@@ -1,0 +1,4 @@
+---
+- import_playbook: elastic.yml
+- import_playbook: kibana.yml
+- import_playbook: ha_proxy.yml

@@ -1,0 +1,6 @@
+---
+# defaults file for configure_filebeat
+filebeat_output_elasticsearch_hosts: ["localhost:9200"]
+filebeat_input_type: log
+filebeat_paths:
+  - /var/log/*.log

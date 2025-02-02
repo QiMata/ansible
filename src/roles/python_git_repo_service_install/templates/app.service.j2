@@ -1,0 +1,12 @@
+[Unit]
+Description=My Python Application
+After=network.target
+
+[Service]
+User=your_username  # Replace with the appropriate user
+WorkingDirectory=/opt/{{ app_name }}
+ExecStart=/usr/bin/python3 app.py  # Replace with the command to start your application
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

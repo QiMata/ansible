@@ -1,0 +1,8 @@
+---
+- hosts: openldap
+  become: yes
+  vars_files:
+    - group_vars/all.yml
+    - group_vars/openldap.yml
+  roles:
+    - base

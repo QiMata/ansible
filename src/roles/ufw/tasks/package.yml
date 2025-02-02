@@ -1,0 +1,10 @@
+---
+# Install the packages
+- name: "Package: install packages"
+  apt:
+    name: "{{ ufw_packages }}"
+    state: present
+  become: true
+  register: result
+  until: result is successful
+  tags: usw, package

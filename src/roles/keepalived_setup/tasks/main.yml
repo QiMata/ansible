@@ -1,0 +1,17 @@
+---
+# tasks file for keepalived_setup
+- name: Ensure keepalived is installed
+  apt:
+    name: keepalived
+    state: present
+    update_cache: yes
+
+- name: Configure keepalived
+  template:
+    src: keepalived.conf.j2
+    dest: /etc/keepalived/keepalived.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - restart keepalived

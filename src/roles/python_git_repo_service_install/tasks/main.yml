@@ -1,0 +1,23 @@
+---
+- name: Clone Git repository
+  git:
+    repo: "{{ app_repo }}"
+    dest: "/opt/{{ app_name }}"
+  register: git_output
+
+- name: Install Python dependencies
+  pip:
+    requirements: "/opt/{{ app_name }}/requirements.txt"
+
+- name: Configure systemd service
+  template:
+    src: "templates/app.service.j2"
+    dest: "/etc/systemd/system/{{ app_name }}.service"
+  notify:
+    - Reload systemd
+
+- name: Start and enable the application service
+  systemd:
+    name: "{{ app_name }}"
+    state: started
+    enabled: yes

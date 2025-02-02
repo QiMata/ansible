@@ -1,0 +1,4 @@
+---
+apache_listen_ip: "{{ hostvars[inventory_hostname]['service_ip'] }}"
+apache_mods_enabled:
+  - rewrite

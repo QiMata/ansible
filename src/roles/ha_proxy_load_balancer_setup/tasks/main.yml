@@ -1,0 +1,39 @@
+---
+# tasks file for ha_proxy_load_balancer_setup
+- name: Ensure haproxy is installed
+  apt:
+    name: haproxy
+    state: present
+    update_cache: yes
+
+- name: Copy error files
+  copy:
+    src: "{{ item }}"
+    dest: "/etc/haproxy/errors/{{ item }}"
+    owner: root
+    group: root
+    mode: '0644'
+  with_items:
+    - 400.http
+    - 403.http
+    - 408.http
+    - 500.http
+    - 502.http
+    - 503.http
+    - 504.http
+
+- name: Configure haproxy
+  template:
+    src: haproxy.cfg.j2
+    dest: /etc/haproxy/haproxy.cfg
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Ensure haproxy is started and enabled at boot
+  service:
+    name: haproxy
+    state: started
+    enabled: yes
+  notify:
+    - restart haproxy

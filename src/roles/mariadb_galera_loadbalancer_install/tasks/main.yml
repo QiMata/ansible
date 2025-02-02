@@ -1,0 +1,42 @@
+---
+# https://galeracluster.com/library/documentation/glb.html
+- name: Clone GLB repository
+  git:
+    repo: 'https://github.com/codership/glb'
+    dest: '/opt/glb'
+
+- name: Bootstrap GLB
+  command: './bootstrap.sh'
+  args:
+    chdir: '/opt/glb'
+
+- name: Configure GLB
+  command: './configure'
+  args:
+    chdir: '/opt/glb'
+
+- name: Build GLB
+  make:
+    chdir: '/opt/glb'
+
+- name: Install GLB
+  command: 'make install'
+  args:
+    chdir: '/opt/glb'
+
+- name: Copy service script
+  copy:
+    src: '/opt/glb/files/glbd.sh'
+    dest: '/etc/init.d/glb'
+    mode: '0755'
+
+- name: Copy configuration file
+  template:
+    src: 'glbd.cfg.j2'
+    dest: '/etc/sysconfig/glbd.cfg'
+
+- name: Start GLB service
+  service:
+    name: glb
+    state: started
+    enabled: yes

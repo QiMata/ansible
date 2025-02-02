@@ -1,0 +1,42 @@
+# {{ ansible_managed }}
+
+global
+    log /dev/log    local0
+    log /dev/log    local1 notice
+    chroot /var/lib/haproxy
+    stats socket /run/haproxy/admin.sock mode 660 level admin
+    stats timeout 30s
+    user haproxy
+    group haproxy
+    daemon
+
+defaults
+    log     global
+    mode    http
+    option  httplog
+    option  dontlognull
+    timeout connect 5000
+    timeout client  50000
+    timeout server  50000
+    errorfile 400 /etc/haproxy/errors/400.http
+    errorfile 403 /etc/haproxy/errors/403.http
+    errorfile 408 /etc/haproxy/errors/408.http
+    errorfile 500 /etc/haproxy/errors/500.http
+    errorfile 502 /etc/haproxy/errors/502.http
+    errorfile 503 /etc/haproxy/errors/503.http
+    errorfile 504 /etc/haproxy/errors/504.http
+
+frontend {{ haproxy_frontend_name }}
+    bind {{ haproxy_frontend_bind }}
+    default_backend {{ haproxy_backend_name }}
+
+backend {{ haproxy_backend_name }}
+{% if haproxy_sticky_sessions | lower == 'yes' %}
+    balance source
+    cookie SERVERID insert indirect nocache
+{% endif %}
+{% for server in haproxy_backend_servers %}
+server {{ server.name }} {{ server.address }} check{% if haproxy_sticky_sessions | lower == 'yes' %} cookie {{ server.name }}{% endif %}{% if not loop.last %}
+
+{% endif %}
+{% endfor %}

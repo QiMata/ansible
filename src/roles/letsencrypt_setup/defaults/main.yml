@@ -1,0 +1,8 @@
+---
+# defaults file for letsencrypt_setup
+domain_name: "your_domain"
+email_address: "your_email"
+godaddy_api_key: "your_godaddy_api_key"
+godaddy_api_secret: "your_godaddy_api_secret"
+use_godaddy: true
+webroot_path: "/var/www/html"

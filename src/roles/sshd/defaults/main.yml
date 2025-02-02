@@ -1,0 +1,2 @@
+---
+ssh_listen_address: "{{ hostvars[inventory_hostname]['ansible_host'] }}"

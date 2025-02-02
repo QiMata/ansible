@@ -1,0 +1,70 @@
+---
+- hosts: elastic_logging_ELASTIC_SEARCH
+  vars_files:
+    - ../../../../../group_vars/all.yml
+    - ../../../../../group_vars/elastic.yml
+    - vars.yml
+  roles:
+    - geerlingguy.java
+    - geerlingguy.elasticsearch
+
+- hosts: elastic_logging_ELASTIC_SEARCH
+  vars_files:
+    - ../../../../../group_vars/all.yml
+    - ../../../../../group_vars/elastic.yml
+    - vars.yml
+  tasks:
+    - name: Check if Elasticsearch configuration file exists
+      stat:
+        path: /etc/elasticsearch/elasticsearch.yml
+      register: config_file_existence
+
+    - name: Ensure the data directory exists
+      file:
+        path: "{{ elasticsearch_data_path }}/nodes"
+        owner: elasticsearch
+        group: elasticsearch
+        state: directory
+      become: true
+      when: config_file_existence.stat.exists
+
+    - name: Ensure elasticsearch user owns the data directory
+      file:
+        path: "{{ elasticsearch_data_path }}"
+        owner: elasticsearch
+        group: elasticsearch
+        recurse: true
+      with_fileglob:
+        - "{{ elasticsearch_data_path }}/*"
+      become: true
+      when: config_file_existence.stat.exists
+
+    - name: Ensure data directory permissions are correct
+      file:
+        path: "{{ elasticsearch_data_path }}"
+        mode: '0755'
+        recurse: true
+      with_fileglob:
+        - "{{ elasticsearch_data_path }}/*"
+      become: true
+      when: config_file_existence.stat.exists
+
+    - name: Read Elasticsearch configuration file
+      shell: cat /etc/elasticsearch/elasticsearch.yml
+      register: config_content
+      when: config_file_existence.stat.exists
+
+    - name: Modify Elasticsearch configuration
+      lineinfile:
+        dest: /etc/elasticsearch/elasticsearch.yml
+        regexp: '^path.data:'
+        line: 'path.data: {{ elasticsearch_data_path }}'
+      when:
+        - config_file_existence.stat.exists
+        - "'path.data: {{ elasticsearch_data_path }}' not in config_content.stdout_lines"
+
+    - name: Restart Elasticsearch
+      systemd:
+        name: elasticsearch
+        state: restarted
+      when: config_file_existence.stat.exists

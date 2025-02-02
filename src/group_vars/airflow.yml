@@ -1,0 +1,135 @@
+ 
+---
+airflow_webserver_host: "{{ hostvars[inventory_hostname]['service_ip'] }}"
+airflow_webserver_secret_key: b59c67bf196a4758191e42f76670ceba
+airflow_fernet_key: xKy13nPFfDflJ0DYGasdwf_DEmbItfURHlEDxrt-bBQw=
+airflow_required_python_packages:
+  - { name: SQLAlchemy, version: 1.3.23 }
+  - { name: psycopg2-binary }
+  - {name: pyasn1, version: 0.4.4}
+airflow_user: airflow
+airflow_group: airflow
+airflow_default_required_libs:
+  - python3-dev
+  - python3-pip
+  - python3-setuptools
+  #- python-pip
+  # - acl
+# Airflow 2.0 system level requirements https://airflow.apache.org/docs/apache-airflow/stable/installation.html#system-dependencies
+  - freetds-bin
+  - krb5-user
+  - ldap-utils
+  #- libffi6
+  - libsasl2-2
+  - libsasl2-modules
+  - libssl1.1
+  - locales
+  - lsb-release
+  - sasl2-bin
+  - sqlite3
+  - unixodbc
+airflow_extra_packages:
+  # [Apache]
+  - apache.atlas
+  - apache.beam
+  # - apache.cassandra
+  # - apache.druid
+  # - apache.hdfs
+  # - apache.hive
+  # - apache.kylin
+  # - apache.livy
+  # - apache.pig
+  # - apache.pinot
+  - apache.spark
+  # - apache.sqoop
+  # - apache.webhdfs
+  # [Services]
+  # - amazon
+  # - microsoft.azure
+  # - cloudant
+  # - databricks
+  # - datadog
+  # - dask
+  # - dingding
+  # - discord
+  # - facebook
+  # - google
+  # - github_enterprise
+  # - google_auth
+  # - hashicorp
+  # - jira
+  # - opsgenie
+  # - pagerduty
+  # - plexus
+  # - qubole
+  # - salesforce
+  # - sendgrid
+  # - segment
+  # - sentry
+  # - slack
+  # - snowflake
+  # - telegram
+  # - vertica
+  # - yandex
+  # - zendesk
+  # [Software]
+  # - async
+  # - celery
+  # - cncf.kubernetes
+  # - docker
+  # - elasticsearch
+  # - exasol
+  # - jenkins
+  # - ldap
+  # - mongo
+  # - microsoft.mssql
+  # - mysql
+  # - odbc
+  # - openfaas
+  # - oracle
+  # - postgres
+  # - password
+  # - presto
+  # - rabbitmq
+  # - redis
+  # - samba
+  # - singularity
+  # - statsd
+  # - tableau
+  # - virtualenv
+  # [Others]
+  # - cgroups
+  # - ftp
+  # - grpc
+  # - http
+  # - imap
+  # - jdbc
+  # - kerberos
+  # - papermill
+  # - sftp
+  - sqlite
+  - ssh
+  # - microsoft.winrm
+airflow_admin_users:
+  - name: toothkiller
+    username: toothkiller
+    password: toothkiller
+    role: Admin
+    firstname: tooth
+    lastname: killer
+    email: airflow_admin@qimata.net
+
+airflow_regular_users:
+  - name: toothkiller
+    username: toothkiller
+    password: toothkiller
+    role: Admin
+    firstname: tooth
+    lastname: killer
+    email: airflow_admin@qimata.net
+
+airflow_load_examples: true
+
+# Example keys
+
+

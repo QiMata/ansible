@@ -1,0 +1,28 @@
+---
+- hosts: ansible-semaphore
+  become: yes
+  vars_files:
+    - group_vars/all.yml
+    - group_vars/galera_wordpress.yml
+  roles:
+    - base
+
+
+- hosts: MARIADB_DATABASE
+  become: yes
+  vars_files:
+    - group_vars/all.yml
+    - group_vars/galera_wordpress.yml
+  roles:
+    - mrlesmithjr.ansible-mariadb-galera-cluster
+    - mariadb_backups
+
+
+- hosts: galera_loadbalancer
+  become: yes
+  vars_files:
+    - group_vars/all.yml
+    - group_vars/galera_wordpress.yml
+  roles:
+    - ha_proxy_load_balancer_setup
+    - mariadb_galera_loadbalancer_install

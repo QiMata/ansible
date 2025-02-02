@@ -1,0 +1,70 @@
+---
+# - name: Base install for all servers
+#   hosts: ansible_semaphore0.prod.qimata.net
+#   become: true
+#   vars_files:
+#     - group_vars/all.yml
+#     - group_vars/ansible_semaphore/all.yml
+#   roles:
+#     - base
+
+- name: Set owner and permissions for Mariadb directory
+  hosts: ansible_semaphore_MARIADB_DATABASE
+  become: true  # Run the tasks with sudo
+  vars_files:
+    - group_vars/all.yml
+    - group_vars/systems_admin/shared_tools/ansible_semaphore/all.yml
+    - group_vars/systems_admin/shared_tools/ansible_semaphore/mariadb_galera.yml
+  tasks:
+    - name: Ensure user 'mysql' exists
+      user:
+        name: mysql
+        state: present
+    - name: Set owner and permissions for the directory
+      file:
+        path: "{{ mariadb_datadir }}"
+        owner: mysql
+        group: mysql
+        mode: "0700"  # Set the desired permissions here
+
+- name: MariaDB Galera Cluster Installation
+  hosts: ansible_semaphore_MARIADB_DATABASE
+  become: true
+  vars_files:
+    - group_vars/all.yml
+    - group_vars/systems_admin/shared_tools/ansible_semaphore/all.yml
+    - group_vars/systems_admin/shared_tools/ansible_semaphore/mariadb_galera.yml
+  roles:
+    # - bodsch.mariadb
+    - mrlesmithjr.mariadb_galera_cluster
+
+
+# - name: MariaDB Galera Cluster Backups
+#   hosts: ansible_semaphore_MARIADB_DATABASE
+#   serial: 1
+#   become: true
+#   vars_files:
+#     - group_vars/all.yml
+#     - group_vars/ansible_semaphore/all.yml
+#     - group_vars/mariadb_galera.yml
+#   roles:
+#     - mariadb_backups
+
+
+# # https://github.com/Thulium-Drake/ansible-role-ansible_semaphore/blob/master/defaults/main.yml
+# - name: Ansible Semaphor Installation
+  # hosts: ansible-semaphore:ANSIBLE_SEMAPHORE_WEB
+#   become: yes
+#   vars_files:
+#     - group_vars/all.yml
+#     - group_vars/galera_wordpress.yml
+#   roles:
+#     - thulium_drake.ansible_semaphore
+
+
+# - name: HAProxy Load Balancer Installation
+  # hosts: ansible-semaphore:WEB_LOAD_BALANCER
+#   sudo: yes
+#   roles:
+#     - { role: geerlingguy.haproxy }
+

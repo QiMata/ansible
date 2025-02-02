@@ -1,0 +1,27 @@
+---
+# configure_sshd
+sshd:
+  ListenAddress: "{{ hostvars[inventory_hostname]['ansible_host'] }}"
+  PasswordAuthentication: true
+
+
+# install_fail2ban
+fail2ban_loglevel: INFO
+fail2ban_logtarget: /var/log/fail2ban.log
+
+fail2ban_ignoreself: "true"
+fail2ban_ignoreips:
+  - "127.0.0.1/8 ::1"
+
+# In seconds
+fail2ban_bantime: 600
+fail2ban_findtime: 600
+
+fail2ban_maxretry: 5
+fail2ban_destemail: admin+fail2ban@qimata.net
+fail2ban_sender: admin@{{ ansible_fqdn }}
+
+# install unattended-upgrades
+auto_update_download_updates: yes
+auto_update_apply_updates: no
+auto_update_random_sleep: 360 

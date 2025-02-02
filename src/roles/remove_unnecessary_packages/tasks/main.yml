@@ -1,0 +1,16 @@
+---
+- name: Retry removing unnecessary packages
+  block:
+    - name: Remove unnecessary packages
+      apt:
+        name: "{{ item }}"
+        state: absent
+      loop: "{{ unnecessary_packages }}"
+      register: apt_remove_result
+      until: apt_remove_result is success
+      retries: 10
+      delay: 10
+  rescue:
+    - name: Handle failure
+      debug:
+        msg: "Failed to remove unnecessary packages"

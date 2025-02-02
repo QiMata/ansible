@@ -1,0 +1,52 @@
+---
+# tasks file for letsencrypt_setup
+- name: Install software-properties-common
+  ansible.builtin.apt:
+    name: software-properties-common
+    state: present
+    update_cache: yes
+
+- name: Add certbot repository
+  ansible.builtin.apt_repository:
+    repo: 'ppa:certbot/certbot'
+    state: present
+
+- name: Install certbot and DNS plugin
+  ansible.builtin.apt:
+    name:
+      - certbot
+      - python3-certbot-dns-godaddy
+    state: present
+
+- name: Transfer godaddy.ini
+  ansible.builtin.copy:
+    src: ./godaddy.ini
+    dest: ~/.secrets/certbot/godaddy.ini
+    mode: '0600'
+  when: use_godaddy
+
+- name: Generate certificate with DNS validation
+  ansible.builtin.command:
+    cmd: >-
+      certbot certonly --dns-godaddy --dns-godaddy-credentials ~/.secrets/certbot/godaddy.ini
+      -d {{ domain_name }} --non-interactive --agree-tos --email {{ email_address }}
+    creates: "/etc/letsencrypt/live/{{ domain_name }}/privkey.pem"
+  become: true
+  when: use_godaddy
+
+- name: Generate certificate with webroot validation
+  ansible.builtin.command:
+    cmd: >-
+      certbot certonly --webroot -w {{ webroot_path }} -d {{ domain_name }}
+      --non-interactive --agree-tos --email {{ email_address }}
+    creates: "/etc/letsencrypt/live/{{ domain_name }}/privkey.pem"
+  become: true
+  when: not use_godaddy
+
+- name: Set up automatic renewal
+  ansible.builtin.cron:
+    name: "Certbot auto renewal"
+    job: "certbot renew --quiet"
+    minute: "30"
+    hour: "2"
+    user: root

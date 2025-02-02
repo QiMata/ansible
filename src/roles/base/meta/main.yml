@@ -1,0 +1,11 @@
+---
+dependencies:
+  - role: remove_unnecessary_packages
+  - role: update_system
+  - role: robertdebock.bootstrap
+  # - role: willshersystems.sshd
+  - role: robertdebock.auto_update
+  - role: robertdebock.fail2ban
+  #- role: oefenweb.ufw
+  - role: geerlingguy.clamav
+  #- role: configure_filebeat_os

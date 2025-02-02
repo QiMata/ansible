@@ -1,0 +1,21 @@
+---
+# ha frontend
+#haproxy_frontend_bind_address: "{{ hostvars[inventory_hostname]['service_ip'] }}"
+
+# ha backend
+haproxy_backend_servers: []
+
+# kibana
+kibana_elasticsearch_url: "http://{{ groups['elastic_logging_ELASTIC_SEARCH'] | map('extract', hostvars, 'service_ip') | first }}:9200"
+
+# elasticsearch
+elasticsearch_extra_options: |  # Dont forget the pipe!
+  discovery.seed_hosts: [{{ groups['elastic_logging_ELASTIC_SEARCH'] | map('extract', hostvars, 'service_ip') | join(', ') }}]
+  cluster.initial_master_nodes: [{{ hostvars[groups['elastic_logging_ELASTIC_SEARCH'][0]]['inventory_hostname'].split('.')[0]  | replace('_', '-') }}]
+  node.name: {{ inventory_hostname.split('.')[0]  | replace('_', '-') }}
+  cluster.name: elastic-logging-ELASTIC-SEARCH
+  {% if hostvars[groups['elastic_logging_ELASTIC_SEARCH'][0]]['inventory_hostname'] == inventory_hostname %}
+  node.master: true
+  {% else %}
+  node.data: true
+  {% endif %}

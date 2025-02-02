@@ -1,0 +1,6 @@
+---
+# defaults file for remove_unnecessary_packages
+unnecessary_packages:
+  - games
+  - ftp
+  - telnet

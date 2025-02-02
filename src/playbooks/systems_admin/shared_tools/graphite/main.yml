@@ -1,0 +1,8 @@
+---
+- hosts: graphite
+  become: true
+  vars_files:
+    - ../../../../group_vars/all.yml
+    - ../../../../group_vars/graphite.yml
+  roles:
+     - { role: mrlesmithjr.graphite  }

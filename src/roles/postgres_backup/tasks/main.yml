@@ -1,0 +1,32 @@
+---
+# may need to install pgdump and gzip
+- name: Ensure backup directory exists
+  file:
+    path: "{{ backup_dir }}"
+    state: directory
+
+- name: Deploy backup script
+  template:
+    src: backup_postgres.sh.j2
+    dest: /usr/local/bin/backup_postgres.sh
+    mode: 0755
+
+- name: Deploy systemd service
+  template:
+    src: postgres_backup.service.j2
+    dest: /etc/systemd/system/postgres_backup.service
+
+- name: Deploy systemd timer
+  template:
+    src: postgres_backup.timer.j2
+    dest: /etc/systemd/system/postgres_backup.timer
+
+- name: Reload systemd
+  systemd:
+    daemon_reload: yes
+
+- name: Enable and start timer
+  systemd:
+    name: postgres_backup.timer
+    state: started
+    enabled: yes

@@ -1,0 +1,3 @@
+#!/bin/bash
+
+mysqldump -u {{ mariadb_username }} -p{{ mariadb_password }} --all-databases | gzip > {{ backup_location }}/$(date +\%Y\%m\%d\%H\%M\%S).sql.gz

@@ -1,0 +1,21 @@
+---
+# - name: test variables
+#   hosts: ansible_semaphore0.prod.qimata.net
+#   become: true
+#   vars_files:
+#     - group_vars/all.yml
+#     - group_vars/ansible_semaphore/all.yml
+#   tasks:
+#     - name: print
+#       debug:
+#         msg: "{{ ssh_allowed_users }}"
+
+- name: Base install for all servers
+  hosts: ansible_semaphore0.prod.qimata.net
+  become: true
+  vars_files:
+    - group_vars/all.yml
+    - group_vars/system_admin/shared_tools/ansible_semaphore/all.yml
+    - group_vars/system_admin/shared_tools/ansible_semaphore/mariadb_galera.yml
+  roles:
+    - base

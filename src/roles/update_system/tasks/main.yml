@@ -1,0 +1,15 @@
+---
+- name: Retry apt update and upgrade
+  block:
+    - name: Update and upgrade system
+      apt:
+        upgrade: yes
+        update_cache: yes
+      register: apt_result
+      until: apt_result is success
+      retries: 10
+      delay: 10
+  rescue:
+    - name: Handle failure
+      debug:
+        msg: "Failed to update and upgrade system"

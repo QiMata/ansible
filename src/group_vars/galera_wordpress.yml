@@ -1,0 +1,64 @@
+ufw_packages:
+  - ufw
+
+# allow SSH by defaults
+ufw_allow_ssh: true
+
+# list of allowed ports
+ufw_allow_ports: [3306, 4567, 4568]
+
+# Allow specific interfaces
+ufw_allow_interfaces: ['tcp']
+
+# defaults file for ansible-mariadb-galera-cluster
+
+# MariaDB setting
+# Define mysql root password
+# generate using echo password | mkpasswd -s -m sha-512
+mariadb_mysql_root_password: "JB3mxV=Eun!ZBSag"
+
+# Define the name of the cluster
+galera_cluster_name: "wordpress-cluster"
+
+# Define Ansible group in which the nodes exist to be part of the cluster
+galera_cluster_nodes_group: "wordpresscluster-nodes"
+# Define databases & users to be created
+
+# Create these MariaDB databases during installation
+# Example:
+# mariadb_databases:
+#   - name: keystone
+#   - name: mydb
+#     init_script: files/init_mydb.sql
+mariadb_databases: ['wordpress']
+
+# Define additional MySQL users
+mariadb_mysql_users:
+- name: wordpress
+  hosts:
+    - "%"
+    - "127.0.0.1"
+    - "::1"
+    - "localhost"
+  password: secret
+  encrypted: no (default)
+  priv: '*.*:USAGE (default}'
+  state: present (default)
+  append_privs: no (default)
+
+
+# defaults file for mariadb_galera_loadbalancer_install
+glb_listen_address: "0.0.0.0"
+glb_listen_port: "3306"
+glb_control_port: "8010"
+glb_servers: "{{ nodes | map('regex_replace', '$', ':3306') | list }}"
+glb_threads: "4"
+
+keepalived_interface: eth0
+keepalived_virtual_router_id: 51
+keepalived_priority: 100
+keepalived_virtual_ip: 10.80.6.69
+
+
+ansible_become_pass: Deathcloud12Darkst12
+

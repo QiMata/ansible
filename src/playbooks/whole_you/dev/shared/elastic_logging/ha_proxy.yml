@@ -1,0 +1,17 @@
+---
+- name: install haproxy
+  hosts: elastic_logging_WEB_LOAD_BALANCER
+  become: true
+  vars_files:
+    - ../../../../../group_vars/all.yml
+    - vars.yml
+
+  tasks:
+  - name: Build haproxy_backend_servers variable
+    set_fact:
+      haproxy_backend_servers: "{{ haproxy_backend_servers + [{'name': item, 'address': hostvars[item]['service_ip'] + ':5601'}] }}"
+    loop: "{{ groups['elastic_logging_KIBANA_WEB'] }}"
+
+  - name: Include geerlingguy.haproxy role
+    include_role:
+      name: geerlingguy.haproxy

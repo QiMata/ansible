@@ -1,0 +1,6 @@
+---
+# Handler to restart GLB service when needed
+- name: restart glb
+  service:
+    name: glb
+    state: restarted

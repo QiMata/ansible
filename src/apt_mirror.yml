@@ -1,0 +1,46 @@
+---
+- hosts: aptmirror-shared
+  become: yes
+  vars_files:
+    - group_vars/all.yml
+    - group_vars/apt_mirror.yml
+  roles:
+    - base
+
+- hosts: APT_MIRROR
+  become: yes
+  vars_files:
+    - group_vars/all.yml
+    - group_vars/apt_mirror.yml
+  roles:
+    - mrlesmithjr.apache2
+    - mrlesmithjr.apt-mirror
+
+- name: Configure apt-mirror load balancer
+  hosts: aptmirror-shared:WEB_LOAD_BALANCER
+  become: yes
+  vars_files:
+    - group_vars/all.yml
+    - group_vars/apt_mirror.yml
+  tasks:
+    - name: install gnupg2
+      apt:
+        name: gnupg2
+        state: present
+      register: gnupg2_installed
+      until: gnupg2_installed is success
+    - name: debian | Adding NGINX PPA
+      apt_repository:
+        repo: "ppa:nginx/stable"
+        state: present
+      become: true
+      register: result
+      until: result is successful
+
+- hosts: aptmirror-shared:WEB_LOAD_BALANCER
+  become: yes
+  vars_files:
+    - group_vars/all.yml
+    - group_vars/apt_mirror.yml
+  roles:
+    - mrlesmithjr.nginx-load-balancer

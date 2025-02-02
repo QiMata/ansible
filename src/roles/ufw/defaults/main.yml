@@ -1,0 +1,12 @@
+---
+ufw_packages:
+  - ufw
+
+# allow SSH by defaults
+ufw_allow_ssh: true
+
+# list of allowed ports
+ufw_allow_ports: []
+
+# Allow specific interfaces
+ufw_allow_interfaces: []

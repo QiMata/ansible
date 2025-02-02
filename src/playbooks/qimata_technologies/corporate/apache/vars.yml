@@ -1,0 +1,8 @@
+---
+apache_listen_port: 8080
+apache_vhosts:
+  - {servername: "qimata.com", documentroot: "/var/www/vhosts/qimata_com"}
+  - {servername: "{{ hostvars[inventory_hostname]['service_ip'] }}:8080", documentroot: "/var/www/vhosts/qimata_com"}
+
+apache_web_corpsite_src_dir: "/x/Code/CorporateWebsite/src"
+apache_web_corpsite_dest_dir: "/var/www/vhosts/qimata_com"

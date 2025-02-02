@@ -1,0 +1,40 @@
+---
+# galera vars
+mariadb_bind_address: "{{ hostvars[inventory_hostname]['service_ip'] }}"
+galera_cluster_bind_address: "{{ hostvars[inventory_hostname]['service_ip'] }}"
+galera_mysql_first_node: "{{ galera_cluster_nodes[0] }}"
+
+#galera_cluster_nodes: "{{ groups['ansible_semaphore_MARIADB_DATABASE'] }}"
+mariadb_mysql_settings:
+  datadir: "/data/mariadb"
+  key_buffer_size: "{{ (ansible_memtotal_mb | int * mariadb_mysql_mem_multiplier) | round | int }}M"
+  max_allowed_packet: "16M"
+  max_binlog_size: "100M"
+  query_cache_limit: "1M"
+  query_cache_size: "16M"
+  # MariaDB default: https://mariadb.com/kb/en/server-system-variables/#thread_cache_size
+  thread_cache_size: 256
+mariadb_datadir: "/data/mariadb"
+
+
+# MariaDB setting
+# Define mysql root password
+# generate using echo password | mkpasswd -s -m sha-512
+
+
+# Define the name of the cluster
+
+# Define databases & users to be created
+
+# Create these MariaDB databases during installation
+# Example:
+# mariadb_databases:
+#   - name: keystone
+#   - name: mydb
+#     init_script: files/init_mydb.sql
+mariadb_configure_swappiness: false
+
+
+
+mariadb_replication:
+  enabled: false

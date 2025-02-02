@@ -1,0 +1,25 @@
+---
+- name: Install apache server
+  hosts: apache_web_corpsite_APACHE_WEB_SERVER
+  become: true
+  vars_files:
+    - ../../../../group_vars/all.yml
+    - ../../../../group_vars/apache_web.yml
+    - vars.yml
+  roles:
+    - { role: geerlingguy.apache }
+
+- name: Copy Website
+  hosts: apache_web_corpsite_APACHE_WEB_SERVER
+  become: true
+  vars_files:
+    - ../../../../group_vars/all.yml
+    - ../../../../group_vars/apache_web.yml
+    - vars.yml
+  tasks:
+  - name: Copy website
+    copy:
+      src: "{{ item.src }}"
+      dest: "{{ item.dest }}"
+    with_items:
+      - { src: "{{ apache_web_corpsite_src_dir }}", dest: "{{ apache_web_corpsite_dest_dir }}" }

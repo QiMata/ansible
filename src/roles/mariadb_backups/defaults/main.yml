@@ -1,0 +1,6 @@
+---
+backup_script_path: "/usr/local/bin/mariadb-backup.sh"
+service_file_path: "/etc/systemd/system/mariadb-backup.service"
+mariadb_username: "backup_user"
+mariadb_password: "backup_password"
+backup_location: "/path/to/backup"

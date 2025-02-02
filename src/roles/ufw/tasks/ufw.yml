@@ -1,0 +1,38 @@
+---
+- name: "UFW: Set logging"
+  community.general.ufw:
+    logging: 'on'
+
+# We explicit manage SSH rule
+- name: "UFW: Allow SSH"
+  community.general.ufw:
+    rule: allow
+    name: OpenSSH
+  when: ufw_allow_ssh | bool
+
+# Allow rules
+- name: "UFW: Manage rules"
+  community.general.ufw:
+    rule: allow
+    port: "{{item}}"
+  loop: "{{ufw_allow_ports}}"
+
+# Allow specific interfaces
+- name: Accept packets from interfaces
+  community.general.ufw:
+    direction: in
+    interface: "{{item}}"
+    rule: allow
+  loop: "{{ufw_allow_interfaces}}"
+
+# Deny everything else
+- name: "UFW: Enable"
+  community.general.ufw:
+    state: enabled
+    policy: deny
+
+- name: Start ufw service
+  service:
+    name: ufw
+    enabled: true
+    state: started

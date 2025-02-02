@@ -1,0 +1,113 @@
+---
+- hosts: postgres-clustermanagerpostgres
+  become: yes
+  vars_files:
+    - group_vars/all.yml
+    - group_vars/postgres.yml
+  roles:
+    - base
+
+
+- hosts: postgres-clustermanagerpostgres:POSTGRESQL_DATABASE, postgres-clustermanagerpostgres:POSTGRESQL_REPLICATION, postgres-clustermanagerpostgres:POSTGRESQL_WITNESS
+  name: Install Postgres binaries
+  become: yes
+  gather_facts: yes
+
+  collections:
+    - edb_devops.edb_postgres
+
+  pre_tasks:
+    - name: Initialize the user defined variables
+      set_fact:
+        pg_version: 14
+        pg_type: "PG"
+
+  roles:
+    - role: setup_repo
+      when: "'setup_repo' in lookup('edb_devops.edb_postgres.supported_roles', wantlist=True)"
+    - role: install_dbserver
+      when: "'install_dbserver' in lookup('edb_devops.edb_postgres.supported_roles', wantlist=True)"
+
+- hosts: postgres-clustermanagerpostgres:POSTGRESQL_DATABASE, postgres-clustermanagerpostgres:POSTGRESQL_REPLICATION, postgres-clustermanagerpostgres:POSTGRESQL_WITNESS
+  name: Install and configure Repmgr
+  become: true
+  gather_facts: yes
+
+  collections:
+    - edb_devops.edb_postgres
+
+  pre_tasks:
+    - name: Initialize the user defined variables
+      set_fact:
+        pg_type: "PG"
+        pg_version: 14
+        
+        repmgr_failover: automatic
+        repmgr_reconnect_attemps: 2
+        repmgr_reconnect_interval: 2
+
+  roles:
+    - role: setup_repmgr
+      when: "'setup_repmgr' in lookup('edb_devops.edb_postgres.supported_roles', wantlist=True)"
+
+
+- hosts: postgres-clustermanagerpostgres:POSTGRESQL_DATABASE, postgres-clustermanagerpostgres:POSTGRESQL_REPLICATION, postgres-clustermanagerpostgres:POSTGRESQL_WITNESS 
+  name: Apply system and Postgres recommanded performance tuning
+  become: true
+  gather_facts: yes
+
+  collections:
+    - edb_devops.edb_postgres
+
+  pre_tasks:
+    - name: Initialize the user defined variables
+      set_fact:
+        pg_type: "PG"
+        pg_version: 14
+
+        ssd_disk: yes
+
+  roles:
+    - role: tuning
+
+
+---
+- hosts: postgres-clustermanagerpostgres:PGPOOL
+  name: Manage PgpoolII instances
+  become: yes
+  gather_facts: yes
+
+  collections:
+    - edb_devops.edb_postgres
+
+  pre_tasks:
+    - name: Initialize the user defined variables
+      set_fact:
+        pg_version: 14
+        pg_type: "PG"
+
+        pgpool2_configuration:
+          - key: "port"
+            value: 6432
+            state: present
+          - key: "socket"
+            value: "/tmp"
+            # Add quotes around the value
+            quoted: true
+            state: present
+          - key: "ssl_ca_cert"
+            state: absent
+
+        pgpool2_service_users:
+          - name: "my_user1"
+            pass: "password"
+            auth: scram
+          - name: "my_user2"
+            pass: "password"
+            auth: md5
+          - name: "my_user_to_be_removed"
+            state: absent
+
+  roles:
+    - role: manage_pgpool2
+      when: "'manage_pgpool2' in lookup('edb_devops.edb_postgres.supported_roles', wantlist=True)"

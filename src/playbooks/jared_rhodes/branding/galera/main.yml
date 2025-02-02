@@ -1,0 +1,34 @@
+---
+- name: Set owner and permissions for Mariadb directory
+  hosts: mariadb_galera_blog_MARIADB_DATABASE
+  become: true  # Run the tasks with sudo
+  vars_files:
+    - ../../../../group_vars/all.yml
+    - ../../../../group_vars/galera.yml
+    - all.yml
+  tasks:
+    - name: Ensure user 'mysql' exists
+      user:
+        name: mysql
+        state: present
+    - name: ensure directory exists
+      file:
+        path: "{{ mariadb_datadir }}"
+        state: directory
+    - name: Set owner and permissions for the directory
+      file:
+        path: "{{ mariadb_datadir }}"
+        owner: mysql
+        group: mysql
+        mode: "0700"  # Set the desired permissions here
+
+- name: MariaDB Galera Cluster Installation
+  hosts: mariadb_galera_blog_MARIADB_DATABASE
+  become: true
+  vars_files:
+    - ../../../../group_vars/all.yml
+    - ../../../../group_vars/galera.yml
+    - all.yml
+  roles:
+    # - bodsch.mariadb
+    - mrlesmithjr.mariadb_galera_cluster

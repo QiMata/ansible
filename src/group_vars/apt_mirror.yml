@@ -1,0 +1,115 @@
+---
+ufw_packages:
+  - ufw
+
+# allow SSH by defaults
+ufw_allow_ssh: true
+
+# list of allowed ports
+ufw_allow_ports: [80]
+
+# Allow specific interfaces
+ufw_allow_interfaces: ['tcp']
+
+# defaults file for apt_mirror_setup
+apt_mirror_dir: "/data/apt-mirror/"
+apt_mirror_apache_links:
+  - uri: "{{ apt_mirror_ubuntu_mirror }}"
+    # Defines name of symlink..ensure to change apt_mirror_client_repos to match
+    distro: debian
+apt_mirror_domain_name: qimata.net
+
+# Defines if apt_mirror is being used...if not client will be reset...
+apt_mirror_enable: true
+
+# Defines if you would like to enable bandwidth limits Defined in apt_mirror_limit_rate
+apt_mirror_enable_limit_rate: true
+
+apt_mirror_repos:
+   - "deb-amd64 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }} main restricted universe multiverse"
+   - "deb-amd64 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }}-backports main restricted universe multiverse"
+   - "deb-amd64 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }}-security main restricted universe multiverse"
+   - "deb-amd64 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }}-updates main restricted universe multiverse"
+   - "deb-amd64 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }}-proposed main restricted universe multiverse"
+   - "deb-i386 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }} main restricted universe multiverse"
+   - "deb-i386 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }}-backports main restricted universe multiverse"
+   - "deb-i386 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }}-security main restricted universe multiverse"
+   - "deb-i386 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }}-updates main restricted universe multiverse"
+   - "deb-i386 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }}-proposed main restricted universe multiverse"
+   - "deb-src http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }} main restricted universe multiverse"
+   - "deb-src http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }}-backports main restricted universe multiverse"
+   - "deb-src http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }}-security main restricted universe multiverse"
+   - "deb-src http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }}-updates main restricted universe multiverse"
+   - "deb-src http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }}-proposed main restricted universe multiverse"
+   - "deb http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }} main/debian-installer multiverse/debian-installer restricted/debian-installer universe/debian-installer"
+
+
+keepalived_config: true
+keepalived_router_info:
+  - name: vrrp_1
+    check_script:
+      - name: chk_nginx
+        script: pidof nginx
+        interval: 2
+        weight: 2
+    master_node: "{{ groups['load_balancers'][0] }}"
+    router_id: 51
+    router_pri_backup: 100
+    router_pri_master: 150
+    vip_int: enp0s8
+    vip_addresses:
+      - 10.80.14.197
+
+
+nginx_load_balancer_configs:
+- name: apt-mirror
+  frontend_listen_port: 80
+  locations:
+    - location: /
+      options:
+        - proxy_buffering off
+        - proxy_http_version 1.1
+        - "proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for"
+        - "proxy_set_header Upgrade $http_upgrade"
+        - "proxy_set_header Connection $http_connection"
+        - access_log off
+        - proxy_pass http://127.0.0.1:8080
+  method: round_robin
+  protocol: http
+  server_name:
+    - apt-mirror
+  ssl: false
+  upstream:
+    - servers: "{{ groups['web_servers'] }}"
+      backend_listen_port: 80
+      options:
+        - "fail_timeout=10s"
+        - "max_conns=0"
+        - "max_fails=1"
+        - "weight=1"
+    - server: 10.80.14.193
+      backend_listen_port: 80
+      options:
+        - "fail_timeout=10s"
+        - "max_conns=0"
+        - "weight=1"
+    - server: 10.80.14.194
+      backend_listen_port: 80
+      options:
+        - backup
+        - "fail_timeout=10s"
+        - "max_conns=0"
+        - "weight=1"
+
+
+# Defines a file that will store the process ID of the main process
+ngninx_load_balancer_pid: /run/nginx.pid
+
+# Defines if using a highly available setup. i.e. multiple nginx load balancers
+nginx_load_balancer_ha: true
+
+# Defines the primary host when in HA mode
+nginx_load_balancer_ha_primary: node0
+
+
+ansible_become_pass: Deathcloud12Darkst12
