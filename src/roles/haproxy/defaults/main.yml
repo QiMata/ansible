@@ -1,0 +1,39 @@
+---
+haproxy_package_name: haproxy
+haproxy_service_name: haproxy
+
+haproxy_frontend_name: hafrontend
+haproxy_frontend_bind_address: "*"
+haproxy_frontend_port: 80
+haproxy_frontend_mode: "http"
+
+haproxy_backend_name: habackend
+haproxy_backend_mode: "{{ haproxy_frontend_mode }}"
+haproxy_backend_balance_method: "roundrobin"
+haproxy_backend_httpchk: ""
+
+haproxy_backend_servers: []
+
+haproxy_global_vars:
+  - "log 127.0.0.1 local0"
+  - "log 127.0.0.1 local1 notice"
+  - "chroot /var/lib/haproxy"
+  - "user haproxy"
+  - "group haproxy"
+  - "daemon"
+
+haproxy_defaults_vars:
+  - "option  httplog"
+  - "option  dontlognull"
+  - "timeout connect 5s"
+  - "timeout client  50s"
+  - "timeout server  50s"
+
+haproxy_ssl_certificate: ""
+haproxy_ssl_certificate_content: ""
+
+haproxy_stats_enable: false
+haproxy_stats_user: admin
+haproxy_stats_password: admin
+haproxy_stats_port: 9000
+haproxy_stats_bind_address: "127.0.0.1"

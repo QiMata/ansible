@@ -1,0 +1,22 @@
+---
+- name: Install keepalived
+  apt:
+    name: "{{ keepalived_package_name }}"
+    state: present
+  become: yes
+  when: ansible_facts.os_family == 'Debian'
+
+- name: Deploy keepalived configuration
+  template:
+    src: keepalived.conf.j2
+    dest: /etc/keepalived/keepalived.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart keepalived
+
+- name: Enable and start keepalived
+  service:
+    name: "{{ keepalived_service_name }}"
+    state: started
+    enabled: yes

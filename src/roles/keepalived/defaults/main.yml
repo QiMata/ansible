@@ -1,0 +1,11 @@
+---
+keepalived_package_name: keepalived
+keepalived_service_name: keepalived
+
+keepalived_state: BACKUP
+keepalived_priority: 100
+keepalived_interface: eth0
+keepalived_router_id: 51
+keepalived_virtual_ip: 192.168.50.100
+keepalived_virtual_cidr: 32
+keepalived_auth_pass: vrrp_secret

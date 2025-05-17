@@ -1,0 +1,40 @@
+---
+- name: Install haproxy
+  apt:
+    name: "{{ haproxy_package_name }}"
+    state: present
+  become: yes
+  when: ansible_facts.os_family == 'Debian'
+
+- name: Ensure certificate directory exists
+  file:
+    path: /etc/haproxy/certs
+    state: directory
+    owner: root
+    group: haproxy
+    mode: "0750"
+  when: haproxy_ssl_certificate | length > 0
+
+- name: Deploy certificate
+  copy:
+    content: "{{ haproxy_ssl_certificate_content }}"
+    dest: "{{ haproxy_ssl_certificate }}"
+    owner: root
+    group: haproxy
+    mode: "0640"
+  when: haproxy_ssl_certificate | length > 0 and haproxy_ssl_certificate_content | length > 0
+
+- name: Deploy haproxy configuration
+  template:
+    src: haproxy.cfg.j2
+    dest: /etc/haproxy/haproxy.cfg
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload haproxy
+
+- name: Enable and start haproxy
+  service:
+    name: "{{ haproxy_service_name }}"
+    state: started
+    enabled: yes
