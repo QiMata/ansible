@@ -1,2 +1,15 @@
 [cloudflare]
 localhost ansible_connection=local
+
+[nifi_single]
+nifi-dev.example.com
+
+[nifi_nodes]
+nifi1.example.com
+nifi2.example.com
+nifi3.example.com
+
+[zookeeper_nodes]
+zk1.example.com
+zk2.example.com
+zk3.example.com

@@ -1,0 +1,11 @@
+---
+galaxy_info:
+  role_name: apache_nifi
+  author: your_name
+  description: Install and configure Apache NiFi (single-node or cluster) on Debian systems.
+  license: Apache-2.0
+  min_ansible_version: "2.14"
+  platforms:
+    - name: Debian
+      versions: ["11", "12"]
+dependencies: []

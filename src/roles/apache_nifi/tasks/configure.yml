@@ -1,0 +1,29 @@
+---
+- name: Configure nifi.properties
+  ansible.builtin.template:
+    src: nifi.properties.j2
+    dest: "{{ nifi_home }}/conf/nifi.properties"
+    owner: "{{ nifi_user }}"
+    group: "{{ nifi_group }}"
+    mode: "0640"
+  notify: restart nifi
+
+- name: Configure authorizers.xml
+  ansible.builtin.template:
+    src: authorizers.xml.j2
+    dest: "{{ nifi_home }}/conf/authorizers.xml"
+    owner: "{{ nifi_user }}"
+    group: "{{ nifi_group }}"
+    mode: "0640"
+  when: nifi_security_mode == 'ssl'
+  notify: restart nifi
+
+- name: Configure logback.xml
+  ansible.builtin.template:
+    src: logback.xml.j2
+    dest: "{{ nifi_home }}/conf/logback.xml"
+    owner: "{{ nifi_user }}"
+    group: "{{ nifi_group }}"
+    mode: "0640"
+  when: nifi_enable_elk | bool
+  notify: restart nifi

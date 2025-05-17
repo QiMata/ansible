@@ -1,0 +1,15 @@
+---
+- name: Ensure cluster properties set
+  ansible.builtin.lineinfile:
+    path: "{{ nifi_home }}/conf/nifi.properties"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    owner: "{{ nifi_user }}"
+    group: "{{ nifi_group }}"
+    mode: "0640"
+  loop:
+    - { regexp: '^nifi.cluster.is.node=.*',          line: 'nifi.cluster.is.node=true' }
+    - { regexp: '^nifi.cluster.node.address=.*',    line: 'nifi.cluster.node.address={{ ansible_fqdn }}' }
+    - { regexp: '^nifi.cluster.node.protocol.port=.*', line: 'nifi.cluster.node.protocol.port=11443' }
+    - { regexp: '^nifi.zookeeper.connect.string=.*', line: 'nifi.zookeeper.connect.string={{ nifi_zookeeper_connect }}' }
+  notify: restart nifi
