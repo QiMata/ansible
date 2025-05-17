@@ -1,0 +1,10 @@
+---
+- hosts: jenkins_controllers
+  become: yes
+  roles:
+    - jenkins_controller
+
+- hosts: jenkins_agents
+  become: yes
+  roles:
+    - jenkins_agent
