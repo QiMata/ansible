@@ -1,71 +1,70 @@
 ---
-- name: Install prerequisites
-  ansible.builtin.apt:
-    name: "{{ nifi_java_package }}"
+- name: Ensure Java is present
+  become: true
+  apt:
+    name: openjdk-11-jdk
     state: present
-    update_cache: yes
+  tags: [nifi, java]
 
 - name: Create nifi group
-  ansible.builtin.group:
+  become: true
+  group:
     name: "{{ nifi_group }}"
     state: present
+  tags: [nifi, users]
 
 - name: Create nifi user
-  ansible.builtin.user:
+  become: true
+  user:
     name: "{{ nifi_user }}"
     group: "{{ nifi_group }}"
+    home: "{{ nifi_home }}"
     shell: /usr/sbin/nologin
     system: yes
-    create_home: no
+  tags: [nifi, users]
+
+- name: Add NiFi APT repository
+  become: true
+  apt_repository:
+    repo: "{{ nifi_apt_repo }}"
     state: present
+  when: nifi_use_apt_repo
+  tags: [nifi, repo]
 
-- name: Download Apache NiFi tarball
-  ansible.builtin.get_url:
-    url: "{{ nifi_download_url }}"
+- name: Install/upgrade NiFi via package
+  become: true
+  apt:
+    name: nifi
+    state: latest
+    update_cache: yes
+  when: nifi_install_method == "package"
+  tags: [nifi, install]
+
+- name: Download NiFi tarball
+  become: true
+  get_url:
+    url: "https://archive.apache.org/dist/nifi/{{ nifi_version }}/nifi-{{ nifi_version }}-bin.tar.gz"
     dest: "/tmp/nifi-{{ nifi_version }}.tar.gz"
-    mode: "0644"
-    force: no
+    mode: '0644'
+  when: nifi_install_method == "tarball"
+  tags: [nifi, install]
 
-- name: Extract NiFi
-  ansible.builtin.unarchive:
+- name: Extract NiFi tarball
+  become: true
+  unarchive:
     src: "/tmp/nifi-{{ nifi_version }}.tar.gz"
-    dest: "{{ nifi_install_dir }}"
+    dest: "{{ nifi_home }}"
     remote_src: yes
-    creates: "{{ nifi_home }}"
+    creates: "{{ nifi_home }}/bin/nifi.sh"
+  when: nifi_install_method == "tarball"
+  tags: [nifi, install]
 
-- name: Create current symlink
-  ansible.builtin.file:
-    src: "{{ nifi_home }}"
-    dest: "{{ nifi_current_link }}"
-    state: link
-
-- name: Fix ownership
-  ansible.builtin.file:
-    path: "{{ item }}"
+- name: Ensure correct ownership
+  become: true
+  file:
+    path: "{{ nifi_home }}"
+    state: directory
+    recurse: yes
     owner: "{{ nifi_user }}"
     group: "{{ nifi_group }}"
-    recurse: yes
-  loop:
-    - "{{ nifi_home }}"
-
-- name: Install systemd unit
-  ansible.builtin.copy:
-    dest: /etc/systemd/system/nifi.service
-    content: |
-      [Unit]
-      Description=Apache NiFi
-      After=network.target
-
-      [Service]
-      Type=forking
-      User={{ nifi_user }}
-      Group={{ nifi_group }}
-      ExecStart={{ nifi_current_link }}/bin/nifi.sh start
-      ExecStop={{ nifi_current_link }}/bin/nifi.sh stop
-      Restart=on-failure
-      SuccessExitStatus=143
-
-      [Install]
-      WantedBy=multi-user.target
-    mode: "0644"
-  notify: restart nifi
+  tags: [nifi, permissions]

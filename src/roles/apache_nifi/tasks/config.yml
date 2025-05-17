@@ -1,0 +1,61 @@
+---
+- name: Deploy nifi.properties
+  become: true
+  template:
+    src: nifi.properties.j2
+    dest: "{{ nifi_conf_dir }}/nifi.properties"
+    owner: "{{ nifi_user }}"
+    group: "{{ nifi_group }}"
+    mode: '0640'
+  notify: restart nifi
+  tags: [nifi, config]
+
+- name: Deploy bootstrap.conf
+  become: true
+  template:
+    src: bootstrap.conf.j2
+    dest: "{{ nifi_conf_dir }}/bootstrap.conf"
+    owner: "{{ nifi_user }}"
+    group: "{{ nifi_group }}"
+    mode: '0640'
+  notify: restart nifi
+  tags: [nifi, config]
+
+- name: Deploy login-identity-providers.xml
+  become: true
+  template:
+    src: login-identity-providers.xml.j2
+    dest: "{{ nifi_conf_dir }}/login-identity-providers.xml"
+    owner: "{{ nifi_user }}"
+    group: "{{ nifi_group }}"
+    mode: '0640'
+  notify: restart nifi
+  tags: [nifi, config]
+
+- name: Deploy authorizers.xml
+  become: true
+  template:
+    src: authorizers.xml.j2
+    dest: "{{ nifi_conf_dir }}/authorizers.xml"
+    owner: "{{ nifi_user }}"
+    group: "{{ nifi_group }}"
+    mode: '0640'
+  notify: restart nifi
+  tags: [nifi, config]
+
+- name: Install Filebeat for ELK (optional)
+  become: true
+  include_role:
+    name: elastic.filebeat
+  when: nifi_elk_integration
+  tags: [nifi, elk]
+
+- name: Configure Filebeat for NiFi logs (optional)
+  become: true
+  template:
+    src: filebeat-nifi.yml.j2
+    dest: /etc/filebeat/conf.d/nifi.yml
+    mode: '0644'
+  when: nifi_elk_integration
+  notify: restart filebeat
+  tags: [nifi, elk]

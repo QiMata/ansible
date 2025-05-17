@@ -1,26 +1,20 @@
-nifi.web.http.host=
-{% if nifi_security_mode == 'ssl' %}
-nifi.web.https.host={{ ansible_fqdn }}
-nifi.web.https.port=9443
-nifi.security.keystore={{ nifi_keystore_path }}
-nifi.security.keystoreType=JKS
-nifi.security.keystorePasswd={{ nifi_keystore_password }}
-nifi.security.keyPasswd={{ nifi_key_password }}
-nifi.security.truststore={{ nifi_truststore_path }}
-nifi.security.truststoreType=JKS
-nifi.security.truststorePasswd={{ nifi_truststore_password }}
-nifi.security.allow.anonymous.authentication=false
-{% else %}
-nifi.web.http.port=8080
-{% endif %}
-nifi.remote.input.socket.port=10000
-nifi.remote.input.secure={{ 'true' if nifi_security_mode == 'ssl' else 'false' }}
-nifi.flow.configuration.archive.enabled=true
-nifi.flow.configuration.archive.max.time=30 days
-nifi.flow.configuration.archive.max.storage=500 MB
-nifi.cluster.is.node={{ 'true' if nifi_cluster_enable else 'false' }}
-{% if nifi_cluster_enable %}
-nifi.cluster.node.address={{ ansible_fqdn }}
-nifi.cluster.node.protocol.port=11443
+# Apache NiFi Configuration
+nifi.web.http.port={{ nifi_listen_port if not nifi_enable_https else '' }}
+nifi.web.https.port={{ nifi_secure_port if nifi_enable_https else '' }}
+nifi.web.https.host={{ inventory_hostname }}
+nifi.remote.input.secure={{ 'true' if nifi_enable_https else 'false' }}
+
+nifi.cluster.is.node={{ 'true' if nifi_cluster_enabled else 'false' }}
+{% if nifi_cluster_enabled %}
+nifi.cluster.node.address={{ ansible_default_ipv4.address }}
+nifi.cluster.node.protocol.port={{ nifi_cluster_protocol_port }}
 nifi.zookeeper.connect.string={{ nifi_zookeeper_connect }}
 {% endif %}
+
+nifi.security.keystore={{ nifi_keystore_path }}
+nifi.security.keystoreType=jks
+nifi.security.keystorePasswd={{ nifi_keystore_password }}
+nifi.security.truststore={{ nifi_truststore_path }}
+nifi.security.truststoreType=jks
+nifi.security.truststorePasswd={{ nifi_truststore_password }}
+nifi.security.user.login.identity.provider=ldap-provider

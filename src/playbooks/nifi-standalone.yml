@@ -1,0 +1,7 @@
+---
+- hosts: nifi_standalone
+  become: yes
+  vars:
+    nifi_cluster_enabled: false
+  roles:
+    - apache_nifi
