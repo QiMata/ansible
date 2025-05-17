@@ -1,0 +1,4 @@
+---
+zoo_tick_time: 2000
+zoo_init_limit: 10
+zoo_sync_limit: 5
