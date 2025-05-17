@@ -1,0 +1,4 @@
+---
+dependencies:
+  - role: geerlingguy.java
+    when: java_install | default(true)

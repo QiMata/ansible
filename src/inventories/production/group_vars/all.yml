@@ -1,0 +1,20 @@
+---
+es_cluster_name: "prod-es-cluster"
+elasticsearch_version: "8.8.0"
+
+# Snapshot settings
+es_snapshot_repo_name: "backup_repo"
+es_snapshot_repo_type: "fs"
+es_snapshot_repo_settings:
+  location: "/mnt/elasticsearch_snapshots"
+  compress: true
+es_use_slm: true
+
+# LDAP settings
+ldap_url: "ldaps://ldap.example.com:636"
+ldap_bind_dn: "cn=readbind,ou=users,dc=example,dc=com"
+ldap_bind_password: "{{ vault_ldap_bind_password }}"
+ldap_user_base_dn: "ou=users,dc=example,dc=com"
+ldap_group_base_dn: "ou=groups,dc=example,dc=com"
+ldap_admin_group_dn: "cn=admins,dc=example,dc=com"
+ldap_user_group_dn: "cn=users,dc=example,dc=com"
