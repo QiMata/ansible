@@ -1,0 +1,28 @@
+---
+- name: Configure rsyslog for ldap
+  ansible.builtin.copy:
+    dest: /etc/rsyslog.d/50-ldap.conf
+    content: |
+      local4.*    /var/log/ldap.log
+  notify: restart rsyslog
+
+- name: Install Filebeat
+  ansible.builtin.apt:
+    name: filebeat
+    state: present
+    update_cache: yes
+
+- name: Deploy Filebeat config
+  ansible.builtin.template:
+    src: filebeat.yml.j2
+    dest: /etc/filebeat/filebeat.yml
+  notify: restart filebeat
+
+- name: Ensure services running
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  loop:
+    - rsyslog
+    - filebeat

@@ -1,0 +1,5 @@
+---
+- hosts: ldap_clients
+  become: yes
+  roles:
+    - openldap_client

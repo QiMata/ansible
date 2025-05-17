@@ -1,0 +1,26 @@
+---
+- name: Install backup script
+  ansible.builtin.copy:
+    dest: /usr/local/sbin/ldap_backup.sh
+    mode: "0700"
+    owner: root
+    group: root
+    content: |
+      #!/bin/bash
+      set -e
+      BACKUP_DIR=/var/backups/ldap
+      mkdir -p "$BACKUP_DIR"
+      DATE=$(date +'%Y%m%d%H%M')
+      slapcat -b "cn=config" -l "$BACKUP_DIR/config-$DATE.ldif"
+      slapcat -b "{{ ldap_base_dn }}" -l "$BACKUP_DIR/data-$DATE.ldif"
+      tar czf "$BACKUP_DIR/ldap-backup-$DATE.tar.gz" -C "$BACKUP_DIR" "config-$DATE.ldif" "data-$DATE.ldif"
+      rm "$BACKUP_DIR"/config-"$DATE".ldif "$BACKUP_DIR"/data-"$DATE".ldif
+      find "$BACKUP_DIR" -type f -name "ldap-backup-*.tar.gz" -mtime +30 -delete
+
+- name: Schedule nightly backup
+  ansible.builtin.cron:
+    name: "OpenLDAP nightly backup"
+    user: root
+    minute: 0
+    hour: 2
+    job: "/usr/local/sbin/ldap_backup.sh"

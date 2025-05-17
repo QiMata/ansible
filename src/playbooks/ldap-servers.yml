@@ -1,0 +1,9 @@
+---
+- hosts: ldap_servers
+  become: yes
+  roles:
+    - openldap_server
+    - openldap_content
+    - { role: openldap_replication, when: ldap_replication }
+    - openldap_logging
+    - openldap_backup

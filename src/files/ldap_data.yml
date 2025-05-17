@@ -1,0 +1,22 @@
+---
+base_dn: "dc=example,dc=com"
+
+organizations:
+  - name: Engineering
+    ou: eng
+  - name: Sales
+    ou: sales
+
+users:
+  - uid: jdoe
+    givenName: John
+    sn: Doe
+    mail: jdoe@example.com
+    uidNumber: 2001
+    gidNumber: 2001
+    password: "{SSHA}VGVzdFBhc3N3b3JkIQ=="
+
+groups:
+  - cn: eng
+    description: Engineering Department
+    members: [ jdoe ]

@@ -1,0 +1,9 @@
+dn: olcDatabase={1}mdb,cn=config
+changetype: modify
+replace: olcSyncRepl
+{% for host in groups['ldap_servers'] if host != inventory_hostname %}
+olcSyncRepl: rid={{ '%03d' % loop.index }} provider=ldap://{{ host }} binddn="{{ ldap_replication_bind_dn }}" bindmethod=simple credentials={{ ldap_replication_bind_pw }} searchbase="{{ ldap_base_dn }}" type=refreshAndPersist retry="5 5 300 5" timeout=1
+{% endfor %}
+-
+add: olcMirrorMode
+olcMirrorMode: {{ 'TRUE' if groups['ldap_servers'] | length == 2 else 'FALSE' }}

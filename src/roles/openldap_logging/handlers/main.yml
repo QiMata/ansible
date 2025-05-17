@@ -1,0 +1,9 @@
+---
+- name: restart rsyslog
+  ansible.builtin.service:
+    name: rsyslog
+    state: restarted
+- name: restart filebeat
+  ansible.builtin.service:
+    name: filebeat
+    state: restarted

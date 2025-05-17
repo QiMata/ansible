@@ -1,9 +1,3 @@
 ---
-- name: Install and configure Elasticsearch cluster
-  hosts: elasticsearch
-  become: yes
-  roles:
-    - role: elasticsearch_install
-    - role: elasticsearch_config
-    - role: elasticsearch_security
-    - role: elasticsearch_snapshot
+- import_playbook: ldap-servers.yml
+- import_playbook: ldap-clients.yml

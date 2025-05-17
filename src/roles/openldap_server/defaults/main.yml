@@ -1,0 +1,11 @@
+---
+ldap_domain: "example.com"
+ldap_base_dn: "dc=example,dc=com"
+ldap_organization: "Example Corp"
+ldap_admin_password: "{{ vault_ldap_admin_password }}"
+ldap_use_tls: false
+ldap_tls_cert: "/etc/ldap/ssl/ldap.crt"
+ldap_tls_key: "/etc/ldap/ssl/ldap.key"
+ldap_tls_ca: "/etc/ldap/ssl/ca.crt"
+ldap_log_level: 256        # stats
+ldap_extra_schema: []

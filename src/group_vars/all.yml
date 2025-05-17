@@ -26,3 +26,6 @@ auto_update_download_updates: yes
 auto_update_apply_updates: no
 auto_update_random_sleep: 360 
 deployment_profile: "simple"
+ldap_data_file: "{{ playbook_dir }}/files/ldap_data.yml"
+ldap_replication: false
+ldap_use_tls: false
