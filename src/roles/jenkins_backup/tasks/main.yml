@@ -1,0 +1,30 @@
+---
+- name: create backup dir
+  ansible.builtin.file:
+    path: "{{ jenkins_backup_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: archive jenkins home
+  ansible.builtin.archive:
+    path: "{{ jenkins_home }}/"
+    dest: "{{ jenkins_backup_dir }}/jenkins-{{ ansible_date_time.date }}.tar.gz"
+    format: gz
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: prune old backups
+  ansible.builtin.find:
+    paths: "{{ jenkins_backup_dir }}"
+    age: "{{ jenkins_backup_keep_days }}d"
+    patterns: "jenkins-*.tar.gz"
+  register: old_backups
+
+- name: remove old backups
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ old_backups.files }}"
