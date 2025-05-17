@@ -113,7 +113,7 @@ airflow_extra_packages:
 airflow_admin_users:
   - name: toothkiller
     username: toothkiller
-    password: toothkiller
+    password: ""
     role: Admin
     firstname: tooth
     lastname: killer
@@ -122,7 +122,7 @@ airflow_admin_users:
 airflow_regular_users:
   - name: toothkiller
     username: toothkiller
-    password: toothkiller
+    password: ""
     role: Admin
     firstname: tooth
     lastname: killer
