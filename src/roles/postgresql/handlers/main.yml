@@ -1,0 +1,17 @@
+---
+
+- name: Reload PostgreSQL
+  ansible.builtin.service:
+    name: "{{ postgresql_service_name }}"
+    state: reloaded
+
+- name: Restart PostgreSQL
+  ansible.builtin.service:
+    name: "{{ postgresql_service_name }}"
+    state: restarted
+
+- name: Restart Patroni
+  ansible.builtin.service:
+    name: patroni
+    state: restarted
+  when: postgresql_use_patroni

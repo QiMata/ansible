@@ -1,0 +1,27 @@
+---
+
+- name: Ensure replication user exists on primary
+  community.postgresql.postgresql_user:
+    name: "{{ postgresql_replication_user }}"
+    password: "{{ postgresql_replication_password }}"
+    role_attr_flags: REPLICATION
+    login_unix_socket: /var/run/postgresql
+  become: true
+  become_user: postgres
+  when:
+    - postgresql_replication_role == 'primary'
+    - postgresql_replication_password != ""
+
+- name: Configure primary_conninfo on standby
+  ansible.builtin.lineinfile:
+    path: "{{ postgresql_data_dir }}/postgresql.auto.conf"
+    regexp: '^primary_conninfo ='
+    line: "primary_conninfo = '{{ postgresql_primary_conninfo | default('host=' ~ groups['postgres_primary'][0] ~ ' user=' ~ postgresql_replication_user ~ ' password=' ~ postgresql_replication_password) }}'"
+    owner: postgres
+    group: postgres
+    mode: '0600'
+  notify: Reload PostgreSQL
+  become: true
+  when:
+    - postgresql_replication_role == 'standby'
+    - postgresql_replication_password != ""
