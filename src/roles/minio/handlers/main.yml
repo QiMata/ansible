@@ -1,0 +1,9 @@
+---
+- name: daemon-reload
+  ansible.builtin.systemd:
+    daemon_reload: yes
+
+- name: restart minio
+  ansible.builtin.service:
+    name: minio
+    state: restarted

@@ -1,0 +1,14 @@
+---
+- name: Set minio_opts fact
+  ansible.builtin.set_fact:
+    minio_opts: >-
+      {{ minio_opts_extra }}{% if minio_enable_tls %} --certs-dir {{ minio_certs_dir }}{% endif %}
+
+- name: Template environment file
+  ansible.builtin.template:
+    src: minio.env.j2
+    dest: /etc/default/minio
+    owner: root
+    group: root
+    mode: "0640"
+  notify: restart minio
