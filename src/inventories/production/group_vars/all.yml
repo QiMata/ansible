@@ -18,3 +18,33 @@ ldap_user_base_dn: "ou=users,dc=example,dc=com"
 ldap_group_base_dn: "ou=groups,dc=example,dc=com"
 ldap_admin_group_dn: "cn=admins,dc=example,dc=com"
 ldap_user_group_dn: "cn=users,dc=example,dc=com"
+
+# Cloudflare front door settings
+cloudflare_api_token: "{{ lookup('env', 'CLOUDFLARE_TOKEN') }}"
+cloudflare_zone: "example.com"
+cloudflare_zone_id: "YOUR_ZONE_ID"
+
+cloudflare_ssl_mode: "strict"
+cloudflare_always_use_https: true
+
+cloudflare_dns_records:
+  - record: "@"
+    type: A
+    value: "203.0.113.45"
+    proxied: true
+    ttl: 1
+  - record: "www"
+    type: CNAME
+    value: "@"
+    proxied: true
+    ttl: 1
+
+cloudflare_firewall_rules:
+  - target: "country"
+    value: "RU"
+    mode: "block"
+    note: "Block traffic from Russia"
+  - target: "ip"
+    value: "198.51.100.0/24"
+    mode: "challenge"
+    note: "Challenge suspicious subnet"

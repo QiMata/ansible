@@ -1,0 +1,12 @@
+---
+- name: Manage Cloudflare DNS records
+  community.cloudflare.cloudflare_dns:
+    zone: "{{ cloudflare_zone }}"
+    record: "{{ item.record }}"
+    type: "{{ item.type }}"
+    value: "{{ item.value }}"
+    proxied: "{{ item.proxied | default(false) }}"
+    ttl: "{{ item.ttl | default(1) }}"
+    api_token: "{{ cloudflare_api_token }}"
+    state: present
+  loop: "{{ cloudflare_dns_records }}"

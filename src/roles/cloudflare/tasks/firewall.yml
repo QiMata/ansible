@@ -1,0 +1,36 @@
+---
+- name: Get existing firewall access rules
+  uri:
+    url: "https://api.cloudflare.com/client/v4/zones/{{ cloudflare_zone_id }}/firewall/access_rules/rules?page=1&per_page=1000"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ cloudflare_api_token }}"
+  register: _cf_existing_rules
+  failed_when: _cf_existing_rules.status != 200
+  changed_when: false
+
+- name: Ensure firewall rules are present
+  vars:
+    existing_rules: "{{ _cf_existing_rules.json.result | default([]) }}"
+  loop: "{{ cloudflare_firewall_rules }}"
+  loop_control:
+    loop_var: rule
+  when: >
+    existing_rules | selectattr('configuration.target', 'equalto', rule.target) |
+    selectattr('configuration.value', 'equalto', rule.value) |
+    selectattr('mode', 'equalto', rule.mode) | list | length == 0
+  uri:
+    url: "https://api.cloudflare.com/client/v4/zones/{{ cloudflare_zone_id }}/firewall/access_rules/rules"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ cloudflare_api_token }}"
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      mode: "{{ rule.mode }}"
+      notes: "{{ rule.note }}"
+      configuration:
+        target: "{{ rule.target }}"
+        value: "{{ rule.value }}"
+  register: _create_rule
+  changed_when: _create_rule.status == 200
