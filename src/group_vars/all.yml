@@ -29,3 +29,8 @@ deployment_profile: "simple"
 ldap_data_file: "{{ playbook_dir }}/files/ldap_data.yml"
 ldap_replication: false
 ldap_use_tls: false
+neo4j_password: "StrongPassw0rd"
+es_heap_size: "4g"
+metadata_api_base: "http://10.0.0.20:5002"
+search_api_base: "http://10.0.0.21:5001"
+

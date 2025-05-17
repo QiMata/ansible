@@ -1,0 +1,17 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  become: yes
+
+- name: Install common dependencies
+  apt:
+    name:
+      - python3-venv
+      - python3-pip
+      - apt-transport-https
+      - ca-certificates
+      - gnupg
+    state: present
+  become: yes

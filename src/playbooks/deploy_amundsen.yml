@@ -1,0 +1,18 @@
+---
+- name: Deploy Amundsen stack
+  hosts: all
+  become: yes
+  vars_files:
+    - group_vars/all.yml
+  roles:
+    - role: common
+    - role: neo4j_server
+      when: "'neo4j' in group_names"
+    - role: elasticsearch_cluster
+      when: "'elasticsearch' in group_names"
+    - role: amundsen_metadata
+      when: "'amundsen_metadata' in group_names"
+    - role: amundsen_search
+      when: "'amundsen_search' in group_names"
+    - role: amundsen_frontend
+      when: "'amundsen_frontend' in group_names"

@@ -1,0 +1,43 @@
+---
+- name: Add Elastic GPG key
+  apt_key:
+    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    state: present
+  become: yes
+
+- name: Add Elasticsearch repository
+  apt_repository:
+    repo: "deb https://artifacts.elastic.co/packages/{{ es_version }}/apt stable main"
+    state: present
+  become: yes
+
+- name: Install required Java runtime
+  apt:
+    name: openjdk-11-jdk
+    state: present
+  become: yes
+
+- name: Install Elasticsearch
+  apt:
+    name: elasticsearch
+    state: present
+  become: yes
+  notify: Restart Elasticsearch
+
+- name: Configure Elasticsearch
+  blockinfile:
+    path: /etc/elasticsearch/elasticsearch.yml
+    block: |
+      cluster.name: "{{ es_cluster_name }}"
+      node.roles: {{ es_node_roles }}
+      network.host: "{{ es_network_host }}"
+  become: yes
+  notify: Restart Elasticsearch
+
+- name: Set JVM Heap
+  lineinfile:
+    path: /etc/elasticsearch/jvm.options.d/heap_size.options
+    create: yes
+    line: "-Xms{{ es_heap_size }}\n-Xmx{{ es_heap_size }}"
+  become: yes
+  notify: Restart Elasticsearch

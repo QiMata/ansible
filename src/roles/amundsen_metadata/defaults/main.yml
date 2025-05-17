@@ -1,0 +1,11 @@
+---
+amundsen_metadata_version: "4.0.0"
+metadata_bind_host: "0.0.0.0"
+metadata_port: 5002
+metadata_gunicorn_workers: 4
+metadata_virtualenv: "/opt/amundsen/metadata/venv"
+neo4j_host: "localhost"
+neo4j_port: 7687
+neo4j_user: "neo4j"
+neo4j_password: "ChangeMe!"
+metadata_config_class: "metadata_service.config.ProdConfig"

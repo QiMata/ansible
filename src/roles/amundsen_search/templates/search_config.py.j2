@@ -1,0 +1,5 @@
+from search_service.config_common import Config
+
+class ProdConfig(Config):
+    ELASTICSEARCH_ENDPOINT = "http://{{ es_host }}:{{ es_port }}"
+    LOG_LEVEL = "INFO"
