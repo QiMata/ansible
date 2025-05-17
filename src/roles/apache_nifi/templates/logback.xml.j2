@@ -1,0 +1,16 @@
+<configuration>
+  <include resource="org/apache/nifi/logback-common.xml"/>
+  <appender name="ELK" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>{{ nifi_home }}/logs/nifi-elk.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>{{ nifi_home }}/logs/nifi-elk-%d{yyyy-MM-dd}.log</fileNamePattern>
+      <maxHistory>30</maxHistory>
+    </rollingPolicy>
+    <encoder>
+      <pattern>%date{ISO8601} %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+  <root level="INFO">
+    <appender-ref ref="ELK"/>
+  </root>
+</configuration>

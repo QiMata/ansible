@@ -1,0 +1,71 @@
+---
+- name: Install prerequisites
+  ansible.builtin.apt:
+    name: "{{ nifi_java_package }}"
+    state: present
+    update_cache: yes
+
+- name: Create nifi group
+  ansible.builtin.group:
+    name: "{{ nifi_group }}"
+    state: present
+
+- name: Create nifi user
+  ansible.builtin.user:
+    name: "{{ nifi_user }}"
+    group: "{{ nifi_group }}"
+    shell: /usr/sbin/nologin
+    system: yes
+    create_home: no
+    state: present
+
+- name: Download Apache NiFi tarball
+  ansible.builtin.get_url:
+    url: "{{ nifi_download_url }}"
+    dest: "/tmp/nifi-{{ nifi_version }}.tar.gz"
+    mode: "0644"
+    force: no
+
+- name: Extract NiFi
+  ansible.builtin.unarchive:
+    src: "/tmp/nifi-{{ nifi_version }}.tar.gz"
+    dest: "{{ nifi_install_dir }}"
+    remote_src: yes
+    creates: "{{ nifi_home }}"
+
+- name: Create current symlink
+  ansible.builtin.file:
+    src: "{{ nifi_home }}"
+    dest: "{{ nifi_current_link }}"
+    state: link
+
+- name: Fix ownership
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: "{{ nifi_user }}"
+    group: "{{ nifi_group }}"
+    recurse: yes
+  loop:
+    - "{{ nifi_home }}"
+
+- name: Install systemd unit
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/nifi.service
+    content: |
+      [Unit]
+      Description=Apache NiFi
+      After=network.target
+
+      [Service]
+      Type=forking
+      User={{ nifi_user }}
+      Group={{ nifi_group }}
+      ExecStart={{ nifi_current_link }}/bin/nifi.sh start
+      ExecStop={{ nifi_current_link }}/bin/nifi.sh stop
+      Restart=on-failure
+      SuccessExitStatus=143
+
+      [Install]
+      WantedBy=multi-user.target
+    mode: "0644"
+  notify: restart nifi

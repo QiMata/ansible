@@ -1,0 +1,40 @@
+---
+nifi_version: "2.4.0"
+nifi_download_url: "https://downloads.apache.org/nifi/{{ nifi_version }}/nifi-{{ nifi_version }}-bin.tar.gz"
+
+# Installation
+nifi_install_dir: "/opt"
+nifi_user: "nifi"
+nifi_group: "nifi"
+nifi_home: "{{ nifi_install_dir }}/nifi-{{ nifi_version }}"
+nifi_current_link: "/opt/nifi"
+nifi_java_package: "openjdk-17-jdk"
+
+# Runtime
+nifi_heap_size: "4g"
+
+# Security
+nifi_security_mode: "ssl"        # ssl | http
+nifi_keystore_path: "{{ nifi_home }}/conf/keystore.jks"
+nifi_keystore_password: ""
+nifi_key_password: "{{ nifi_keystore_password }}"
+nifi_truststore_path: "{{ nifi_home }}/conf/truststore.jks"
+nifi_truststore_password: ""
+nifi_initial_admin_identity: ""
+nifi_admin_username: "admin"
+nifi_admin_password: "admin123"  # vault in production
+
+# TLS Toolkit
+nifi_tls_toolkit_enable: false
+nifi_tls_toolkit_url: "https://downloads.apache.org/nifi/{{ nifi_version }}/nifi-toolkit-{{ nifi_version }}-bin.zip"
+nifi_ca_server: ""
+
+# Clustering
+nifi_cluster_enable: false
+nifi_cluster_nodes: []
+nifi_zookeeper_connect: ""
+
+# ELK integration
+nifi_enable_elk: false
+elk_logstash_host: ""
+elk_logstash_port: 5044

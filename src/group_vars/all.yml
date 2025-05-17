@@ -34,3 +34,4 @@ es_heap_size: "4g"
 metadata_api_base: "http://10.0.0.20:5002"
 search_api_base: "http://10.0.0.21:5001"
 
+ansible_python_interpreter: /usr/bin/python3

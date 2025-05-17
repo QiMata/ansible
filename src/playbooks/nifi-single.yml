@@ -1,0 +1,11 @@
+---
+- hosts: nifi_single
+  become: yes
+  vars:
+    nifi_cluster_enable: false
+    nifi_security_mode: ssl
+    nifi_initial_admin_identity: "CN=NiFi Admin, OU=IT, O=Example Corp, C=US"
+    nifi_keystore_password: "changeit"
+    nifi_truststore_password: "changeit"
+  roles:
+    - apache_nifi

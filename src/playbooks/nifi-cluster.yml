@@ -1,0 +1,14 @@
+---
+- hosts: nifi_nodes
+  become: yes
+  vars:
+    nifi_cluster_enable: true
+    nifi_cluster_nodes: "{{ groups['nifi_nodes'] }}"
+    nifi_zookeeper_connect: "{{ groups['zookeeper_nodes'] | map('regex_replace', '(.*)', '\\1:2181') | join(',') }}"
+    nifi_tls_toolkit_enable: true
+    nifi_security_mode: ssl
+    nifi_initial_admin_identity: "CN=NiFi Admin, OU=IT, O=Example Corp, C=US"
+    nifi_keystore_password: "changeit"
+    nifi_truststore_password: "changeit"
+  roles:
+    - apache_nifi

@@ -1,0 +1,11 @@
+<authorizers>
+  <authorizer>
+    <identifier>file-provider</identifier>
+    <class>org.apache.nifi.authorization.FileAuthorizer</class>
+    <property name="Authorizations File">./conf/authorizations.xml</property>
+    <property name="Users File">./conf/users.xml</property>
+    <property name="Initial Admin Identity">{{ nifi_initial_admin_identity }}</property>
+    <property name="Legacy Authorized Users File"></property>
+    <property name="Node Identity 1"></property>
+  </authorizer>
+</authorizers>

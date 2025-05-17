@@ -1,0 +1,14 @@
+---
+- import_tasks: install.yml
+- import_tasks: configure.yml
+- import_tasks: users.yml
+- import_tasks: cluster.yml
+  when: nifi_cluster_enable | bool
+- import_tasks: elk.yml
+  when: nifi_enable_elk | bool
+
+- name: enable and start nifi service
+  ansible.builtin.systemd:
+    name: nifi
+    state: started
+    enabled: yes

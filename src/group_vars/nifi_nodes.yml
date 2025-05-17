@@ -1,0 +1,5 @@
+---
+nifi_heap_size: "8g"
+nifi_enable_elk: true
+elk_logstash_host: "logstash.prod.internal"
+elk_logstash_port: 5044
