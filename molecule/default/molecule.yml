@@ -1,0 +1,15 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: stepca
+    image: debian:12
+    privileged: true
+provisioner:
+  name: ansible
+  playbooks:
+    converge: ../../playbooks/deploy_step_ca.yml
+verifier:
+  name: ansible

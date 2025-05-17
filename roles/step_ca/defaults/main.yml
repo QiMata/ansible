@@ -1,0 +1,20 @@
+step_ca_version: "latest"
+step_cli_version: "latest"
+step_ca_user: "step"
+step_ca_group: "step"
+step_ca_home: "/home/step"
+step_ca_config_path: "{{ step_ca_home }}/.step/config"
+step_ca_listen_address: ":8443"
+step_ca_dns_names: []
+step_ca_use_vault_ra: false
+step_ca_vault_address: ""
+step_ca_vault_pki_mount: ""
+step_ca_vault_role_id: ""
+step_ca_vault_secret_id: ""
+step_ca_vault_cacert: "/etc/ssl/certs/ca-certificates.crt"
+step_ca_db_backend: "badger"
+step_ca_db_host: ""
+step_ca_db_name: ""
+step_ca_db_username: ""
+step_ca_db_password: ""
+step_ca_bootstrap: false

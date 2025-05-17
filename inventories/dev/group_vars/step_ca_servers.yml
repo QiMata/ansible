@@ -1,0 +1,7 @@
+step_ca_version: "0.25.1"
+step_ca_use_vault_ra: false
+step_ca_db_backend: "badger"
+step_ca_dns_names:
+  - "ca-dev.local"
+step_ca_listen_address: ":8443"
+step_ca_bootstrap: true
