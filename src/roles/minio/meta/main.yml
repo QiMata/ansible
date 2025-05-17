@@ -1,0 +1,18 @@
+---
+galaxy_info:
+  role_name: minio_systemd
+  description: Install and configure MinIO object storage as a systemd service on Debian
+  author: Your Name
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+  galaxy_tags:
+    - storage
+    - objectstorage
+    - minio
+    - systemd
+dependencies: []

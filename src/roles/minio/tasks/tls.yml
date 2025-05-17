@@ -1,0 +1,53 @@
+---
+- name: Ensure cert dir exists
+  ansible.builtin.file:
+    path: "{{ minio_certs_dir }}"
+    state: directory
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: "0755"
+
+- name: Copy provided certificates
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ minio_certs_dir }}/{{ item.dest }}"
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: "0640"
+  loop:
+    - { src: "{{ minio_cert_public }}", dest: "public.crt" }
+    - { src: "{{ minio_cert_private }}", dest: "private.key" }
+  when: minio_cert_public | length > 0 and minio_cert_private | length > 0
+
+- name: Generate self-signed certificate
+  block:
+    - name: Generate private key
+      community.crypto.openssl_privatekey:
+        path: "{{ minio_certs_dir }}/private.key"
+        owner: "{{ minio_user }}"
+        group: "{{ minio_group }}"
+        mode: "0600"
+
+    - name: Generate CSR
+      community.crypto.openssl_csr:
+        path: "{{ minio_certs_dir }}/request.csr"
+        privatekey_path: "{{ minio_certs_dir }}/private.key"
+        common_name: "{{ minio_domain }}"
+        subject_alt_name: >-
+          {{ ['DNS:' + minio_domain] + minio_extra_sans | default([]) | map('regex_replace','^(.*)$','DNS:\1') | list }}
+        owner: "{{ minio_user }}"
+        group: "{{ minio_group }}"
+        mode: "0600"
+
+    - name: Generate self-signed cert
+      community.crypto.openssl_certificate:
+        path: "{{ minio_certs_dir }}/public.crt"
+        privatekey_path: "{{ minio_certs_dir }}/private.key"
+        csr_path: "{{ minio_certs_dir }}/request.csr"
+        provider: selfsigned
+        days: 365
+        owner: "{{ minio_user }}"
+        group: "{{ minio_group }}"
+        mode: "0644"
+  when: minio_self_signed and (minio_cert_public | length == 0 or minio_cert_private | length == 0)
+  notify: restart minio

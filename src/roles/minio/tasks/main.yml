@@ -1,0 +1,22 @@
+---
+- name: Include OS specific vars
+  include_vars: "{{ ansible_os_family }}.yml"
+  when: ansible_os_family is defined
+
+- name: Install prerequisite packages
+  ansible.builtin.package:
+    name: "{{ minio_required_packages }}"
+    state: present
+
+- name: Include installation tasks
+  import_tasks: install.yml
+
+- name: Include configuration tasks
+  import_tasks: config.yml
+
+- name: Include TLS tasks
+  import_tasks: tls.yml
+  when: minio_enable_tls
+
+- name: Include service tasks
+  import_tasks: service.yml
