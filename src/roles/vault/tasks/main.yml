@@ -1,0 +1,10 @@
+---
+- name: Include install tasks
+  ansible.builtin.import_tasks: install.yml
+
+- name: Include configuration tasks
+  ansible.builtin.import_tasks: config.yml
+
+- name: Include PKI tasks
+  ansible.builtin.import_tasks: pki.yml
+  when: vault_enable_pki | bool

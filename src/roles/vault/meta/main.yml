@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  author: your_name
+  description: Install & configure HashiCorp Vault on Debian with optional step-ca integration.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+  dependencies: []

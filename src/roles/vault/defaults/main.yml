@@ -1,0 +1,30 @@
+---
+vault_version: "latest"
+
+# Service & directories
+vault_user: vault
+vault_group: vault
+vault_config_dir: /etc/vault
+vault_data_dir: /opt/vault/data
+vault_tls_dir: "{{ vault_config_dir }}/tls"
+vault_service_name: vault
+
+# Networking
+vault_addr: "0.0.0.0"
+vault_port: 8200
+vault_ui: true
+
+# TLS (set these to existing cert/key paths or leave empty for self-signed)
+vault_tls_cert_src: ""
+vault_tls_key_src: ""
+
+# PKI integration
+vault_enable_pki: false           # true to configure Vault PKI
+vault_pki_mode: "ra"              # "ra" (Vault upstream), "intermediate" (Vault intermediate)
+vault_pki_common_name: "Vault Intermediate CA"
+vault_pki_max_ttl: "43800h"
+
+# Step-CA integration (used when vault_pki_mode == "ra")
+vault_stepca_role: stepca-role
+vault_stepca_policy: smallstep
+vault_stepca_token_ttl: "24h"
