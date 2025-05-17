@@ -1,0 +1,14 @@
+---
+- name: Ensure airflow group exists
+  group:
+    name: "{{ airflow_group }}"
+    state: present
+
+- name: Ensure airflow user exists
+  user:
+    name: "{{ airflow_user }}"
+    group: "{{ airflow_group }}"
+    home: "{{ airflow_home }}"
+    create_home: true
+    shell: /usr/sbin/nologin
+    system: true

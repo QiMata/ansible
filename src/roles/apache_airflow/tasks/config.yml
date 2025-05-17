@@ -1,0 +1,33 @@
+---
+- name: Create Airflow home and subdirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ airflow_user }}"
+    group: "{{ airflow_group }}"
+    mode: "0755"
+  loop:
+    - "{{ airflow_home }}"
+    - "{{ airflow_home }}/dags"
+    - "{{ airflow_home }}/logs"
+
+- name: Deploy airflow.cfg
+  template:
+    src: airflow.cfg.j2
+    dest: "{{ airflow_home }}/airflow.cfg"
+    owner: "{{ airflow_user }}"
+    group: "{{ airflow_group }}"
+    mode: "0600"
+  notify:
+    - restart airflow-webserver
+    - restart airflow-scheduler
+    - restart airflow-worker
+
+- name: Deploy environment file for systemd
+  template:
+    src: airflow.env.j2
+    dest: /etc/default/airflow
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload systemd

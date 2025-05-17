@@ -1,0 +1,19 @@
+---
+- name: Deploy systemd unit files
+  template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/airflow-{{ item }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+  with_items:
+    - "{{ airflow_systemd_units_enabled }}"
+  notify:
+    - reload systemd
+
+- name: Enable and start Airflow services
+  systemd:
+    name: "airflow-{{ item }}.service"
+    enabled: true
+    state: started
+  with_items: "{{ airflow_systemd_units_enabled }}"

@@ -1,0 +1,24 @@
+---
+airflow_version: "2.6.3"
+
+airflow_user: "airflow"
+airflow_group: "airflow"
+airflow_home: "/opt/airflow"
+airflow_python: "/usr/bin/python3"           # Change if using a venv
+airflow_venv_path: ""                        # e.g. /opt/airflow/venv (leave blank for system python)
+
+airflow_executor: "SequentialExecutor"       # Override to CeleryExecutor for multi-node
+airflow_systemd_units_enabled:
+  - webserver
+  - scheduler
+  - worker                                    # Ignored if not CeleryExecutor
+
+airflow_database_url: "sqlite:///{{ airflow_home }}/airflow.db"
+airflow_broker_url: "redis://localhost:6379/0"      # Only for CeleryExecutor
+
+airflow_fernet_key: "CHANGE_ME"                      # Vault this in production
+airflow_remote_logging: false
+airflow_elasticsearch_host: "http://elasticsearch:9200"
+airflow_logging_json: true
+
+airflow_extra_pip_packages: []               # e.g. ['apache-airflow[celery,redis]']
