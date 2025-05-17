@@ -1,0 +1,13 @@
+[sssd]
+services = nss, pam
+domains = LDAP
+
+[domain/LDAP]
+id_provider = ldap
+auth_provider = krb5
+ldap_uri = ldap://{{ ldap_servers | join(',') }}
+ldap_search_base = {{ ldap_base_dn }}
+krb5_realm = {{ kerberos_realm }}
+krb5_server = {{ kerberos_kdc }}
+fallback_homedir = /home/%u
+access_provider = simple

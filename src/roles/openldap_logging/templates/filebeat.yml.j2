@@ -1,0 +1,10 @@
+filebeat.inputs:
+  - type: log
+    paths:
+      - /var/log/ldap.log
+    fields:
+      service: openldap
+    fields_under_root: true
+
+output.logstash:
+  hosts: ["{{ elk_host | default('logstash.example.com:5044') }}"]
