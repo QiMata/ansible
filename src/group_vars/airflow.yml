@@ -1,8 +1,8 @@
  
 ---
 airflow_webserver_host: "{{ hostvars[inventory_hostname]['service_ip'] }}"
-airflow_webserver_secret_key: b59c67bf196a4758191e42f76670ceba
-airflow_fernet_key: xKy13nPFfDflJ0DYGasdwf_DEmbItfURHlEDxrt-bBQw=
+airflow_webserver_secret_key: ""
+airflow_fernet_key: ""
 airflow_required_python_packages:
   - { name: SQLAlchemy, version: 1.3.23 }
   - { name: psycopg2-binary }
