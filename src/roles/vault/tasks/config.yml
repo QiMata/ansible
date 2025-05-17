@@ -1,0 +1,35 @@
+---
+- name: Deploy TLS certificate
+  ansible.builtin.copy:
+    src: "{{ vault_tls_cert_src }}"
+    dest: "{{ vault_tls_dir }}/vault.crt"
+    owner: "{{ vault_user }}"
+    group: "{{ vault_group }}"
+    mode: "0644"
+  when: vault_tls_cert_src | length > 0
+  notify: restart vault
+
+- name: Deploy TLS key
+  ansible.builtin.copy:
+    src: "{{ vault_tls_key_src }}"
+    dest: "{{ vault_tls_dir }}/vault.key"
+    owner: "{{ vault_user }}"
+    group: "{{ vault_group }}"
+    mode: "0600"
+  when: vault_tls_key_src | length > 0
+  notify: restart vault
+
+- name: Render Vault configuration
+  ansible.builtin.template:
+    src: vault.hcl.j2
+    dest: "{{ vault_config_dir }}/vault.hcl"
+    owner: "{{ vault_user }}"
+    group: "{{ vault_group }}"
+    mode: "0644"
+  notify: restart vault
+
+- name: Enable and start Vault service
+  ansible.builtin.service:
+    name: "{{ vault_service_name }}"
+    enabled: true
+    state: started

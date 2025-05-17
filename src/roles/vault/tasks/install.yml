@@ -1,0 +1,44 @@
+---
+- name: Ensure apt dependencies are present
+  ansible.builtin.apt:
+    name:
+      - gnupg
+      - apt-transport-https
+    state: present
+    update_cache: true
+
+- name: Add HashiCorp GPG key
+  ansible.builtin.apt_key:
+    url: https://apt.releases.hashicorp.com/gpg
+    state: present
+
+- name: Add HashiCorp repository
+  ansible.builtin.apt_repository:
+    repo: "deb [arch={{ ansible_architecture }} signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
+    filename: hashicorp
+    state: present
+
+- name: Install Vault package
+  ansible.builtin.apt:
+    name: "vault{{ '=' + vault_version if vault_version != 'latest' else '' }}"
+    state: present
+    update_cache: true
+
+- name: Create Vault user and group
+  ansible.builtin.user:
+    name: "{{ vault_user }}"
+    system: yes
+    shell: /usr/sbin/nologin
+  register: _vault_user_created
+
+- name: Ensure data & config directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ vault_user }}"
+    group: "{{ vault_group }}"
+    mode: "0750"
+  loop:
+    - "{{ vault_config_dir }}"
+    - "{{ vault_tls_dir }}"
+    - "{{ vault_data_dir }}"
