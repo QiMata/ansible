@@ -1,0 +1,17 @@
+bind9_forwarders:
+  - 8.8.8.8
+  - 1.1.1.1
+
+bind9_zones:
+  - name: example.com
+    type: master
+    dnssec: true
+    dynamic_updates: true
+    records:
+      - { name: 'host1', type: 'A', value: '192.168.10.50' }
+
+bind9_allow_query:
+  - '192.168.10.0/24'
+
+bind9_logging_enabled: true
+elk_logstash_host: 'elk.example.com'

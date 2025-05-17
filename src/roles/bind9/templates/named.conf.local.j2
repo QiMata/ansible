@@ -1,0 +1,11 @@
+{% for zone in bind9_zones %}
+zone "{{ zone.name }}" {
+    type {{ zone.type }};
+    file "/etc/bind/db.{{ zone.name }}";
+    {% if zone.dynamic_updates %}
+    update-policy {
+      grant rndc-key zonesub ANY;
+    };
+    {% endif %}
+};
+{% endfor %}

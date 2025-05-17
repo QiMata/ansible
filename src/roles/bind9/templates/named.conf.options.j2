@@ -1,0 +1,7 @@
+options {
+  directory "/var/cache/bind";
+  recursion yes;
+  allow-query { {{ bind9_allow_query | join("; ") }}; };
+  forwarders { {{ bind9_forwarders | join("; ") }}; };
+  dnssec-validation auto;
+};
