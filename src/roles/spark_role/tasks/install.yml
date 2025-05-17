@@ -1,0 +1,70 @@
+---
+- name: Ensure spark group exists
+  group:
+    name: "{{ spark_group }}"
+    state: present
+  become: yes
+
+- name: Ensure spark user exists
+  user:
+    name: "{{ spark_user }}"
+    group: "{{ spark_group }}"
+    create_home: yes
+    shell: /bin/bash
+    state: present
+  become: yes
+
+- name: Install Java
+  apt:
+    name: "{{ java_package }}"
+    state: present
+    update_cache: yes
+  become: yes
+
+- name: Create installation directory
+  file:
+    path: "{{ spark_install_dir }}"
+    state: directory
+    owner: "{{ spark_user }}"
+    group: "{{ spark_group }}"
+    mode: "0755"
+  become: yes
+
+- name: Download Spark archive
+  get_url:
+    url: "{{ spark_download_url }}"
+    dest: "{{ spark_install_dir }}/{{ spark_package_name }}.tgz"
+    mode: "0644"
+    force: no
+  become: yes
+
+- name: Extract Spark archive
+  unarchive:
+    src: "{{ spark_install_dir }}/{{ spark_package_name }}.tgz"
+    dest: "{{ spark_install_dir }}"
+    remote_src: yes
+    creates: "{{ spark_install_dir }}/{{ spark_package_name }}/bin/spark-submit"
+  become: yes
+
+- name: Update Spark symlink
+  file:
+    src: "{{ spark_install_dir }}/{{ spark_package_name }}"
+    dest: "{{ spark_symlink_dir }}"
+    state: link
+    force: yes
+  become: yes
+
+- name: Ensure additional directories exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ spark_user }}"
+    group: "{{ spark_group }}"
+    mode: "0755"
+  loop:
+    - "{{ spark_eventlog_dir }}"
+    - "{{ spark_log_dir }}"
+    - "{{ spark_worker_dir }}"
+    - "{{ spark_recovery_dir | default(omit) }}"
+  when: item is not none
+  become: yes

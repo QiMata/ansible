@@ -1,0 +1,56 @@
+---
+- name: Deploy Spark Master unit
+  template:
+    src: spark-master.service.j2
+    dest: /etc/systemd/system/spark-master.service
+    mode: "0644"
+  when: inventory_hostname in groups['spark_master']
+  notify: Restart Spark Master
+  become: yes
+
+- name: Deploy Spark Worker unit
+  template:
+    src: spark-worker.service.j2
+    dest: /etc/systemd/system/spark-worker.service
+    mode: "0644"
+  when: inventory_hostname in groups['spark_worker']
+  notify: Restart Spark Worker
+  become: yes
+
+- name: Deploy Spark History Server unit
+  template:
+    src: spark-history-server.service.j2
+    dest: /etc/systemd/system/spark-history-server.service
+    mode: "0644"
+  when: spark_history_enabled | bool and inventory_hostname in groups['spark_master']
+  notify: Restart Spark History Server
+  become: yes
+
+- name: Reload systemd configuration
+  systemd:
+    daemon_reload: yes
+  become: yes
+
+- name: Enable and start Spark Master
+  systemd:
+    name: spark-master
+    state: started
+    enabled: yes
+  when: inventory_hostname in groups['spark_master']
+  become: yes
+
+- name: Enable and start Spark Worker
+  systemd:
+    name: spark-worker
+    state: started
+    enabled: yes
+  when: inventory_hostname in groups['spark_worker']
+  become: yes
+
+- name: Enable and start Spark History Server
+  systemd:
+    name: spark-history-server
+    state: started
+    enabled: yes
+  when: spark_history_enabled | bool and inventory_hostname in groups['spark_master']
+  become: yes

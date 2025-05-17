@@ -1,0 +1,30 @@
+---
+spark_version: "3.4.1"
+spark_hadoop_version: "3"
+spark_package_name: "spark-{{ spark_version }}-bin-hadoop{{ spark_hadoop_version }}"
+spark_download_url: "https://dlcdn.apache.org/spark/spark-{{ spark_version }}/{{ spark_package_name }}.tgz"
+
+spark_install_dir: "/opt/spark"
+spark_symlink_dir: "{{ spark_install_dir }}/current"
+
+spark_user: "spark"
+spark_group: "{{ spark_user }}"
+
+java_package: "openjdk-17-jdk"
+
+spark_eventlog_dir: "/var/spark-events"
+spark_log_dir: "/var/log/spark"
+spark_worker_dir: "/var/lib/spark/work"
+spark_recovery_dir: ""
+
+spark_master_host: "{{ inventory_hostname }}"
+spark_master_url: "spark://{{ spark_master_host }}:7077"
+
+spark_ha_enabled: false
+spark_zookeeper_hosts: ""
+spark_ha_zk_dir: "/spark-cluster"
+
+spark_history_enabled: false
+
+spark_worker_memory: "1g"
+spark_worker_cores: 1

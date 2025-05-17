@@ -1,0 +1,34 @@
+---
+- name: Deploy spark-env.sh
+  template:
+    src: spark-env.sh.j2
+    dest: "{{ spark_symlink_dir }}/conf/spark-env.sh"
+    owner: "{{ spark_user }}"
+    group: "{{ spark_group }}"
+    mode: "0644"
+  notify:
+    - Restart Spark Master
+    - Restart Spark Worker
+  become: yes
+
+- name: Deploy spark-defaults.conf
+  template:
+    src: spark-defaults.conf.j2
+    dest: "{{ spark_symlink_dir }}/conf/spark-defaults.conf"
+    owner: "{{ spark_user }}"
+    group: "{{ spark_group }}"
+    mode: "0644"
+  notify:
+    - Restart Spark Master
+    - Restart Spark Worker
+  become: yes
+
+- name: Deploy workers file
+  template:
+    src: workers.j2
+    dest: "{{ spark_symlink_dir }}/conf/workers"
+    owner: "{{ spark_user }}"
+    group: "{{ spark_group }}"
+    mode: "0644"
+  when: groups['spark_worker'] is defined
+  become: yes
