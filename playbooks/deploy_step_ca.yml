@@ -1,0 +1,5 @@
+- name: Deploy Step CA (single node)
+  hosts: step_ca_servers
+  become: true
+  roles:
+    - step_ca

@@ -1,0 +1,7 @@
+- name: Reload systemd
+  command: systemctl daemon-reload
+
+- name: Restart step-ca
+  service:
+    name: step-ca
+    state: restarted

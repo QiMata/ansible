@@ -1,0 +1,7 @@
+- name: Deploy Step CA cluster
+  hosts: step_ca_servers
+  become: true
+  vars:
+    step_ca_bootstrap: "{{ (step_ca_primary | default(false) | bool) }}"
+  roles:
+    - step_ca
