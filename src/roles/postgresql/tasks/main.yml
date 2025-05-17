@@ -1,0 +1,19 @@
+---
+
+- name: Include install tasks
+  ansible.builtin.include_tasks: install.yml
+
+- name: Include configuration tasks
+  ansible.builtin.include_tasks: config.yml
+
+- name: Include replication tasks
+  ansible.builtin.include_tasks: replication.yml
+  when: postgresql_enable_replication | bool
+
+- name: Include Patroni tasks
+  ansible.builtin.include_tasks: patroni.yml
+  when: postgresql_use_patroni | bool
+
+- name: Include firewall tasks
+  ansible.builtin.include_tasks: firewall.yml
+  when: postgresql_configure_firewall | bool

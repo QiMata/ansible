@@ -1,0 +1,31 @@
+---
+
+- name: Template postgresql.conf
+  ansible.builtin.template:
+    src: postgresql.conf.j2
+    dest: "{{ postgresql_data_dir }}/postgresql.conf"
+    owner: postgres
+    group: postgres
+    mode: '0644'
+  notify: "{{ 'Restart PostgreSQL' if postgresql_use_patroni | bool else 'Reload PostgreSQL' }}"
+  become: true
+
+- name: Template pg_hba.conf
+  ansible.builtin.template:
+    src: pg_hba.conf.j2
+    dest: "{{ postgresql_data_dir }}/pg_hba.conf"
+    owner: postgres
+    group: postgres
+    mode: '0600'
+  notify: "{{ 'Restart PostgreSQL' if postgresql_use_patroni | bool else 'Reload PostgreSQL' }}"
+  become: true
+
+- name: Set postgres admin password
+  community.postgresql.postgresql_user:
+    name: postgres
+    password: "{{ postgresql_admin_password }}"
+    encrypted: true
+    login_unix_socket: /var/run/postgresql
+  become: true
+  become_user: postgres
+  when: postgresql_admin_password != ""

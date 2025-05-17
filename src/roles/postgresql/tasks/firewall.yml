@@ -1,0 +1,21 @@
+---
+
+- name: Allow PostgreSQL port with UFW
+  community.general.ufw:
+    rule: allow
+    port: "{{ postgresql_port }}"
+    proto: tcp
+  when:
+    - postgresql_firewall_use_ufw
+    - ansible_facts.packages['ufw'] is defined
+  become: true
+
+- name: Allow PostgreSQL port with firewalld
+  ansible.posix.firewalld:
+    port: "{{ postgresql_port }}/tcp"
+    permanent: true
+    state: enabled
+  when:
+    - not postgresql_firewall_use_ufw
+    - ansible_facts.services['firewalld.service'] is defined
+  become: true
