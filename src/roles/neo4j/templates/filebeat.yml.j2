@@ -1,0 +1,12 @@
+filebeat.inputs:
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/neo4j/*.log
+    fields:
+      service: neo4j
+      cluster: "{{ 'cluster' if neo4j_cluster_enabled else 'single' }}"
+
+output.logstash:
+  hosts: ["{{ elk_host }}:{{ elk_port }}"]
+

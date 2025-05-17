@@ -1,0 +1,14 @@
+---
+- import_tasks: install.yml
+- import_tasks: configure.yml
+- import_tasks: security.yml
+- import_tasks: backup.yml
+- import_tasks: monitoring.yml
+- import_tasks: users.yml
+- name: Ensure Neo4j service enabled and started
+  ansible.builtin.service:
+    name: neo4j
+    state: started
+    enabled: true
+
+
