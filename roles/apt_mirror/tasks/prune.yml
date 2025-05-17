@@ -1,0 +1,6 @@
+---
+- name: Run clean.sh after sync
+  shell: "{{ apt_mirror_base_path }}/var/clean.sh"
+  args:
+    executable: /bin/bash
+  when: apt_mirror_prune | bool

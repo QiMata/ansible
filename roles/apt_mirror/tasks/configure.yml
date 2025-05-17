@@ -1,0 +1,16 @@
+---
+- name: Template /etc/apt/mirror.list
+  template:
+    src: mirror.list.j2
+    dest: /etc/apt/mirror.list
+    owner: root
+    group: root
+    mode: "0644"
+  notify: run initial mirror
+
+- name: Create architecture symlink (multi-arch only)
+  file:
+    src: "{{ apt_mirror_base_path }}/mirror"
+    dest: "{{ apt_mirror_base_path }}/mirror_arch"
+    state: link
+  when: apt_mirror_multi_arch | bool

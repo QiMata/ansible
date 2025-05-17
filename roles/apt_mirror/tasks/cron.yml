@@ -1,0 +1,12 @@
+---
+- name: Schedule apt-mirror sync
+  cron:
+    name: "apt-mirror sync"
+    user: "apt-mirror"
+    job: "/usr/bin/apt-mirror > {{ apt_mirror_base_path }}/var/cron.log 2>&1"
+    state: present
+    minute: "{{ apt_mirror_cron_schedule.split(' ')[0] }}"
+    hour:   "{{ apt_mirror_cron_schedule.split(' ')[1] }}"
+    day:    "{{ apt_mirror_cron_schedule.split(' ')[2] }}"
+    month:  "{{ apt_mirror_cron_schedule.split(' ')[3] }}"
+    weekday:"{{ apt_mirror_cron_schedule.split(' ')[4] }}"

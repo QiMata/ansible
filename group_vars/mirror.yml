@@ -1,0 +1,32 @@
+apt_mirror_base_path: "/var/spool/apt-mirror"
+
+apt_mirror_mirrors:
+  - name: "ubuntu_official"
+    base_url: "http://archive.ubuntu.com/ubuntu"
+    distributions:
+      - "focal"
+      - "focal-security"
+      - "focal-updates"
+    components: ["main", "restricted", "universe", "multiverse"]
+  - name: "debian_official"
+    base_url: "http://deb.debian.org/debian"
+    distributions:
+      - "bullseye"
+      - "bullseye-updates"
+    components: ["main"]
+  - name: "debian_security"
+    base_url: "http://security.debian.org/debian-security"
+    distributions:
+      - "bullseye-security"
+    components: ["main"]
+
+apt_mirror_architectures: ["amd64"]
+apt_mirror_include_sources: false
+
+apt_mirror_cron_enabled: true
+apt_mirror_cron_schedule: "0 4 * * *"   # daily 04:00
+
+elk_integration_enabled: false
+ha_features_enabled: false
+dr_backup_enabled: true
+apt_mirror_prune: true

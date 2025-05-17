@@ -1,0 +1,11 @@
+---
+# derive feature flags from deployment_profile
+apt_mirror_multi_arch: "{{ (deployment_profile | default('simple')) == 'complex' or apt_mirror_architectures | length > 1 }}"
+apt_mirror_source_pkgs: "{{ (deployment_profile | default('simple')) == 'complex' or apt_mirror_include_sources }}"
+
+elk_integration_enabled: "{{ (deployment_profile | default('simple')) == 'complex' or elk_integration_enabled }}"
+ha_features_enabled: "{{ (deployment_profile | default('simple')) == 'complex' and ha_features_enabled }}"
+dr_backup_enabled: "{{ dr_backup_enabled }}"
+
+# cron always on unless explicitly disabled
+apt_mirror_cron_enabled: "{{ apt_mirror_cron_enabled }}"
