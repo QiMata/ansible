@@ -1,0 +1,16 @@
+[Unit]
+Description=Apache Superset
+After=network.target
+
+[Service]
+Type=simple
+User={{ superset_user }}
+Group={{ superset_group }}
+WorkingDirectory={{ superset_install_dir }}
+Environment=SUPERSET_CONFIG_PATH={{ superset_config_path }}
+ExecStart={{ superset_venv_dir }}/bin/gunicorn -w {{ superset_gunicorn_workers }} -k gevent --timeout 120 -b {{ superset_gunicorn_bind }} --limit-request-line 0 --limit-request-field_size 0 superset.app:create_app()
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

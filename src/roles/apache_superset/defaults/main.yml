@@ -1,0 +1,46 @@
+---
+superset_version: "latest"
+
+superset_user: "superset"
+superset_group: "superset"
+
+superset_install_dir: "/opt/superset"
+superset_venv_dir: "{{ superset_install_dir }}/venv"
+superset_config_dir: "/etc/superset"
+superset_config_path: "{{ superset_config_dir }}/superset_config.py"
+
+superset_system_packages:
+  - build-essential
+  - libssl-dev
+  - libffi-dev
+  - python3-dev
+  - python3-pip
+  - libsasl2-dev
+  - libldap2-dev
+  - default-libmysqlclient-dev
+  - libpq-dev
+
+superset_additional_python_packages: []  # e.g. ['psycopg2-binary', 'mysqlclient']
+
+superset_database_uri: "sqlite:////{{ superset_install_dir }}/superset.db"
+
+superset_secret_key: "CHANGEME"  # override via vault
+superset_admin_username: "admin"  # override via vault
+superset_admin_password: "CHANGEME"  # override via vault
+superset_admin_email: "admin@example.com"
+superset_admin_firstname: "Superset"
+superset_admin_lastname: "Admin"
+
+superset_load_examples: false
+superset_use_gunicorn: true
+superset_gunicorn_workers: 4
+superset_gunicorn_bind: "0.0.0.0:8088"
+
+superset_redis_url: ""
+superset_celery_broker_url: ""
+
+superset_feature_flags: {}
+
+superset_service_name: "superset"
+
+superset_marker_file: "{{ superset_config_dir }}/.admin_created"
