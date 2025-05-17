@@ -1,0 +1,35 @@
+# Managed by Ansible: /etc/prometheus/prometheus.yml
+
+global:
+  scrape_interval: {{ prometheus_scrape_interval }}
+  evaluation_interval: {{ prometheus_evaluation_interval }}
+
+{% if prometheus_alertmanager_urls %}
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: {{ prometheus_alertmanager_urls | to_json }}
+{% endif %}
+
+{% if prometheus_external_label_monitor or prometheus_external_label_replica %}
+external_labels:
+  {% if prometheus_external_label_monitor %}monitor: "{{ prometheus_external_label_monitor }}"{% endif %}
+  {% if prometheus_external_label_replica %}replica: "{{ prometheus_external_label_replica }}"{% endif %}
+{% endif %}
+
+rule_files:
+  - "{{ prometheus_rules_file }}"
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'node_exporter'
+    static_configs:
+      - targets: {{ prometheus_node_targets | to_nice_yaml(indent=10) }}
+
+{% if prometheus_additional_scrape_configs %}
+# Additional user-provided scrape configs
+{{ prometheus_additional_scrape_configs | indent(2) }}
+{% endif %}
