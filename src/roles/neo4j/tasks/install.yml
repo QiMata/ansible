@@ -1,0 +1,36 @@
+---
+- name: Ensure apt helper packages
+  ansible.builtin.apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - gnupg
+    state: present
+    update_cache: true
+
+- name: Add Neo4j apt GPG key
+  ansible.builtin.get_url:
+    url: "{{ neo4j_apt_key_url }}"
+    dest: /etc/apt/keyrings/neo4j.gpg
+    mode: "0644"
+
+- name: Add Neo4j repository
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/neo4j.gpg] {{ neo4j_repository_url }} stable {{ neo4j_release_track }}"
+    filename: neo4j
+    state: present
+
+- name: Accept Neo4j Enterprise license
+  ansible.builtin.debconf:
+    name: "{{ neo4j_package_name }}"
+    question: "{{ neo4j_package_name }}/accept-license"
+    value: "true"
+    vtype: select
+  when: neo4j_edition == 'enterprise' and neo4j_accept_license
+
+- name: Install Neo4j
+  ansible.builtin.apt:
+    name: "{{ neo4j_package_name }}{{ '=' + neo4j_version if neo4j_version else '' }}"
+    state: present
+    update_cache: true
+

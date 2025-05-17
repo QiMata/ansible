@@ -1,0 +1,50 @@
+---
+neo4j_edition: enterprise
+neo4j_release_track: latest
+neo4j_version: ""
+neo4j_accept_license: true
+
+neo4j_cluster_enabled: false
+neo4j_core_count: "{{ groups['neo4j_core']|length if groups['neo4j_core'] is defined else 1 }}"
+neo4j_read_replica_count: "{{ groups['neo4j_replica']|length if groups['neo4j_replica'] is defined else 0 }}"
+
+neo4j_listen_address: "0.0.0.0"
+neo4j_advertised_address: "{{ ansible_default_ipv4.address }}"
+neo4j_bolt_port: 7687
+neo4j_http_enabled: false
+neo4j_https_enabled: true
+neo4j_http_port: 7474
+neo4j_https_port: 7473
+
+neo4j_tls_client_enable: true
+neo4j_tls_cluster_enable: "{{ neo4j_cluster_enabled }}"
+neo4j_certificates_source: "self-signed"
+
+neo4j_initial_password: ""
+neo4j_user_creation: []
+
+neo4j_heap_size: ""
+neo4j_pagecache_size: ""
+
+neo4j_backup_enabled: "{{ neo4j_edition == 'enterprise' }}"
+neo4j_backup_listen_address: "127.0.0.1:6362"
+neo4j_backup_cron_enabled: false
+neo4j_backup_hour: 2
+neo4j_backup_dir: "/var/backups/neo4j"
+neo4j_backup_retention: 7
+
+neo4j_metrics_enabled: "{{ neo4j_edition == 'enterprise' }}"
+neo4j_metrics_listen: ":2004"
+
+neo4j_elk_integration: false
+elk_host: ""
+elk_port: 5044
+elk_cloud_id: ""
+elk_username: ""
+elk_password: ""
+
+neo4j_logrotate_enable: true
+neo4j_logrotate_rotation: 7
+neo4j_logrotate_frequency: weekly
+neo4j_log_level: INFO
+

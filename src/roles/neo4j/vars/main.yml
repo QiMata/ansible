@@ -1,0 +1,4 @@
+---
+neo4j_repository_url: "https://debian.neo4j.com"
+neo4j_apt_key_url: "https://debian.neo4j.com/neotechnology.gpg.key"
+neo4j_package_name: "{{ 'neo4j-enterprise' if neo4j_edition == 'enterprise' else 'neo4j' }}"

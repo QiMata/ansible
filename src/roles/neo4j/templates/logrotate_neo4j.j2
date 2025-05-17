@@ -1,0 +1,9 @@
+/var/log/neo4j/*.log {
+    {{ neo4j_logrotate_frequency }}
+    rotate {{ neo4j_logrotate_rotation }}
+    compress
+    copytruncate
+    missingok
+    notifempty
+}
+

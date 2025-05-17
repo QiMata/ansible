@@ -1,0 +1,21 @@
+---
+- name: Set initial admin password
+  ansible.builtin.command: neo4j-admin set-initial-password "{{ neo4j_initial_password }}"
+  register: pw_set
+  failed_when: pw_set.rc not in [0,4]
+  changed_when: pw_set.rc == 0
+  become: true
+  become_user: neo4j
+  when: neo4j_initial_password | length > 0
+
+# TLS directories
+- name: Create TLS directories
+  ansible.builtin.file:
+    path: "/etc/neo4j/certificates/{{ item }}"
+    state: directory
+    owner: root
+    group: neo4j
+    mode: "0750"
+  loop: ["bolt", "cluster"]
+  when: neo4j_tls_client_enable or neo4j_tls_cluster_enable
+
