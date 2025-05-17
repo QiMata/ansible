@@ -1,0 +1,7 @@
+---
+- name: Configure Cloudflare front door
+  hosts: cloudflare
+  gather_facts: false
+  connection: local
+  roles:
+    - cloudflare

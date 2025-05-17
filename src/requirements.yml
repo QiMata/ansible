@@ -10,3 +10,5 @@ collections:
     version: "2.6.0"
   - name: community.general
     version: "8.6.0"
+  - name: community.cloudflare
+    version: ">=2.0.0"
