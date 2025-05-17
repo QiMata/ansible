@@ -1,0 +1,6 @@
+---
+- name: Deploy HAProxy (single node dev)
+  hosts: haproxy
+  become: yes
+  roles:
+    - role: haproxy

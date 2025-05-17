@@ -1,0 +1,21 @@
+---
+haproxy_frontend_port: 443
+haproxy_frontend_mode: http
+haproxy_backend_mode: http
+haproxy_backend_balance_method: leastconn
+haproxy_backend_httpchk: "GET /healthz HTTP/1.1\\r\\nHost: health"
+
+haproxy_ssl_certificate: /etc/haproxy/certs/prod_bundle.pem
+haproxy_ssl_certificate_content: "{{ vault_prod_bundle_pem }}"
+
+haproxy_stats_enable: true
+haproxy_stats_user: admin
+haproxy_stats_password: "{{ vault_haproxy_stats_pw }}"
+haproxy_stats_port: 9000
+haproxy_stats_bind_address: 0.0.0.0
+
+keepalived_virtual_ip: 10.0.0.50
+keepalived_virtual_cidr: 32
+keepalived_interface: eth0
+keepalived_router_id: 50
+keepalived_auth_pass: "{{ vault_vrrp_auth_pass }}"
