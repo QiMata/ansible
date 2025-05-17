@@ -1,0 +1,11 @@
+---
+galaxy_info:
+  role_name: apache_superset
+  author: "Your Name"
+  description: "Deploy Apache Superset on Debian-based systems"
+  license: "MIT"
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Debian
+      versions: ["bullseye", "bookworm"]
+dependencies: []

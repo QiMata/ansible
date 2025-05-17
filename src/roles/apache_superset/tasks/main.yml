@@ -1,0 +1,20 @@
+---
+- name: Include install tasks
+  ansible.builtin.import_tasks: install.yml
+  tags: ['superset', 'superset_install']
+
+- name: Include venv setup tasks
+  ansible.builtin.import_tasks: setup_venv.yml
+  tags: ['superset', 'superset_venv']
+
+- name: Include configuration tasks
+  ansible.builtin.import_tasks: config.yml
+  tags: ['superset', 'superset_config']
+
+- name: Include database initialization tasks
+  ansible.builtin.import_tasks: init_db.yml
+  tags: ['superset', 'superset_db']
+
+- name: Include service tasks
+  ansible.builtin.import_tasks: service.yml
+  tags: ['superset', 'superset_service']

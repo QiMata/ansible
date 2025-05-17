@@ -1,0 +1,48 @@
+---
+- name: Run database migrations
+  ansible.builtin.command: "{{ superset_venv_dir }}/bin/superset db upgrade"
+  environment:
+    FLASK_APP: superset
+    SUPERSET_CONFIG_PATH: "{{ superset_config_path }}"
+  changed_when: false
+  become_user: "{{ superset_user }}"
+
+- name: Create admin user
+  ansible.builtin.command: >
+    {{ superset_venv_dir }}/bin/superset fab create-admin
+    --username "{{ superset_admin_username }}"
+    --firstname "{{ superset_admin_firstname }}"
+    --lastname "{{ superset_admin_lastname }}"
+    --email "{{ superset_admin_email }}"
+    --password "{{ superset_admin_password }}"
+  args:
+    creates: "{{ superset_marker_file }}"
+  environment:
+    FLASK_APP: superset
+    SUPERSET_CONFIG_PATH: "{{ superset_config_path }}"
+  become_user: "{{ superset_user }}"
+
+- name: Touch marker file after admin creation
+  ansible.builtin.file:
+    path: "{{ superset_marker_file }}"
+    state: touch
+    owner: "{{ superset_user }}"
+    group: "{{ superset_group }}"
+  when: not (superset_marker_file is exists)
+  become: yes
+
+- name: Load example data
+  ansible.builtin.command: "{{ superset_venv_dir }}/bin/superset load_examples"
+  environment:
+    FLASK_APP: superset
+    SUPERSET_CONFIG_PATH: "{{ superset_config_path }}"
+  when: superset_load_examples | bool
+  become_user: "{{ superset_user }}"
+
+- name: Initialize roles and permissions
+  ansible.builtin.command: "{{ superset_venv_dir }}/bin/superset init"
+  environment:
+    FLASK_APP: superset
+    SUPERSET_CONFIG_PATH: "{{ superset_config_path }}"
+  changed_when: false
+  become_user: "{{ superset_user }}"

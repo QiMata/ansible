@@ -1,0 +1,20 @@
+---
+- name: Render Superset systemd unit
+  ansible.builtin.template:
+    src: superset.service.j2
+    dest: "/etc/systemd/system/{{ superset_service_name }}.service"
+    mode: "0644"
+  notify: restart superset
+  become: yes
+
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: yes
+  become: yes
+
+- name: Enable and start Superset service
+  ansible.builtin.systemd:
+    name: "{{ superset_service_name }}"
+    enabled: yes
+    state: started
+  become: yes

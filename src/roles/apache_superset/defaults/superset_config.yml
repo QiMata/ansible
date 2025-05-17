@@ -1,0 +1,3 @@
+---
+WTF_CSRF_ENABLED: true
+FEATURE_FLAGS: "{{ superset_feature_flags }}"
