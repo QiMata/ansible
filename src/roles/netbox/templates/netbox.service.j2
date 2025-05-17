@@ -1,0 +1,17 @@
+[Unit]
+Description=NetBox WSGI Service
+After=network.target
+
+[Service]
+Type=simple
+User={{ netbox_user }}
+Group={{ netbox_user }}
+WorkingDirectory={{ netbox_install_dir }}/netbox
+ExecStart={{ netbox_venv }}/bin/gunicorn --workers 4 --bind 0.0.0.0:8000 netbox.wsgi
+Environment="DJANGO_SETTINGS_MODULE=netbox.settings"
+Environment="PYTHONPATH={{ netbox_install_dir }}/netbox"
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

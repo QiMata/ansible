@@ -1,0 +1,10 @@
+filebeat.inputs:
+  - type: log
+    paths:
+      - /var/log/netbox/netbox.log
+    fields:
+      service: netbox
+      environment: "{{ ansible_facts.env | default('production') }}"
+
+output.logstash:
+  hosts: ["logstash.example.com:5044"]

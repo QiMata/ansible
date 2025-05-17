@@ -1,0 +1,9 @@
+---
+netbox_git_repo: "https://github.com/netbox-community/netbox.git"
+netbox_branch: "master"
+netbox_systemd_unit: "/etc/systemd/system/netbox.service"
+netbox_python: "python3"
+netbox_venv: "/opt/netbox/venv"
+netbox_uwsgi_socket: "/run/netbox/netbox.sock"
+netbox_media_root: "{{ netbox_install_dir }}/netbox/media"
+netbox_static_root: "{{ netbox_install_dir }}/netbox/static"

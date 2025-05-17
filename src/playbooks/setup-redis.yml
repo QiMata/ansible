@@ -1,0 +1,6 @@
+---
+- name: Configure Redis
+  hosts: netbox_cache_servers
+  become: true
+  roles:
+    - geerlingguy.redis

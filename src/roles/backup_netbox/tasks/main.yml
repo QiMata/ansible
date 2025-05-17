@@ -1,0 +1,23 @@
+---
+- name: Create backup directory
+  ansible.builtin.file:
+    path: /var/backups/netbox
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Backup PostgreSQL database
+  community.postgresql.postgresql_db:
+    name: "{{ postgres_db }}"
+    target: "/var/backups/netbox/netbox_{{ ansible_date_time.iso8601_basic_short }}.sql"
+    login_host: "{{ postgres_host }}"
+    login_user: "{{ postgres_user }}"
+    login_password: "{{ postgres_password }}"
+  become_user: postgres
+
+- name: Archive NetBox media
+  ansible.builtin.archive:
+    path: "{{ netbox_media_root }}"
+    dest: "/var/backups/netbox/netbox_media_{{ ansible_date_time.iso8601_basic_short }}.tgz"
+    format: gz
