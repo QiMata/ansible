@@ -1,0 +1,15 @@
+set base_path    {{ apt_mirror_base_path }}
+set nthreads     20
+set _tilde       0
+
+{% for mirror in apt_mirror_mirrors %}
+{% for distro in mirror.distributions %}
+{% for arch in apt_mirror_architectures %}
+deb-{{ arch }} {{ mirror.base_url }} {{ distro }} {{ mirror.components | join(' ') }}
+{% if apt_mirror_source_pkgs %}
+deb-src {{ mirror.base_url }} {{ distro }} {{ mirror.components | join(' ') }}
+{% endif %}
+{% endfor %}
+{% endfor %}
+clean {{ mirror.base_url }}
+{% endfor %}

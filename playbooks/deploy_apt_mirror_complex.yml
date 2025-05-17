@@ -1,0 +1,8 @@
+---
+- name: Complex apt-mirror deployment (production)
+  hosts: mirror
+  become: true
+  vars:
+    deployment_profile: "complex"
+  roles:
+    - apt_mirror

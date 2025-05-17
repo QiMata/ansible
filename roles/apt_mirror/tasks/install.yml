@@ -1,0 +1,17 @@
+---
+- name: Install apt-mirror and dependencies
+  apt:
+    name:
+      - apt-mirror
+      - apache2
+      - python3-apt
+    state: present
+    update_cache: true
+
+- name: Ensure base path exists
+  file:
+    path: "{{ apt_mirror_base_path }}"
+    state: directory
+    owner: apt-mirror
+    group: apt-mirror
+    mode: "0755"

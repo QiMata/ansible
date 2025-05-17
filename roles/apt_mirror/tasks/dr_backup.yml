@@ -1,0 +1,21 @@
+---
+- name: Create backup directory
+  file:
+    path: /var/backups/apt-mirror
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Weekly tar backup of mirror index (lightweight)
+  cron:
+    name: "Backup apt-mirror metadata"
+    user: root
+    job: >
+      tar -czf /var/backups/apt-mirror/metadata_$(date +\%F).tgz
+      {{ apt_mirror_base_path }}/var
+    weekday: 0
+    hour: 2
+    minute: 0
+    state: present
+  when: dr_backup_enabled | bool

@@ -3,7 +3,7 @@
   become: yes
   vars_files:
     - group_vars/all.yml
-    - group_vars/apt_mirror.yml
+    - group_vars/mirror.yml
   roles:
     - base
 
@@ -11,7 +11,7 @@
   become: yes
   vars_files:
     - group_vars/all.yml
-    - group_vars/apt_mirror.yml
+    - group_vars/mirror.yml
   roles:
     - mrlesmithjr.apache2
     - mrlesmithjr.apt-mirror
@@ -21,7 +21,7 @@
   become: yes
   vars_files:
     - group_vars/all.yml
-    - group_vars/apt_mirror.yml
+    - group_vars/mirror.yml
   tasks:
     - name: install gnupg2
       apt:
@@ -41,6 +41,6 @@
   become: yes
   vars_files:
     - group_vars/all.yml
-    - group_vars/apt_mirror.yml
+    - group_vars/mirror.yml
   roles:
     - mrlesmithjr.nginx-load-balancer

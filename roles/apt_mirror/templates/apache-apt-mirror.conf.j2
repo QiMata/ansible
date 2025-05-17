@@ -1,0 +1,13 @@
+# Apache configuration to serve apt-mirror repositories
+Alias /mirror/ "{{ apt_mirror_base_path }}/mirror/"
+
+<Directory "{{ apt_mirror_base_path }}/mirror/">
+    Options Indexes FollowSymLinks
+    AllowOverride None
+    Require all granted
+</Directory>
+
+# Convenience aliases based on mirror names
+{% for mirror in apt_mirror_mirrors %}
+Alias /{{ mirror.name }}/ "{{ apt_mirror_base_path }}/mirror/{{ mirror.base_url | regex_replace('https?://','') }}/"
+{% endfor %}

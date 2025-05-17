@@ -1,0 +1,14 @@
+---
+- import_tasks: install.yml
+- import_tasks: configure.yml
+- import_tasks: apache.yml
+- import_tasks: cron.yml
+  when: apt_mirror_cron_enabled | bool
+- import_tasks: elk.yml
+  when: elk_integration_enabled | bool
+- import_tasks: ha.yml
+  when: ha_features_enabled | bool
+- import_tasks: dr_backup.yml
+  when: dr_backup_enabled | bool
+- import_tasks: prune.yml
+  when: apt_mirror_prune | bool

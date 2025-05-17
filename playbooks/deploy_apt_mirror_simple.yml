@@ -1,0 +1,8 @@
+---
+- name: Simple apt-mirror deployment (dev / test)
+  hosts: mirror
+  become: true
+  vars:
+    deployment_profile: "simple"
+  roles:
+    - apt_mirror
