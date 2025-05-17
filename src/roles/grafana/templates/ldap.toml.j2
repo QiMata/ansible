@@ -1,0 +1,13 @@
+[[servers]]
+host = "{{ ldap_host }}"
+port = {{ ldap_port }}
+use_ssl = {{ ldap_use_ssl }}
+start_tls = {{ ldap_start_tls }}
+bind_dn = "{{ ldap_bind_dn }}"
+bind_password = "{{ ldap_bind_password }}"
+search_base_dns = ["{{ ldap_search_base }}"]
+search_filter = "(uid={{username}})"
+
+[[servers.group_mappings]]
+group_dn = "{{ ldap_admin_group_dn }}"
+org_role = "Admin"

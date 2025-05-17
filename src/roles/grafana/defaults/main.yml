@@ -1,0 +1,29 @@
+---
+grafana_version: "10.4.0"
+grafana_ha_enabled: false
+grafana_admin_user: admin
+grafana_admin_password: "{{ vault_grafana_admin_password }}"
+grafana_database:
+  type: sqlite3
+  host: ""
+  name: grafana
+  user: grafana
+  password: ""
+grafana_ldap_enabled: false
+grafana_ldap_file: "/etc/grafana/ldap.toml"
+grafana_provisioning_path: "/etc/grafana/provisioning"
+grafana_backup_enabled: true
+grafana_backup_path: "/var/backups/grafana"
+grafana_datasources:
+  - name: Prometheus
+    type: prometheus
+    url: "http://prometheus:9090"
+    access: proxy
+    isDefault: true
+  - name: Elasticsearch
+    type: elasticsearch
+    url: "http://elasticsearch:9200"
+    access: proxy
+    database: "[logstash-]YYYY.MM.DD"
+# list of dashboard UIDs to back up
+grafana_dashboard_uids: []

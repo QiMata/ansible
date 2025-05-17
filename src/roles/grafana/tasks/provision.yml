@@ -1,0 +1,26 @@
+---
+- name: Create provisioning directories
+  ansible.builtin.file:
+    path: "{{ grafana_provisioning_path }}/datasources"
+    state: directory
+    owner: root
+    group: grafana
+    mode: "0755"
+
+- name: Deploy datasource configurations
+  ansible.builtin.copy:
+    src: provisioning/datasources.yml
+    dest: "{{ grafana_provisioning_path }}/datasources/datasources.yml"
+    owner: root
+    group: grafana
+    mode: "0644"
+  notify: Restart Grafana
+
+- name: Deploy dashboards
+  ansible.builtin.copy:
+    src: dashboards/
+    dest: "/var/lib/grafana/dashboards/"
+    owner: grafana
+    group: grafana
+    mode: "0644"
+  notify: Restart Grafana

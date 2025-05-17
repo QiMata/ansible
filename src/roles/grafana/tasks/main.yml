@@ -1,0 +1,10 @@
+---
+- import_tasks: install.yml
+- import_tasks: config.yml
+- import_tasks: ha.yml
+  when: grafana_ha_enabled
+- import_tasks: ldap.yml
+  when: grafana_ldap_enabled
+- import_tasks: provision.yml
+- import_tasks: backup.yml
+  when: grafana_backup_enabled
