@@ -12,12 +12,12 @@ served over Apache HTTP. Supports:
 ## Quick Start
 
 ```bash
-ansible-playbook playbooks/deploy_apt_mirror_simple.yml  # dev/test
-ansible-playbook playbooks/deploy_apt_mirror_complex.yml # prod
+ansible-playbook src/playbooks/deploy_apt_mirror_simple.yml  # dev/test
+ansible-playbook src/playbooks/deploy_apt_mirror_complex.yml # prod
 ```
 
 ## Variables
 
-See `defaults/main.yml` and `group_vars/mirror.yml` for full list.
+See `defaults/main.yml` and `src/group_vars/mirror.yml` for full list.
 
 ---

@@ -25,3 +25,4 @@ fail2ban_sender: admin@{{ ansible_fqdn }}
 auto_update_download_updates: yes
 auto_update_apply_updates: no
 auto_update_random_sleep: 360 
+deployment_profile: "simple"
