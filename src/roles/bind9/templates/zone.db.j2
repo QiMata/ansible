@@ -1,0 +1,12 @@
+$TTL 86400
+@   IN  SOA ns1.{{ item.name }}. admin.{{ item.name }}. (
+          2025051201 ; Serial
+          3600       ; Refresh
+          1800       ; Retry
+          604800     ; Expire
+          86400      ; Minimum
+      )
+@   IN  NS  ns1.{{ item.name }}.
+{% for record in item.records %}
+{{ record.name }}  IN  {{ record.type }}  {{ record.value }}
+{% endfor %}

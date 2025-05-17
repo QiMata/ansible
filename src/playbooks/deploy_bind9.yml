@@ -1,0 +1,4 @@
+- hosts: dns_primary:dns_secondary
+  become: yes
+  roles:
+    - bind9
