@@ -1,0 +1,6 @@
+---
+es_version: "8.x"
+es_cluster_name: "amundsen-es-cluster"
+es_heap_size: "2g"
+es_node_roles: ["master", "data"]
+es_network_host: "0.0.0.0"

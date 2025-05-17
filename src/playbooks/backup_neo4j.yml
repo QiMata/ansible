@@ -1,0 +1,27 @@
+---
+- name: Backup Neo4j database
+  hosts: neo4j
+  become: yes
+  tasks:
+    - name: Ensure backup directory exists
+      file:
+        path: /var/backups/neo4j
+        state: directory
+        owner: neo4j
+        group: neo4j
+        mode: "0755"
+
+    - name: Stop Neo4j
+      service:
+        name: neo4j
+        state: stopped
+
+    - name: Dump database
+      command: >
+        neo4j-admin dump
+        --to=/var/backups/neo4j/neo4j-{{ ansible_date_time.iso8601_basic }}.dump
+
+    - name: Start Neo4j
+      service:
+        name: neo4j
+        state: started

@@ -1,0 +1,55 @@
+---
+- name: Ensure amundsen user exists
+  user:
+    name: amundsen
+    shell: /usr/sbin/nologin
+  become: yes
+
+- name: Create search directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: amundsen
+    group: amundsen
+    mode: "0755"
+  with_items:
+    - "{{ search_virtualenv | dirname }}"
+  become: yes
+
+- name: Create virtualenv for search service
+  command: python3 -m venv "{{ search_virtualenv }}"
+  args:
+    creates: "{{ search_virtualenv }}/bin/activate"
+  become: yes
+
+- name: Install search service
+  pip:
+    virtualenv: "{{ search_virtualenv }}"
+    name: "amundsen-search=={{ amundsen_search_version }}"
+    state: present
+  become: yes
+
+- name: Deploy search config
+  template:
+    src: search_config.py.j2
+    dest: "{{ search_virtualenv }}/config.py"
+    owner: amundsen
+    group: amundsen
+    mode: "0644"
+  become: yes
+  notify: Restart Search Service
+
+- name: Deploy systemd unit
+  template:
+    src: search_gunicorn.service.j2
+    dest: /etc/systemd/system/amundsen-search.service
+    mode: "0644"
+  become: yes
+  notify: Reload Systemd
+
+- name: Enable and start service
+  systemd:
+    name: amundsen-search
+    enabled: yes
+    state: started
+  become: yes

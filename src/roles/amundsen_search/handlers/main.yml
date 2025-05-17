@@ -1,0 +1,10 @@
+---
+- name: Reload Systemd
+  command: systemctl daemon-reload
+  become: yes
+
+- name: Restart Search Service
+  service:
+    name: amundsen-search
+    state: restarted
+  become: yes

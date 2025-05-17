@@ -1,0 +1,20 @@
+---
+- name: Restore Neo4j from latest dump
+  hosts: neo4j
+  become: yes
+  vars:
+    neo4j_dump_path: "{{ lookup('pipe', 'ls -t /var/backups/neo4j/*.dump | head -1') }}"
+  tasks:
+    - name: Stop Neo4j
+      service:
+        name: neo4j
+        state: stopped
+
+    - name: Load dump
+      command: >
+        neo4j-admin load --from={{ neo4j_dump_path }} --database=neo4j --force
+
+    - name: Start Neo4j
+      service:
+        name: neo4j
+        state: started

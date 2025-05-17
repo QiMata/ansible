@@ -1,0 +1,10 @@
+---
+- name: Reload Systemd
+  command: systemctl daemon-reload
+  become: yes
+
+- name: Restart Metadata Service
+  service:
+    name: amundsen-metadata
+    state: restarted
+  become: yes
