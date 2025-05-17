@@ -5,7 +5,7 @@ galera_cluster_nodes: "{{ groups['ansible_semaphore_MARIADB_DATABASE'] }}"
 galera_mysql_first_node: "{{ galera_cluster_nodes[0] }}"
 galera_cluster_nodes_group: "ansible_semaphore_MARIADB_DATABASE"
 #galera_cluster_nodes: "{{ groups['ansible_semaphore_MARIADB_DATABASE'] }}"
-mariadb_mysql_root_password: "JB3mxV=Eun!ZBSag"
+mariadb_mysql_root_password: ""
 galera_cluster_name: "ansible_semaphor_cluster"
 mariadb_pri_domain_name: "qimata.net"
 mariadb_mysql_settings:
