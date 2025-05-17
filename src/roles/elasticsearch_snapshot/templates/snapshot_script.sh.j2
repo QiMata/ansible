@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+SNAP_NAME="snap-$(date +%Y%m%d%H%M)"
+curl -s -u {{ elastic_api_user | default('elastic') }}:{{ elastic_api_password | default("$ELASTIC_PASSWORD") }} \
+  -H "Content-Type: application/json" \
+  -X PUT "http://localhost:9200/_snapshot/{{ es_snapshot_repo_name }}/$SNAP_NAME?wait_for_completion=false" \
+  -d '{}'

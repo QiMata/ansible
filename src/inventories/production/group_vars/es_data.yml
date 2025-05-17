@@ -1,0 +1,4 @@
+---
+node_roles:
+  - data
+elasticsearch_heap_size: "8g"

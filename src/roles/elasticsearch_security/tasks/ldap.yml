@@ -1,0 +1,16 @@
+---
+- name: Configure LDAP realm
+  blockinfile:
+    path: /etc/elasticsearch/elasticsearch.yml
+    block: |
+      xpack.security.authc.realms.ldap.ldap1:
+        order: 0
+        url: "{{ ldap_url }}"
+        bind_dn: "{{ ldap_bind_dn }}"
+        bind_password: "{{ ldap_bind_password }}"
+        user_search:
+          base_dn: "{{ ldap_user_base_dn }}"
+        group_search:
+          base_dn: "{{ ldap_group_base_dn }}"
+        files.role_mapping: "/etc/elasticsearch/role_mapping.yml"
+  notify: restart elasticsearch

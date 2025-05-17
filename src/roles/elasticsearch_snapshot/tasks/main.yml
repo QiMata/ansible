@@ -1,0 +1,3 @@
+---
+- import_tasks: repository.yml
+- import_tasks: cron.yml

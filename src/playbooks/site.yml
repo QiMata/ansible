@@ -1,4 +1,9 @@
 ---
-- import_playbook: setup-db.yml
-- import_playbook: setup-redis.yml
-- import_playbook: deploy-netbox.yml
+- name: Install and configure Elasticsearch cluster
+  hosts: elasticsearch
+  become: yes
+  roles:
+    - role: elasticsearch_install
+    - role: elasticsearch_config
+    - role: elasticsearch_security
+    - role: elasticsearch_snapshot

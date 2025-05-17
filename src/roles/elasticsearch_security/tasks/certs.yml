@@ -1,0 +1,48 @@
+---
+- name: Ensure certificate directory exists
+  file:
+    path: /etc/elasticsearch/certs
+    state: directory
+    owner: root
+    group: elasticsearch
+    mode: '0750'
+
+- name: Copy node certificate
+  copy:
+    src: "{{ inventory_hostname }}.crt"
+    dest: "/etc/elasticsearch/certs/{{ inventory_hostname }}.crt"
+    owner: root
+    group: elasticsearch
+    mode: '0644'
+  when: es_tls_provided | default(false)
+
+- name: Copy node key
+  copy:
+    src: "{{ inventory_hostname }}.key"
+    dest: "/etc/elasticsearch/certs/{{ inventory_hostname }}.key"
+    owner: root
+    group: elasticsearch
+    mode: '0600'
+  when: es_tls_provided | default(false)
+
+- name: Copy CA certificate
+  copy:
+    src: cacert.pem
+    dest: /etc/elasticsearch/certs/ca.crt
+    owner: root
+    group: elasticsearch
+    mode: '0644'
+  when: es_tls_provided | default(false)
+
+- name: Configure TLS settings
+  blockinfile:
+    path: /etc/elasticsearch/elasticsearch.yml
+    block: |
+      xpack.security.enabled: true
+      xpack.security.transport.ssl.enabled: true
+      xpack.security.transport.ssl.verification_mode: certificate
+      xpack.security.transport.ssl.key: "/etc/elasticsearch/certs/{{ inventory_hostname }}.key"
+      xpack.security.transport.ssl.certificate: "/etc/elasticsearch/certs/{{ inventory_hostname }}.crt"
+      xpack.security.transport.ssl.certificate_authorities: ["/etc/elasticsearch/certs/ca.crt"]
+  notify: restart elasticsearch
+  when: es_tls_provided | default(false)

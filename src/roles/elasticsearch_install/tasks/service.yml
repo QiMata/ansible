@@ -1,0 +1,6 @@
+---
+- name: Ensure Elasticsearch service enabled
+  service:
+    name: elasticsearch
+    enabled: yes
+    state: stopped

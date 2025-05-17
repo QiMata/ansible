@@ -1,0 +1,4 @@
+---
+- import_tasks: certs.yml
+- import_tasks: ldap.yml
+- import_tasks: users.yml

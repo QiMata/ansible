@@ -1,0 +1,9 @@
+---
+- name: update apt cache
+  apt:
+    update_cache: yes
+
+- name: restart elasticsearch
+  service:
+    name: elasticsearch
+    state: restarted
