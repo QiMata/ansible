@@ -1,0 +1,13 @@
+---
+galaxy_info:
+  role_name: apache_airflow
+  author: your_name
+  description: Install and manage Apache Airflow on Debian/Ubuntu using systemd (supports single-node and multi-node HA setups)
+  license: MIT
+  min_ansible_version: "2.13"
+  platforms:
+    - name: Debian
+      versions: [bullseye, bookworm]
+    - name: Ubuntu
+      versions: [focal, jammy]
+dependencies: []

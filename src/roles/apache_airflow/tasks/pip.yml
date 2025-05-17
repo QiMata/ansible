@@ -1,0 +1,28 @@
+---
+- name: Optionally create venv
+  command: "{{ airflow_python }} -m venv {{ airflow_venv_path }}"
+  args:
+    creates: "{{ airflow_venv_path }}/bin/activate"
+  when: airflow_venv_path | length > 0
+
+- name: Install/upgrade pip in venv or system
+  pip:
+    name: pip
+    state: latest
+    virtualenv: "{{ airflow_venv_path | default(omit) }}"
+    virtualenv_command: "{{ airflow_python }} -m venv"
+    virtualenv_python: "{{ airflow_python }}"
+
+- name: Install Apache Airflow
+  pip:
+    name: "apache-airflow=={{ airflow_version }}"
+    extra_args: "-r https://raw.githubusercontent.com/apache/airflow/constraints-{{ airflow_version }}/constraints-3.10.txt"
+    virtualenv: "{{ airflow_venv_path | default(omit) }}"
+    virtualenv_site_packages: false
+
+- name: Install extra Airflow packages
+  pip:
+    name: "{{ airflow_extra_pip_packages }}"
+    state: present
+    virtualenv: "{{ airflow_venv_path | default(omit) }}"
+  when: airflow_extra_pip_packages | length > 0
