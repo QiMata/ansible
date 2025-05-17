@@ -1,0 +1,10 @@
+---
+- name: Verify
+  hosts: all
+  tasks:
+    - name: Check acme.sh directory exists
+      ansible.builtin.stat:
+        path: "/etc/acme"
+      register: acme_dir
+    - ansible.builtin.assert:
+        that: acme_dir.stat.exists

@@ -1,0 +1,30 @@
+---
+- name: Determine primary domain
+  ansible.builtin.set_fact:
+    primary_domain: "{{ cert_domains[0] }}"
+
+- name: Ensure certificate directory exists
+  ansible.builtin.file:
+    path: "{{ cert_install_path }}/{{ primary_domain }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: true
+
+- name: Install certificate to target path
+  ansible.builtin.shell: |
+    export GD_Key="{{ godaddy_api_key }}";
+    export GD_Secret="{{ godaddy_api_secret }}";
+    "{{ acme_sh_install_dir }}/acme.sh" --install-cert -d "{{ primary_domain }}" \
+      --home "{{ acme_sh_install_dir }}" \
+      --config-home "{{ acme_sh_install_dir }}" \
+      --cert-file "{{ cert_install_path }}/{{ primary_domain }}/cert.pem" \
+      --key-file "{{ cert_install_path }}/{{ primary_domain }}/privkey.pem" \
+      --fullchain-file "{{ cert_install_path }}/{{ primary_domain }}/fullchain.pem" \
+      {% if service_reload_command %}--reloadcmd "{{ service_reload_command }}"{% endif %}
+  register: acme_install
+  changed_when: "'Cert success' in acme_install.stdout or 'Installing' in acme_install.stdout"
+  notify: reload_service
+  no_log: true
+  become: true
