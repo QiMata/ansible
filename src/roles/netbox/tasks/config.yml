@@ -1,0 +1,24 @@
+---
+- name: Template configuration.py
+  ansible.builtin.template:
+    src: configuration.py.j2
+    dest: "{{ netbox_install_dir }}/netbox/netbox/configuration.py"
+    owner: "{{ netbox_user }}"
+    group: "{{ netbox_user }}"
+    mode: "0640"
+  notify: restart netbox
+
+- name: Template systemd service
+  ansible.builtin.template:
+    src: netbox.service.j2
+    dest: "{{ netbox_systemd_unit }}"
+    mode: "0644"
+  notify: restart netbox
+
+- name: Ensure log directory exists
+  ansible.builtin.file:
+    path: /var/log/netbox
+    state: directory
+    owner: "{{ netbox_user }}"
+    group: "{{ netbox_user }}"
+    mode: "0755"

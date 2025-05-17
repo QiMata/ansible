@@ -1,0 +1,49 @@
+ALLOWED_HOSTS = {{ netbox_allowed_hosts | to_json }}
+DATABASE = {
+    'NAME': '{{ postgres_db }}',
+    'USER': '{{ postgres_user }}',
+    'PASSWORD': '{{ postgres_password }}',
+    'HOST': '{{ postgres_host }}',
+    'PORT': '{{ postgres_port }}',
+}
+REDIS = {
+    'tasks': {
+        'HOST': '{{ redis_host }}',
+        'PORT': {{ redis_port }},
+        'PASSWORD': '',
+        'DATABASE': 0,
+    },
+    'caching': {
+        'HOST': '{{ redis_host }}',
+        'PORT': {{ redis_port }},
+        'PASSWORD': '',
+        'DATABASE': 1,
+    }
+}
+SECRET_KEY = '{{ netbox_secret_key }}'
+MEDIA_ROOT = '{{ netbox_media_root }}'
+STATIC_ROOT = '{{ netbox_static_root }}'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '/var/log/netbox/netbox.log',
+            'maxBytes': 10485760,
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+    },
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(name)s %(message)s'
+        },
+    },
+    'root': {
+        'handlers': ['file'],
+        'level': 'INFO',
+    },
+}
