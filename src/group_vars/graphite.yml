@@ -1,8 +1,8 @@
 ---
 enable_carbon-cache: true
-graphite_web_db_user: "toothkiller"
-graphite_web_db_password: "Darkst12"
+graphite_web_db_user: ""
+graphite_web_db_password: ""
 graphite_web_db_host: "{{ hostvars[inventory_hostname]['service_ip'] }}"
 graphite_web_db_port: "8080"
 graphite_web_timezone: "America/New York"
-graphite_web_salt: "b59c67bf196a4758191e42f76670ceba"
+graphite_web_salt: ""
