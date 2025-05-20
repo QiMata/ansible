@@ -1,0 +1,2 @@
+vault_keycloak_db_password: "change_me"
+vault_keycloak_admin_password: "change_me"

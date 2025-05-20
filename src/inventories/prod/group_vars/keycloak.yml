@@ -1,0 +1,25 @@
+keycloak_version: "24.0.4"
+keycloak_install_dir: /opt
+keycloak_user: keycloak
+keycloak_group: keycloak
+keycloak_db_host: db.prod.example.com
+keycloak_db_port: 5432
+keycloak_db_name: keycloak
+keycloak_db_user: keycloak
+keycloak_db_password: "{{ vault_keycloak_db_password }}"
+keycloak_bind: "0.0.0.0"
+keycloak_http_port: 8080
+keycloak_https_port: 8443
+keycloak_cluster: true
+keycloak_cache_stack: "cluster"
+keycloak_admin_user: admin
+keycloak_admin_password: "{{ vault_keycloak_admin_password }}"
+keycloak_realms:
+  - name: sample-realm
+    displayName: Sample Realm
+    enabled: true
+    clients:
+      - clientId: sample-client
+        publicClient: true
+        redirectUris:
+          - "https://app.example.com/*"

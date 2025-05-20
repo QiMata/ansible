@@ -1,0 +1,8 @@
+- name: Deploy Keycloak (prod – rolling)
+  hosts: keycloak
+  become: true
+  serial: 1
+  roles:
+    - role: postgresql_client
+    - role: keycloak
+    - role: keycloak_realm

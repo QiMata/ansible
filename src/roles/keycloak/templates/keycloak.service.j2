@@ -1,0 +1,16 @@
+[Unit]
+Description=Keycloak Service
+After=network.target
+
+[Service]
+Type=simple
+EnvironmentFile={{ keycloak_install_dir }}/keycloak/.env
+User={{ keycloak_user }}
+Group={{ keycloak_group }}
+ExecStart={{ keycloak_install_dir }}/keycloak/bin/kc.sh start --optimized
+Restart=on-failure
+RestartSec=10s
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

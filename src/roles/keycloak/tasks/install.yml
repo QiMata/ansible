@@ -1,0 +1,50 @@
+---
+- name: Ensure group exists
+  ansible.builtin.group:
+    name: "{{ keycloak_group }}"
+    state: present
+
+- name: Ensure user exists
+  ansible.builtin.user:
+    name: "{{ keycloak_user }}"
+    group: "{{ keycloak_group }}"
+    shell: /bin/false
+    create_home: false
+    state: present
+
+- name: Install dependencies
+  ansible.builtin.apt:
+    name:
+      - openjdk-17-jre-headless
+      - unzip
+    state: present
+    update_cache: true
+
+- name: Download Keycloak archive
+  ansible.builtin.get_url:
+    url: "https://github.com/keycloak/keycloak/releases/download/{{ keycloak_version }}/keycloak-{{ keycloak_version }}.tar.gz"
+    dest: "/tmp/keycloak-{{ keycloak_version }}.tar.gz"
+    checksum: "sha256:{{ keycloak_checksum | default('') }}"
+    mode: '0644'
+
+- name: Extract archive
+  ansible.builtin.unarchive:
+    src: "/tmp/keycloak-{{ keycloak_version }}.tar.gz"
+    dest: "{{ keycloak_install_dir }}"
+    remote_src: yes
+    creates: "{{ keycloak_install_dir }}/keycloak-{{ keycloak_version }}"
+
+- name: Create symlink to current version
+  ansible.builtin.file:
+    src: "{{ keycloak_install_dir }}/keycloak-{{ keycloak_version }}"
+    dest: "{{ keycloak_install_dir }}/keycloak"
+    state: link
+    force: true
+
+- name: Ensure ownership
+  ansible.builtin.file:
+    path: "{{ keycloak_install_dir }}/keycloak-{{ keycloak_version }}"
+    state: directory
+    recurse: yes
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_group }}"
