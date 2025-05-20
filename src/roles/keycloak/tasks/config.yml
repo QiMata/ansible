@@ -1,0 +1,33 @@
+---
+- name: Deploy env file
+  ansible.builtin.template:
+    src: keycloak.env.j2
+    dest: "{{ keycloak_install_dir }}/keycloak/.env"
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_group }}"
+    mode: '0640'
+  notify: restart keycloak
+
+- name: Deploy systemd service
+  ansible.builtin.template:
+    src: keycloak.service.j2
+    dest: /etc/systemd/system/keycloak.service
+    mode: '0644'
+  notify:
+    - daemon reload
+    - restart keycloak
+
+- name: Open firewall (ufw) ports
+  ansible.builtin.ufw:
+    rule: allow
+    port: "{{ item }}"
+  loop:
+    - "{{ keycloak_http_port }}"
+    - "{{ keycloak_https_port }}"
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Start and enable service
+  ansible.builtin.systemd:
+    name: keycloak
+    state: started
+    enabled: yes

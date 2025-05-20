@@ -1,0 +1,30 @@
+---
+- name: "Ensure realms are present"
+  community.general.keycloak_realm:
+    auth_keycloak_url: "http://{{ inventory_hostname }}:{{ keycloak_http_port }}"
+    auth_username: "{{ keycloak_admin_user }}"
+    auth_password: "{{ keycloak_admin_password }}"
+    realm: "{{ item.name }}"
+    state: present
+    enabled: "{{ item.enabled | default(true) }}"
+    display_name: "{{ item.displayName | default(item.name) }}"
+  loop: "{{ keycloak_realms }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: "Ensure clients for each realm"
+  community.general.keycloak_client:
+    auth_keycloak_url: "http://{{ inventory_hostname }}:{{ keycloak_http_port }}"
+    auth_username: "{{ keycloak_admin_user }}"
+    auth_password: "{{ keycloak_admin_password }}"
+    realm: "{{ realm.name }}"
+    client_id: "{{ client.clientId }}"
+    public_client: "{{ client.publicClient | default(true) }}"
+    redirect_uris: "{{ client.redirectUris | default([]) }}"
+    state: present
+  loop: "{{ keycloak_realms | subelements('clients') }}"
+  loop_control:
+    label: "{{ realm.name }} / {{ client.clientId }}"
+  vars:
+    realm: "{{ item.0 }}"
+    client: "{{ item.1 }}"

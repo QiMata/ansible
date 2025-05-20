@@ -1,0 +1,14 @@
+- name: Deploy Keycloak (dev)
+  hosts: keycloak
+  become: true
+  vars:
+    keycloak_cluster: false
+    keycloak_db_host: localhost           # use local postgres or H2
+    keycloak_db_port: 5432
+    keycloak_db_name: keycloak
+    keycloak_db_user: keycloak
+    keycloak_db_password: keycloak
+  roles:
+    - role: postgresql_client
+    - role: keycloak
+    - role: keycloak_realm
