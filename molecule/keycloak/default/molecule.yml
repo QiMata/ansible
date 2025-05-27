@@ -1,0 +1,16 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: keycloak
+    image: geerlingguy/docker-debian12-ansible:latest
+    command: "/lib/systemd/systemd"
+    privileged: true
+provisioner:
+  name: ansible
+  playbooks:
+    converge: ../../../../playbooks/keycloak.yml
+verifier:
+  name: testinfra
