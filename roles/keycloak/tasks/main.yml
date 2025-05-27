@@ -1,0 +1,54 @@
+---
+- name: Ensure required apt packages are present
+  apt:
+    name: "{{ keycloak_packages }}"
+    state: present
+    update_cache: yes
+
+- name: Create keycloak system user
+  user:
+    name: "{{ keycloak_user }}"
+    system: yes
+    home: "{{ keycloak_home }}"
+    shell: /usr/sbin/nologin
+
+- name: Download Keycloak archive
+  get_url:
+    url: "{{ keycloak_download_url }}"
+    dest: "/tmp/keycloak-{{ keycloak_version }}.tar.gz"
+    mode: '0644'
+  args:
+    creates: "/tmp/keycloak-{{ keycloak_version }}.tar.gz"
+
+- name: Unpack Keycloak to install dir
+  unarchive:
+    src: "/tmp/keycloak-{{ keycloak_version }}.tar.gz"
+    dest: "{{ keycloak_install_dir }}"
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    remote_src: yes
+    creates: "{{ keycloak_install_dir }}/bin/kc.sh"
+
+- name: Deploy systemd unit file
+  template:
+    src: keycloak.service.j2
+    dest: /etc/systemd/system/keycloak.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload systemd
+
+- name: Deploy Keycloak configuration
+  template:
+    src: keycloak.conf.j2
+    dest: "{{ keycloak_install_dir }}/conf/keycloak.conf"
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0640'
+  notify: Restart Keycloak
+
+- name: Ensure Keycloak is enabled and started
+  systemd:
+    name: keycloak
+    enabled: yes
+    state: started

@@ -1,0 +1,6 @@
+---
+dependencies:
+  - role: java
+collections:
+  - community.postgresql
+  - community.general
