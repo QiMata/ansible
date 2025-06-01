@@ -2,6 +2,6 @@
 keycloak_db_host: "postgres.example.com"
 keycloak_db_name: "keycloak"
 keycloak_db_user: "keycloak"
-keycloak_db_password: "!vault |
-          $ANSIBLE_VAULT;1.1;AES256;example
-          <encrypted text here>"
+keycloak_db_password: !vault |
+  $ANSIBLE_VAULT;1.1;AES256;example
+  <encrypted text here>
