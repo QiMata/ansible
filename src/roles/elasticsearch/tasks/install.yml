@@ -1,0 +1,37 @@
+---
+- name: Ensure apt-transport-https is installed
+  apt:
+    name: apt-transport-https
+    state: present
+    update_cache: yes
+
+- name: Add Elasticsearch GPG key
+  apt_key:
+    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    state: present
+
+- name: Add Elasticsearch repository
+  template:
+    src: elasticsearch.list.j2
+    dest: /etc/apt/sources.list.d/elasticsearch.list
+    mode: '0644'
+  notify: update apt cache
+
+- name: Install OpenJDK
+  apt:
+    name: openjdk-11-jdk
+    state: present
+  when: es_install_java
+
+- name: Install Elasticsearch
+  apt:
+    name: elasticsearch
+    state: present
+    update_cache: yes
+  notify: restart elasticsearch
+
+- name: Ensure Elasticsearch service enabled and started
+  service:
+    name: elasticsearch
+    state: started
+    enabled: yes
