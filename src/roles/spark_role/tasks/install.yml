@@ -1,61 +1,61 @@
 ---
 - name: Ensure spark group exists
-  group:
+  ansible.builtin.group:
     name: "{{ spark_group }}"
     state: present
-  become: yes
+  become: true
 
 - name: Ensure spark user exists
-  user:
+  ansible.builtin.user:
     name: "{{ spark_user }}"
     group: "{{ spark_group }}"
-    create_home: yes
+    create_home: true
     shell: /bin/bash
     state: present
-  become: yes
+  become: true
 
 - name: Install Java
-  apt:
+  ansible.builtin.apt:
     name: "{{ java_package }}"
     state: present
-    update_cache: yes
-  become: yes
+    update_cache: true
+  become: true
 
 - name: Create installation directory
-  file:
+  ansible.builtin.file:
     path: "{{ spark_install_dir }}"
     state: directory
     owner: "{{ spark_user }}"
     group: "{{ spark_group }}"
     mode: "0755"
-  become: yes
+  become: true
 
 - name: Download Spark archive
-  get_url:
+  ansible.builtin.get_url:
     url: "{{ spark_download_url }}"
     dest: "{{ spark_install_dir }}/{{ spark_package_name }}.tgz"
     mode: "0644"
-    force: no
-  become: yes
+    force: false
+  become: true
 
 - name: Extract Spark archive
-  unarchive:
+  ansible.builtin.unarchive:
     src: "{{ spark_install_dir }}/{{ spark_package_name }}.tgz"
     dest: "{{ spark_install_dir }}"
-    remote_src: yes
+    remote_src: true
     creates: "{{ spark_install_dir }}/{{ spark_package_name }}/bin/spark-submit"
-  become: yes
+  become: true
 
 - name: Update Spark symlink
-  file:
+  ansible.builtin.file:
     src: "{{ spark_install_dir }}/{{ spark_package_name }}"
     dest: "{{ spark_symlink_dir }}"
     state: link
-    force: yes
-  become: yes
+    force: true
+  become: true
 
 - name: Ensure additional directories exist
-  file:
+  ansible.builtin.file:
     path: "{{ item }}"
     state: directory
     owner: "{{ spark_user }}"
@@ -67,4 +67,4 @@
     - "{{ spark_worker_dir }}"
     - "{{ spark_recovery_dir | default(omit) }}"
   when: item is not none
-  become: yes
+  become: true

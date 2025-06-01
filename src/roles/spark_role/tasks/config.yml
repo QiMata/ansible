@@ -1,6 +1,6 @@
 ---
 - name: Deploy spark-env.sh
-  template:
+  ansible.builtin.template:
     src: spark-env.sh.j2
     dest: "{{ spark_symlink_dir }}/conf/spark-env.sh"
     owner: "{{ spark_user }}"
@@ -9,10 +9,10 @@
   notify:
     - Restart Spark Master
     - Restart Spark Worker
-  become: yes
+  become: true
 
 - name: Deploy spark-defaults.conf
-  template:
+  ansible.builtin.template:
     src: spark-defaults.conf.j2
     dest: "{{ spark_symlink_dir }}/conf/spark-defaults.conf"
     owner: "{{ spark_user }}"
@@ -21,14 +21,14 @@
   notify:
     - Restart Spark Master
     - Restart Spark Worker
-  become: yes
+  become: true
 
 - name: Deploy workers file
-  template:
+  ansible.builtin.template:
     src: workers.j2
     dest: "{{ spark_symlink_dir }}/conf/workers"
     owner: "{{ spark_user }}"
     group: "{{ spark_group }}"
     mode: "0644"
   when: groups['spark_worker'] is defined
-  become: yes
+  become: true
