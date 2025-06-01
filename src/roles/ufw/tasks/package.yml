@@ -1,7 +1,7 @@
 ---
 # Install the packages
 - name: "Package: install packages"
-  apt:
+  ansible.builtin.apt:
     name: "{{ ufw_packages }}"
     state: present
   become: true

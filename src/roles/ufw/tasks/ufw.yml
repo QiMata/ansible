@@ -3,7 +3,7 @@
   community.general.ufw:
     logging: 'on'
 
-# We explicit manage SSH rule
+# We explicitly manage SSH rule
 - name: "UFW: Allow SSH"
   community.general.ufw:
     rule: allow
@@ -14,16 +14,16 @@
 - name: "UFW: Manage rules"
   community.general.ufw:
     rule: allow
-    port: "{{item}}"
-  loop: "{{ufw_allow_ports}}"
+    port: "{{ item }}"
+  loop: "{{ ufw_allow_ports }}"
 
 # Allow specific interfaces
 - name: Accept packets from interfaces
   community.general.ufw:
     direction: in
-    interface: "{{item}}"
+    interface: "{{ item }}"
     rule: allow
-  loop: "{{ufw_allow_interfaces}}"
+  loop: "{{ ufw_allow_interfaces }}"
 
 # Deny everything else
 - name: "UFW: Enable"
@@ -32,7 +32,7 @@
     policy: deny
 
 - name: Start ufw service
-  service:
+  ansible.builtin.service:
     name: ufw
     enabled: true
     state: started
