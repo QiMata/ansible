@@ -8,5 +8,5 @@ filebeat.inputs:
       cluster: "{{ 'cluster' if neo4j_cluster_enabled else 'single' }}"
 
 output.logstash:
-  hosts: ["{{ elk_host }}:{{ elk_port }}"]
+  hosts: ["{{ neo4j_elk_host }}:{{ neo4j_elk_port }}"]
 
