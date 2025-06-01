@@ -1,4 +1,15 @@
 ---
+galaxy_info:
+  role_name: base
+  author: Example Inc.
+  description: Base system configuration
+  license: MIT
+  min_ansible_version: "2.13"
+  platforms:
+    - name: Debian
+      versions: [bullseye, bookworm]
+    - name: Ubuntu
+      versions: [focal, jammy]
 dependencies:
   - role: remove_unnecessary_packages
   - role: update_system

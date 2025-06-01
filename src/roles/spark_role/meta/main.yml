@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   role_name: spark_role
-  author: your_name
+  author: Example Inc.
   description: Install and configure Apache Spark standalone cluster with optional HA on Debian
   license: MIT
   min_ansible_version: "2.11"

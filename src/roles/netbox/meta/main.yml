@@ -1,4 +1,15 @@
 ---
+galaxy_info:
+  role_name: netbox
+  author: Example Inc.
+  description: Deploy NetBox network inventory
+  license: MIT
+  min_ansible_version: "2.13"
+  platforms:
+    - name: Debian
+      versions: [bullseye, bookworm]
+    - name: Ubuntu
+      versions: [focal, jammy]
 dependencies:
   - role: geerlingguy.postgresql
   - role: geerlingguy.redis

@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   role_name: apache_superset
-  author: "Your Name"
+  author: Example Inc.
   description: "Deploy Apache Superset on Debian-based systems"
   license: "MIT"
   min_ansible_version: "2.12"

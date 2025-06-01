@@ -34,8 +34,5 @@
   run_once: false
 
 - name: Apply syncrepl config
-  ansible.builtin.shell: |
-    ldapmodify -Y EXTERNAL -H ldapi:/// -f /tmp/syncrepl.ldif
-  args:
-    warn: false
+  ansible.builtin.command: ldapmodify -Y EXTERNAL -H ldapi:/// -f /tmp/syncrepl.ldif
   notify: restart slapd

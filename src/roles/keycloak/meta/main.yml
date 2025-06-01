@@ -1,4 +1,15 @@
 ---
+galaxy_info:
+  role_name: keycloak
+  author: Example Inc.
+  description: Install and configure Keycloak
+  license: MIT
+  min_ansible_version: "2.13"
+  platforms:
+    - name: Debian
+      versions: [bullseye, bookworm]
+    - name: Ubuntu
+      versions: [focal, jammy]
 dependencies:
   - role: java
 collections:

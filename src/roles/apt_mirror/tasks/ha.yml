@@ -1,4 +1,5 @@
 ---
 # placeholder for HA; currently no-op
-- debug:
+- name: HA placeholder
+  debug:
     msg: "HA features not implemented for single-instance deployment."

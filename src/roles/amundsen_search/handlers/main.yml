@@ -1,6 +1,7 @@
 ---
 - name: Reload Systemd
-  command: systemctl daemon-reload
+  ansible.builtin.systemd:
+    daemon_reload: yes
   become: yes
 
 - name: Restart Search Service

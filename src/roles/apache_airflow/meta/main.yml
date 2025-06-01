@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   role_name: apache_airflow
-  author: your_name
+  author: Example Inc.
   description: Install and manage Apache Airflow on Debian/Ubuntu using systemd (supports single-node and multi-node HA setups)
   license: MIT
   min_ansible_version: "2.13"
