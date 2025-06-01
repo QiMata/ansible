@@ -16,7 +16,6 @@ and playbooks are organized so they can be reused for different clients and envi
 - `docs/` – documentation files (for example `keycloak-role.md`)
 - `group_vars/` – group variable files used by the top level playbooks
 - `playbooks/` – simple playbooks demonstrating role usage
-- `molecule/` – Molecule scenarios used for testing roles
 - `src/` – primary Ansible project
   - `ansible.cfg` – configuration for running playbooks in `src`
   - `requirements.yml` – additional role and collection dependencies

@@ -105,7 +105,7 @@ This role includes a **Molecule** test scenario for automated testing. Molecule 
    Go to the Molecule scenario for the keycloak role:
 
    ```bash
-   cd molecule/keycloak/default
+   cd src/roles/keycloak/molecule/default
    ```
 
    (This is the default test scenario for the Keycloak role.)
