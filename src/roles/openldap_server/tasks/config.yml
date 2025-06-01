@@ -1,6 +1,6 @@
 ---
 - name: Set log level
-  community.general.ldap_attr:
+  community.general.ldap_attrs:
     dn: "cn=config"
     attribute: olcLogLevel
     values: "{{ ldap_log_level }}"

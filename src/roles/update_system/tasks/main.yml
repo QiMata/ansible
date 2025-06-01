@@ -2,7 +2,7 @@
 - name: Retry apt update and upgrade
   block:
     - name: Update and upgrade system
-      apt:
+      ansible.builtin.apt:
         upgrade: yes
         update_cache: yes
       register: apt_result
@@ -11,5 +11,5 @@
       delay: 10
   rescue:
     - name: Handle failure
-      debug:
+      ansible.builtin.debug:
         msg: "Failed to update and upgrade system"

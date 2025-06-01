@@ -24,7 +24,7 @@
     mode: "0644"
 
 - name: Configure slapd TLS settings
-  community.general.ldap_attr:
+  community.general.ldap_attrs:
     dn: "cn=config"
     attributes:
       olcTLSCertificateFile: "/etc/ldap/ssl/ldap.crt"

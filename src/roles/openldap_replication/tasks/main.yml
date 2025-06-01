@@ -5,7 +5,7 @@
   when: not ldap_replication
 
 - name: Set olcServerID
-  community.general.ldap_attr:
+  community.general.ldap_attrs:
     dn: "cn=config"
     attribute: olcServerID
     values: "{{ ansible_play_hosts_all.index(inventory_hostname) + 1 }} {{ inventory_hostname }}"
