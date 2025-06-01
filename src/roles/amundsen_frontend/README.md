@@ -55,7 +55,7 @@ This role does **not** define any task-level tags by default. All tasks will run
 * **Amundsen Metadata service** – provides the metadata API (commonly deployed via the `amundsen_metadata` role).
 * **Amundsen Search service** – provides the search API (commonly deployed via the `amundsen_search` role).
 * **Metadata database** – Amundsen’s metadata service typically uses Neo4j as a backend (you may deploy Neo4j via a `neo4j_server` role or have it pre-provisioned).
-* **Search index** – The search service uses Elasticsearch as the search index. You may deploy an Elasticsearch cluster (for example via an `elasticsearch_cluster` role) or use an existing one.
+* **Search index** – The search service uses Elasticsearch as the search index. You may deploy an Elasticsearch cluster (for example via the unified `elasticsearch` role) or use an existing one.
 
 While not formal Ansible role dependencies (this role can run on its own), the above components are required for Amundsen to function. Ensure that the `metadata_api_base` and `search_api_base` URLs are configured to point to the running metadata and search services. This role will not install Neo4j or Elasticsearch; those should be set up separately (the Amundsen metadata/search roles or other means should handle their installation and configuration).
 

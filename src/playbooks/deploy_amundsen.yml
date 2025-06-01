@@ -8,7 +8,7 @@
     - role: common
     - role: neo4j_server
       when: "'neo4j' in group_names"
-    - role: elasticsearch_cluster
+    - role: elasticsearch
       when: "'elasticsearch' in group_names"
     - role: amundsen_metadata
       when: "'amundsen_metadata' in group_names"
