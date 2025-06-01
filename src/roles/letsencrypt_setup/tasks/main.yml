@@ -23,25 +23,25 @@
     src: ./godaddy.ini
     dest: ~/.secrets/certbot/godaddy.ini
     mode: '0600'
-  when: use_godaddy
+  when: letsencrypt_setup_use_godaddy
 
 - name: Generate certificate with DNS validation
   ansible.builtin.command:
     cmd: >-
       certbot certonly --dns-godaddy --dns-godaddy-credentials ~/.secrets/certbot/godaddy.ini
-      -d {{ domain_name }} --non-interactive --agree-tos --email {{ email_address }}
-    creates: "/etc/letsencrypt/live/{{ domain_name }}/privkey.pem"
+      -d {{ letsencrypt_setup_domain_name }} --non-interactive --agree-tos --email {{ letsencrypt_setup_email_address }}
+    creates: "/etc/letsencrypt/live/{{ letsencrypt_setup_domain_name }}/privkey.pem"
   become: true
-  when: use_godaddy
+  when: letsencrypt_setup_use_godaddy
 
 - name: Generate certificate with webroot validation
   ansible.builtin.command:
     cmd: >-
-      certbot certonly --webroot -w {{ webroot_path }} -d {{ domain_name }}
-      --non-interactive --agree-tos --email {{ email_address }}
-    creates: "/etc/letsencrypt/live/{{ domain_name }}/privkey.pem"
+      certbot certonly --webroot -w {{ letsencrypt_setup_webroot_path }} -d {{ letsencrypt_setup_domain_name }}
+      --non-interactive --agree-tos --email {{ letsencrypt_setup_email_address }}
+    creates: "/etc/letsencrypt/live/{{ letsencrypt_setup_domain_name }}/privkey.pem"
   become: true
-  when: not use_godaddy
+  when: not letsencrypt_setup_use_godaddy
 
 - name: Set up automatic renewal
   ansible.builtin.cron:

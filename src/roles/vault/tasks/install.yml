@@ -14,7 +14,10 @@
 
 - name: Add HashiCorp repository
   ansible.builtin.apt_repository:
-    repo: "deb [arch={{ ansible_architecture }} signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
+    repo: >-
+      deb [arch={{ ansible_architecture }}
+      signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg]
+      https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main
     filename: hashicorp
     state: present
 
@@ -27,7 +30,7 @@
 - name: Create Vault user and group
   ansible.builtin.user:
     name: "{{ vault_user }}"
-    system: yes
+    system: true
     shell: /usr/sbin/nologin
   register: _vault_user_created
 

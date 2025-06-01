@@ -1,4 +1,7 @@
 ---
-- import_tasks: install.yml
-- import_tasks: config.yml
-- import_tasks: service.yml
+- name: Include install tasks
+  ansible.builtin.import_tasks: install.yml
+- name: Include config tasks
+  ansible.builtin.import_tasks: config.yml
+- name: Include service tasks
+  ansible.builtin.import_tasks: service.yml
