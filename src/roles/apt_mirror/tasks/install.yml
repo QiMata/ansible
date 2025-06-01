@@ -1,6 +1,6 @@
 ---
 - name: Install apt-mirror and dependencies
-  apt:
+  ansible.builtin.apt:
     name:
       - apt-mirror
       - apache2
@@ -9,7 +9,7 @@
     update_cache: true
 
 - name: Ensure base path exists
-  file:
+  ansible.builtin.file:
     path: "{{ apt_mirror_base_path }}"
     state: directory
     owner: apt-mirror
