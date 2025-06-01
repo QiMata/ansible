@@ -1,13 +1,14 @@
 - name: Ensure step user exists
-  user:
+  ansible.builtin.user:
     name: "{{ step_ca_user }}"
     group: "{{ step_ca_group }}"
     shell: /usr/sbin/nologin
-    create_home: yes
+    create_home: true
 
 - name: Initialize step-ca
+  become: true
   become_user: "{{ step_ca_user }}"
-  command: >
+  ansible.builtin.command: >
     step ca init
     --non-interactive
     --name "Internal CA"
@@ -17,5 +18,5 @@
     --password-file "{{ step_ca_home }}/ca-pass.txt"
   args:
     creates: "{{ step_ca_config_path }}/ca.json"
-  when: step_ca_use_vault_ra | bool == false
+  when: not step_ca_use_vault_ra | bool
   notify: Restart step-ca

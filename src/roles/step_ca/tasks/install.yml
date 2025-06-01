@@ -1,17 +1,17 @@
 - name: Add Smallstep APT key
-  apt_key:
+  ansible.builtin.apt_key:
     url: https://dl.smallstep.com/apt/keys/steps-public-key.asc
     state: present
 
 - name: Add Smallstep repository
-  apt_repository:
+  ansible.builtin.apt_repository:
     repo: "deb [arch=amd64] https://dl.smallstep.com/apt {{ ansible_distribution_release }} main"
     state: present
 
 - name: Install step and step-ca packages
-  apt:
+  ansible.builtin.apt:
     name:
-      - "step={{ step_cli_version if step_cli_version != 'latest' else '' }}"
+      - "step={{ step_ca_cli_version if step_ca_cli_version != 'latest' else '' }}"
       - "step-ca={{ step_ca_version if step_ca_version != 'latest' else '' }}"
     state: present
-    update_cache: yes
+    update_cache: true

@@ -1,5 +1,5 @@
 - name: Enable and start step-ca
-  service:
+  ansible.builtin.service:
     name: step-ca
-    enabled: yes
+    enabled: true
     state: started

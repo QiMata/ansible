@@ -1,5 +1,5 @@
 step_ca_version: "latest"
-step_cli_version: "latest"
+step_ca_cli_version: "latest"
 step_ca_user: "step"
 step_ca_group: "step"
 step_ca_home: "/home/step"
