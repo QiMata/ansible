@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   role_name: bind9
-  author: your_name
+  author: Example Inc.
   description: Manage BIND9 DNS servers
   license: MIT
   min_ansible_version: "2.13"

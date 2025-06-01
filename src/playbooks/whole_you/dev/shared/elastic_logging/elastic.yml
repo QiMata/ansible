@@ -28,24 +28,22 @@
       become: true
       when: config_file_existence.stat.exists
 
-    - name: Ensure elasticsearch user owns the data directory
+    - name: Ensure elasticsearch user owns data directories
       file:
-        path: "{{ elasticsearch_data_path }}"
+        path: "{{ item }}"
         owner: elasticsearch
         group: elasticsearch
         recurse: true
-      with_fileglob:
-        - "{{ elasticsearch_data_path }}/*"
+      loop: "{{ query('fileglob', elasticsearch_data_path + '/*') }}"
       become: true
       when: config_file_existence.stat.exists
 
     - name: Ensure data directory permissions are correct
       file:
-        path: "{{ elasticsearch_data_path }}"
+        path: "{{ item }}"
         mode: '0755'
         recurse: true
-      with_fileglob:
-        - "{{ elasticsearch_data_path }}/*"
+      loop: "{{ query('fileglob', elasticsearch_data_path + '/*') }}"
       become: true
       when: config_file_existence.stat.exists
 

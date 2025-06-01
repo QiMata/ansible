@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   role_name: apt_mirror
-  author: your_name
+  author: Example Inc.
   description: "Modular apt-mirror with Apache, cron, optional ELK/HA/DR."
   license: MIT
   min_ansible_version: "2.13"

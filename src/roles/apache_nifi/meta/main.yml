@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   role_name: apache_nifi
-  author: your_name
+  author: Example Inc.
   description: Install & configure Apache NiFi with LDAP, HA, ELK, Prometheus
   license: MIT
   min_ansible_version: "2.11"

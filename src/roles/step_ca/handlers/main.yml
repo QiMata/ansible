@@ -1,5 +1,6 @@
 - name: Reload systemd
-  command: systemctl daemon-reload
+  ansible.builtin.systemd:
+    daemon_reload: yes
 
 - name: Restart step-ca
   service:

@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   role_name: postgresql
-  author: your_name
+  author: Example Inc.
   description: PostgreSQL installation and configuration on Debian/Ubuntu with optional HA
   license: MIT
   min_ansible_version: '2.15'
