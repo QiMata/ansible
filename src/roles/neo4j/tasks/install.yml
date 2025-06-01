@@ -33,4 +33,3 @@
     name: "{{ neo4j_package_name }}{{ '=' + neo4j_version if neo4j_version else '' }}"
     state: present
     update_cache: true
-

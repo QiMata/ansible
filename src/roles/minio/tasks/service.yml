@@ -13,5 +13,5 @@
 - name: Ensure minio service enabled and started
   ansible.builtin.service:
     name: minio
-    enabled: yes
+    enabled: true
     state: started

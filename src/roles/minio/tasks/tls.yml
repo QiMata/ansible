@@ -40,7 +40,7 @@
         mode: "0600"
 
     - name: Generate self-signed cert
-      community.crypto.openssl_certificate:
+      community.crypto.x509_certificate:
         path: "{{ minio_certs_dir }}/public.crt"
         privatekey_path: "{{ minio_certs_dir }}/private.key"
         csr_path: "{{ minio_certs_dir }}/request.csr"

@@ -15,4 +15,3 @@
     mode: "0644"
   notify: Restart Filebeat
   when: neo4j_elk_integration
-

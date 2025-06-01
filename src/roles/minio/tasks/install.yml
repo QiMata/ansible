@@ -10,8 +10,8 @@
     group: "{{ minio_group }}"
     home: "{{ minio_base_dir }}"
     shell: /usr/sbin/nologin
-    system: yes
-    create_home: no
+    system: true
+    create_home: false
     state: present
 
 - name: Create base and data directories
