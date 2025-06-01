@@ -1,7 +1,7 @@
 # allow LDAP and LDAPS by default
 ufw_packages:
   - ufw
-  
+
 ufw_allow_ldap: true
 ufw_allow_ldaps: true
 
@@ -37,7 +37,7 @@ openldap_server_generate_cert: false
 #   organization: m-cloud.cz
 
 # ACLs - Do not touch unless you know what you're doing
-openldap_olcAccess:
+openldap_olcaccess:
   - >-
     to attrs=userPassword,shadowLastChange
     by self write

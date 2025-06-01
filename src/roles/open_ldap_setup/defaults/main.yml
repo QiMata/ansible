@@ -24,7 +24,7 @@ openldap_server_ssl:
   organization: m-cloud.cz
 
 # ACLs - Do not touch unless you know what you're doing
-openldap_olcAccess:
+openldap_olcaccess:
   - >-
     to attrs=userPassword,shadowLastChange
     by self write

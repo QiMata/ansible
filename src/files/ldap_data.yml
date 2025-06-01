@@ -19,4 +19,4 @@ users:
 groups:
   - cn: eng
     description: Engineering Department
-    members: [ jdoe ]
+    members: [jdoe]

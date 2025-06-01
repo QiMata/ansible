@@ -55,7 +55,7 @@
   community.general.ldap_attrs:
     dn: olcDatabase={1}mdb,cn=config
     attributes:
-      olcAccess: "{{ openldap_olcAccess }}"
+      olcAccess: "{{ openldap_olcaccess }}"
     ordered: true
     state: exact
 

@@ -4,7 +4,7 @@ mariadb_bind_address: "{{ hostvars[inventory_hostname]['service_ip'] }}"
 galera_cluster_bind_address: "{{ hostvars[inventory_hostname]['service_ip'] }}"
 galera_mysql_first_node: "{{ galera_cluster_nodes[0] }}"
 
-#galera_cluster_nodes: "{{ groups['ansible_semaphore_MARIADB_DATABASE'] }}"
+# galera_cluster_nodes: "{{ groups['ansible_semaphore_MARIADB_DATABASE'] }}"
 mariadb_mysql_settings:
   datadir: "/data/mariadb"
   key_buffer_size: "{{ (ansible_memtotal_mb | int * mariadb_mysql_mem_multiplier) | round | int }}M"
@@ -33,8 +33,6 @@ mariadb_datadir: "/data/mariadb"
 #   - name: mydb
 #     init_script: files/init_mydb.sql
 mariadb_configure_swappiness: false
-
-
 
 mariadb_replication:
   enabled: false

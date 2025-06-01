@@ -22,9 +22,9 @@ fail2ban_destemail: admin+fail2ban@qimata.net
 fail2ban_sender: admin@{{ ansible_fqdn }}
 
 # install unattended-upgrades
-auto_update_download_updates: yes
-auto_update_apply_updates: no
-auto_update_random_sleep: 360 
+auto_update_download_updates: true
+auto_update_apply_updates: false
+auto_update_random_sleep: 360
 deployment_profile: "simple"
 ldap_data_file: "{{ playbook_dir }}/files/ldap_data.yml"
 ldap_replication: false
