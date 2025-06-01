@@ -17,5 +17,5 @@
 #       - name: Lint
 #         run: ansible-lint .
 #       - name: Molecule
-#         working-directory: roles/keycloak
+#         working-directory: src/roles/keycloak
 #         run: molecule test
