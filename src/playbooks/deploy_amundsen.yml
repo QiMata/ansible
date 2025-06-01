@@ -6,7 +6,7 @@
     - group_vars/all.yml
   roles:
     - role: common
-    - role: neo4j_server
+    - role: neo4j
       when: "'neo4j' in group_names"
     - role: elasticsearch
       when: "'elasticsearch' in group_names"
