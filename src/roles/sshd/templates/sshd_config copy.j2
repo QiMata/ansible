@@ -1,7 +1,7 @@
 # {{ ansible_managed }}
 Port 22
 AddressFamily inet
-ListenAddress {{ ssh_listen_address }}
+ListenAddress {{ sshd_listen_address }}
 Protocol 2
 Compression yes
 Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes256-ctr

@@ -37,14 +37,13 @@ neo4j_metrics_enabled: "{{ neo4j_edition == 'enterprise' }}"
 neo4j_metrics_listen: ":2004"
 
 neo4j_elk_integration: false
-elk_host: ""
-elk_port: 5044
-elk_cloud_id: ""
-elk_username: ""
-elk_password: ""
+neo4j_elk_host: ""
+neo4j_elk_port: 5044
+neo4j_elk_cloud_id: ""
+neo4j_elk_username: ""
+neo4j_elk_password: ""
 
 neo4j_logrotate_enable: true
 neo4j_logrotate_rotation: 7
 neo4j_logrotate_frequency: weekly
 neo4j_log_level: INFO
-

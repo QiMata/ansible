@@ -3,8 +3,8 @@
   block:
     - name: Update and upgrade system
       ansible.builtin.apt:
-        upgrade: yes
-        update_cache: yes
+        upgrade: true
+        update_cache: true
       register: apt_result
       until: apt_result is success
       retries: 10
