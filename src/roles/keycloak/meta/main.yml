@@ -10,8 +10,7 @@ galaxy_info:
       versions: [bullseye, bookworm]
     - name: Ubuntu
       versions: [focal, jammy]
-dependencies:
-  - role: java
+dependencies: []
 collections:
   - community.postgresql
   - community.general
