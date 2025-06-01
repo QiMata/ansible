@@ -9,4 +9,3 @@
     name: filebeat
     state: restarted
   when: neo4j_elk_integration
-

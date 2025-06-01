@@ -5,8 +5,8 @@ neo4j_version: ""
 neo4j_accept_license: true
 
 neo4j_cluster_enabled: false
-neo4j_core_count: "{{ groups['neo4j_core']|length if groups['neo4j_core'] is defined else 1 }}"
-neo4j_read_replica_count: "{{ groups['neo4j_replica']|length if groups['neo4j_replica'] is defined else 0 }}"
+neo4j_core_count: "{{ groups['neo4j_core'] | length if groups['neo4j_core'] is defined else 1 }}"
+neo4j_read_replica_count: "{{ groups['neo4j_replica'] | length if groups['neo4j_replica'] is defined else 0 }}"
 
 neo4j_listen_address: "0.0.0.0"
 neo4j_advertised_address: "{{ ansible_default_ipv4.address }}"

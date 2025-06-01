@@ -1,42 +1,45 @@
 ---
 # https://galeracluster.com/library/documentation/glb.html
 - name: Clone GLB repository
-  git:
+  ansible.builtin.git:
     repo: 'https://github.com/codership/glb'
     dest: '/opt/glb'
 
 - name: Bootstrap GLB
-  command: './bootstrap.sh'
+  ansible.builtin.command: './bootstrap.sh'
   args:
     chdir: '/opt/glb'
+  changed_when: false
 
 - name: Configure GLB
-  command: './configure'
+  ansible.builtin.command: './configure'
   args:
     chdir: '/opt/glb'
+  changed_when: false
 
 - name: Build GLB
-  make:
+  community.general.make:
     chdir: '/opt/glb'
 
 - name: Install GLB
-  command: 'make install'
+  ansible.builtin.command: 'make install'
   args:
     chdir: '/opt/glb'
+  changed_when: false
 
 - name: Copy service script
-  copy:
+  ansible.builtin.copy:
     src: '/opt/glb/files/glbd.sh'
     dest: '/etc/init.d/glb'
     mode: '0755'
 
 - name: Copy configuration file
-  template:
+  ansible.builtin.template:
     src: 'glbd.cfg.j2'
     dest: '/etc/sysconfig/glbd.cfg'
 
 - name: Start GLB service
-  service:
+  ansible.builtin.service:
     name: glb
     state: started
-    enabled: yes
+    enabled: true
