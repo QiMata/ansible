@@ -1,18 +1,18 @@
 ---
 - name: Install filebeat (placeholder – implement as needed)
-  apt:
+  ansible.builtin.apt:
     name: filebeat
     state: present
 
 - name: Configure filebeat for apt-mirror logs (placeholder)
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/filebeat/filebeat.yml
     regexp: '^ *- /var/spool/apt-mirror/var/cron.log'
     line: "  - /var/spool/apt-mirror/var/cron.log"
   notify: restart filebeat
 
 - name: Ensure filebeat service
-  service:
+  ansible.builtin.service:
     name: filebeat
     state: started
     enabled: true

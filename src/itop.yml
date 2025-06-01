@@ -28,7 +28,7 @@
 
 
 - hosts: itop:WEB_LOAD_BALANCER
-  sudo: yes
+  become: yes
   roles:
     - { role: geerlingguy.haproxy }
 

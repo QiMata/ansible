@@ -33,9 +33,9 @@
 
 - name: Install/upgrade NiFi via package
   become: true
-  apt:
+  ansible.builtin.apt:
     name: nifi
-    state: latest
+    state: present
     update_cache: yes
   when: nifi_install_method == "package"
   tags: [nifi, install]

@@ -19,7 +19,7 @@
     name:
       - pip
       - setuptools
-    state: latest
+    state: present
   become_user: "{{ superset_user }}"
 
 - name: Install Superset

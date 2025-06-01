@@ -25,13 +25,15 @@
     cmd: "gluster peer probe {{ item }}"
   loop: "{{ glusterfs_nodes }}"
   when: inventory_hostname != item
-  ignore_errors: true
+  failed_when: false
+  changed_when: false
 
 - name: Set up GlusterFS volume
   ansible.builtin.command:
     cmd: "gluster volume create {{ glusterfs_volume_name }} replica {{ glusterfs_nodes | length }} {{ glusterfs_nodes | join(':') }}:{{ glusterfs_brick_dir }} force"
   when: inventory_hostname == glusterfs_nodes[0]
-  ignore_errors: true
+  failed_when: false
+  changed_when: false
 
 - name: Start GlusterFS volume
   ansible.builtin.command:

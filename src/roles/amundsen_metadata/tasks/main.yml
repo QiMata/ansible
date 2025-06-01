@@ -1,36 +1,36 @@
 ---
 - name: Ensure amundsen user exists
-  user:
+  ansible.builtin.user:
     name: amundsen
     shell: /usr/sbin/nologin
   become: yes
 
 - name: Create metadata directories
-  file:
+  ansible.builtin.file:
     path: "{{ item }}"
     state: directory
     owner: amundsen
     group: amundsen
     mode: "0755"
-  with_items:
+  loop:
     - "{{ metadata_virtualenv | dirname }}"
   become: yes
 
 - name: Create virtualenv for metadata service
-  command: python3 -m venv "{{ metadata_virtualenv }}"
+  ansible.builtin.command: python3 -m venv "{{ metadata_virtualenv }}"
   args:
     creates: "{{ metadata_virtualenv }}/bin/activate"
   become: yes
 
 - name: Install metadata service
-  pip:
+  ansible.builtin.pip:
     virtualenv: "{{ metadata_virtualenv }}"
     name: "amundsen-metadata=={{ amundsen_metadata_version }}"
     state: present
   become: yes
 
 - name: Deploy metadata config
-  template:
+  ansible.builtin.template:
     src: metadata_config.py.j2
     dest: "{{ metadata_virtualenv }}/config.py"
     owner: amundsen
@@ -40,7 +40,7 @@
   notify: Restart Metadata Service
 
 - name: Deploy systemd unit
-  template:
+  ansible.builtin.template:
     src: metadata_gunicorn.service.j2
     dest: /etc/systemd/system/amundsen-metadata.service
     mode: "0644"
@@ -48,7 +48,7 @@
   notify: Reload Systemd
 
 - name: Enable and start service
-  systemd:
+  ansible.builtin.systemd:
     name: amundsen-metadata
     enabled: yes
     state: started

@@ -50,18 +50,19 @@
       when: config_file_existence.stat.exists
 
     - name: Read Elasticsearch configuration file
-      shell: cat /etc/elasticsearch/elasticsearch.yml
+      ansible.builtin.slurp:
+        src: /etc/elasticsearch/elasticsearch.yml
       register: config_content
       when: config_file_existence.stat.exists
 
     - name: Modify Elasticsearch configuration
-      lineinfile:
-        dest: /etc/elasticsearch/elasticsearch.yml
+      ansible.builtin.lineinfile:
+        path: /etc/elasticsearch/elasticsearch.yml
         regexp: '^path.data:'
         line: 'path.data: {{ elasticsearch_data_path }}'
       when:
         - config_file_existence.stat.exists
-        - "'path.data: {{ elasticsearch_data_path }}' not in config_content.stdout_lines"
+        - "'path.data: {{ elasticsearch_data_path }}' not in (config_content.content | b64decode).splitlines()"
 
     - name: Restart Elasticsearch
       systemd:
