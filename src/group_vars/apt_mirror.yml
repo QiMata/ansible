@@ -26,22 +26,22 @@ apt_mirror_enable: true
 apt_mirror_enable_limit_rate: true
 
 apt_mirror_repos:
-   - "deb-amd64 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }} main restricted universe multiverse"
-   - "deb-amd64 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }}-backports main restricted universe multiverse"
-   - "deb-amd64 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }}-security main restricted universe multiverse"
-   - "deb-amd64 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }}-updates main restricted universe multiverse"
-   - "deb-amd64 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }}-proposed main restricted universe multiverse"
-   - "deb-i386 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }} main restricted universe multiverse"
-   - "deb-i386 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }}-backports main restricted universe multiverse"
-   - "deb-i386 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }}-security main restricted universe multiverse"
-   - "deb-i386 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }}-updates main restricted universe multiverse"
-   - "deb-i386 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }}-proposed main restricted universe multiverse"
-   - "deb-src http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }} main restricted universe multiverse"
-   - "deb-src http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }}-backports main restricted universe multiverse"
-   - "deb-src http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }}-security main restricted universe multiverse"
-   - "deb-src http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }}-updates main restricted universe multiverse"
-   - "deb-src http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }}-proposed main restricted universe multiverse"
-   - "deb http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release|lower }} main/debian-installer multiverse/debian-installer restricted/debian-installer universe/debian-installer"
+  - "deb-amd64 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release| lower }} main restricted universe multiverse"
+  - "deb-amd64 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release| lower }}-backports main restricted universe multiverse"
+  - "deb-amd64 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release| lower }}-security main restricted universe multiverse"
+  - "deb-amd64 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release| lower }}-updates main restricted universe multiverse"
+  - "deb-amd64 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release| lower }}-proposed main restricted universe multiverse"
+  - "deb-i386 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release| lower }} main restricted universe multiverse"
+  - "deb-i386 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release| lower }}-backports main restricted universe multiverse"
+  - "deb-i386 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release| lower }}-security main restricted universe multiverse"
+  - "deb-i386 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release| lower }}-updates main restricted universe multiverse"
+  - "deb-i386 http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release| lower }}-proposed main restricted universe multiverse"
+  - "deb-src http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release| lower }} main restricted universe multiverse"
+  - "deb-src http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release| lower }}-backports main restricted universe multiverse"
+  - "deb-src http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release| lower }}-security main restricted universe multiverse"
+  - "deb-src http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release| lower }}-updates main restricted universe multiverse"
+  - "deb-src http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release| lower }}-proposed main restricted universe multiverse"
+  - "deb http://{{ apt_mirror_ubuntu_mirror }} {{ ansible_distribution_release| lower }} main/debian-installer multiverse/debian-installer restricted/debian-installer universe/debian-installer"
 
 
 keepalived_config: true
@@ -62,44 +62,44 @@ keepalived_router_info:
 
 
 nginx_load_balancer_configs:
-- name: apt-mirror
-  frontend_listen_port: 80
-  locations:
-    - location: /
-      options:
-        - proxy_buffering off
-        - proxy_http_version 1.1
-        - "proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for"
-        - "proxy_set_header Upgrade $http_upgrade"
-        - "proxy_set_header Connection $http_connection"
-        - access_log off
-        - proxy_pass http://127.0.0.1:8080
-  method: round_robin
-  protocol: http
-  server_name:
-    - apt-mirror
-  ssl: false
-  upstream:
-    - servers: "{{ groups['web_servers'] }}"
-      backend_listen_port: 80
-      options:
-        - "fail_timeout=10s"
-        - "max_conns=0"
-        - "max_fails=1"
-        - "weight=1"
-    - server: 10.80.14.193
-      backend_listen_port: 80
-      options:
-        - "fail_timeout=10s"
-        - "max_conns=0"
-        - "weight=1"
-    - server: 10.80.14.194
-      backend_listen_port: 80
-      options:
-        - backup
-        - "fail_timeout=10s"
-        - "max_conns=0"
-        - "weight=1"
+  - name: apt-mirror
+    frontend_listen_port: 80
+    locations:
+      - location: /
+        options:
+          - proxy_buffering off
+          - proxy_http_version 1.1
+          - "proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for"
+          - "proxy_set_header Upgrade $http_upgrade"
+          - "proxy_set_header Connection $http_connection"
+          - access_log off
+          - proxy_pass http://127.0.0.1:8080
+    method: round_robin
+    protocol: http
+    server_name:
+      - apt-mirror
+    ssl: false
+    upstream:
+      - servers: "{{ groups['web_servers'] }}"
+        backend_listen_port: 80
+        options:
+          - "fail_timeout=10s"
+          - "max_conns=0"
+          - "max_fails=1"
+          - "weight=1"
+      - server: 10.80.14.193
+        backend_listen_port: 80
+        options:
+          - "fail_timeout=10s"
+          - "max_conns=0"
+          - "weight=1"
+      - server: 10.80.14.194
+        backend_listen_port: 80
+        options:
+          - backup
+          - "fail_timeout=10s"
+          - "max_conns=0"
+          - "weight=1"
 
 
 # Defines a file that will store the process ID of the main process

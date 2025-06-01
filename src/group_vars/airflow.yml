@@ -1,4 +1,3 @@
- 
 ---
 airflow_webserver_host: "{{ hostvars[inventory_hostname]['service_ip'] }}"
 airflow_webserver_secret_key: ""
@@ -13,13 +12,13 @@ airflow_default_required_libs:
   - python3-dev
   - python3-pip
   - python3-setuptools
-  #- python-pip
+# - python-pip
   # - acl
 # Airflow 2.0 system level requirements https://airflow.apache.org/docs/apache-airflow/stable/installation.html#system-dependencies
   - freetds-bin
   - krb5-user
   - ldap-utils
-  #- libffi6
+# - libffi6
   - libsasl2-2
   - libsasl2-modules
   - libssl1.1
@@ -131,5 +130,3 @@ airflow_regular_users:
 airflow_load_examples: true
 
 # Example keys
-
-
