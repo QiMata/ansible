@@ -6,7 +6,7 @@
       - curl
       - cron
     state: present
-    update_cache: yes
+    update_cache: true
   become: true
 
 - name: Clone acme.sh repository

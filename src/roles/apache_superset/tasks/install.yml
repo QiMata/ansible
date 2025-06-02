@@ -17,4 +17,4 @@
     name: "{{ superset_system_packages }}"
     state: present
     update_cache: true
-  become: yes
+  become: true

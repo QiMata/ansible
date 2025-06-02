@@ -1,6 +1,6 @@
 ---
 - hosts: ansible-semaphore
-  become: yes
+  become: true
   vars_files:
     - group_vars/all.yml
     - group_vars/galera_wordpress.yml
@@ -9,7 +9,7 @@
 
 
 - hosts: MARIADB_DATABASE
-  become: yes
+  become: true
   vars_files:
     - group_vars/all.yml
     - group_vars/galera_wordpress.yml
@@ -19,7 +19,7 @@
 
 
 - hosts: galera_loadbalancer
-  become: yes
+  become: true
   vars_files:
     - group_vars/all.yml
     - group_vars/galera_wordpress.yml

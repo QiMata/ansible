@@ -10,7 +10,7 @@
   ansible.builtin.apt:
     name: filebeat
     state: present
-    update_cache: yes
+    update_cache: true
 
 - name: Deploy Filebeat config
   ansible.builtin.template:
@@ -22,7 +22,7 @@
   ansible.builtin.service:
     name: "{{ item }}"
     state: started
-    enabled: yes
+    enabled: true
   loop:
     - rsyslog
     - filebeat

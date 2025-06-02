@@ -4,7 +4,7 @@
   ansible.builtin.apt:
     name: software-properties-common
     state: present
-    update_cache: yes
+    update_cache: true
 
 - name: Add certbot repository
   ansible.builtin.apt_repository:

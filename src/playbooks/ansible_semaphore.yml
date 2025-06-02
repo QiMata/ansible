@@ -54,7 +54,7 @@
 # # https://github.com/Thulium-Drake/ansible-role-ansible_semaphore/blob/master/defaults/main.yml
 # - name: Ansible Semaphor Installation
   # hosts: ansible-semaphore:ANSIBLE_SEMAPHORE_WEB
-#   become: yes
+# become: true
 #   vars_files:
 #     - group_vars/all.yml
 #     - group_vars/galera_wordpress.yml

@@ -4,7 +4,7 @@
   ansible.builtin.apt:
     name: glusterfs-server
     state: present
-    update_cache: yes
+    update_cache: true
 
 - name: Create GlusterFS brick directory
   ansible.builtin.file:
@@ -18,7 +18,7 @@
   ansible.builtin.systemd:
     name: glusterfs-server
     state: started
-    enabled: yes
+    enabled: true
 
 - name: Set up GlusterFS peers
   ansible.builtin.command:
