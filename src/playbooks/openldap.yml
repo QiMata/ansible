@@ -1,6 +1,7 @@
 ---
-- hosts: openldap
-  become: yes
+- name: Configure OpenLDAP server
+  hosts: openldap
+  become: true
   vars_files:
     - group_vars/all.yml
     - group_vars/openldap.yml

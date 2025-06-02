@@ -1,5 +1,6 @@
 ---
-- hosts: ldap_clients
-  become: yes
+- name: Configure LDAP clients
+  hosts: ldap_clients
+  become: true
   roles:
     - openldap_client

@@ -1,6 +1,7 @@
 ---
-- hosts: ldap_servers
-  become: yes
+- name: Configure LDAP servers
+  hosts: ldap_servers
+  become: true
   roles:
     - openldap_server
     - openldap_content

@@ -1,6 +1,6 @@
 ---
 # ha frontend
-#haproxy_frontend_bind_address: "{{ hostvars[inventory_hostname]['service_ip'] }}"
+# haproxy_frontend_bind_address: "{{ hostvars[inventory_hostname]['service_ip'] }}"
 
 # ha backend
 haproxy_backend_servers: []
