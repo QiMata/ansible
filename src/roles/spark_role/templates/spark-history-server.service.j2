@@ -5,11 +5,11 @@ Wants=network-online.target
 
 [Service]
 Type=forking
-User={{ spark_user }}
-Group={{ spark_group }}
-WorkingDirectory={{ spark_symlink_dir }}/sbin
-ExecStart={{ spark_symlink_dir }}/sbin/start-history-server.sh
-ExecStop={{ spark_symlink_dir }}/sbin/stop-history-server.sh
+User={{ spark_role_user }}
+Group={{ spark_role_group }}
+WorkingDirectory={{ spark_role_symlink_dir }}/sbin
+ExecStart={{ spark_role_symlink_dir }}/sbin/start-history-server.sh
+ExecStop={{ spark_role_symlink_dir }}/sbin/stop-history-server.sh
 SuccessExitStatus=143
 Restart=on-failure
 
