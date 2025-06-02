@@ -34,8 +34,8 @@ Other Debian/Ubuntu-derived releases are likely compatible as long as they use t
 
 The **`remove_unnecessary_packages_list`** variable defines which packages will be removed. This is a list that can be customized as needed. By default it includes “games”, “ftp”, and “telnet.” You can override this list to add or remove package names based on your environment’s needs (for example, to purge GUI utilities on a server or other unwanted packages).
 
-| Variable                               | Default Value                | Description                                                                                                                                    |
-| -------------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Variable                               | Default Value                | Description                                                                                                                                                           |
+| -------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **`remove_unnecessary_packages_list`** | `["games", "ftp", "telnet"]` | List of packages to remove during initial cleanup. By default, it removes legacy or insecure utilities (games, ftp, telnet) that are generally not needed on servers. |
 
 *(See the role’s `defaults/main.yml` for the source of these defaults. You can override this variable in your playbook or inventory to change which packages get purged.)*
@@ -82,10 +82,10 @@ This role comes with a **Molecule** test scenario to verify its functionality in
    molecule test -s remove_unnecessary_packages
    ```
 
-   This will launch the Molecule test sequence for the **remove_unnecessary_packages** scenario. Under the hood, Molecule will:
+   This will launch the Molecule test sequence for the **remove\_unnecessary\_packages** scenario. Under the hood, Molecule will:
 
    * **Spin up a container:** It will create a fresh Docker container (using a Debian-based image, e.g. Debian 12) as the test instance.
-   * **Apply the role (converge):** Molecule runs a test playbook that includes the **remove_unnecessary_packages** role, applying all of its tasks inside the container.
+   * **Apply the role (converge):** Molecule runs a test playbook that includes the **remove\_unnecessary\_packages** role, applying all of its tasks inside the container.
    * **Verify results:** After convergence, Molecule (via Testinfra) will check that the expected changes occurred. For example, it will ensure that the packages listed in `remove_unnecessary_packages_list` (e.g. **telnet** and **ftp**) have indeed been removed from the container. The verification may involve checking that those packages are no longer installed (e.g., using `dpkg` queries or ensuring the binaries are absent).
    * **Destroy the container:** Finally, Molecule will clean up by destroying the test container, returning the environment to its initial state.
 
@@ -115,4 +115,3 @@ This repository contains other roles that are related to system baseline managem
 * **[Common](../common/README.md)** – This role installs fundamental packages and updates the package index on Debian/Ubuntu systems, preparing a host for further configuration. Unlike the Base role, **Common** is a lightweight bootstrap: it updates APT caches and installs basic tools (like Python 3, `apt-transport-https`, CA certificates, etc.) but **does not remove** any packages or perform upgrades. If you choose not to use the full Base role, you might use Common to do initial setup and then run *remove_unnecessary_packages* separately to strip out unwanted packages (since Common by itself leaves them untouched). In summary, Common ensures the system has the prerequisites and package index updated, while Remove Unnecessary Packages can be run alongside it to clean the system of default bloat. (You may then follow with Update System to apply upgrades, if needed.)
 
 Each of the above roles has its own documentation in this repository. Refer to those READMEs for more details on usage and how they interact with the baseline configuration. By combining the **Remove Unnecessary Packages** role with these related roles (or using the Base role which encompasses them), you can achieve a robust and secure initialization of your servers, setting the stage for application-specific roles to be applied on a clean, up-to-date system.
-
