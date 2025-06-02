@@ -1,28 +1,29 @@
 ---
 - name: Download and unzip iTop
-  unarchive:
+  ansible.builtin.unarchive:
     src: "https://sourceforge.net/projects/itop/files/itop/{{ itop_version }}/iTop-{{ itop_version }}-2633.zip"
     dest: "/tmp"
-    remote_src: yes
+    remote_src: true
 
 - name: Move iTop to Apache DocumentRoot
-  command: mv /tmp/web/{{ itop_version }}/{{ itop_root_dir }}
+  ansible.builtin.command: mv /tmp/web/{{ itop_version }}/{{ itop_root_dir }}
+  changed_when: false
 
 - name: Change ownership of iTop directory
-  file:
+  ansible.builtin.file:
     path: "{{ itop_root_dir }}"
     owner: www-data
     group: www-data
-    recurse: yes
+    recurse: true
 
 - name: Create iTop Database
-  mysql_db:
-    name: "{{ db_name }}"
+  community.mysql.mysql_db:
+    name: "{{ itop_db_name }}"
     state: present
 
 - name: Create iTop DB User
-  mysql_user:
-    name: "{{ db_user }}"
-    password: "{{ db_password }}"
-    priv: "{{ db_name }}.*:ALL"
+  community.mysql.mysql_user:
+    name: "{{ itop_db_user }}"
+    password: "{{ itop_db_password }}"
+    priv: "{{ itop_db_name }}.*:ALL"
     state: present

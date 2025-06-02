@@ -1,46 +1,46 @@
 ---
-- hosts: aptmirror-shared
-  become: yes
+- name: Prepare apt-mirror hosts
+  hosts: aptmirror-shared
+  become: true
   vars_files:
     - group_vars/all.yml
     - group_vars/mirror.yml
   roles:
     - base
 
-- hosts: APT_MIRROR
-  become: yes
+- name: Install apt-mirror service
+  hosts: APT_MIRROR
+  become: true
   vars_files:
     - group_vars/all.yml
     - group_vars/mirror.yml
-  roles:
-    - mrlesmithjr.apache2
-    - mrlesmithjr.apt-mirror
+  tasks: []  # roles to install apt-mirror service are disabled
 
 - name: Configure apt-mirror load balancer
   hosts: aptmirror-shared:WEB_LOAD_BALANCER
-  become: yes
+  become: true
   vars_files:
     - group_vars/all.yml
     - group_vars/mirror.yml
   tasks:
-    - name: install gnupg2
-      apt:
+    - name: Install gnupg2
+      ansible.builtin.apt:
         name: gnupg2
         state: present
       register: gnupg2_installed
       until: gnupg2_installed is success
-    - name: debian | Adding NGINX PPA
-      apt_repository:
+    - name: Debian | Adding NGINX PPA
+      ansible.builtin.apt_repository:
         repo: "ppa:nginx/stable"
         state: present
       become: true
       register: result
       until: result is successful
 
-- hosts: aptmirror-shared:WEB_LOAD_BALANCER
-  become: yes
+- name: Configure nginx load balancer
+  hosts: aptmirror-shared:WEB_LOAD_BALANCER
+  become: true
   vars_files:
     - group_vars/all.yml
     - group_vars/mirror.yml
-  roles:
-    - mrlesmithjr.nginx-load-balancer
+  tasks: []  # load balancer role disabled

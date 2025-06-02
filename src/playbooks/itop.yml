@@ -1,36 +1,33 @@
 ---
-- hosts: itop
-  become: yes
+- name: Configure itop base
+  hosts: itop
+  become: true
   vars_files:
     - group_vars/all.yml
     - group_vars/galera_wordpress.yml
   roles:
     - base
 
-
-- hosts: itop:MARIADB_DATABASE
-  become: yes
+- name: Setup itop database
+  hosts: itop:MARIADB_DATABASE
+  become: true
   vars_files:
     - group_vars/all.yml
     - group_vars/galera_wordpress.yml
   roles:
-    - mrlesmithjr.ansible-mariadb-galera-cluster
+    # - mrlesmithjr.ansible-mariadb-galera-cluster
     - mariadb_backups
 
-
-- hosts: itop:ITOP_WEB
-  become: yes
+- name: Deploy itop web
+  hosts: itop:ITOP_WEB
+  become: true
   vars_files:
     - group_vars/all.yml
     - group_vars/galera_wordpress.yml
   roles:
     - itop
 
-
-- hosts: itop:WEB_LOAD_BALANCER
-  become: yes
-  roles:
-    - { role: geerlingguy.haproxy }
-
-  
-  
+- name: Configure itop load balancer
+  hosts: itop:WEB_LOAD_BALANCER
+  become: true
+  tasks: []  # load balancer role disabled
