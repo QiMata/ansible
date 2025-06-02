@@ -13,7 +13,9 @@
 
 - name: Install OpenLDAP server packages
   ansible.builtin.apt:
-    name: [ slapd, ldap-utils ]
+    name:
+      - slapd
+      - ldap-utils
     state: present
     update_cache: true
 

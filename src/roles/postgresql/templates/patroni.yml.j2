@@ -1,8 +1,8 @@
-scope: {{ patroni_cluster_name }}
-name: {{ patroni_node_name }}
+scope: {{ postgresql_patroni_cluster_name }}
+name: {{ postgresql_patroni_node_name }}
 
 etcd:
-  hosts: {{ patroni_etcd_host }}
+  hosts: {{ postgresql_patroni_etcd_host }}
 
 restapi:
   listen: 127.0.0.1:8008
