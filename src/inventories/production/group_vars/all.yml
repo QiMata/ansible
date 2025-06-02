@@ -1,6 +1,6 @@
 ---
 es_cluster_name: "prod-es-cluster"
-elasticsearch_version: "8.8.0"
+elasticsearch_install_version: "8.8.0"
 
 # Snapshot settings
 es_snapshot_repo_name: "backup_repo"
@@ -8,7 +8,7 @@ es_snapshot_repo_type: "fs"
 es_snapshot_repo_settings:
   location: "/mnt/elasticsearch_snapshots"
   compress: true
-es_use_slm: true
+elasticsearch_snapshot_use_slm: true
 
 # LDAP settings
 ldap_url: "ldaps://ldap.example.com:636"

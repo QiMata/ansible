@@ -12,4 +12,4 @@ galaxy_info:
       versions: [focal, jammy]
 dependencies:
   - role: geerlingguy.java
-    when: java_install | default(true)
+    when: elasticsearch_install_java_install | default(true)

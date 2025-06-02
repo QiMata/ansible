@@ -1,6 +1,6 @@
 ---
 - name: Template JVM options
-  template:
+  ansible.builtin.template:
     src: jvm.options.j2
     dest: /etc/elasticsearch/jvm.options.d/heap.options
     owner: root

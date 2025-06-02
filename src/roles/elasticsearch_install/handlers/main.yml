@@ -1,9 +1,9 @@
 ---
-- name: update apt cache
-  apt:
-    update_cache: yes
+- name: Update APT cache
+  ansible.builtin.apt:
+    update_cache: true
 
-- name: restart elasticsearch
-  service:
+- name: Restart Elasticsearch
+  ansible.builtin.service:
     name: elasticsearch
     state: restarted

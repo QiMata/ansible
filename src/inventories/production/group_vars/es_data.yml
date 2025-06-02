@@ -1,4 +1,4 @@
 ---
 node_roles:
   - data
-elasticsearch_heap_size: "8g"
+  elasticsearch_config_heap_size: "8g"
