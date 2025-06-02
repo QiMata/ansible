@@ -1,6 +1,7 @@
 ---
-- hosts: nifi_standalone
-  become: yes
+- name: Deploy NiFi standalone
+  hosts: nifi_standalone
+  become: true
   vars:
     nifi_cluster_enabled: false
   roles:

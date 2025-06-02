@@ -1,11 +1,13 @@
 ---
-- hosts: zookeeper_nodes
-  become: yes
+- name: Configure Zookeeper nodes
+  hosts: zookeeper_nodes
+  become: true
   roles:
     - zookeeper_role
 
-- hosts: nifi_cluster
-  become: yes
+- name: Deploy NiFi cluster
+  hosts: nifi_cluster
+  become: true
   vars:
     nifi_cluster_enabled: true
     nifi_zookeeper_connect: "{{ groups['zookeeper_nodes'] | map('extract', hostvars, ['inventory_hostname']) | join(':2181,') }}:2181"

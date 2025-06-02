@@ -1,7 +1,7 @@
 ---
 - name: Restore Neo4j from latest dump
   hosts: neo4j
-  become: yes
+  become: true
   vars:
     neo4j_dump_path: "{{ lookup('pipe', 'ls -t /var/backups/neo4j/*.dump | head -1') }}"
   tasks:

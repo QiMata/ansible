@@ -1,6 +1,7 @@
 ---
-- hosts: nifi_single
-  become: yes
+- name: Deploy NiFi single node
+  hosts: nifi_single
+  become: true
   vars:
     nifi_cluster_enable: false
     nifi_security_mode: ssl
