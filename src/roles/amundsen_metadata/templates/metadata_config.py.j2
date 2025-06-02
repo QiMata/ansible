@@ -3,9 +3,9 @@ from metadata_service.config_common import Config
 
 class ProdConfig(Config):
     # Neo4j
-    NEO4J_ENDPOINT = "bolt://{{ neo4j_host }}:{{ neo4j_port }}"
-    NEO4J_USERNAME = "{{ neo4j_user }}"
-    NEO4J_PASSWORD = "{{ neo4j_password }}"
+    NEO4J_ENDPOINT = "bolt://{{ amundsen_metadata_neo4j_host }}:{{ amundsen_metadata_neo4j_port }}"
+    NEO4J_USERNAME = "{{ amundsen_metadata_neo4j_user }}"
+    NEO4J_PASSWORD = "{{ amundsen_metadata_neo4j_password }}"
 
     # Logging
     LOG_LEVEL = "INFO"
