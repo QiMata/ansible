@@ -9,7 +9,7 @@ apt_mirror_include_sources: false
 apt_mirror_cron_enabled: true
 apt_mirror_cron_schedule: "0 4 * * *"
 
-elk_integration_enabled: false
-ha_features_enabled: false
-dr_backup_enabled: true
+apt_mirror_elk_integration_enabled: false
+apt_mirror_ha_features_enabled: false
+apt_mirror_dr_backup_enabled: true
 apt_mirror_prune: true

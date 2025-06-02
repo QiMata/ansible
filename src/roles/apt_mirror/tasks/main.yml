@@ -1,14 +1,29 @@
 ---
-- import_tasks: install.yml
-- import_tasks: configure.yml
-- import_tasks: apache.yml
-- import_tasks: cron.yml
+- name: Import install tasks
+  ansible.builtin.import_tasks: install.yml
+
+- name: Import configure tasks
+  ansible.builtin.import_tasks: configure.yml
+
+- name: Import apache tasks
+  ansible.builtin.import_tasks: apache.yml
+
+- name: Import cron tasks
+  ansible.builtin.import_tasks: cron.yml
   when: apt_mirror_cron_enabled | bool
-- import_tasks: elk.yml
-  when: elk_integration_enabled | bool
-- import_tasks: ha.yml
-  when: ha_features_enabled | bool
-- import_tasks: dr_backup.yml
-  when: dr_backup_enabled | bool
-- import_tasks: prune.yml
+
+- name: Import ELK tasks
+  ansible.builtin.import_tasks: elk.yml
+  when: apt_mirror_elk_integration_enabled | bool
+
+- name: Import HA tasks
+  ansible.builtin.import_tasks: ha.yml
+  when: apt_mirror_ha_features_enabled | bool
+
+- name: Import DR backup tasks
+  ansible.builtin.import_tasks: dr_backup.yml
+  when: apt_mirror_dr_backup_enabled | bool
+
+- name: Import prune tasks
+  ansible.builtin.import_tasks: prune.yml
   when: apt_mirror_prune | bool
