@@ -1,6 +1,6 @@
 ---
 - name: Ensure Elasticsearch service enabled
-  service:
+  ansible.builtin.service:
     name: elasticsearch
-    enabled: yes
+    enabled: true
     state: stopped

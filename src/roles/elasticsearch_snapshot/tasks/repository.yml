@@ -1,6 +1,6 @@
 ---
 - name: Register snapshot repository
-  uri:
+  ansible.builtin.uri:
     url: "http://localhost:9200/_snapshot/{{ es_snapshot_repo_name }}"
     method: PUT
     body_format: json

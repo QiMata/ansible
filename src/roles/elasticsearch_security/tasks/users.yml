@@ -1,6 +1,6 @@
 ---
 - name: Template role mapping file
-  template:
+  ansible.builtin.template:
     src: role_mapping.yml.j2
     dest: /etc/elasticsearch/role_mapping.yml
     owner: root
