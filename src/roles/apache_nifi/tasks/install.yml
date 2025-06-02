@@ -1,31 +1,31 @@
 ---
 - name: Ensure Java is present
   become: true
-  apt:
+  ansible.builtin.apt:
     name: openjdk-11-jdk
     state: present
   tags: [nifi, java]
 
 - name: Create nifi group
   become: true
-  group:
+  ansible.builtin.group:
     name: "{{ nifi_group }}"
     state: present
   tags: [nifi, users]
 
 - name: Create nifi user
   become: true
-  user:
+  ansible.builtin.user:
     name: "{{ nifi_user }}"
     group: "{{ nifi_group }}"
     home: "{{ nifi_home }}"
     shell: /usr/sbin/nologin
-    system: yes
+    system: true
   tags: [nifi, users]
 
 - name: Add NiFi APT repository
   become: true
-  apt_repository:
+  ansible.builtin.apt_repository:
     repo: "{{ nifi_apt_repo }}"
     state: present
   when: nifi_use_apt_repo
@@ -36,13 +36,13 @@
   ansible.builtin.apt:
     name: nifi
     state: present
-    update_cache: yes
+    update_cache: true
   when: nifi_install_method == "package"
   tags: [nifi, install]
 
 - name: Download NiFi tarball
   become: true
-  get_url:
+  ansible.builtin.get_url:
     url: "https://archive.apache.org/dist/nifi/{{ nifi_version }}/nifi-{{ nifi_version }}-bin.tar.gz"
     dest: "/tmp/nifi-{{ nifi_version }}.tar.gz"
     mode: '0644'
@@ -51,20 +51,20 @@
 
 - name: Extract NiFi tarball
   become: true
-  unarchive:
+  ansible.builtin.unarchive:
     src: "/tmp/nifi-{{ nifi_version }}.tar.gz"
     dest: "{{ nifi_home }}"
-    remote_src: yes
+    remote_src: true
     creates: "{{ nifi_home }}/bin/nifi.sh"
   when: nifi_install_method == "tarball"
   tags: [nifi, install]
 
 - name: Ensure correct ownership
   become: true
-  file:
+  ansible.builtin.file:
     path: "{{ nifi_home }}"
     state: directory
-    recurse: yes
+    recurse: true
     owner: "{{ nifi_user }}"
     group: "{{ nifi_group }}"
   tags: [nifi, permissions]
