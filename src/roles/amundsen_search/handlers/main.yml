@@ -5,7 +5,7 @@
   become: yes
 
 - name: Restart Search Service
-  service:
+  ansible.builtin.service:
     name: amundsen-search
     state: restarted
   become: yes

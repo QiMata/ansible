@@ -1,12 +1,12 @@
 ---
 - name: Update apt cache
-  apt:
+  ansible.builtin.apt:
     update_cache: yes
     cache_valid_time: 3600
   become: yes
 
 - name: Install common dependencies
-  apt:
+  ansible.builtin.apt:
     name:
       - python3-venv
       - python3-pip

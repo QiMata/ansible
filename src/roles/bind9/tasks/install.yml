@@ -1,5 +1,5 @@
 - name: Install BIND9 packages
-  apt:
+  ansible.builtin.apt:
     name: "{{ bind9_package_name }}"
     state: present
     update_cache: yes
