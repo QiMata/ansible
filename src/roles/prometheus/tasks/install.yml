@@ -1,8 +1,8 @@
 ---
 - name: Update apt cache
   ansible.builtin.apt:
-    update_cache: yes
-  become: yes
+    update_cache: true
+  become: true
 
 - name: Install Prometheus and Node Exporter
   ansible.builtin.apt:
@@ -10,5 +10,5 @@
       - prometheus
       - prometheus-node-exporter
     state: present
-  become: yes
+  become: true
   tags: install
