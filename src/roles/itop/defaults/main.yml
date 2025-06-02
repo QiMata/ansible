@@ -1,6 +1,6 @@
 ---
 itop_version: "2.7.5"
 itop_root_dir: "/var/www/html/itop"
-db_name: "itop_db"
-db_user: "itop_user"
-db_password: "itop_password"
+itop_db_name: "itop_db"
+itop_db_user: "itop_user"
+itop_db_password: "itop_password"

@@ -34,17 +34,17 @@ mariadb_databases: ['wordpress']
 
 # Define additional MySQL users
 mariadb_mysql_users:
-- name: wordpress
-  hosts:
-    - "%"
-    - "127.0.0.1"
-    - "::1"
-    - "localhost"
-  password: secret
-  encrypted: no (default)
-  priv: '*.*:USAGE (default}'
-  state: present (default)
-  append_privs: no (default)
+  - name: wordpress
+    hosts:
+      - "%"
+      - "127.0.0.1"
+      - "::1"
+      - "localhost"
+    password: secret
+    encrypted: no (default)
+    priv: '*.*:USAGE (default}'
+    state: present (default)
+    append_privs: no (default)
 
 
 # defaults file for mariadb_galera_loadbalancer_install
@@ -58,7 +58,4 @@ keepalived_interface: eth0
 keepalived_virtual_router_id: 51
 keepalived_priority: 100
 keepalived_virtual_ip: 10.80.6.69
-
-
 ansible_become_pass: Deathcloud12Darkst12
-
