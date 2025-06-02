@@ -5,10 +5,10 @@ After=network.target
 [Service]
 User=amundsen
 Group=amundsen
-Environment=FRONTEND_SVC_CONFIG_MODULE_CLASS={{ frontend_config_class }}
-Environment=SEARCHSERVICE_BASE={{ search_api_base }}
-Environment=METADATASERVICE_BASE={{ metadata_api_base }}
-ExecStart={{ frontend_virtualenv }}/bin/gunicorn --workers {{ frontend_gunicorn_workers }} --bind {{ frontend_bind_host }}:{{ frontend_port }} amundsen_application.wsgi:app
+Environment=FRONTEND_SVC_CONFIG_MODULE_CLASS={{ amundsen_frontend_config_class }}
+Environment=SEARCHSERVICE_BASE={{ amundsen_frontend_search_api_base }}
+Environment=METADATASERVICE_BASE={{ amundsen_frontend_metadata_api_base }}
+ExecStart={{ amundsen_frontend_virtualenv }}/bin/gunicorn --workers {{ amundsen_frontend_gunicorn_workers }} --bind {{ amundsen_frontend_bind_host }}:{{ amundsen_frontend_port }} amundsen_application.wsgi:app
 Restart=always
 RestartSec=5
 

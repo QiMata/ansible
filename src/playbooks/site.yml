@@ -1,3 +1,6 @@
 ---
-- import_playbook: ldap-servers.yml
-- import_playbook: ldap-clients.yml
+- name: Include LDAP servers playbook
+  import_playbook: ldap-servers.yml
+
+- name: Include LDAP clients playbook
+  import_playbook: ldap-clients.yml

@@ -13,18 +13,18 @@
     group: amundsen
     mode: "0755"
   loop:
-    - "{{ frontend_virtualenv | dirname }}"
+    - "{{ amundsen_frontend_virtualenv | dirname }}"
   become: true
 
 - name: Create virtualenv for frontend
-  ansible.builtin.command: python3 -m venv "{{ frontend_virtualenv }}"
+  ansible.builtin.command: python3 -m venv "{{ amundsen_frontend_virtualenv }}"
   args:
-    creates: "{{ frontend_virtualenv }}/bin/activate"
+    creates: "{{ amundsen_frontend_virtualenv }}/bin/activate"
   become: true
 
 - name: Install frontend service
   ansible.builtin.pip:
-    virtualenv: "{{ frontend_virtualenv }}"
+    virtualenv: "{{ amundsen_frontend_virtualenv }}"
     name: "amundsen-frontend=={{ amundsen_frontend_version }}"
     state: present
   become: true
@@ -32,7 +32,7 @@
 - name: Deploy frontend config
   ansible.builtin.template:
     src: frontend_config.py.j2
-    dest: "{{ frontend_virtualenv }}/config.py"
+    dest: "{{ amundsen_frontend_virtualenv }}/config.py"
     owner: amundsen
     group: amundsen
     mode: "0644"
