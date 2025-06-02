@@ -1,7 +1,7 @@
 ---
 - name: Restart Elasticsearch
-  service:
+  ansible.builtin.service:
     name: elasticsearch
     state: restarted
-    enabled: yes
-  become: yes
+    enabled: true
+  become: true

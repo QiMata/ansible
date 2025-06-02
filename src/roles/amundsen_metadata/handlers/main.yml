@@ -1,11 +1,11 @@
 ---
 - name: Reload Systemd
   ansible.builtin.systemd:
-    daemon_reload: yes
-  become: yes
+    daemon_reload: true
+  become: true
 
 - name: Restart Metadata Service
-  service:
+  ansible.builtin.service:
     name: amundsen-metadata
     state: restarted
-  become: yes
+  become: true
