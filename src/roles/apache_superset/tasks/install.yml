@@ -8,7 +8,7 @@
   ansible.builtin.user:
     name: "{{ superset_user }}"
     group: "{{ superset_group }}"
-    create_home: no
+    create_home: false
     shell: /usr/sbin/nologin
     state: present
 

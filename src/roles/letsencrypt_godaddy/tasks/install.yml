@@ -14,7 +14,7 @@
     repo: "{{ acme_sh_git_url }}"
     dest: "{{ acme_sh_install_dir }}"
     version: master
-    update: yes
+    update: true
   become: true
 
 - name: Install acme.sh (first run only)
