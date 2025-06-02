@@ -4,7 +4,7 @@ mariadb_mysql_root_password: "JB3mxV=Eun!ZBSag"
 galera_cluster_name: "jared_rhodes_blog"
 mariadb_pri_domain_name: "qimata.com"
 
-mariadb_databases: 
+mariadb_databases:
   - name: jared_rhodes_blog
 
 # Define additional MySQL users

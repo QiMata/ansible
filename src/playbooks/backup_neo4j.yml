@@ -1,7 +1,7 @@
 ---
 - name: Backup Neo4j database
   hosts: neo4j
-  become: yes
+  become: true
   tasks:
     - name: Ensure backup directory exists
       ansible.builtin.file:

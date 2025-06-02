@@ -1,10 +1,12 @@
 ---
-- hosts: jenkins_controllers
-  become: yes
+- name: Configure Jenkins controllers
+  hosts: jenkins_controllers
+  become: true
   roles:
     - jenkins_controller
 
-- hosts: jenkins_agents
-  become: yes
+- name: Configure Jenkins agents
+  hosts: jenkins_agents
+  become: true
   roles:
     - jenkins_agent
