@@ -1,5 +1,5 @@
 ---
-- name: reload_service
-  ansible.builtin.shell: "{{ service_reload_command }}"
+- name: Reload service
+  ansible.builtin.command: "{{ service_reload_command }}"
   when: service_reload_command | length > 0
   become: true
