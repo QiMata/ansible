@@ -6,4 +6,4 @@ olcSyncRepl: rid={{ '%03d' % loop.index }} provider=ldap://{{ host }} binddn="{{
 {% endfor %}
 -
 add: olcMirrorMode
-olcMirrorMode: {{ 'TRUE' if groups['ldap_servers'] | length == 2 else 'FALSE' }}
+olcMirrorMode: {{ 'true' if groups['ldap_servers'] | length == 2 else 'false' }}

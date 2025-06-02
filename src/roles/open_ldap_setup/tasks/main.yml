@@ -6,7 +6,7 @@
       - ldap-utils
       - openssl
       - db-util
-      - "{{ 'python3-ldap' if ansible_python_version is version('3','>=') else 'python-ldap' }}"
+      - "{{ 'python3-ldap' if ansible_python_version is version('3', '>=') else 'python-ldap' }}"
     update_cache: true
 
 - name: Install the openldap and required packages for legacy distros
@@ -27,7 +27,7 @@
   ansible.builtin.template:
     src: slapd.j2
     dest: /etc/default/slapd
-    mode: 0755
+    mode: '0755'
   notify: restart slapd
 
 - name: Make sure slapd is enabled and running
@@ -79,9 +79,9 @@
     dn: olcDatabase={1}mdb,cn=config
     attributes:
       olcSyncrepl: >
-        rid=001 provider=ldap://master2 bindmethod=simple binddn="cn=admin,dc=example,dc=com" 
+        rid=001 provider=ldap://master2 bindmethod=simple binddn="cn=admin,dc=example,dc=com"
         credentials=secret searchbase="dc=example,dc=com" type=refreshAndPersist retry="5 5 300 5" timeout=1
-      olcMirrorMode: TRUE
+      olcMirrorMode: true
     state: exact
 
 - name: Set up syncrepl on Master 2
@@ -89,9 +89,9 @@
     dn: olcDatabase={1}mdb,cn=config
     attributes:
       olcSyncrepl: >
-        rid=002 provider=ldap://master1 bindmethod=simple binddn="cn=admin,dc=example,dc=com" 
+        rid=002 provider=ldap://master1 bindmethod=simple binddn="cn=admin,dc=example,dc=com"
         credentials=secret searchbase="dc=example,dc=com" type=refreshAndPersist retry="5 5 300 5" timeout=1
-      olcMirrorMode: TRUE
+      olcMirrorMode: true
     state: exact
 
 - name: Start and enable OpenLDAP service

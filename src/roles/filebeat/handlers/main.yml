@@ -1,5 +1,5 @@
 ---
-- name: restart filebeat
+- name: Restart filebeat
   ansible.builtin.service:
     name: filebeat
     state: restarted

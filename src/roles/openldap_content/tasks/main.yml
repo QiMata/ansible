@@ -14,7 +14,7 @@
       ou: "{{ item.ou }}"
       description: "{{ item.name | default(item.ou) }}"
     state: present
-    bind_url: "ldapi:///"
+    server_uri: "ldapi:///"
   loop: "{{ ldap_data.organizations }}"
 
 - name: Ensure user entries

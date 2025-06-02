@@ -10,7 +10,7 @@
     attribute: olcServerID
     values: "{{ ansible_play_hosts_all.index(inventory_hostname) + 1 }} {{ inventory_hostname }}"
     state: present
-    bind_url: "ldapi:///"
+    server_uri: "ldapi:///"
   notify: restart slapd
 
 - name: Enable syncprov overlay
@@ -24,15 +24,17 @@
       olcSpCheckpoint: 100 10
       olcSpSessionlog: 1000
     state: present
-    bind_url: "ldapi:///"
+    server_uri: "ldapi:///"
   notify: restart slapd
 
 - name: Configure syncrepl for peers
   ansible.builtin.template:
     src: syncrepl.ldif.j2
     dest: /tmp/syncrepl.ldif
+    mode: '0600'
   run_once: false
 
 - name: Apply syncrepl config
   ansible.builtin.command: ldapmodify -Y EXTERNAL -H ldapi:/// -f /tmp/syncrepl.ldif
+  changed_when: false
   notify: restart slapd
