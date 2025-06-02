@@ -4,7 +4,7 @@
   become: yes
   tasks:
     - name: Ensure backup directory exists
-      file:
+      ansible.builtin.file:
         path: /var/backups/neo4j
         state: directory
         owner: neo4j
@@ -12,16 +12,17 @@
         mode: "0755"
 
     - name: Stop Neo4j
-      service:
+      ansible.builtin.service:
         name: neo4j
         state: stopped
 
     - name: Dump database
-      command: >
+      ansible.builtin.command: >
         neo4j-admin dump
         --to=/var/backups/neo4j/neo4j-{{ ansible_date_time.iso8601_basic }}.dump
+      changed_when: false
 
     - name: Start Neo4j
-      service:
+      ansible.builtin.service:
         name: neo4j
         state: started

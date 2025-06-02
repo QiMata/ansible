@@ -19,8 +19,8 @@
         path: /etc/elasticsearch/elasticsearch.yml
       register: config_file_existence
 
-    - name: Ensure the data directory exists
-      file:
+      - name: Ensure the data directory exists
+      ansible.builtin.file:
         path: "{{ elasticsearch_data_path }}/nodes"
         owner: elasticsearch
         group: elasticsearch
@@ -28,8 +28,8 @@
       become: true
       when: config_file_existence.stat.exists
 
-    - name: Ensure elasticsearch user owns data directories
-      file:
+      - name: Ensure elasticsearch user owns data directories
+      ansible.builtin.file:
         path: "{{ item }}"
         owner: elasticsearch
         group: elasticsearch
@@ -38,8 +38,8 @@
       become: true
       when: config_file_existence.stat.exists
 
-    - name: Ensure data directory permissions are correct
-      file:
+      - name: Ensure data directory permissions are correct
+      ansible.builtin.file:
         path: "{{ item }}"
         mode: '0755'
         recurse: true
@@ -62,8 +62,8 @@
         - config_file_existence.stat.exists
         - "'path.data: {{ elasticsearch_data_path }}' not in (config_content.content | b64decode).splitlines()"
 
-    - name: Restart Elasticsearch
-      systemd:
+      - name: Restart Elasticsearch
+      ansible.builtin.systemd:
         name: elasticsearch
         state: restarted
       when: config_file_existence.stat.exists
