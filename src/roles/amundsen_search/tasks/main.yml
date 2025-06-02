@@ -13,18 +13,18 @@
     group: amundsen
     mode: "0755"
   loop:
-    - "{{ search_virtualenv | dirname }}"
+    - "{{ amundsen_search_virtualenv | dirname }}"
   become: true
 
 - name: Create virtualenv for search service
-  ansible.builtin.command: python3 -m venv "{{ search_virtualenv }}"
+  ansible.builtin.command: python3 -m venv "{{ amundsen_search_virtualenv }}"
   args:
-    creates: "{{ search_virtualenv }}/bin/activate"
+    creates: "{{ amundsen_search_virtualenv }}/bin/activate"
   become: true
 
 - name: Install search service
   ansible.builtin.pip:
-    virtualenv: "{{ search_virtualenv }}"
+    virtualenv: "{{ amundsen_search_virtualenv }}"
     name: "amundsen-search=={{ amundsen_search_version }}"
     state: present
   become: true
@@ -32,7 +32,7 @@
 - name: Deploy search config
   ansible.builtin.template:
     src: search_config.py.j2
-    dest: "{{ search_virtualenv }}/config.py"
+    dest: "{{ amundsen_search_virtualenv }}/config.py"
     owner: amundsen
     group: amundsen
     mode: "0644"

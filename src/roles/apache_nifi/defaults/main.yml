@@ -1,13 +1,13 @@
 ---
-nifi_version: "2.0.0"
-nifi_install_method: "package"            # package|tarball
-nifi_use_apt_repo: true
-nifi_apt_repo: "deb [trusted=yes] https://archive.apache.org/dist/nifi/{{ nifi_version }}/bin/ ./"
+apache_nifi_version: "2.0.0"
+apache_nifi_install_method: "package"            # package|tarball
+apache_nifi_use_apt_repo: true
+apache_nifi_apt_repo: "deb [trusted=yes] https://archive.apache.org/dist/nifi/{{ apache_nifi_version }}/bin/ ./"
 
-nifi_user: nifi
-nifi_group: nifi
-nifi_home: /opt/nifi
-nifi_conf_dir: "{{ nifi_home }}/conf"
+apache_nifi_user: nifi
+apache_nifi_group: nifi
+apache_nifi_home: /opt/nifi
+apache_nifi_conf_dir: "{{ apache_nifi_home }}/conf"
 
 nifi_cluster_enabled: false
 nifi_zookeeper_connect: ""
@@ -16,10 +16,10 @@ nifi_cluster_protocol_port: 11443
 nifi_enable_https: true
 nifi_listen_port: 8080
 nifi_secure_port: 9443
-nifi_keystore_path: "{{ nifi_conf_dir }}/keystore.jks"
-nifi_keystore_password: changeme
-nifi_truststore_path: "{{ nifi_conf_dir }}/truststore.jks"
-nifi_truststore_password: changeme
+apache_nifi_keystore_path: "{{ apache_nifi_conf_dir }}/keystore.jks"
+apache_nifi_keystore_password: changeme
+apache_nifi_truststore_path: "{{ apache_nifi_conf_dir }}/truststore.jks"
+apache_nifi_truststore_password: changeme
 
 nifi_ldap_url: ""
 nifi_ldap_bind_dn: ""
@@ -28,5 +28,5 @@ nifi_ldap_user_search_base: ""
 nifi_ldap_user_search_filter: ""
 nifi_admin_identity: ""
 
-nifi_elk_integration: false
-nifi_prometheus_integration: false
+apache_nifi_elk_integration: false
+apache_nifi_prometheus_integration: false

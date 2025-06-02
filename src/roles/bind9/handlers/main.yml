@@ -5,3 +5,4 @@
 
 - name: Reload BIND9
   ansible.builtin.command: rndc reload
+  changed_when: false

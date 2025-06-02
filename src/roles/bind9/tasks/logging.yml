@@ -9,6 +9,9 @@
 - name: Configure log rotation
   ansible.builtin.copy:
     dest: /etc/logrotate.d/bind9
+    owner: root
+    group: root
+    mode: '0644'
     content: |
       {{ bind9_log_dir }}/*.log {
           weekly

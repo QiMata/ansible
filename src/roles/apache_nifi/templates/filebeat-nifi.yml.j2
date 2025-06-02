@@ -1,7 +1,7 @@
 filebeat.inputs:
   - type: log
     paths:
-      - "{{ nifi_home }}/logs/*.log"
+      - "{{ apache_nifi_home }}/logs/*.log"
     exclude_files: ['\.gz$']
     fields:
       service: nifi
