@@ -30,6 +30,6 @@ prometheus_alert_rules: |
           labels:
             severity: critical
           annotations:
-            description: "{{ $labels.instance }} is down for more than 5 minutes."
+            description: "{% raw %}{{ $labels.instance }}{% endraw %} is down for more than 5 minutes."
 
 prometheus_rules_file: /etc/prometheus/alert.rules

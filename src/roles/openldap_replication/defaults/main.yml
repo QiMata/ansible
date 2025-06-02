@@ -1,4 +1,4 @@
 ---
-ldap_replication_provider_uri: "ldap://{{ inventory_hostname }}"
-ldap_replication_bind_dn: "cn=admin,{{ ldap_base_dn }}"
-ldap_replication_bind_pw: "{{ ldap_admin_password }}"
+openldap_replication_provider_uri: "ldap://{{ inventory_hostname }}"
+openldap_replication_bind_dn: "cn=admin,{{ ldap_base_dn }}"
+openldap_replication_bind_pw: "{{ ldap_admin_password }}"

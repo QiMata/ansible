@@ -1,28 +1,28 @@
 ---
 - name: Optionally create venv
-  ansible.builtin.command: "{{ airflow_python }} -m venv {{ airflow_venv_path }}"
+  ansible.builtin.command: "{{ apache_airflow_python }} -m venv {{ apache_airflow_venv_path }}"
   args:
-    creates: "{{ airflow_venv_path }}/bin/activate"
-  when: airflow_venv_path | length > 0
+    creates: "{{ apache_airflow_venv_path }}/bin/activate"
+  when: apache_airflow_venv_path | length > 0
 
 - name: Install/upgrade pip in venv or system
   ansible.builtin.pip:
     name: pip
     state: present
-    virtualenv: "{{ airflow_venv_path | default(omit) }}"
-    virtualenv_command: "{{ airflow_python }} -m venv"
-    virtualenv_python: "{{ airflow_python }}"
+    virtualenv: "{{ apache_airflow_venv_path | default(omit) }}"
+    virtualenv_command: "{{ apache_airflow_python }} -m venv"
+    virtualenv_python: "{{ apache_airflow_python }}"
 
 - name: Install Apache Airflow
   ansible.builtin.pip:
-    name: "apache-airflow=={{ airflow_version }}"
-    extra_args: "-r https://raw.githubusercontent.com/apache/airflow/constraints-{{ airflow_version }}/constraints-3.10.txt"
-    virtualenv: "{{ airflow_venv_path | default(omit) }}"
+    name: "apache-airflow=={{ apache_airflow_version }}"
+    extra_args: "-r https://raw.githubusercontent.com/apache/airflow/constraints-{{ apache_airflow_version }}/constraints-3.10.txt"
+    virtualenv: "{{ apache_airflow_venv_path | default(omit) }}"
     virtualenv_site_packages: false
 
 - name: Install extra Airflow packages
   ansible.builtin.pip:
-    name: "{{ airflow_extra_pip_packages }}"
+    name: "{{ apache_airflow_extra_pip_packages }}"
     state: present
-    virtualenv: "{{ airflow_venv_path | default(omit) }}"
-  when: airflow_extra_pip_packages | length > 0
+    virtualenv: "{{ apache_airflow_venv_path | default(omit) }}"
+  when: apache_airflow_extra_pip_packages | length > 0

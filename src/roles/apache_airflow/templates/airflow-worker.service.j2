@@ -6,10 +6,10 @@ Wants=network.target redis-server.service
 
 [Service]
 EnvironmentFile=/etc/default/airflow
-User={{ airflow_user }}
-Group={{ airflow_group }}
+User={{ apache_airflow_user }}
+Group={{ apache_airflow_group }}
 Type=simple
-ExecStart={{ airflow_venv_path | default('') }}/bin/airflow celery worker
+ExecStart={{ apache_airflow_venv_path | default('') }}/bin/airflow celery worker
 Restart=always
 RestartSec=5
 
