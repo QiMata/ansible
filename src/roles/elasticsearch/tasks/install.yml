@@ -1,37 +1,37 @@
 ---
 - name: Ensure apt-transport-https is installed
-  apt:
+  ansible.builtin.apt:
     name: apt-transport-https
     state: present
-    update_cache: yes
+    update_cache: true
 
 - name: Add Elasticsearch GPG key
-  apt_key:
+  ansible.builtin.apt_key:
     url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
     state: present
 
 - name: Add Elasticsearch repository
-  template:
+  ansible.builtin.template:
     src: elasticsearch.list.j2
     dest: /etc/apt/sources.list.d/elasticsearch.list
     mode: '0644'
   notify: update apt cache
 
 - name: Install OpenJDK
-  apt:
+  ansible.builtin.apt:
     name: openjdk-11-jdk
     state: present
   when: es_install_java
 
 - name: Install Elasticsearch
-  apt:
+  ansible.builtin.apt:
     name: elasticsearch
     state: present
-    update_cache: yes
+    update_cache: true
   notify: restart elasticsearch
 
 - name: Ensure Elasticsearch service enabled and started
-  service:
+  ansible.builtin.service:
     name: elasticsearch
     state: started
-    enabled: yes
+    enabled: true

@@ -1,10 +1,13 @@
 ---
-- import_tasks: install.yml
+- name: Include install tasks
+  ansible.builtin.import_tasks: install.yml
   tags: install
 
-- import_tasks: config.yml
+- name: Include config tasks
+  ansible.builtin.import_tasks: config.yml
   tags: config
 
-- import_tasks: security.yml
+- name: Include security tasks
+  ansible.builtin.import_tasks: security.yml
   when: es_enable_security
   tags: security
