@@ -2,9 +2,9 @@
 - name: Deploy spark-env.sh
   ansible.builtin.template:
     src: spark-env.sh.j2
-    dest: "{{ spark_symlink_dir }}/conf/spark-env.sh"
-    owner: "{{ spark_user }}"
-    group: "{{ spark_group }}"
+    dest: "{{ spark_role_symlink_dir }}/conf/spark-env.sh"
+    owner: "{{ spark_role_user }}"
+    group: "{{ spark_role_group }}"
     mode: "0644"
   notify:
     - Restart Spark Master
@@ -14,9 +14,9 @@
 - name: Deploy spark-defaults.conf
   ansible.builtin.template:
     src: spark-defaults.conf.j2
-    dest: "{{ spark_symlink_dir }}/conf/spark-defaults.conf"
-    owner: "{{ spark_user }}"
-    group: "{{ spark_group }}"
+    dest: "{{ spark_role_symlink_dir }}/conf/spark-defaults.conf"
+    owner: "{{ spark_role_user }}"
+    group: "{{ spark_role_group }}"
     mode: "0644"
   notify:
     - Restart Spark Master
@@ -26,9 +26,9 @@
 - name: Deploy workers file
   ansible.builtin.template:
     src: workers.j2
-    dest: "{{ spark_symlink_dir }}/conf/workers"
-    owner: "{{ spark_user }}"
-    group: "{{ spark_group }}"
+    dest: "{{ spark_role_symlink_dir }}/conf/workers"
+    owner: "{{ spark_role_user }}"
+    group: "{{ spark_role_group }}"
     mode: "0644"
   when: groups['spark_worker'] is defined
   become: true

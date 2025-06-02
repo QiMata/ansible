@@ -22,7 +22,7 @@
     src: spark-history-server.service.j2
     dest: /etc/systemd/system/spark-history-server.service
     mode: "0644"
-  when: spark_history_enabled | bool and inventory_hostname in groups['spark_master']
+  when: spark_role_history_enabled | bool and inventory_hostname in groups['spark_master']
   notify: Restart Spark History Server
   become: true
 
@@ -52,5 +52,5 @@
     name: spark-history-server
     state: started
     enabled: true
-  when: spark_history_enabled | bool and inventory_hostname in groups['spark_master']
+  when: spark_role_history_enabled | bool and inventory_hostname in groups['spark_master']
   become: true

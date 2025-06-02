@@ -1,14 +1,14 @@
 ---
 - name: Ensure spark group exists
   ansible.builtin.group:
-    name: "{{ spark_group }}"
+    name: "{{ spark_role_group }}"
     state: present
   become: true
 
 - name: Ensure spark user exists
   ansible.builtin.user:
-    name: "{{ spark_user }}"
-    group: "{{ spark_group }}"
+    name: "{{ spark_role_user }}"
+    group: "{{ spark_role_group }}"
     create_home: true
     shell: /bin/bash
     state: present
@@ -16,40 +16,40 @@
 
 - name: Install Java
   ansible.builtin.apt:
-    name: "{{ java_package }}"
+    name: "{{ spark_role_java_package }}"
     state: present
     update_cache: true
   become: true
 
 - name: Create installation directory
   ansible.builtin.file:
-    path: "{{ spark_install_dir }}"
+    path: "{{ spark_role_install_dir }}"
     state: directory
-    owner: "{{ spark_user }}"
-    group: "{{ spark_group }}"
+    owner: "{{ spark_role_user }}"
+    group: "{{ spark_role_group }}"
     mode: "0755"
   become: true
 
 - name: Download Spark archive
   ansible.builtin.get_url:
-    url: "{{ spark_download_url }}"
-    dest: "{{ spark_install_dir }}/{{ spark_package_name }}.tgz"
+    url: "{{ spark_role_download_url }}"
+    dest: "{{ spark_role_install_dir }}/{{ spark_role_package_name }}.tgz"
     mode: "0644"
     force: false
   become: true
 
 - name: Extract Spark archive
   ansible.builtin.unarchive:
-    src: "{{ spark_install_dir }}/{{ spark_package_name }}.tgz"
-    dest: "{{ spark_install_dir }}"
+    src: "{{ spark_role_install_dir }}/{{ spark_role_package_name }}.tgz"
+    dest: "{{ spark_role_install_dir }}"
     remote_src: true
-    creates: "{{ spark_install_dir }}/{{ spark_package_name }}/bin/spark-submit"
+    creates: "{{ spark_role_install_dir }}/{{ spark_role_package_name }}/bin/spark-submit"
   become: true
 
 - name: Update Spark symlink
   ansible.builtin.file:
-    src: "{{ spark_install_dir }}/{{ spark_package_name }}"
-    dest: "{{ spark_symlink_dir }}"
+    src: "{{ spark_role_install_dir }}/{{ spark_role_package_name }}"
+    dest: "{{ spark_role_symlink_dir }}"
     state: link
     force: true
   become: true
@@ -58,13 +58,13 @@
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
-    owner: "{{ spark_user }}"
-    group: "{{ spark_group }}"
+    owner: "{{ spark_role_user }}"
+    group: "{{ spark_role_group }}"
     mode: "0755"
   loop:
-    - "{{ spark_eventlog_dir }}"
-    - "{{ spark_log_dir }}"
-    - "{{ spark_worker_dir }}"
-    - "{{ spark_recovery_dir | default(omit) }}"
+    - "{{ spark_role_eventlog_dir }}"
+    - "{{ spark_role_log_dir }}"
+    - "{{ spark_role_worker_dir }}"
+    - "{{ spark_role_recovery_dir | default(omit) }}"
   when: item is not none
   become: true

@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-export SPARK_MASTER_HOST="{{ spark_master_host }}"
+export SPARK_MASTER_HOST="{{ spark_role_master_host }}"
 export JAVA_HOME="{{ lookup('env', 'JAVA_HOME') | default('/usr/lib/jvm/default-java', true) }}"
-export SPARK_LOG_DIR="{{ spark_log_dir }}"
-export SPARK_WORKER_DIR="{{ spark_worker_dir }}"
-export SPARK_WORKER_MEMORY="{{ spark_worker_memory }}"
-export SPARK_WORKER_CORES="{{ spark_worker_cores }}"
+export SPARK_LOG_DIR="{{ spark_role_log_dir }}"
+export SPARK_WORKER_DIR="{{ spark_role_worker_dir }}"
+export SPARK_WORKER_MEMORY="{{ spark_role_worker_memory }}"
+export SPARK_WORKER_CORES="{{ spark_role_worker_cores }}"
 
-{% if spark_ha_enabled | bool %}
-export SPARK_DAEMON_JAVA_OPTS="$SPARK_DAEMON_JAVA_OPTS -Dspark.deploy.recoveryMode=ZOOKEEPER -Dspark.deploy.zookeeper.url={{ spark_zookeeper_hosts }} -Dspark.deploy.zookeeper.dir={{ spark_ha_zk_dir }}"
+{% if spark_role_ha_enabled | bool %}
+export SPARK_DAEMON_JAVA_OPTS="$SPARK_DAEMON_JAVA_OPTS -Dspark.deploy.recoveryMode=ZOOKEEPER -Dspark.deploy.zookeeper.url={{ spark_role_zookeeper_hosts }} -Dspark.deploy.zookeeper.dir={{ spark_role_ha_zk_dir }}"
 {% endif %}
 
-{% if spark_recovery_dir | length > 0 and not spark_ha_enabled | bool %}
-export SPARK_DAEMON_JAVA_OPTS="$SPARK_DAEMON_JAVA_OPTS -Dspark.deploy.recoveryMode=FILESYSTEM -Dspark.deploy.recoveryDirectory={{ spark_recovery_dir }}"
+{% if spark_role_recovery_dir | length > 0 and not spark_role_ha_enabled | bool %}
+export SPARK_DAEMON_JAVA_OPTS="$SPARK_DAEMON_JAVA_OPTS -Dspark.deploy.recoveryMode=FILESYSTEM -Dspark.deploy.recoveryDirectory={{ spark_role_recovery_dir }}"
 {% endif %}
