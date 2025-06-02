@@ -4,6 +4,7 @@
   args:
     chdir: "{{ netbox_install_dir }}/netbox"
   when: inventory_hostname == groups['netbox_app_servers'][0]
+  changed_when: false
   notify: restart netbox
 
 - name: Collect static files
@@ -11,4 +12,5 @@
   args:
     chdir: "{{ netbox_install_dir }}/netbox"
   when: inventory_hostname == groups['netbox_app_servers'][0]
+  changed_when: false
   notify: restart netbox

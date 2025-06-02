@@ -1,39 +1,39 @@
 ---
-openldap_server_domain: example.com
+open_ldap_setup_domain: example.com
 
 # This is the password for admin for openldap
-openldap_server_rootpw: passme
+open_ldap_setup_rootpw: passme
 # Root dn
-openldap_server_rootdn: cn=Manager,{{ _basedn }}
+open_ldap_setup_rootdn: cn=Manager,{{ open_ldap_setup_basedn }}
 
-openldap_server_app_path: "/etc/ldap/"
-openldap_server_user: "openldap"
+open_ldap_setup_app_path: "/etc/ldap/"
+open_ldap_setup_user: "openldap"
 
 # SSL-related stuff
-openldap_server_enable_tls: false
-openldap_server_ssl_cert: "{{ openldap_server_app_path }}/certs/cert.crt"
-openldap_server_ssl_key: "{{ openldap_server_app_path }}/certs/my.key"
+open_ldap_setup_enable_tls: false
+open_ldap_setup_ssl_cert: "{{ open_ldap_setup_app_path }}/certs/cert.crt"
+open_ldap_setup_ssl_key: "{{ open_ldap_setup_app_path }}/certs/my.key"
 
 # Use self-signed certificate
-openldap_server_generate_cert: false
+open_ldap_setup_generate_cert: false
 # The self signed ssl parameters
-openldap_server_ssl:
+open_ldap_setup_ssl:
   country: CZ
   state: Central Bohemia
   location: Prague
   organization: m-cloud.cz
 
 # ACLs - Do not touch unless you know what you're doing
-openldap_olcaccess:
+open_ldap_setup_olcaccess:
   - >-
     to attrs=userPassword,shadowLastChange
     by self write
     by anonymous auth
     by * none
   - >-
-    to dn.subtree="{{ _basedn }}"
+    to dn.subtree="{{ open_ldap_setup_basedn }}"
     by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage
     by * read
 
 # internal basedn variable
-_basedn: "dc={{ openldap_server_domain.split('.')[0] }},dc={{ openldap_server_domain.split('.')[1] }}"
+open_ldap_setup_basedn: "dc={{ open_ldap_setup_domain.split('.')[0] }},dc={{ open_ldap_setup_domain.split('.')[1] }}"

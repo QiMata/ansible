@@ -6,4 +6,4 @@
     {% if item.roles|length > 0 %}GRANT ROLE {{ item.roles|join(',') }} TO {{ item.name }};{% endif %}"
   loop: "{{ neo4j_user_creation }}"
   when: neo4j_user_creation | length > 0
-
+  changed_when: false
