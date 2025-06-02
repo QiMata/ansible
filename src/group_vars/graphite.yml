@@ -1,5 +1,5 @@
 ---
-enable_carbon-cache: true
+enable_carbon_cache: true
 graphite_web_db_user: ""
 graphite_web_db_password: ""
 graphite_web_db_host: "{{ hostvars[inventory_hostname]['service_ip'] }}"
