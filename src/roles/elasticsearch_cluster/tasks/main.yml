@@ -3,25 +3,25 @@
   ansible.builtin.apt_key:
     url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
     state: present
-  become: yes
+  become: true
 
 - name: Add Elasticsearch repository
   ansible.builtin.apt_repository:
     repo: "deb https://artifacts.elastic.co/packages/{{ es_version }}/apt stable main"
     state: present
-  become: yes
+  become: true
 
 - name: Install required Java runtime
   ansible.builtin.apt:
     name: openjdk-11-jdk
     state: present
-  become: yes
+  become: true
 
 - name: Install Elasticsearch
   ansible.builtin.apt:
     name: elasticsearch
     state: present
-  become: yes
+  become: true
   notify: Restart Elasticsearch
 
 - name: Configure Elasticsearch
@@ -31,13 +31,13 @@
       cluster.name: "{{ es_cluster_name }}"
       node.roles: {{ es_node_roles }}
       network.host: "{{ es_network_host }}"
-  become: yes
+  become: true
   notify: Restart Elasticsearch
 
 - name: Set JVM Heap
   ansible.builtin.lineinfile:
     path: /etc/elasticsearch/jvm.options.d/heap_size.options
-    create: yes
+    create: true
     line: "-Xms{{ es_heap_size }}\n-Xmx{{ es_heap_size }}"
-  become: yes
+  become: true
   notify: Restart Elasticsearch
