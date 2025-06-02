@@ -1,6 +1,6 @@
 ---
 - name: Template elasticsearch.yml
-  template:
+  ansible.builtin.template:
     src: elasticsearch.yml.j2
     dest: /etc/elasticsearch/elasticsearch.yml
     owner: root
@@ -9,7 +9,7 @@
   notify: restart elasticsearch
 
 - name: Template JVM options
-  template:
+  ansible.builtin.template:
     src: jvm.options.j2
     dest: /etc/elasticsearch/jvm.options.d/heap.options
     owner: root

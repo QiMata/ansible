@@ -1,6 +1,6 @@
 ---
 - name: Ensure certificate directory exists
-  file:
+  ansible.builtin.file:
     path: /etc/elasticsearch/certs
     state: directory
     owner: root
@@ -8,7 +8,7 @@
     mode: '0750'
 
 - name: Copy node certificate
-  copy:
+  ansible.builtin.copy:
     src: "{{ inventory_hostname }}.crt"
     dest: "/etc/elasticsearch/certs/{{ inventory_hostname }}.crt"
     owner: root
@@ -17,7 +17,7 @@
   when: es_tls_provided
 
 - name: Copy node key
-  copy:
+  ansible.builtin.copy:
     src: "{{ inventory_hostname }}.key"
     dest: "/etc/elasticsearch/certs/{{ inventory_hostname }}.key"
     owner: root
@@ -26,7 +26,7 @@
   when: es_tls_provided
 
 - name: Copy CA certificate
-  copy:
+  ansible.builtin.copy:
     src: cacert.pem
     dest: /etc/elasticsearch/certs/ca.crt
     owner: root
@@ -35,7 +35,7 @@
   when: es_tls_provided
 
 - name: Configure TLS settings
-  blockinfile:
+  ansible.builtin.blockinfile:
     path: /etc/elasticsearch/elasticsearch.yml
     block: |
       xpack.security.enabled: true
@@ -48,7 +48,7 @@
   when: es_tls_provided
 
 - name: Configure LDAP realm
-  blockinfile:
+  ansible.builtin.blockinfile:
     path: /etc/elasticsearch/elasticsearch.yml
     block: |
       xpack.security.authc.realms.ldap.ldap1:
@@ -64,7 +64,7 @@
   notify: restart elasticsearch
 
 - name: Template role mapping file
-  template:
+  ansible.builtin.template:
     src: role_mapping.yml.j2
     dest: /etc/elasticsearch/role_mapping.yml
     owner: root
