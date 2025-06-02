@@ -1,6 +1,6 @@
 ---
 - name: Template elasticsearch.yml
-  template:
+  ansible.builtin.template:
     src: elasticsearch.yml.j2
     dest: /etc/elasticsearch/elasticsearch.yml
     owner: root

@@ -1,2 +1,2 @@
 ---
-es_use_slm: true
+elasticsearch_snapshot_use_slm: true
