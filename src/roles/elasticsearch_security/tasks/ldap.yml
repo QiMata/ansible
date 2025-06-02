@@ -1,6 +1,6 @@
 ---
 - name: Configure LDAP realm
-  blockinfile:
+  ansible.builtin.blockinfile:
     path: /etc/elasticsearch/elasticsearch.yml
     block: |
       xpack.security.authc.realms.ldap.ldap1:
