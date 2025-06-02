@@ -8,15 +8,15 @@
     - all.yml
   tasks:
     - name: Ensure user 'mysql' exists
-      user:
+      ansible.builtin.user:
         name: mysql
         state: present
     - name: ensure directory exists
-      file:
+      ansible.builtin.file:
         path: "{{ mariadb_datadir }}"
         state: directory
     - name: Set owner and permissions for the directory
-      file:
+      ansible.builtin.file:
         path: "{{ mariadb_datadir }}"
         owner: mysql
         group: mysql

@@ -6,15 +6,16 @@
     neo4j_dump_path: "{{ lookup('pipe', 'ls -t /var/backups/neo4j/*.dump | head -1') }}"
   tasks:
     - name: Stop Neo4j
-      service:
+      ansible.builtin.service:
         name: neo4j
         state: stopped
 
     - name: Load dump
-      command: >
+      ansible.builtin.command: >
         neo4j-admin load --from={{ neo4j_dump_path }} --database=neo4j --force
+      changed_when: false
 
     - name: Start Neo4j
-      service:
+      ansible.builtin.service:
         name: neo4j
         state: started

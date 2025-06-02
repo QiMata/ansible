@@ -17,11 +17,11 @@
     - group_vars/systems_admin/shared_tools/ansible_semaphore/mariadb_galera.yml
   tasks:
     - name: Ensure user 'mysql' exists
-      user:
+      ansible.builtin.user:
         name: mysql
         state: present
     - name: Set owner and permissions for the directory
-      file:
+      ansible.builtin.file:
         path: "{{ mariadb_datadir }}"
         owner: mysql
         group: mysql
