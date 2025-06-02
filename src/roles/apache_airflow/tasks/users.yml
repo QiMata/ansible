@@ -1,11 +1,11 @@
 ---
 - name: Ensure airflow group exists
-  group:
+  ansible.builtin.group:
     name: "{{ airflow_group }}"
     state: present
 
 - name: Ensure airflow user exists
-  user:
+  ansible.builtin.user:
     name: "{{ airflow_user }}"
     group: "{{ airflow_group }}"
     home: "{{ airflow_home }}"

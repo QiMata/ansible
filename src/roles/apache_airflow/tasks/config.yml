@@ -1,6 +1,6 @@
 ---
 - name: Create Airflow home and subdirs
-  file:
+  ansible.builtin.file:
     path: "{{ item }}"
     state: directory
     owner: "{{ airflow_user }}"
@@ -12,7 +12,7 @@
     - "{{ airflow_home }}/logs"
 
 - name: Deploy airflow.cfg
-  template:
+  ansible.builtin.template:
     src: airflow.cfg.j2
     dest: "{{ airflow_home }}/airflow.cfg"
     owner: "{{ airflow_user }}"
@@ -24,7 +24,7 @@
     - restart airflow-worker
 
 - name: Deploy environment file for systemd
-  template:
+  ansible.builtin.template:
     src: airflow.env.j2
     dest: /etc/default/airflow
     owner: root

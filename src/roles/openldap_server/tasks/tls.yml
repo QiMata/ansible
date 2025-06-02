@@ -31,5 +31,5 @@
       olcTLSCertificateKeyFile: "/etc/ldap/ssl/ldap.key"
       olcTLSCACertificateFile: "/etc/ldap/ssl/ca.crt"
     state: present
-    bind_url: "ldapi:///"
+    server_uri: "ldapi:///"
   notify: restart slapd
