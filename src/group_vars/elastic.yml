@@ -4,5 +4,3 @@ elasticsearch_heap_size_min: 2g
 elasticsearch_heap_size_max: 2g
 elasticsearch_data_path: /data
 kibana_server_host: "{{ hostvars[inventory_hostname]['service_ip'] }}"
-
-
