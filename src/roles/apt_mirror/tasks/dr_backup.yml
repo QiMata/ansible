@@ -1,6 +1,6 @@
 ---
 - name: Create backup directory
-  file:
+  ansible.builtin.file:
     path: /var/backups/apt-mirror
     state: directory
     owner: root
@@ -8,7 +8,7 @@
     mode: "0755"
 
 - name: Weekly tar backup of mirror index (lightweight)
-  cron:
+  ansible.builtin.cron:
     name: "Backup apt-mirror metadata"
     user: root
     job: >
@@ -18,4 +18,4 @@
     hour: 2
     minute: 0
     state: present
-  when: dr_backup_enabled | bool
+  when: apt_mirror_dr_backup_enabled | bool
