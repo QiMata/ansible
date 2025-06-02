@@ -16,5 +16,5 @@
   ansible.builtin.apt:
     name: "{{ superset_system_packages }}"
     state: present
-    update_cache: yes
+    update_cache: true
   become: yes
