@@ -40,38 +40,38 @@
   community.general.ldap_attrs:
     dn: olcDatabase={1}mdb,cn=config
     attributes:
-      olcSuffix: "{{ _basedn }}"
+      olcSuffix: "{{ open_ldap_setup_basedn }}"
     state: exact
 
 - name: Set up a root user
   community.general.ldap_attrs:
     dn: olcDatabase={1}mdb,cn=config
     attributes:
-      olcRootDN: "{{ openldap_server_rootdn }}"
-      olcRootPW: "{{ openldap_server_rootpw }}"
+      olcRootDN: "{{ open_ldap_setup_rootdn }}"
+      olcRootPW: "{{ open_ldap_setup_rootpw }}"
     state: exact
 
 - name: Set up the ACL
   community.general.ldap_attrs:
     dn: olcDatabase={1}mdb,cn=config
     attributes:
-      olcAccess: "{{ openldap_olcaccess }}"
+      olcAccess: "{{ open_ldap_setup_olcaccess }}"
     ordered: true
     state: exact
 
 - name: Generate basedn
   community.general.ldap_entry:
-    dn: "{{ _basedn }}"
+    dn: "{{ open_ldap_setup_basedn }}"
     objectClass: domain
 
 # - name: Load encryption config
 #   community.general.ldap_attrs:
 #     dn: cn=config
 #     attributes:
-#       olcTLSCertificateKeyFile: "{{ openldap_server_ssl_key }}"
-#       olcTLSCertificateFile: "{{ openldap_server_ssl_cert }}"
+#       olcTLSCertificateKeyFile: "{{ open_ldap_setup_ssl_key }}"
+#       olcTLSCertificateFile: "{{ open_ldap_setup_ssl_cert }}"
 #     state: exact
-#   when: openldap_server_enable_tls
+#   when: open_ldap_setup_enable_tls
 #   notify: restart slapd
 
 - name: Set up syncrepl on Master 1

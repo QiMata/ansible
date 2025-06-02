@@ -22,7 +22,7 @@ SLAPD_PIDFILE=
 # sockets.
 # Example usage:
 # SLAPD_SERVICES="ldap://127.0.0.1:389/ ldaps:/// ldapi:///"
-{% if openldap_server_enable_tls %}
+{% if open_ldap_setup_enable_tls %}
 SLAPD_SERVICES="ldaps:/// ldapi:///"
 {% else %}
 SLAPD_SERVICES="ldap:// ldapi:///"
