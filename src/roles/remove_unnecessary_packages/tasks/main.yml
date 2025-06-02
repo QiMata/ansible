@@ -2,7 +2,7 @@
 - name: Retry removing unnecessary packages
   block:
     - name: Remove unnecessary packages
-      apt:
+      ansible.builtin.apt:
         name: "{{ item }}"
         state: absent
       loop: "{{ unnecessary_packages }}"
@@ -12,5 +12,5 @@
       delay: 10
   rescue:
     - name: Handle failure
-      debug:
+      ansible.builtin.debug:
         msg: "Failed to remove unnecessary packages"

@@ -9,12 +9,12 @@
 
 - name: Reload systemd
   ansible.builtin.systemd:
-    daemon_reload: yes
+    daemon_reload: true
   become: yes
 
 - name: Enable and start Superset service
   ansible.builtin.systemd:
     name: "{{ superset_service_name }}"
-    enabled: yes
+    enabled: true
     state: started
   become: yes

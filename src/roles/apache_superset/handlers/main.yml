@@ -1,6 +1,6 @@
 ---
-- name: restart superset
+- name: Restart superset
   ansible.builtin.systemd:
     name: "{{ superset_service_name }}"
     state: restarted
-    daemon_reload: yes
+    daemon_reload: true
