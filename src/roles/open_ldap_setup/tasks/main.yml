@@ -1,6 +1,6 @@
 ---
 - name: Install the openldap and required packages
-  apt:
+  ansible.builtin.apt:
     name:
       - slapd
       - ldap-utils
@@ -10,7 +10,7 @@
     update_cache: true
 
 - name: Install the openldap and required packages for legacy distros
-  apt:
+  ansible.builtin.apt:
     name:
       - python-selinux
   when:
@@ -18,20 +18,20 @@
     - ansible_distribution_major_version|int < 20
 
 - name: Add openldap user to root group (ssl keys access)
-  user:
+  ansible.builtin.user:
     name: openldap
     append: true
     groups: root
 
 - name: Copy default config
-  template:
+  ansible.builtin.template:
     src: slapd.j2
     dest: /etc/default/slapd
     mode: 0755
   notify: restart slapd
 
 - name: Make sure slapd is enabled and running
-  systemd:
+  ansible.builtin.systemd:
     name: slapd
     state: started
     enabled: true
@@ -95,7 +95,7 @@
     state: exact
 
 - name: Start and enable OpenLDAP service
-  systemd:
+  ansible.builtin.systemd:
     name: slapd
     state: started
     enabled: yes
