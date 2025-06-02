@@ -1,4 +1,7 @@
 ---
-- import_tasks: install.yml
-- import_tasks: configure.yml
-- import_tasks: exporters.yml
+- name: Include install tasks
+  ansible.builtin.import_tasks: install.yml
+- name: Include configuration tasks
+  ansible.builtin.import_tasks: configure.yml
+- name: Include exporter tasks
+  ansible.builtin.import_tasks: exporters.yml
