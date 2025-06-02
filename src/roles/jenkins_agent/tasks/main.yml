@@ -1,19 +1,19 @@
 ---
-- name: ensure jenkins user
+- name: Ensure Jenkins user
   ansible.builtin.user:
     name: "{{ jenkins_agent_user }}"
     home: "{{ jenkins_agent_home }}"
     shell: /bin/bash
-    create_home: yes
+    create_home: true
 
-- name: install openjdk
+- name: Install OpenJDK
   ansible.builtin.apt:
     name: openjdk-11-jdk
     state: present
-    update_cache: yes
+    update_cache: true
 
-- name: deploy controller public key
-  ansible.builtin.authorized_key:
+- name: Deploy controller public key
+  ansible.posix.authorized_key:
     user: "{{ jenkins_agent_user }}"
     key: "{{ jenkins_agent_ssh_public_key }}"
     state: present
