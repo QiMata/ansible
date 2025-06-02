@@ -3,7 +3,7 @@
   ansible.builtin.apt:
     pkg: filebeat
     state: present
-    update_cache: yes
+    update_cache: true
 
 - name: Deploy Filebeat config
   ansible.builtin.template:
@@ -15,5 +15,5 @@
 - name: Enable and start Filebeat
   ansible.builtin.service:
     name: filebeat
-    enabled: yes
+    enabled: true
     state: started

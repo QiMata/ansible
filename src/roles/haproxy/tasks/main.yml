@@ -1,13 +1,13 @@
 ---
 - name: Install haproxy
-  apt:
+  ansible.builtin.apt:
     name: "{{ haproxy_package_name }}"
     state: present
   become: yes
   when: ansible_facts.os_family == 'Debian'
 
 - name: Ensure certificate directory exists
-  file:
+  ansible.builtin.file:
     path: /etc/haproxy/certs
     state: directory
     owner: root
@@ -16,7 +16,7 @@
   when: haproxy_ssl_certificate | length > 0
 
 - name: Deploy certificate
-  copy:
+  ansible.builtin.copy:
     content: "{{ haproxy_ssl_certificate_content }}"
     dest: "{{ haproxy_ssl_certificate }}"
     owner: root
@@ -25,7 +25,7 @@
   when: haproxy_ssl_certificate | length > 0 and haproxy_ssl_certificate_content | length > 0
 
 - name: Deploy haproxy configuration
-  template:
+  ansible.builtin.template:
     src: haproxy.cfg.j2
     dest: /etc/haproxy/haproxy.cfg
     owner: root
@@ -34,7 +34,7 @@
   notify: reload haproxy
 
 - name: Enable and start haproxy
-  service:
+  ansible.builtin.service:
     name: "{{ haproxy_service_name }}"
     state: started
-    enabled: yes
+    enabled: true

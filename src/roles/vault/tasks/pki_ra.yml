@@ -23,6 +23,7 @@
       path "pki/revoke" {
         capabilities = ["update"]
       }
+    mode: '0600'
   register: _policy_file
 
 - name: Apply Vault policy

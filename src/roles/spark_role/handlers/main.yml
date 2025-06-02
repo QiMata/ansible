@@ -1,18 +1,18 @@
 ---
 - name: Restart Spark Master
-  systemd:
+  ansible.builtin.systemd:
     name: spark-master
     state: restarted
-    daemon_reload: yes
+    daemon_reload: true
 
 - name: Restart Spark Worker
-  systemd:
+  ansible.builtin.systemd:
     name: spark-worker
     state: restarted
-    daemon_reload: yes
+    daemon_reload: true
 
 - name: Restart Spark History Server
-  systemd:
+  ansible.builtin.systemd:
     name: spark-history-server
     state: restarted
-    daemon_reload: yes
+    daemon_reload: true
