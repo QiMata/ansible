@@ -8,7 +8,7 @@
       - libpam-sss
       - krb5-user
     state: present
-    update_cache: yes
+    update_cache: true
 
 - name: Configure krb5.conf
   ansible.builtin.template:
@@ -36,4 +36,4 @@
   ansible.builtin.service:
     name: sssd
     state: started
-    enabled: yes
+    enabled: true

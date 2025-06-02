@@ -1,6 +1,6 @@
 ---
 - hosts: postgres-clustermanagerpostgres
-  become: yes
+  become: true
   vars_files:
     - group_vars/all.yml
     - group_vars/postgres.yml
@@ -10,7 +10,7 @@
 
 - hosts: postgres-clustermanagerpostgres:POSTGRESQL_DATABASE, postgres-clustermanagerpostgres:POSTGRESQL_REPLICATION, postgres-clustermanagerpostgres:POSTGRESQL_WITNESS
   name: Install Postgres binaries
-  become: yes
+  become: true
   gather_facts: yes
 
   collections:
@@ -74,7 +74,7 @@
 ---
 - hosts: postgres-clustermanagerpostgres:PGPOOL
   name: Manage PgpoolII instances
-  become: yes
+  become: true
   gather_facts: yes
 
   collections:

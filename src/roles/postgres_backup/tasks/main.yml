@@ -23,10 +23,10 @@
 
 - name: Reload systemd
   ansible.builtin.systemd:
-    daemon_reload: yes
+    daemon_reload: true
 
 - name: Enable and start timer
   ansible.builtin.systemd:
     name: postgres_backup.timer
     state: started
-    enabled: yes
+    enabled: true

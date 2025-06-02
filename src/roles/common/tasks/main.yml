@@ -1,9 +1,9 @@
 ---
 - name: Update apt cache
   ansible.builtin.apt:
-    update_cache: yes
+    update_cache: true
     cache_valid_time: 3600
-  become: yes
+  become: true
 
 - name: Install common dependencies
   ansible.builtin.apt:
@@ -14,4 +14,4 @@
       - ca-certificates
       - gnupg
     state: present
-  become: yes
+  become: true

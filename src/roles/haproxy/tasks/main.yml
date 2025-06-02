@@ -3,7 +3,7 @@
   ansible.builtin.apt:
     name: "{{ haproxy_package_name }}"
     state: present
-  become: yes
+  become: true
   when: ansible_facts.os_family == 'Debian'
 
 - name: Ensure certificate directory exists

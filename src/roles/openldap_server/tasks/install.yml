@@ -15,10 +15,10 @@
   ansible.builtin.apt:
     name: [ slapd, ldap-utils ]
     state: present
-    update_cache: yes
+    update_cache: true
 
 - name: Ensure slapd service started
   ansible.builtin.service:
     name: slapd
     state: started
-    enabled: yes
+    enabled: true
