@@ -1,6 +1,6 @@
 ---
 - name: Set SSL mode
-  uri:
+  ansible.builtin.uri:
     url: "https://api.cloudflare.com/client/v4/zones/{{ cloudflare_zone_id }}/settings/ssl"
     method: PATCH
     headers:
@@ -13,7 +13,7 @@
   changed_when: _ssl.json.result.value != cloudflare_ssl_mode
 
 - name: Enable / Disable Always Use HTTPS
-  uri:
+  ansible.builtin.uri:
     url: "https://api.cloudflare.com/client/v4/zones/{{ cloudflare_zone_id }}/settings/always_use_https"
     method: PATCH
     headers:

@@ -1,5 +1,5 @@
 - name: Ensure logging directory exists
-  file:
+  ansible.builtin.file:
     path: "{{ bind9_log_dir }}"
     state: directory
     owner: bind
@@ -7,7 +7,7 @@
     mode: '0755'
 
 - name: Configure log rotation
-  copy:
+  ansible.builtin.copy:
     dest: /etc/logrotate.d/bind9
     content: |
       {{ bind9_log_dir }}/*.log {

@@ -1,17 +1,17 @@
 - name: Deploy named.conf.options
-  template:
+  ansible.builtin.template:
     src: named.conf.options.j2
     dest: /etc/bind/named.conf.options
   notify: Restart BIND9
 
 - name: Deploy named.conf.local with zone definitions
-  template:
+  ansible.builtin.template:
     src: named.conf.local.j2
     dest: /etc/bind/named.conf.local
   notify: Restart BIND9
 
 - name: Create zone files
-  template:
+  ansible.builtin.template:
     src: zone.db.j2
     dest: "/etc/bind/db.{{ item.name }}"
   loop: "{{ bind9_zones }}"
