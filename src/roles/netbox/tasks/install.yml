@@ -16,8 +16,8 @@
 - name: Create netbox system user
   ansible.builtin.user:
     name: "{{ netbox_user }}"
-    system: yes
-    create_home: no
+    system: true
+    create_home: false
     shell: /usr/sbin/nologin
 
 - name: Clone NetBox repository
@@ -25,7 +25,7 @@
     repo: "{{ netbox_git_repo }}"
     dest: "{{ netbox_install_dir }}"
     version: "{{ netbox_branch }}"
-    force: yes
+    force: true
   notify: restart netbox
 
 - name: Create virtualenv

@@ -6,5 +6,6 @@
       ansible.builtin.stat:
         path: "/etc/acme"
       register: acme_dir
-    - ansible.builtin.assert:
+    - name: Assert acme.sh directory exists
+      ansible.builtin.assert:
         that: acme_dir.stat.exists

@@ -1,4 +1,7 @@
 ---
-- import_tasks: install.yml
-- import_tasks: obtain.yml
-- import_tasks: deploy.yml
+- name: Import install tasks
+  ansible.builtin.import_tasks: install.yml
+- name: Import obtain tasks
+  ansible.builtin.import_tasks: obtain.yml
+- name: Import deploy tasks
+  ansible.builtin.import_tasks: deploy.yml

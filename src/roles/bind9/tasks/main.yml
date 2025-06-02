@@ -1,4 +1,8 @@
-- ansible.builtin.include_tasks: install.yml
-- ansible.builtin.include_tasks: configure.yml
-- ansible.builtin.include_tasks: dnssec.yml
-- ansible.builtin.include_tasks: logging.yml
+- name: Include install tasks
+  ansible.builtin.include_tasks: install.yml
+- name: Include configure tasks
+  ansible.builtin.include_tasks: configure.yml
+- name: Include DNSSEC tasks
+  ansible.builtin.include_tasks: dnssec.yml
+- name: Include logging tasks
+  ansible.builtin.include_tasks: logging.yml
