@@ -1,6 +1,6 @@
 ---
 - name: Manage Cloudflare DNS records
-  community.cloudflare.cloudflare_dns:
+  community.general.cloudflare_dns:
     zone: "{{ cloudflare_zone }}"
     record: "{{ item.record }}"
     type: "{{ item.type }}"

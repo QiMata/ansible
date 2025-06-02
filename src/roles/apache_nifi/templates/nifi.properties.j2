@@ -11,10 +11,10 @@ nifi.cluster.node.protocol.port={{ nifi_cluster_protocol_port }}
 nifi.zookeeper.connect.string={{ nifi_zookeeper_connect }}
 {% endif %}
 
-nifi.security.keystore={{ nifi_keystore_path }}
+nifi.security.keystore={{ apache_nifi_keystore_path }}
 nifi.security.keystoreType=jks
-nifi.security.keystorePasswd={{ nifi_keystore_password }}
-nifi.security.truststore={{ nifi_truststore_path }}
+nifi.security.keystorePasswd={{ apache_nifi_keystore_password }}
+nifi.security.truststore={{ apache_nifi_truststore_path }}
 nifi.security.truststoreType=jks
-nifi.security.truststorePasswd={{ nifi_truststore_password }}
+nifi.security.truststorePasswd={{ apache_nifi_truststore_password }}
 nifi.security.user.login.identity.provider=ldap-provider

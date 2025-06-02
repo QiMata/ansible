@@ -1,9 +1,9 @@
 ---
 amundsen_search_version: "4.0.0"
-search_bind_host: "0.0.0.0"
-search_port: 5001
-search_gunicorn_workers: 4
-search_virtualenv: "/opt/amundsen/search/venv"
-es_host: "localhost"
-es_port: 9200
-search_config_class: "search_service.config.ProdConfig"
+amundsen_search_bind_host: "0.0.0.0"
+amundsen_search_port: 5001
+amundsen_search_gunicorn_workers: 4
+amundsen_search_virtualenv: "/opt/amundsen/search/venv"
+amundsen_search_es_host: "localhost"
+amundsen_search_es_port: 9200
+amundsen_search_config_class: "search_service.config.ProdConfig"

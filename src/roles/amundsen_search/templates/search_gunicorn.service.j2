@@ -5,10 +5,10 @@ After=network.target
 [Service]
 User=amundsen
 Group=amundsen
-Environment=SEARCH_SVC_CONFIG_MODULE_CLASS={{ search_config_class }}
-Environment=ELASTICSEARCH_HOST={{ es_host }}
-Environment=ELASTICSEARCH_PORT={{ es_port }}
-ExecStart={{ search_virtualenv }}/bin/gunicorn --workers {{ search_gunicorn_workers }} --bind {{ search_bind_host }}:{{ search_port }} search_service.search_wsgi:app
+Environment=SEARCH_SVC_CONFIG_MODULE_CLASS={{ amundsen_search_config_class }}
+Environment=ELASTICSEARCH_HOST={{ amundsen_search_es_host }}
+Environment=ELASTICSEARCH_PORT={{ amundsen_search_es_port }}
+ExecStart={{ amundsen_search_virtualenv }}/bin/gunicorn --workers {{ amundsen_search_gunicorn_workers }} --bind {{ amundsen_search_bind_host }}:{{ amundsen_search_port }} search_service.search_wsgi:app
 Restart=always
 RestartSec=5
 

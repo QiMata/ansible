@@ -1,5 +1,5 @@
 from search_service.config_common import Config
 
 class ProdConfig(Config):
-    ELASTICSEARCH_ENDPOINT = "http://{{ es_host }}:{{ es_port }}"
+    ELASTICSEARCH_ENDPOINT = "http://{{ amundsen_search_es_host }}:{{ amundsen_search_es_port }}"
     LOG_LEVEL = "INFO"
