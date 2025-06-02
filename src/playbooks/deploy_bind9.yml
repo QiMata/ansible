@@ -1,4 +1,5 @@
-- hosts: dns_primary:dns_secondary
-  become: yes
+- name: Deploy BIND9
+  hosts: dns_primary:dns_secondary
+  become: true
   roles:
     - bind9

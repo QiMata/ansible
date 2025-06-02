@@ -9,9 +9,9 @@ postgres_host: "{{ groups['netbox_db_servers'][0] }}"
 postgres_port: 5432
 postgres_db: "netbox"
 postgres_user: "netbox"
-postgres_password: "{{ lookup('community.hashi_vault.hashi_vault', 'secret=secret/netbox/db field=password token={{ lookup("env", "VAULT_TOKEN") }}') }}"
+postgres_password: "{{ lookup('community.hashi_vault.hashi_vault', 'secret=secret/netbox/db field=password token=' + lookup('env', 'VAULT_TOKEN')) }}"
 
 redis_host: "netbox-redis.prod.local"
 redis_port: 6379
 
-netbox_secret_key: "{{ lookup('community.hashi_vault.hashi_vault', 'secret=secret/netbox/app field=secret_key token={{ lookup("env", "VAULT_TOKEN") }}') }}"
+netbox_secret_key: "{{ lookup('community.hashi_vault.hashi_vault', 'secret=secret/netbox/app field=secret_key token=' + lookup('env', 'VAULT_TOKEN')) }}"

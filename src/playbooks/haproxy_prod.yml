@@ -1,12 +1,12 @@
 ---
 - name: Gather facts from backend servers
   hosts: appservers
-  gather_facts: yes
+  gather_facts: true
   become: false
 
 - name: Deploy HAProxy cluster with Keepalived
   hosts: loadbalancers
-  become: yes
+  become: true
   roles:
     - role: haproxy
     - role: keepalived
