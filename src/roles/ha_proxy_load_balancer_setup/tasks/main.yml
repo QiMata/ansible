@@ -4,7 +4,7 @@
   ansible.builtin.apt:
     name: haproxy
     state: present
-    update_cache: yes
+    update_cache: true
 
 - name: Copy error files
   ansible.builtin.copy:
@@ -34,6 +34,6 @@
   ansible.builtin.service:
     name: haproxy
     state: started
-    enabled: yes
+    enabled: true
   notify:
     - restart haproxy

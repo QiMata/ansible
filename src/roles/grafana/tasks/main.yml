@@ -1,10 +1,16 @@
 ---
-- import_tasks: install.yml
-- import_tasks: config.yml
-- import_tasks: ha.yml
+- name: Import install tasks
+  ansible.builtin.import_tasks: install.yml
+- name: Import config tasks
+  ansible.builtin.import_tasks: config.yml
+- name: Import HA tasks
+  ansible.builtin.import_tasks: ha.yml
   when: grafana_ha_enabled
-- import_tasks: ldap.yml
+- name: Import LDAP tasks
+  ansible.builtin.import_tasks: ldap.yml
   when: grafana_ldap_enabled
-- import_tasks: provision.yml
-- import_tasks: backup.yml
+- name: Import provisioning tasks
+  ansible.builtin.import_tasks: provision.yml
+- name: Import backup tasks
+  ansible.builtin.import_tasks: backup.yml
   when: grafana_backup_enabled

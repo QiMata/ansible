@@ -1,6 +1,6 @@
 ---
 # handlers file for ha_proxy_load_balancer_setup
-- name: restart haproxy
-  service:
+- name: Restart haproxy
+  ansible.builtin.service:
     name: haproxy
     state: restarted
