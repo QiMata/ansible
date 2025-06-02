@@ -3,5 +3,5 @@
   hosts: all
   become: true
   roles:
-    - role: ../../
-      airflow_executor: "SequentialExecutor"
+    - role: apache_airflow
+      apache_airflow_executor: "SequentialExecutor"

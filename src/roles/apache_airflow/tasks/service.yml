@@ -7,7 +7,7 @@
     group: root
     mode: "0644"
   loop:
-    - "{{ airflow_systemd_units_enabled }}"
+    - "{{ apache_airflow_systemd_units_enabled }}"
   notify:
     - reload systemd
 
@@ -16,4 +16,4 @@
     name: "airflow-{{ item }}.service"
     enabled: true
     state: started
-  loop: "{{ airflow_systemd_units_enabled }}"
+  loop: "{{ apache_airflow_systemd_units_enabled }}"

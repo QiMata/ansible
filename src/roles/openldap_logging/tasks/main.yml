@@ -2,6 +2,9 @@
 - name: Configure rsyslog for ldap
   ansible.builtin.copy:
     dest: /etc/rsyslog.d/50-ldap.conf
+    owner: root
+    group: root
+    mode: "0644"
     content: |
       local4.*    /var/log/ldap.log
   notify: restart rsyslog
@@ -16,6 +19,9 @@
   ansible.builtin.template:
     src: filebeat.yml.j2
     dest: /etc/filebeat/filebeat.yml
+    owner: root
+    group: root
+    mode: "0644"
   notify: restart filebeat
 
 - name: Ensure services running

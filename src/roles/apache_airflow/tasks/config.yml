@@ -3,20 +3,20 @@
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
-    owner: "{{ airflow_user }}"
-    group: "{{ airflow_group }}"
+    owner: "{{ apache_airflow_user }}"
+    group: "{{ apache_airflow_group }}"
     mode: "0755"
   loop:
-    - "{{ airflow_home }}"
-    - "{{ airflow_home }}/dags"
-    - "{{ airflow_home }}/logs"
+    - "{{ apache_airflow_home }}"
+    - "{{ apache_airflow_home }}/dags"
+    - "{{ apache_airflow_home }}/logs"
 
 - name: Deploy airflow.cfg
   ansible.builtin.template:
     src: airflow.cfg.j2
-    dest: "{{ airflow_home }}/airflow.cfg"
-    owner: "{{ airflow_user }}"
-    group: "{{ airflow_group }}"
+    dest: "{{ apache_airflow_home }}/airflow.cfg"
+    owner: "{{ apache_airflow_user }}"
+    group: "{{ apache_airflow_group }}"
     mode: "0600"
   notify:
     - restart airflow-webserver
