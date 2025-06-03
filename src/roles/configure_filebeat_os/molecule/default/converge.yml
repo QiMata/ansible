@@ -1,0 +1,8 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    filebeat_output_elasticsearch_hosts: ['http://localhost:9200']
+  roles:
+    - role: configure_filebeat_os

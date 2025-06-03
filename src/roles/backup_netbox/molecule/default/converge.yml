@@ -1,0 +1,17 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    postgres_db: netbox
+    postgres_host: localhost
+    postgres_user: netbox
+    postgres_password: netbox
+    netbox_media_root: /opt/netbox/media
+  pre_tasks:
+    - name: Create fake media directory
+      ansible.builtin.file:
+        path: "{{ netbox_media_root }}"
+        state: directory
+  roles:
+    - role: backup_netbox

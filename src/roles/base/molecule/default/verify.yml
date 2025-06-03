@@ -1,0 +1,20 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Ensure telnet package is absent
+      ansible.builtin.package:
+        name: telnet
+        state: absent
+      check_mode: true
+
+    - name: Check fail2ban service
+      ansible.builtin.service_facts:
+
+    - name: Assert fail2ban running
+      ansible.builtin.assert:
+        that: ansible_facts.services['fail2ban.service'].state == 'running'
+        fail_msg: "fail2ban is not running"
+        quiet: true
+      when: '"fail2ban.service" in ansible_facts.services'
