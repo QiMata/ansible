@@ -1,0 +1,9 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  roles:
+    - role: glusterfs_setup
+      glusterfs_nodes:
+        - localhost
+        - localhost
