@@ -1,0 +1,7 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  roles:
+    - role: jenkins_agent
+      jenkins_agent_ssh_public_key: "ssh-rsa AAAAB3NzaD dummykey"
