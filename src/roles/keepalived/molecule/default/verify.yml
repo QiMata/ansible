@@ -1,0 +1,31 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Ensure keepalived package installed
+      ansible.builtin.package:
+        name: keepalived
+        state: present
+      check_mode: true
+
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Assert keepalived running and enabled
+      ansible.builtin.assert:
+        that:
+          - "'keepalived.service' in ansible_facts.services"
+          - ansible_facts.services['keepalived.service'].state == 'running'
+          - ansible_facts.services['keepalived.service'].status == 'enabled'
+
+    - name: Read configuration
+      ansible.builtin.slurp:
+        path: /etc/keepalived/keepalived.conf
+      register: keepalived_conf
+
+    - name: Assert VIP configured
+      ansible.builtin.assert:
+        that:
+          - "'10.10.10.10' in (keepalived_conf.content | b64decode)"
+          - "'state MASTER' in (keepalived_conf.content | b64decode)"

@@ -4,7 +4,7 @@ dependency:
 driver:
   name: docker
 platforms:
-  - name: keycloak
+  - name: mariadb
     image: geerlingguy/docker-debian12-ansible:latest
     command: /lib/systemd/systemd
     privileged: true

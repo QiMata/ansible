@@ -1,0 +1,30 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Ensure keepalived installed
+      ansible.builtin.package:
+        name: keepalived
+        state: present
+      check_mode: true
+
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Assert keepalived running
+      ansible.builtin.assert:
+        that:
+          - "'keepalived.service' in ansible_facts.services"
+          - ansible_facts.services['keepalived.service'].state == 'running'
+
+    - name: Slurp configuration
+      ansible.builtin.slurp:
+        path: /etc/keepalived/keepalived.conf
+      register: conf
+
+    - name: Assert template values
+      ansible.builtin.assert:
+        that:
+          - "'10.10.0.100' in (conf.content | b64decode)"
+          - "'virtual_router_id 99' in (conf.content | b64decode)"
