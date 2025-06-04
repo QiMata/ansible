@@ -1,0 +1,18 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check filebeat installed
+      ansible.builtin.package:
+        name: filebeat
+        state: present
+      check_mode: true
+
+    - name: Verify configuration file
+      ansible.builtin.stat:
+        path: /etc/filebeat/filebeat.yml
+      register: fb_cfg
+
+    - ansible.builtin.assert:
+        that: fb_cfg.stat.exists

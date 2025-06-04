@@ -1,0 +1,11 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    app_name: myapp
+    app_repo: https://example.com/repo.git
+  roles:
+    - role: python_git_repo_service_install
+      app_name: "{{ app_name }}"
+      app_repo: "{{ app_repo }}"

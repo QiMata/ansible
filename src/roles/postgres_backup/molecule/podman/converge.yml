@@ -1,0 +1,25 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    db_name: testdb
+    db_user: postgres
+  tasks:
+    - name: Install PostgreSQL server
+      apt:
+        name: postgresql
+        state: present
+        update_cache: true
+
+    - name: Ensure database exists
+      become_user: postgres
+      postgresql_db:
+        name: "{{ db_name }}"
+      ignore_errors: true
+
+  roles:
+    - role: postgres_backup
+      db_name: "{{ db_name }}"
+      db_user: "{{ db_user }}"
+      backup_dir: /var/backups/postgres

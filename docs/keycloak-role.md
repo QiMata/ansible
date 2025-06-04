@@ -92,15 +92,19 @@ There is also a provided playbook `playbooks/keycloak.yml` in this repository wh
 
 ## Testing Instructions
 
-This role includes a **Molecule** test scenario for automated testing. Molecule is used to verify that the role can converge on a fresh system and that Keycloak starts correctly. To test this role locally using Molecule (with Docker):
+This role includes a **Molecule** test scenario for automated testing. Molecule is used to verify that the role can converge on a fresh system and that Keycloak starts correctly. You can run the scenario using either the Docker or Podman driver:
 
-1. **Install Molecule and dependencies**: Make sure you have Python and Docker installed. Install Molecule and its Docker driver, for example:
+1. **Install Molecule and dependencies**: Make sure you have Python installed along with either Docker or Podman. Install Molecule with the driver you plan to use, for example:
 
    ```bash
+   # For Docker
    pip install molecule molecule[docker] docker-py testinfra
+
+   # For Podman
+   pip install molecule[podman] testinfra
    ```
 
-   *This will install Molecule and Testinfra (for verifications). Docker must be running on your system to launch test containers.*
+   *This will install Molecule and Testinfra (for verifications). Ensure the chosen container engine is running on your system.*
 2. **Navigate to the scenario directory**:
    Go to the Molecule scenario for the keycloak role:
 
