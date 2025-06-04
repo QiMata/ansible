@@ -1,0 +1,15 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check backup directory exists
+      ansible.builtin.stat:
+        path: /var/backups/netbox
+      register: backup_dir
+
+    - name: Assert backup directory
+      ansible.builtin.assert:
+        that:
+          - backup_dir.stat.exists
+          - backup_dir.stat.isdir

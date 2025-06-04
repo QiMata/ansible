@@ -1,0 +1,19 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check glbd binary
+      ansible.builtin.command: glbd --version
+      register: glbd_ver
+      changed_when: false
+      failed_when: glbd_ver.rc != 0
+
+    - name: Check service running
+      ansible.builtin.service_facts:
+
+    - name: Assert glb service active
+      ansible.builtin.assert:
+        that:
+          - "'glb.service' in ansible_facts.services"
+          - ansible_facts.services['glb.service'].state == 'running'

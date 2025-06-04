@@ -1,0 +1,30 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    glb_default_targets: "127.0.0.1:3306"
+    glb_listen_addr: 0.0.0.0
+    glb_other_options: ""
+  pre_tasks:
+    - name: Install build tools
+      ansible.builtin.apt:
+        name:
+          - git
+          - build-essential
+          - netcat
+        state: present
+        update_cache: true
+
+    - name: Install mariadb-server
+      ansible.builtin.apt:
+        name: mariadb-server
+        state: present
+
+    - name: Start mariadb
+      ansible.builtin.service:
+        name: mariadb
+        state: started
+        enabled: true
+  roles:
+    - role: mariadb_galera_loadbalancer_install

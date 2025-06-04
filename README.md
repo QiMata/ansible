@@ -29,4 +29,5 @@ and playbooks are organized so they can be reused for different clients and envi
   - `scripts/` – helper utilities for tasks like generating inventories
 
 Each role is built to be modular and can be tested independently using Molecule.  The playbooks
-combine these roles to configure complete systems.
+combine these roles to configure complete systems. Molecule scenarios in this repository work with
+either the **Docker** or **Podman** driver, so you may use whichever container engine is available.

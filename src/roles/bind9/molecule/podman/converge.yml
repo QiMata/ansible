@@ -1,0 +1,12 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    bind9_zones:
+      - name: example.com
+        type: master
+        dynamic_updates: false
+        dnssec: false
+  roles:
+    - role: bind9
