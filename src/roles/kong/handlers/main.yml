@@ -1,0 +1,5 @@
+---
+- name: Restart Kong
+  ansible.builtin.systemd:
+    name: kong
+    state: restarted

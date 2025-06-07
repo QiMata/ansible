@@ -1,0 +1,43 @@
+---
+- name: Install Kong apt key
+  ansible.builtin.get_url:
+    url: "https://download.konghq.com/gateway-3.x/{{ ansible_distribution | lower }}/apt.gpg"
+    dest: /usr/share/keyrings/kong-archive-keyring.gpg
+    mode: '0644'
+
+- name: Add Kong apt repository
+  ansible.builtin.apt_repository:
+    repo: >-
+      deb [signed-by=/usr/share/keyrings/kong-archive-keyring.gpg]
+      https://download.konghq.com/gateway-3.x-{{ ansible_distribution | lower }}
+      {{ ansible_distribution_release }} main
+    state: present
+    filename: kong
+
+- name: Install Kong package
+  ansible.builtin.apt:
+    name: "kong={{ kong_version }}"
+    state: present
+    update_cache: true
+
+- name: Deploy kong.conf
+  ansible.builtin.template:
+    src: kong.conf.j2
+    dest: /etc/kong/kong.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart Kong
+
+- name: Run Kong database migrations
+  ansible.builtin.command: kong migrations bootstrap
+  when: kong_database != 'off'
+  register: kong_migrate
+  changed_when: "'migrate: done' in kong_migrate.stdout"
+  run_once: true
+
+- name: Ensure Kong service is enabled and started
+  ansible.builtin.systemd:
+    name: kong
+    enabled: true
+    state: started
