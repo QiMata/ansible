@@ -1,0 +1,8 @@
+---
+# Default variables for kubeadm role
+kubeadm_version: "1.29.0-00"
+kubeadm_role: "control-plane"  # control-plane or worker
+kubeadm_pod_network_cidr: "10.244.0.0/16"
+kubeadm_init_extra_opts: ""
+kubeadm_join_command: ""
+kubeadm_disable_swap: true

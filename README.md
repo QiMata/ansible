@@ -13,9 +13,9 @@ and playbooks are organized so they can be reused for different clients and envi
 ## Repository Layout
 - `ansible.cfg` – basic configuration pointing Ansible at the bundled roles
 - `requirements.yml` – collection dependencies required to run the playbooks
-- `docs/` – documentation files (for example `keycloak-role.md`)
+- `docs/` – documentation files (for example `keycloak-role.md` and `kubeadm-guide.md`)
 - `group_vars/` – group variable files used by the top level playbooks
-- `playbooks/` – simple playbooks demonstrating role usage
+ - `playbooks/` – simple playbooks demonstrating role usage such as `keycloak.yml` and `kubeadm.yml`
 - `src/` – primary Ansible project
   - `ansible.cfg` – configuration for running playbooks in `src`
   - `requirements.yml` – additional role and collection dependencies
@@ -24,7 +24,7 @@ and playbooks are organized so they can be reused for different clients and envi
   - `group_vars/` and `host_vars/` – variable definitions
   - `playbooks/` – service playbooks like `deploy_bind9.yml` and `deploy_step_ca.yml`
   - `roles/` – dozens of roles covering services including BIND9, Keycloak, Jenkins,
-    OpenLDAP, HAProxy, Step CA, NetBox and more
+    OpenLDAP, HAProxy, Step CA, NetBox, Kubernetes (kubeadm) and more
   - `molecule/` – test scenarios specific to some roles
   - `scripts/` – helper utilities for tasks like generating inventories
 
