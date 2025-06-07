@@ -1,0 +1,25 @@
+---
+- name: Set Erlang cookie
+  ansible.builtin.copy:
+    dest: /var/lib/rabbitmq/.erlang.cookie
+    content: "{{ rabbitmq_erlang_cookie }}"
+    owner: rabbitmq
+    group: rabbitmq
+    mode: '0400'
+  notify: Restart RabbitMQ
+
+- name: Deploy rabbitmq.conf
+  ansible.builtin.template:
+    src: rabbitmq.conf.j2
+    dest: /etc/rabbitmq/rabbitmq.conf
+    owner: root
+    group: rabbitmq
+    mode: '0644'
+  notify: Restart RabbitMQ
+
+- name: Enable RabbitMQ plugins
+  ansible.builtin.command: "rabbitmq-plugins enable --quiet {{ item }}"
+  loop: "{{ rabbitmq_plugins }}"
+  register: plugin_result
+  changed_when: plugin_result.rc == 0 and 'already enabled' not in plugin_result.stdout
+  notify: Restart RabbitMQ

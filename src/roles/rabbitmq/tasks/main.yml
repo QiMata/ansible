@@ -1,0 +1,10 @@
+---
+- name: Include installation tasks
+  ansible.builtin.import_tasks: install.yml
+
+- name: Include configuration tasks
+  ansible.builtin.import_tasks: config.yml
+
+- name: Include clustering tasks
+  ansible.builtin.import_tasks: cluster.yml
+  when: rabbitmq_clustered | bool
