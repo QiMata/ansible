@@ -1,0 +1,13 @@
+---
+galaxy_info:
+  role_name: kubeadm
+  author: Example Inc.
+  description: Install and configure Kubernetes with kubeadm on Debian-based systems
+  license: MIT
+  min_ansible_version: '2.13'
+  platforms:
+    - name: Debian
+      versions: [bullseye, bookworm]
+    - name: Ubuntu
+      versions: [focal, jammy]
+dependencies: []
