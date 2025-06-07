@@ -1,0 +1,18 @@
+---
+kafka_broker_version: "3.5.2"
+kafka_broker_scala_version: "2.13"
+kafka_broker_download_url: "https://downloads.apache.org/kafka/{{ kafka_broker_version }}/kafka_{{ kafka_broker_scala_version }}-{{ kafka_broker_version }}.tgz"
+
+kafka_broker_install_dir: "/opt/kafka"
+kafka_broker_home: "{{ kafka_broker_install_dir }}/kafka_{{ kafka_broker_scala_version }}-{{ kafka_broker_version }}"
+
+kafka_broker_user: "kafka"
+kafka_broker_group: "kafka"
+
+kafka_broker_data_dir: "/var/lib/kafka"
+
+kafka_broker_java_package: "openjdk-17-jdk"
+
+kafka_broker_heap_opts: "-Xmx1G -Xms1G"
+kafka_broker_listeners: "PLAINTEXT://0.0.0.0:9092"
+kafka_broker_zookeeper_connect: "localhost:2181"
