@@ -1,0 +1,45 @@
+---
+- name: Enable SSH
+  ansible.builtin.shell: |
+    pfSsh.php playback svc enable ssh
+  when: pfsense_enable_ssh | bool
+
+- name: Configure interfaces
+  pfsensible.core.pfsense_interface:
+    interface: "{{ item.name }}"
+    ip_address: "{{ item.ip }}"
+    subnet: "{{ item.mask }}"
+    description: "{{ item.description | default('') }}"
+  loop: "{{ pfsense_interfaces }}"
+
+- name: Configure gateways
+  pfsensible.core.pfsense_gateway:
+    name: "{{ item.name }}"
+    interface: "{{ item.interface }}"
+    gateway: "{{ item.gateway }}"
+    description: "{{ item.description | default('') }}"
+  loop: "{{ pfsense_gateways }}"
+
+- name: Set default gateway
+  pfsensible.core.pfsense_default_gateway:
+    name: "{{ pfsense_default_gateway }}"
+  when: pfsense_default_gateway != ''
+
+- name: Configure aliases
+  pfsensible.core.pfsense_alias:
+    name: "{{ item.name }}"
+    type: "{{ item.type }}"
+    address: "{{ item.addresses }}"
+    description: "{{ item.description | default('') }}"
+  loop: "{{ pfsense_aliases }}"
+
+- name: Configure firewall rules
+  pfsensible.core.pfsense_rule:
+    interface: "{{ item.interface }}"
+    action: "{{ item.action }}"
+    protocol: "{{ item.protocol | default('any') }}"
+    source: "{{ item.source | default('any') }}"
+    destination: "{{ item.destination | default('any') }}"
+    destination_port: "{{ item.destination_port | default('') }}"
+    description: "{{ item.description | default('') }}"
+  loop: "{{ pfsense_rules }}"
