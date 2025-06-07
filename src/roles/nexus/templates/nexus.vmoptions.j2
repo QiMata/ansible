@@ -1,0 +1,5 @@
+-Xms{{ nexus_min_heap }}
+-Xmx{{ nexus_max_heap }}
+-XX:+UnlockExperimentalVMOptions
+-XX:+UseCGroupMemoryLimitForHeap
+-XX:ActiveProcessorCount={{ nexus_active_processors }}
