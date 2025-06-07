@@ -1,0 +1,4 @@
+---
+kong_pg_password: !vault |
+  $ANSIBLE_VAULT;1.1;AES256;example
+  <encrypted kong password>

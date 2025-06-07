@@ -1,0 +1,6 @@
+---
+- name: Deploy Kong Gateway
+  hosts: kong
+  become: true
+  roles:
+    - kong

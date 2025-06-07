@@ -1,0 +1,19 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check kong binary
+      ansible.builtin.command: kong version
+      register: kong_ver
+      changed_when: false
+      failed_when: kong_ver.rc != 0
+
+    - name: Assert service running
+      ansible.builtin.service_facts:
+
+    - name: Ensure kong service is running
+      ansible.builtin.assert:
+        that:
+          - "'kong.service' in ansible_facts.services"
+          - ansible_facts.services['kong.service'].state == 'running'

@@ -1,0 +1,8 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  roles:
+    - role: kong
+      vars:
+        kong_database: off
