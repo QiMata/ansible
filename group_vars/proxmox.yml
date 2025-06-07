@@ -1,0 +1,5 @@
+---
+proxmox_cluster_enabled: true
+proxmox_cluster_master: true
+proxmox_cluster_name: pve
+# proxmox_cluster_address: 10.0.0.1
