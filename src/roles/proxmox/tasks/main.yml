@@ -1,0 +1,44 @@
+---
+- name: Ensure Proxmox apt dependencies are present
+  ansible.builtin.apt:
+    name:
+      - gnupg
+      - curl
+    state: present
+    update_cache: true
+
+- name: Add Proxmox repository key
+  ansible.builtin.apt_key:
+    url: "{{ proxmox_repo_key_url }}"
+    state: present
+
+- name: Add Proxmox repository
+  ansible.builtin.apt_repository:
+    repo: "deb {{ proxmox_repo_url }} {{ proxmox_repo_release }} pve-no-subscription"
+    filename: proxmox
+    state: present
+
+- name: Install Proxmox packages
+  ansible.builtin.apt:
+    name: "{{ proxmox_packages }}"
+    state: present
+    update_cache: true
+
+- name: Create Proxmox cluster
+  ansible.builtin.command: >
+    pvecm create {{ proxmox_cluster_name }}
+  args:
+    creates: /etc/pve/corosync.conf
+  when:
+    - proxmox_cluster_enabled
+    - proxmox_cluster_master
+
+- name: Join Proxmox cluster
+  ansible.builtin.command: >
+    pvecm add {{ proxmox_cluster_address }}
+  args:
+    creates: /etc/pve/corosync.conf
+  when:
+    - proxmox_cluster_enabled
+    - not proxmox_cluster_master
+    - proxmox_cluster_address is defined
