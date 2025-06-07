@@ -1,0 +1,7 @@
+---
+- name: Ensure Kafka is enabled and started
+  ansible.builtin.systemd:
+    name: kafka
+    enabled: true
+    state: started
+  become: true

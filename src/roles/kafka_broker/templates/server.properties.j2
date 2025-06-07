@@ -1,0 +1,4 @@
+broker.id={{ kafka_broker_id | default('0') }}
+listeners={{ kafka_broker_listeners }}
+log.dirs={{ kafka_broker_data_dir }}
+zookeeper.connect={{ kafka_broker_zookeeper_connect }}
