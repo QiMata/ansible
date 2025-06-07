@@ -1,0 +1,4 @@
+---
+rabbitmq_erlang_cookie: !vault |
+  $ANSIBLE_VAULT;1.1;AES256;example
+  <encrypted rabbitmq cookie here>

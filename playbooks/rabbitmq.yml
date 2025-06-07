@@ -1,0 +1,6 @@
+---
+- name: Deploy RabbitMQ
+  hosts: rabbitmq
+  become: true
+  roles:
+    - rabbitmq

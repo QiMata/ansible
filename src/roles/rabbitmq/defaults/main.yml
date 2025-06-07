@@ -1,0 +1,12 @@
+---
+# RabbitMQ role default variables
+rabbitmq_port: 5672
+rabbitmq_management_port: 15672
+rabbitmq_prometheus_port: 15692
+rabbitmq_clustered: false
+rabbitmq_cluster_master_node: "{{ groups['rabbitmq_cluster'][0] | default(inventory_hostname) }}"
+rabbitmq_erlang_cookie: ""
+rabbitmq_cluster_partition_handling: "pause_minority"
+rabbitmq_plugins:
+  - rabbitmq_management
+  - rabbitmq_prometheus
