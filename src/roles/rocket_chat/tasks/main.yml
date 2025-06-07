@@ -1,0 +1,65 @@
+---
+- name: Install dependencies
+  ansible.builtin.apt:
+    name:
+      - curl
+      - ca-certificates
+      - gnupg
+      - build-essential
+      - nodejs
+    state: present
+    update_cache: true
+
+- name: Ensure rocket chat user
+  ansible.builtin.user:
+    name: "{{ rocket_chat_user }}"
+    system: true
+    home: "{{ rocket_chat_install_dir }}"
+    shell: /usr/sbin/nologin
+
+- name: Create install directory
+  ansible.builtin.file:
+    path: "{{ rocket_chat_install_dir }}"
+    state: directory
+    owner: "{{ rocket_chat_user }}"
+    group: "{{ rocket_chat_user }}"
+    mode: '0755'
+
+- name: Download Rocket.Chat archive
+  ansible.builtin.get_url:
+    url: "https://releases.rocket.chat/{{ rocket_chat_version }}/download"
+    dest: "/tmp/rocket.chat.tgz"
+    mode: '0644'
+    force: true
+
+- name: Extract Rocket.Chat
+  ansible.builtin.unarchive:
+    src: "/tmp/rocket.chat.tgz"
+    dest: "{{ rocket_chat_install_dir }}"
+    remote_src: true
+    creates: "{{ rocket_chat_install_dir }}/main.js"
+    owner: "{{ rocket_chat_user }}"
+    group: "{{ rocket_chat_user }}"
+
+- name: Install Node dependencies
+  become: true
+  ansible.builtin.command: npm install
+  args:
+    chdir: "{{ rocket_chat_install_dir }}/programs/server"
+    creates: "{{ rocket_chat_install_dir }}/programs/server/node_modules"
+  become_user: "{{ rocket_chat_user }}"
+
+- name: Deploy systemd unit
+  ansible.builtin.template:
+    src: rocketchat.service.j2
+    dest: /etc/systemd/system/rocketchat.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload systemd
+
+- name: Ensure Rocket.Chat service enabled and started
+  ansible.builtin.systemd:
+    name: rocketchat
+    enabled: true
+    state: started

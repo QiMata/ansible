@@ -1,0 +1,16 @@
+[Unit]
+Description=Rocket.Chat server
+After=network.target
+
+[Service]
+Type=simple
+User={{ rocket_chat_user }}
+Group={{ rocket_chat_user }}
+ExecStart=/usr/bin/node {{ rocket_chat_install_dir }}/main.js
+Environment=ROOT_URL={{ rocket_chat_root_url }}
+Environment=MONGO_URL={{ rocket_chat_mongo_url }}
+Environment=PORT={{ rocket_chat_port }}
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
