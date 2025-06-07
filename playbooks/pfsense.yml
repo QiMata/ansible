@@ -1,0 +1,6 @@
+---
+- name: Configure pfSense firewall
+  hosts: pfsense_firewalls
+  gather_facts: false
+  roles:
+    - pfsense
