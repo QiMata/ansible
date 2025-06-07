@@ -1,0 +1,6 @@
+---
+- name: Deploy Rocket.Chat
+  hosts: rocketchat
+  become: true
+  roles:
+    - rocket_chat
