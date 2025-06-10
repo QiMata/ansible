@@ -3,6 +3,6 @@
   hosts: all
   become: true
   roles:
-    - role: spark_role
+    - role: apache_spark
       vars:
-        spark_role_history_enabled: true
+        apache_spark_history_enabled: true

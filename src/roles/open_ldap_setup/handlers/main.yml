@@ -1,5 +1,0 @@
----
-- name: Restart slapd
-  ansible.builtin.systemd:
-    name: slapd
-    state: restarted
