@@ -11,7 +11,7 @@ ufw_allow_ports: [389, 636]
 # Allow specific interfaces
 ufw_allow_interfaces: ['tcp']
 
-# defaults file for open_ldap_setup
+# defaults file for openldap_server
 openldap_server_domain: qimata.net
 
 # This is the password for admin for openldap

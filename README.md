@@ -24,8 +24,10 @@ and playbooks are organized so they can be reused for different clients and envi
   - `inventories/` – inventory files for environments such as `prod` and `dev`
   - `group_vars/` and `host_vars/` – variable definitions
   - `playbooks/` – service playbooks like `deploy_bind9.yml` and `deploy_step_ca.yml`
-  - `roles/` – dozens of roles covering services including BIND9, Keycloak, Jenkins,
-    OpenLDAP, HAProxy, Step CA, NetBox, Kubernetes (kubeadm) and more
+  - role directories organized under category folders, for example
+    `infrastructure/linux/roles`, `security/linux/roles`, `databases/linux/roles`,
+    etc. Each contains the individual service roles (Keycloak, Vault, PostgreSQL,
+    Proxmox, and so on).
   - `molecule/` – test scenarios specific to some roles
   - `scripts/` – helper utilities for tasks like generating inventories
 

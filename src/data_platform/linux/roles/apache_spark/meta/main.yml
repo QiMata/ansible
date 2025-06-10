@@ -1,6 +1,6 @@
 ---
 galaxy_info:
-  role_name: spark_role
+  role_name: apache_spark
   author: Example Inc.
   description: Install and configure Apache Spark standalone cluster with optional HA on Debian
   license: MIT

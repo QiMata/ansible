@@ -105,7 +105,7 @@ This role does **not define any specific Ansible tags** in its tasks. All tasks 
 ```yaml
 - hosts: spark_master
   roles:
-    - role: spark_role
+    - role: apache_spark
       tags: ["spark", "spark_master"]
 ```
 
@@ -139,7 +139,7 @@ This would allow you to run or skip the Spark role via the tag, but by default (
 
 ## Example Playbook
 
-Below is an example of how to use the `spark_role` in an Ansible playbook to set up a Spark cluster. In this example, we define two groups in inventory: `spark_master` (for master node(s)) and `spark_worker` (for worker nodes). We then apply the role to each group with appropriate variables. This ensures that the master node starts the Spark master service (and optionally history server), and the worker nodes connect to the master.
+Below is an example of how to use the `apache_spark` in an Ansible playbook to set up a Spark cluster. In this example, we define two groups in inventory: `spark_master` (for master node(s)) and `spark_worker` (for worker nodes). We then apply the role to each group with appropriate variables. This ensures that the master node starts the Spark master service (and optionally history server), and the worker nodes connect to the master.
 
 ```yaml
 # Example inventory groups (for context, not part of playbook):
@@ -154,7 +154,7 @@ Below is an example of how to use the `spark_role` in an Ansible playbook to set
   hosts: spark_master
   become: yes
   roles:
-    - role: spark_role
+    - role: apache_spark
       vars:
         spark_history_enabled: true       # Enable the history server on the master node (optional)
         # spark_ha_enabled: true          # (Optional) If you have multiple masters, enable HA
@@ -165,7 +165,7 @@ Below is an example of how to use the `spark_role` in an Ansible playbook to set
   hosts: spark_worker
   become: yes
   roles:
-    - role: spark_role
+    - role: apache_spark
       vars:
         spark_master_host: "{{ groups['spark_master'][0] }}"  # Point workers to the first master host
         spark_master_url: "spark://{{ groups['spark_master'][0] }}:7077"  # Construct master URL (if not using default)
@@ -184,7 +184,7 @@ After running the playbook, you should have:
 
 ## Testing Instructions
 
-It is highly recommended to test this role using **Molecule** (with Docker or another driver) to verify its behavior before deploying to production. Molecule can run the role in a disposable environment (container or VM) and check for idempotency and correct configuration. Below are steps to test the `spark_role` using Molecule:
+It is highly recommended to test this role using **Molecule** (with Docker or another driver) to verify its behavior before deploying to production. Molecule can run the role in a disposable environment (container or VM) and check for idempotency and correct configuration. Below are steps to test the `apache_spark` using Molecule:
 
 1. **Install Molecule (and Docker)** on your development machine if not already installed. For example, using pip:
 
@@ -197,7 +197,7 @@ It is highly recommended to test this role using **Molecule** (with Docker or an
 2. **Check for an existing Molecule scenario:** This role may come with a predefined Molecule scenario (commonly in `molecule/default/`). If such a directory exists in the role, you can use it directly. If not, you can initialize a new scenario for this role with:
 
    ```bash
-   molecule init scenario -r spark_role -d docker
+   molecule init scenario -r apache_spark -d docker
    ```
 
    This will create a `molecule/default/` directory with a basic scenario using Docker driver. It includes a `molecule.yml` (for config) and a `converge.yml` playbook that applies the role to a test instance.
@@ -215,7 +215,7 @@ It is highly recommended to test this role using **Molecule** (with Docker or an
    molecule converge
    ```
 
-   Molecule will pull up the container, run the `converge.yml` playbook (which applies the `spark_role`), and report the results. Watch for any errors or failed tasks. A successful run should indicate that all tasks completed and (on the first run) changed some state. Running `molecule converge` again after the first time should result in *zero changes*, indicating the role is idempotent.
+   Molecule will pull up the container, run the `converge.yml` playbook (which applies the `apache_spark`), and report the results. Watch for any errors or failed tasks. A successful run should indicate that all tasks completed and (on the first run) changed some state. Running `molecule converge` again after the first time should result in *zero changes*, indicating the role is idempotent.
 
 5. **Verify the outcome in the container:** After convergence, you can manually check the container to ensure Spark was installed and configured:
 
@@ -251,7 +251,7 @@ Using Molecule for testing ensures the role is **idempotent** (running it again 
 
 ## Known Issues and Gotchas
 
-When using the spark_role, be aware of the following caveats, edge cases, and design limitations:
+When using the apache_spark, be aware of the following caveats, edge cases, and design limitations:
 
 * **Inventory Group Names:** The role uses hard-coded inventory group names `spark_master` and `spark_worker` to determine which tasks to run on which hosts. This means your inventory should have hosts organized into these groups for the role to work as intended. For example, if you have one master node and multiple workers, ensure the master’s hostname is in the `spark_master` group and all worker hostnames are in the `spark_worker` group. Tasks like deploying the master’s systemd unit or starting the worker service are conditional on group membership. If you run the role on a host that is not in either group, those conditional tasks will all skip, and you might end up with just Spark installed but no service running. In practice, you can include a host in both groups if it should run both master and worker (not typical in production, but possible for testing or small setups). Just be mindful that these group names are expected by the role (they are not configurable via a variable in the current implementation).
 
