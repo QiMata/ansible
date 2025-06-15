@@ -21,6 +21,6 @@
 
   roles:
     - role: postgres_backup
-      db_name: "{{ postgres_backup_db_name }}"
-      db_user: "{{ postgres_backup_db_user }}"
-      backup_dir: /var/backups/postgres
+      postgres_backup_db_name: "{{ postgres_backup_db_name }}"
+      postgres_backup_db_user: "{{ postgres_backup_db_user }}"
+      postgres_backup_backup_dir: /var/backups/postgres

@@ -1,14 +1,14 @@
 # Apache NiFi Configuration
-nifi.web.http.port={{ nifi_listen_port if not nifi_enable_https else '' }}
-nifi.web.https.port={{ nifi_secure_port if nifi_enable_https else '' }}
+nifi.web.http.port={{ apache_nifi_listen_port if not apache_nifi_enable_https else '' }}
+nifi.web.https.port={{ apache_nifi_secure_port if apache_nifi_enable_https else '' }}
 nifi.web.https.host={{ inventory_hostname }}
-nifi.remote.input.secure={{ 'true' if nifi_enable_https else 'false' }}
+nifi.remote.input.secure={{ 'true' if apache_nifi_enable_https else 'false' }}
 
-nifi.cluster.is.node={{ 'true' if nifi_cluster_enabled else 'false' }}
-{% if nifi_cluster_enabled %}
+nifi.cluster.is.node={{ 'true' if apache_nifi_cluster_enabled else 'false' }}
+{% if apache_nifi_cluster_enabled %}
 nifi.cluster.node.address={{ ansible_default_ipv4.address }}
-nifi.cluster.node.protocol.port={{ nifi_cluster_protocol_port }}
-nifi.zookeeper.connect.string={{ nifi_zookeeper_connect }}
+nifi.cluster.node.protocol.port={{ apache_nifi_cluster_protocol_port }}
+nifi.zookeeper.connect.string={{ apache_nifi_zookeeper_connect }}
 {% endif %}
 
 nifi.security.keystore={{ apache_nifi_keystore_path }}

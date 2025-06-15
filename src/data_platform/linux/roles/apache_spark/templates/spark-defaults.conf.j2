@@ -1,6 +1,6 @@
 spark.eventLog.enabled                 true
-spark.eventLog.dir                     {{ spark_role_eventlog_dir }}
-spark.history.fs.logDirectory          {{ spark_role_eventlog_dir }}
-{% if spark_role_history_enabled | bool %}
+spark.eventLog.dir                     {{ apache_spark_eventlog_dir }}
+spark.history.fs.logDirectory          {{ apache_spark_eventlog_dir }}
+{% if apache_spark_history_enabled | bool %}
 spark.history.ui.port                  18080
 {% endif %}

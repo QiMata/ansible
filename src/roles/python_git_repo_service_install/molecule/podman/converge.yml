@@ -7,5 +7,5 @@
     python_git_repo_service_install_app_repo: https://example.com/repo.git
   roles:
     - role: python_git_repo_service_install
-      app_name: "{{ python_git_repo_service_install_app_name }}"
-      app_repo: "{{ python_git_repo_service_install_app_repo }}"
+      python_git_repo_service_install_app_name: "{{ python_git_repo_service_install_app_name }}"
+      python_git_repo_service_install_app_repo: "{{ python_git_repo_service_install_app_repo }}"
