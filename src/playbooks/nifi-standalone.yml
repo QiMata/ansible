@@ -3,6 +3,6 @@
   hosts: nifi_standalone
   become: true
   vars:
-    nifi_cluster_enabled: false
+    apache_nifi_cluster_enabled: false
   roles:
     - apache_nifi

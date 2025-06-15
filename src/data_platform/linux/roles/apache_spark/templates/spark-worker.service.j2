@@ -5,11 +5,11 @@ Wants=network-online.target
 
 [Service]
 Type=forking
-User={{ spark_role_user }}
-Group={{ spark_role_group }}
-WorkingDirectory={{ spark_role_symlink_dir }}/sbin
-ExecStart={{ spark_role_symlink_dir }}/sbin/start-worker.sh {{ spark_role_master_url }}
-ExecStop={{ spark_role_symlink_dir }}/sbin/stop-worker.sh
+User={{ apache_spark_user }}
+Group={{ apache_spark_group }}
+WorkingDirectory={{ apache_spark_symlink_dir }}/sbin
+ExecStart={{ apache_spark_symlink_dir }}/sbin/start-worker.sh {{ apache_spark_master_url }}
+ExecStop={{ apache_spark_symlink_dir }}/sbin/stop-worker.sh
 SuccessExitStatus=143
 Restart=on-failure
 

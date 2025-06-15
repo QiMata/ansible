@@ -1,30 +1,30 @@
 ---
-spark_role_version: "3.4.1"
-spark_role_hadoop_version: "3"
-spark_role_package_name: "spark-{{ spark_role_version }}-bin-hadoop{{ spark_role_hadoop_version }}"
-spark_role_download_url: "https://dlcdn.apache.org/spark/spark-{{ spark_role_version }}/{{ spark_role_package_name }}.tgz"
+apache_spark_version: "3.4.1"
+apache_spark_hadoop_version: "3"
+apache_spark_package_name: "spark-{{ apache_spark_version }}-bin-hadoop{{ apache_spark_hadoop_version }}"
+apache_spark_download_url: "https://dlcdn.apache.org/spark/spark-{{ apache_spark_version }}/{{ apache_spark_package_name }}.tgz"
 
-spark_role_install_dir: "/opt/spark"
-spark_role_symlink_dir: "{{ spark_role_install_dir }}/current"
+apache_spark_install_dir: "/opt/spark"
+apache_spark_symlink_dir: "{{ apache_spark_install_dir }}/current"
 
-spark_role_user: "spark"
-spark_role_group: "{{ spark_role_user }}"
+apache_spark_user: "spark"
+apache_spark_group: "{{ apache_spark_user }}"
 
-spark_role_java_package: "openjdk-17-jdk"
+apache_spark_java_package: "openjdk-17-jdk"
 
-spark_role_eventlog_dir: "/var/spark-events"
-spark_role_log_dir: "/var/log/spark"
-spark_role_worker_dir: "/var/lib/spark/work"
-spark_role_recovery_dir: ""
+apache_spark_eventlog_dir: "/var/spark-events"
+apache_spark_log_dir: "/var/log/spark"
+apache_spark_worker_dir: "/var/lib/spark/work"
+apache_spark_recovery_dir: ""
 
-spark_role_master_host: "{{ inventory_hostname }}"
-spark_role_master_url: "spark://{{ spark_role_master_host }}:7077"
+apache_spark_master_host: "{{ inventory_hostname }}"
+apache_spark_master_url: "spark://{{ apache_spark_master_host }}:7077"
 
-spark_role_ha_enabled: false
-spark_role_zookeeper_hosts: ""
-spark_role_ha_zk_dir: "/spark-cluster"
+apache_spark_ha_enabled: false
+apache_spark_zookeeper_hosts: ""
+apache_spark_ha_zk_dir: "/spark-cluster"
 
-spark_role_history_enabled: false
+apache_spark_history_enabled: false
 
-spark_role_worker_memory: "1g"
-spark_role_worker_cores: 1
+apache_spark_worker_memory: "1g"
+apache_spark_worker_cores: 1

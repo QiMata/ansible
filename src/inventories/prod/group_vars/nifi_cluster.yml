@@ -1,13 +1,13 @@
 ---
-nifi_cluster_enabled: true
-nifi_enable_https: true
-nifi_keystore_password: "{{ vault_nifi_keystore_password }}"
-nifi_truststore_password: "{{ vault_nifi_truststore_password }}"
-nifi_admin_identity: "CN=NiFi Admin,OU=Apps,DC=example,DC=com"
-nifi_ldap_url: "ldaps://ldap.example.com:636"
-nifi_ldap_bind_dn: "CN=svc_nifi,OU=Service,DC=example,DC=com"
-nifi_ldap_bind_password: "{{ vault_nifi_ldap_password }}"
-nifi_ldap_user_search_base: "OU=Users,DC=example,DC=com"
+apache_nifi_cluster_enabled: true
+apache_nifi_enable_https: true
+apache_nifi_keystore_password: "{{ vault_nifi_keystore_password }}"
+apache_nifi_truststore_password: "{{ vault_nifi_truststore_password }}"
+apache_nifi_admin_identity: "CN=NiFi Admin,OU=Apps,DC=example,DC=com"
+apache_nifi_ldap_url: "ldaps://ldap.example.com:636"
+apache_nifi_ldap_bind_dn: "CN=svc_nifi,OU=Service,DC=example,DC=com"
+apache_nifi_ldap_bind_password: "{{ vault_nifi_ldap_password }}"
+apache_nifi_ldap_user_search_base: "OU=Users,DC=example,DC=com"
 nifi_ldap_user_search_filter: "(sAMAccountName={0})"
 nifi_elk_integration: true
 nifi_prometheus_integration: true

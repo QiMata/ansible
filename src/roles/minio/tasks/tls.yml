@@ -20,6 +20,8 @@
   when: minio_cert_public | length > 0 and minio_cert_private | length > 0
 
 - name: Generate self-signed certificate
+  when: minio_self_signed and (minio_cert_public | length == 0 or minio_cert_private | length == 0)
+  notify: restart minio
   block:
     - name: Generate private key
       community.crypto.openssl_privatekey:
@@ -34,7 +36,7 @@
         privatekey_path: "{{ minio_certs_dir }}/private.key"
         common_name: "{{ minio_domain }}"
         subject_alt_name: >-
-          {{ ['DNS:' + minio_domain] + minio_extra_sans | default([]) | map('regex_replace','^(.*)$','DNS:\1') | list }}
+          {{ ['DNS:' + minio_domain] + minio_extra_sans | default([]) | map('regex_replace', '^(.*)$', 'DNS:\1') | list }}
         owner: "{{ minio_user }}"
         group: "{{ minio_group }}"
         mode: "0600"
@@ -45,9 +47,7 @@
         privatekey_path: "{{ minio_certs_dir }}/private.key"
         csr_path: "{{ minio_certs_dir }}/request.csr"
         provider: selfsigned
-        days: 365
+        selfsigned_not_after: "+365d"
         owner: "{{ minio_user }}"
         group: "{{ minio_group }}"
         mode: "0644"
-  when: minio_self_signed and (minio_cert_public | length == 0 or minio_cert_private | length == 0)
-  notify: restart minio
