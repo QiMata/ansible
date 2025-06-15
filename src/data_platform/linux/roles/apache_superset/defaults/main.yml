@@ -1,15 +1,15 @@
 ---
-superset_version: "latest"
+apache_superset_version: "latest"
 
-superset_user: "superset"
-superset_group: "superset"
+apache_superset_user: "superset"
+apache_superset_group: "superset"
 
-superset_install_dir: "/opt/superset"
-superset_venv_dir: "{{ superset_install_dir }}/venv"
-superset_config_dir: "/etc/superset"
-superset_config_path: "{{ superset_config_dir }}/superset_config.py"
+apache_superset_install_dir: "/opt/superset"
+apache_superset_venv_dir: "{{ apache_superset_install_dir }}/venv"
+apache_superset_config_dir: "/etc/superset"
+apache_superset_config_path: "{{ apache_superset_config_dir }}/superset_config.py"
 
-superset_system_packages:
+apache_superset_system_packages:
   - build-essential
   - libssl-dev
   - libffi-dev
@@ -20,27 +20,27 @@ superset_system_packages:
   - default-libmysqlclient-dev
   - libpq-dev
 
-superset_additional_python_packages: []  # e.g. ['psycopg2-binary', 'mysqlclient']
+apache_superset_additional_python_packages: []  # e.g. ['psycopg2-binary', 'mysqlclient']
 
-superset_database_uri: "sqlite:////{{ superset_install_dir }}/superset.db"
+apache_superset_database_uri: "sqlite:////{{ apache_superset_install_dir }}/superset.db"
 
-superset_secret_key: "CHANGEME"  # override via vault
-superset_admin_username: "admin"  # override via vault
-superset_admin_password: "CHANGEME"  # override via vault
-superset_admin_email: "admin@example.com"
-superset_admin_firstname: "Superset"
-superset_admin_lastname: "Admin"
+apache_superset_secret_key: "CHANGEME"  # override via vault
+apache_superset_admin_username: "admin"  # override via vault
+apache_superset_admin_password: "CHANGEME"  # override via vault
+apache_superset_admin_email: "admin@example.com"
+apache_superset_admin_firstname: "Superset"
+apache_superset_admin_lastname: "Admin"
 
-superset_load_examples: false
-superset_use_gunicorn: true
-superset_gunicorn_workers: 4
-superset_gunicorn_bind: "0.0.0.0:8088"
+apache_superset_load_examples: false
+apache_superset_use_gunicorn: true
+apache_superset_gunicorn_workers: 4
+apache_superset_gunicorn_bind: "0.0.0.0:8088"
 
-superset_redis_url: ""
-superset_celery_broker_url: ""
+apache_superset_redis_url: ""
+apache_superset_celery_broker_url: ""
 
-superset_feature_flags: {}
+apache_superset_feature_flags: {}
 
-superset_service_name: "superset"
+apache_superset_service_name: "superset"
 
-superset_marker_file: "{{ superset_config_dir }}/.admin_created"
+apache_superset_marker_file: "{{ apache_superset_config_dir }}/.admin_created"

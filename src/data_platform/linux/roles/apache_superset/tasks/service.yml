@@ -2,7 +2,7 @@
 - name: Render Superset systemd unit
   ansible.builtin.template:
     src: superset.service.j2
-    dest: "/etc/systemd/system/{{ superset_service_name }}.service"
+    dest: "/etc/systemd/system/{{ apache_superset_service_name }}.service"
     mode: "0644"
   notify: restart superset
   become: true
@@ -14,7 +14,7 @@
 
 - name: Enable and start Superset service
   ansible.builtin.systemd:
-    name: "{{ superset_service_name }}"
+    name: "{{ apache_superset_service_name }}"
     enabled: true
     state: started
   become: true

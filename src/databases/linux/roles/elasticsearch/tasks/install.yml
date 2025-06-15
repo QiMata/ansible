@@ -21,7 +21,7 @@
   ansible.builtin.apt:
     name: openjdk-11-jdk
     state: present
-  when: es_install_java
+  when: elasticsearch_install_java
 
 - name: Install Elasticsearch
   ansible.builtin.apt:

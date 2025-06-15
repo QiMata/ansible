@@ -3,8 +3,8 @@
   hosts: all
   become: true
   vars:
-    db_name: testdb
-    db_user: postgres
+    postgres_backup_db_name: testdb
+    postgres_backup_db_user: postgres
   tasks:
     - name: Install PostgreSQL server
       ansible.builtin.apt:
@@ -14,12 +14,13 @@
 
     - name: Ensure database exists
       become_user: postgres
-      postgresql_db:
-        name: "{{ db_name }}"
-      ignore_errors: true
+      become: true
+      community.postgresql.postgresql_db:
+        name: "{{ postgres_backup_db_name }}"
+      failed_when: false
 
   roles:
     - role: postgres_backup
-      db_name: "{{ db_name }}"
-      db_user: "{{ db_user }}"
+      db_name: "{{ postgres_backup_db_name }}"
+      db_user: "{{ postgres_backup_db_user }}"
       backup_dir: /var/backups/postgres

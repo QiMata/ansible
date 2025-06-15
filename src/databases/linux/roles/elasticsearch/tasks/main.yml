@@ -9,5 +9,5 @@
 
 - name: Include security tasks
   ansible.builtin.import_tasks: security.yml
-  when: es_enable_security
+  when: elasticsearch_enable_security
   tags: security
