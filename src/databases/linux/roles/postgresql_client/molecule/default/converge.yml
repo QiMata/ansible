@@ -9,13 +9,13 @@
     keycloak_db_password: changeme
   tasks:
     - name: Install PostgreSQL server
-      apt:
+      ansible.builtin.apt:
         name: postgresql
         state: present
         update_cache: true
 
     - name: Ensure postgres is running
-      service:
+      ansible.builtin.service:
         name: postgresql
         state: started
         enabled: true
