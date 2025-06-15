@@ -5,6 +5,7 @@
       ansible.builtin.apt:
         name: "{{ item }}"
         state: absent
+      become: true
       loop: "{{ remove_unnecessary_packages_list }}"
       register: apt_remove_result
       until: apt_remove_result is success

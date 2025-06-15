@@ -8,12 +8,14 @@
     content: |
       local4.*    /var/log/ldap.log
   notify: restart rsyslog
+  become: true
 
 - name: Install Filebeat
   ansible.builtin.apt:
     name: filebeat
     state: present
     update_cache: true
+  become: true
 
 - name: Deploy Filebeat config
   ansible.builtin.template:
@@ -23,6 +25,7 @@
     group: root
     mode: "0644"
   notify: restart filebeat
+  become: true
 
 - name: Ensure services running
   ansible.builtin.service:
@@ -32,3 +35,4 @@
   loop:
     - rsyslog
     - filebeat
+  become: true

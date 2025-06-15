@@ -5,3 +5,4 @@
     executable: /bin/bash
   changed_when: false
   when: apt_mirror_prune | bool
+  become: true

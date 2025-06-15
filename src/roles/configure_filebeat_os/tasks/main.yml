@@ -5,6 +5,7 @@
     name: filebeat
     state: present
     update_cache: true
+  become: true
 
 - name: Configure filebeat
   ansible.builtin.template:
@@ -15,3 +16,4 @@
     mode: '0644'
   notify:
     - restart filebeat
+  become: true

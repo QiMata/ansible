@@ -3,21 +3,25 @@
   ansible.builtin.apt_key:
     url: https://packagecloud.io/rabbitmq/rabbitmq-server/gpgkey
     state: present
+  become: true
 
 - name: Add RabbitMQ apt repository
   ansible.builtin.apt_repository:
     repo: "deb https://packagecloud.io/rabbitmq/rabbitmq-server/debian/ {{ ansible_distribution_release }} main"
     filename: rabbitmq
     state: present
+  become: true
 
 - name: Install rabbitmq-server package
   ansible.builtin.apt:
     name: rabbitmq-server
     state: present
     update_cache: true
+  become: true
 
 - name: Ensure RabbitMQ service is enabled and started
   ansible.builtin.systemd:
     name: rabbitmq-server
     enabled: true
     state: started
+  become: true

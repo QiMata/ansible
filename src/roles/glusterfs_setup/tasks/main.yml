@@ -5,6 +5,7 @@
     name: glusterfs-server
     state: present
     update_cache: true
+  become: true
 
 - name: Create GlusterFS brick directory
   ansible.builtin.file:
@@ -13,12 +14,14 @@
     owner: root
     group: root
     mode: '0755'
+  become: true
 
 - name: Start and enable GlusterFS service
   ansible.builtin.systemd:
     name: glusterfs-server
     state: started
     enabled: true
+  become: true
 
 - name: Set up GlusterFS peers
   ansible.builtin.command:
@@ -27,6 +30,7 @@
   when: inventory_hostname != item
   failed_when: false
   changed_when: false
+  become: true
 
 - name: Set up GlusterFS volume
   ansible.builtin.command:
@@ -34,8 +38,10 @@
   when: inventory_hostname == glusterfs_nodes[0]
   failed_when: false
   changed_when: false
+  become: true
 
 - name: Start GlusterFS volume
   ansible.builtin.command:
     cmd: "gluster volume start {{ glusterfs_volume_name }}"
   when: inventory_hostname == glusterfs_nodes[0]
+  become: true

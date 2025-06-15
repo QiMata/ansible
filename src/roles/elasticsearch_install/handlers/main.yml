@@ -2,8 +2,10 @@
 - name: Update APT cache
   ansible.builtin.apt:
     update_cache: true
+  become: true
 
 - name: Restart Elasticsearch
   ansible.builtin.service:
     name: elasticsearch
     state: restarted
+  become: true

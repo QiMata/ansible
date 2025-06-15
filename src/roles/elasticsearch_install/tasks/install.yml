@@ -4,11 +4,13 @@
     name: apt-transport-https
     state: present
     update_cache: true
+  become: true
 
 - name: Add Elasticsearch GPG key
   ansible.builtin.apt_key:
     url: "https://artifacts.elastic.co/GPG-KEY-elasticsearch"
     state: present
+  become: true
 
 - name: Add Elasticsearch repository
   ansible.builtin.template:
@@ -16,6 +18,7 @@
     dest: /etc/apt/sources.list.d/elasticsearch.list
     mode: '0644'
   notify: update apt cache
+  become: true
 
 - name: Install Elasticsearch
   ansible.builtin.apt:
@@ -23,3 +26,4 @@
     state: present
     update_cache: true
   notify: restart elasticsearch
+  become: true
