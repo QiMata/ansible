@@ -14,5 +14,6 @@
         path: /etc/filebeat/filebeat.yml
       register: fb_cfg
 
-    - ansible.builtin.assert:
+    - name: Assert configuration exists
+      ansible.builtin.assert:
         that: fb_cfg.stat.exists
