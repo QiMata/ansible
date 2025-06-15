@@ -1,20 +1,20 @@
 ---
 - name: Ensure superset group exists
   ansible.builtin.group:
-    name: "{{ superset_group }}"
+    name: "{{ apache_superset_group }}"
     state: present
 
 - name: Ensure superset user exists
   ansible.builtin.user:
-    name: "{{ superset_user }}"
-    group: "{{ superset_group }}"
+    name: "{{ apache_superset_user }}"
+    group: "{{ apache_superset_group }}"
     create_home: false
     shell: /usr/sbin/nologin
     state: present
 
 - name: Install system dependencies
   ansible.builtin.apt:
-    name: "{{ superset_system_packages }}"
+    name: "{{ apache_superset_system_packages }}"
     state: present
     update_cache: true
   become: true

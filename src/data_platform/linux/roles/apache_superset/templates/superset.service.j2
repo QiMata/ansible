@@ -4,11 +4,11 @@ After=network.target
 
 [Service]
 Type=simple
-User={{ superset_user }}
-Group={{ superset_group }}
-WorkingDirectory={{ superset_install_dir }}
-Environment=SUPERSET_CONFIG_PATH={{ superset_config_path }}
-ExecStart={{ superset_venv_dir }}/bin/gunicorn -w {{ superset_gunicorn_workers }} -k gevent --timeout 120 -b {{ superset_gunicorn_bind }} --limit-request-line 0 --limit-request-field_size 0 superset.app:create_app()
+User={{ apache_superset_user }}
+Group={{ apache_superset_group }}
+WorkingDirectory={{ apache_superset_install_dir }}
+Environment=SUPERSET_CONFIG_PATH={{ apache_superset_config_path }}
+ExecStart={{ apache_superset_venv_dir }}/bin/gunicorn -w {{ apache_superset_gunicorn_workers }} -k gevent --timeout 120 -b {{ apache_superset_gunicorn_bind }} --limit-request-line 0 --limit-request-field_size 0 superset.app:create_app()
 Restart=on-failure
 RestartSec=5
 

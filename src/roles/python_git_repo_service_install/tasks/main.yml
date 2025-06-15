@@ -1,25 +1,25 @@
 ---
 - name: Clone Git repository
   ansible.builtin.git:
-    repo: "{{ app_repo }}"
-    dest: "/opt/{{ app_name }}"
+    repo: "{{ python_git_repo_service_install_app_repo }}"
+    dest: "/opt/{{ python_git_repo_service_install_app_name }}"
     version: "{{ app_version | default('HEAD') }}"
   register: git_output
 
 - name: Install Python dependencies
   ansible.builtin.pip:
-    requirements: "/opt/{{ app_name }}/requirements.txt"
+    requirements: "/opt/{{ python_git_repo_service_install_app_name }}/requirements.txt"
 
 - name: Configure systemd service
   ansible.builtin.template:
     src: "templates/app.service.j2"
-    dest: "/etc/systemd/system/{{ app_name }}.service"
+    dest: "/etc/systemd/system/{{ python_git_repo_service_install_app_name }}.service"
     mode: '0644'
   notify:
     - Reload systemd
 
 - name: Start and enable the application service
   ansible.builtin.systemd:
-    name: "{{ app_name }}"
+    name: "{{ python_git_repo_service_install_app_name }}"
     state: started
     enabled: true

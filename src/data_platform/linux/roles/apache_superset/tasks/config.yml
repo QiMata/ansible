@@ -1,17 +1,17 @@
 ---
 - name: Ensure configuration directory exists
   ansible.builtin.file:
-    path: "{{ superset_config_dir }}"
+    path: "{{ apache_superset_config_dir }}"
     state: directory
-    owner: "{{ superset_user }}"
-    group: "{{ superset_group }}"
+    owner: "{{ apache_superset_user }}"
+    group: "{{ apache_superset_group }}"
     mode: "0750"
 
 - name: Render Superset configuration
   ansible.builtin.template:
     src: superset_config.py.j2
-    dest: "{{ superset_config_path }}"
-    owner: "{{ superset_user }}"
-    group: "{{ superset_group }}"
+    dest: "{{ apache_superset_config_path }}"
+    owner: "{{ apache_superset_user }}"
+    group: "{{ apache_superset_group }}"
     mode: "0640"
   notify: restart superset

@@ -1,20 +1,20 @@
 import os
 
-SECRET_KEY = "{{ superset_secret_key }}"
+SECRET_KEY = "{{ apache_superset_secret_key }}"
 
-SQLALCHEMY_DATABASE_URI = "{{ superset_database_uri }}"
+SQLALCHEMY_DATABASE_URI = "{{ apache_superset_database_uri }}"
 
-{% if superset_redis_url %}
+{% if apache_superset_redis_url %}
 CACHE_TYPE = "RedisCache"
-CACHE_REDIS_URL = "{{ superset_redis_url }}"
+CACHE_REDIS_URL = "{{ apache_superset_redis_url }}"
 {% endif %}
 
-{% if superset_celery_broker_url %}
-CELERY_BROKER_URL = "{{ superset_celery_broker_url }}"
-RESULT_BACKEND = "{{ superset_celery_broker_url }}"
+{% if apache_superset_celery_broker_url %}
+CELERY_BROKER_URL = "{{ apache_superset_celery_broker_url }}"
+RESULT_BACKEND = "{{ apache_superset_celery_broker_url }}"
 {% endif %}
 
-{% for key, value in superset_feature_flags.items() %}
+{% for key, value in apache_superset_feature_flags.items() %}
 FEATURE_FLAGS = FEATURE_FLAGS if 'FEATURE_FLAGS' in globals() else {}
 FEATURE_FLAGS["{{ key }}"] = {{ value }}
 {% endfor %}

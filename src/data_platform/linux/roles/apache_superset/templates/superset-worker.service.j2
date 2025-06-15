@@ -4,11 +4,11 @@ After=network.target
 
 [Service]
 Type=simple
-User={{ superset_user }}
-Group={{ superset_group }}
-WorkingDirectory={{ superset_install_dir }}
-Environment=SUPERSET_CONFIG_PATH={{ superset_config_path }}
-ExecStart={{ superset_venv_dir }}/bin/celery --app=superset.tasks.celery_app:app worker --pool=prefork -O fair -c 4
+User={{ apache_superset_user }}
+Group={{ apache_superset_group }}
+WorkingDirectory={{ apache_superset_install_dir }}
+Environment=SUPERSET_CONFIG_PATH={{ apache_superset_config_path }}
+ExecStart={{ apache_superset_venv_dir }}/bin/celery --app=superset.tasks.celery_app:app worker --pool=prefork -O fair -c 4
 Restart=on-failure
 RestartSec=5
 
