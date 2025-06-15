@@ -26,17 +26,17 @@ defaults
     errorfile 503 /etc/haproxy/errors/503.http
     errorfile 504 /etc/haproxy/errors/504.http
 
-frontend {{ haproxy_frontend_name }}
-    bind {{ haproxy_frontend_bind }}
-    default_backend {{ haproxy_backend_name }}
+frontend {{ ha_proxy_load_balancer_setup_frontend_name }}
+    bind {{ ha_proxy_load_balancer_setup_frontend_bind }}
+    default_backend {{ ha_proxy_load_balancer_setup_backend_name }}
 
-backend {{ haproxy_backend_name }}
-{% if haproxy_sticky_sessions | lower == 'yes' %}
+backend {{ ha_proxy_load_balancer_setup_backend_name }}
+{% if ha_proxy_load_balancer_setup_sticky_sessions | lower == 'yes' %}
     balance source
     cookie SERVERID insert indirect nocache
 {% endif %}
-{% for server in haproxy_backend_servers %}
-server {{ server.name }} {{ server.address }} check{% if haproxy_sticky_sessions | lower == 'yes' %} cookie {{ server.name }}{% endif %}{% if not loop.last %}
+{% for server in ha_proxy_load_balancer_setup_backend_servers %}
+server {{ server.name }} {{ server.address }} check{% if ha_proxy_load_balancer_setup_sticky_sessions | lower == 'yes' %} cookie {{ server.name }}{% endif %}{% if not loop.last %}
 
 {% endif %}
 {% endfor %}

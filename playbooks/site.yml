@@ -3,4 +3,3 @@
   import_playbook: keycloak.yml
 - name: Include Rocket.Chat playbook
   import_playbook: rocketchat.yml
-
