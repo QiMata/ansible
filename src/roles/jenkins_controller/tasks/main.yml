@@ -6,6 +6,7 @@
       - curl
     state: present
     update_cache: true
+  become: true
 
 - name: Add Jenkins apt key
   ansible.builtin.get_url:
@@ -13,12 +14,14 @@
     dest: /usr/share/keyrings/jenkins.gpg
     mode: "0644"
     force: true
+  become: true
 
 - name: Add Jenkins apt repository
   ansible.builtin.apt_repository:
     repo: "deb [signed-by=/usr/share/keyrings/jenkins.gpg] {{ jenkins_controller_repo_url }} binary/"
     filename: jenkins
     state: present
+  become: true
 
 - name: Install Jenkins and Java
   ansible.builtin.apt:
@@ -28,6 +31,7 @@
     state: present
     update_cache: true
   notify: restart jenkins
+  become: true
 
 - name: Disable setup wizard
   ansible.builtin.lineinfile:
@@ -35,6 +39,7 @@
     regexp: '^JENKINS_ARGS='
     line: 'JENKINS_ARGS="--webroot=/var/cache/$NAME/war --httpPort={{ jenkins_http_port }} -Djenkins.install.runSetupWizard=false {{ jenkins_java_opts }}"'
   notify: restart jenkins
+  become: true
 
 - name: Deploy admin groovy init
   ansible.builtin.template:
@@ -44,12 +49,14 @@
     group: jenkins
     mode: "0644"
   notify: restart jenkins
+  become: true
 
 - name: Create plugins list
   ansible.builtin.template:
     src: plugins.txt.j2
     dest: /opt/jenkins_plugins.txt
     mode: "0644"
+  become: true
 
 - name: Install required plugins offline
   ansible.builtin.command: >
@@ -60,9 +67,11 @@
   args:
     creates: "{{ jenkins_controller_home }}/plugins/{{ jenkins_plugins[0] }}.jpi"
   notify: restart jenkins
+  become: true
 
 - name: Ensure Jenkins service enabled and started
   ansible.builtin.service:
     name: jenkins
     state: started
     enabled: true
+  become: true

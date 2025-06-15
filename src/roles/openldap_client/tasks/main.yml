@@ -9,6 +9,7 @@
       - krb5-user
     state: present
     update_cache: true
+  become: true
 
 - name: Configure krb5.conf
   ansible.builtin.template:
@@ -17,6 +18,7 @@
     owner: root
     group: root
     mode: "0644"
+  become: true
 
 - name: Configure sssd.conf
   ansible.builtin.template:
@@ -26,14 +28,17 @@
     group: root
     mode: "0600"
   notify: restart sssd
+  become: true
 
 - name: Enable SSSD nsswitch integration
   ansible.builtin.lineinfile:
     path: /etc/nsswitch.conf
     regexp: '^passwd:'
     line: 'passwd:         compat sss'
+  become: true
 - name: Ensure services started
   ansible.builtin.service:
     name: sssd
     state: started
     enabled: true
+  become: true

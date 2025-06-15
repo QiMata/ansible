@@ -4,6 +4,7 @@
     pkg: filebeat
     state: present
     update_cache: true
+  become: true
 
 - name: Deploy Filebeat config
   ansible.builtin.template:
@@ -11,9 +12,11 @@
     dest: /etc/filebeat/filebeat.yml
     mode: "0644"
   notify: restart filebeat
+  become: true
 
 - name: Enable and start Filebeat
   ansible.builtin.service:
     name: filebeat
     enabled: true
     state: started
+  become: true

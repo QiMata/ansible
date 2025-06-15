@@ -3,6 +3,7 @@
   ansible.builtin.apt:
     name: filebeat
     state: present
+  become: true
 
 - name: Configure filebeat for apt-mirror logs (placeholder)
   ansible.builtin.lineinfile:
@@ -10,9 +11,11 @@
     regexp: '^ *- /var/spool/apt-mirror/var/cron.log'
     line: "  - /var/spool/apt-mirror/var/cron.log"
   notify: restart filebeat
+  become: true
 
 - name: Ensure filebeat service
   ansible.builtin.service:
     name: filebeat
     state: started
     enabled: true
+  become: true

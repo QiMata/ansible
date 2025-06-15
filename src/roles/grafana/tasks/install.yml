@@ -3,14 +3,17 @@
   ansible.builtin.apt_key:
     url: "{{ grafana_package_key_url }}"
     state: present
+  become: true
 
 - name: Add Grafana repository
   ansible.builtin.apt_repository:
     repo: "deb {{ grafana_package_url }} stable main"
     state: present
+  become: true
 
 - name: Install Grafana package
   ansible.builtin.apt:
     name: "grafana={{ grafana_version }}"
     state: present
     update_cache: true
+  become: true

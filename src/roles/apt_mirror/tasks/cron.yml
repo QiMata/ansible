@@ -10,3 +10,4 @@
     day: "{{ apt_mirror_cron_schedule.split(' ')[2] }}"
     month: "{{ apt_mirror_cron_schedule.split(' ')[3] }}"
     weekday: "{{ apt_mirror_cron_schedule.split(' ')[4] }}"
+  become: true

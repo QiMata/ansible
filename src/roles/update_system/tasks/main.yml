@@ -5,6 +5,7 @@
       ansible.builtin.apt:
         upgrade: true
         update_cache: true
+      become: true
       register: apt_result
       until: apt_result is success
       retries: 10

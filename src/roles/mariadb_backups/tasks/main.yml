@@ -3,6 +3,7 @@
   ansible.builtin.apt:
     name: ['mariadb-client', 'gzip']
     state: present
+  become: true
 
 - name: Copy MariaDB backup script
   ansible.builtin.template:
@@ -11,6 +12,7 @@
     owner: root
     group: root
     mode: '0700'
+  become: true
 
 - name: Copy systemd service file
   ansible.builtin.copy:
@@ -19,9 +21,11 @@
     owner: root
     group: root
     mode: '0644'
+  become: true
 
 - name: Enable and start service
   ansible.builtin.systemd:
     name: mariadb-backup
     enabled: true
     state: started
+  become: true

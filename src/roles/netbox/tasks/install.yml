@@ -12,6 +12,7 @@
       - libssl-dev
     state: present
     update_cache: true
+  become: true
 
 - name: Create netbox system user
   ansible.builtin.user:
@@ -19,6 +20,7 @@
     system: true
     create_home: false
     shell: /usr/sbin/nologin
+  become: true
 
 - name: Clone NetBox repository
   ansible.builtin.git:
@@ -27,13 +29,16 @@
     version: "{{ netbox_branch }}"
     force: true
   notify: restart netbox
+  become: true
 
 - name: Create virtualenv
   ansible.builtin.command: "{{ netbox_python }} -m venv {{ netbox_venv }}"
   args:
     creates: "{{ netbox_venv }}/bin/activate"
+  become: true
 
 - name: Install NetBox requirements
   ansible.builtin.pip:
     requirements: "{{ netbox_install_dir }}/requirements.txt"
     virtualenv: "{{ netbox_venv }}"
+  become: true
