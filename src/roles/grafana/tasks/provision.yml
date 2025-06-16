@@ -8,8 +8,8 @@
     mode: "0755"
 
 - name: Deploy datasource configurations
-  ansible.builtin.copy:
-    src: provisioning/datasources.yml
+  ansible.builtin.template:
+    src: provisioning/datasources.yml.j2
     dest: "{{ grafana_provisioning_path }}/datasources/datasources.yml"
     owner: root
     group: grafana

@@ -1,5 +1,5 @@
 ---
-es_cluster_name: "prod-es-cluster"
+elasticsearch_cluster_name: "prod-es-cluster"
 elasticsearch_install_version: "8.8.0"
 
 # Snapshot settings
