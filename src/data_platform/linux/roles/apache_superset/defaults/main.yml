@@ -40,6 +40,7 @@ apache_superset_redis_url: ""
 apache_superset_celery_broker_url: ""
 
 apache_superset_feature_flags: {}
+apache_superset_wtf_csrf_enabled: true
 
 apache_superset_service_name: "superset"
 

@@ -18,4 +18,3 @@
     mode: "0750"
   loop: ["bolt", "cluster"]
   when: neo4j_tls_client_enable or neo4j_tls_cluster_enable
-

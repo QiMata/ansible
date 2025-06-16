@@ -12,18 +12,18 @@
 - name: Clone acme.sh repository
   ansible.builtin.git:
     repo: "{{ acme_sh_git_url }}"
-    dest: "{{ acme_sh_install_dir }}"
+    dest: "{{ letsencrypt_godaddy_acme_sh_install_dir }}"
     version: master
     update: true
   become: true
 
 - name: Install acme.sh (first run only)
   ansible.builtin.shell: |
-    "{{ acme_sh_install_dir }}/acme.sh" --install \
-      --home "{{ acme_sh_install_dir }}" \
-      --config-home "{{ acme_sh_install_dir }}" \
-      {% if acme_install_cron %}--accountemail "{{ letsencrypt_account_email | default('') }}" {% else %}--nocron{% endif %} \
+    "{{ letsencrypt_godaddy_acme_sh_install_dir }}/acme.sh" --install \
+      --home "{{ letsencrypt_godaddy_acme_sh_install_dir }}" \
+      --config-home "{{ letsencrypt_godaddy_acme_sh_install_dir }}" \
+      {% if acme_install_cron %}--accountemail "{{ letsencrypt_godaddy_account_email | default('') }}" {% else %}--nocron{% endif %} \
       {% if acme_sh_auto_upgrade %}--auto-upgrade{% else %}--no-upgrade{% endif %}
   args:
-    creates: "{{ acme_sh_install_dir }}/acme.sh.env"
+    creates: "{{ letsencrypt_godaddy_acme_sh_install_dir }}/acme.sh.env"
   become: true

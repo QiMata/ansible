@@ -11,5 +11,6 @@
         state: directory
         owner: root
         group: root
+        mode: '0755'
   roles:
     - role: mariadb_backups

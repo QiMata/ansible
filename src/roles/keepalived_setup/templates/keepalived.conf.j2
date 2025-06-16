@@ -2,15 +2,15 @@
 
 vrrp_instance VI_1 {
     state MASTER
-    interface {{ keepalived_interface }}
-    virtual_router_id {{ keepalived_virtual_router_id }}
-    priority {{ keepalived_priority }}
+    interface {{ keepalived_setup_interface }}
+    virtual_router_id {{ keepalived_setup_virtual_router_id }}
+    priority {{ keepalived_setup_priority }}
     advert_int 1
     authentication {
         auth_type PASS
         auth_pass secret
     }
     virtual_ipaddress {
-        {{ keepalived_virtual_ip }}
+        {{ keepalived_setup_virtual_ip }}
     }
 }

@@ -4,6 +4,8 @@ SECRET_KEY = "{{ apache_superset_secret_key }}"
 
 SQLALCHEMY_DATABASE_URI = "{{ apache_superset_database_uri }}"
 
+WTF_CSRF_ENABLED = {{ apache_superset_wtf_csrf_enabled }}
+
 {% if apache_superset_redis_url %}
 CACHE_TYPE = "RedisCache"
 CACHE_REDIS_URL = "{{ apache_superset_redis_url }}"

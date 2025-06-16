@@ -16,11 +16,13 @@
         enabled: true
 
     - name: Create database
+      become: true
       become_user: postgres
       community.postgresql.postgresql_db:
         name: keycloak
 
     - name: Create user
+      become: true
       become_user: postgres
       community.postgresql.postgresql_user:
         name: keycloak

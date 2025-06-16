@@ -1,17 +1,17 @@
 ---
- - name: Install snapshot script
-   ansible.builtin.template:
+- name: Install snapshot script
+  ansible.builtin.template:
     src: snapshot_script.sh.j2
     dest: /usr/local/bin/es_snapshot.sh
     mode: '0750'
     owner: root
     group: root
 
- - name: Schedule snapshot via cron
-   ansible.builtin.cron:
+- name: Schedule snapshot via cron
+  ansible.builtin.cron:
     name: "Elasticsearch Daily Snapshot"
     hour: 2
     minute: 0
     user: root
     job: "/usr/local/bin/es_snapshot.sh"
-   when: elasticsearch_snapshot_use_slm is not true
+  when: elasticsearch_snapshot_use_slm is not true

@@ -1,11 +1,11 @@
 ---
 - name: Determine primary domain
   ansible.builtin.set_fact:
-    primary_domain: "{{ cert_domains[0] }}"
+    primary_domain: "{{ letsencrypt_godaddy_cert_domains[0] }}"
 
 - name: Ensure certificate directory exists
   ansible.builtin.file:
-    path: "{{ cert_install_path }}/{{ primary_domain }}"
+    path: "{{ letsencrypt_godaddy_cert_install_path }}/{{ primary_domain }}"
     state: directory
     owner: root
     group: root
@@ -14,15 +14,15 @@
 
 - name: Install certificate to target path
   ansible.builtin.shell: |
-    export GD_Key="{{ godaddy_api_key }}";
-    export GD_Secret="{{ godaddy_api_secret }}";
-    "{{ acme_sh_install_dir }}/acme.sh" --install-cert -d "{{ primary_domain }}" \
-      --home "{{ acme_sh_install_dir }}" \
-      --config-home "{{ acme_sh_install_dir }}" \
-      --cert-file "{{ cert_install_path }}/{{ primary_domain }}/cert.pem" \
-      --key-file "{{ cert_install_path }}/{{ primary_domain }}/privkey.pem" \
-      --fullchain-file "{{ cert_install_path }}/{{ primary_domain }}/fullchain.pem" \
-      {% if service_reload_command %}--reloadcmd "{{ service_reload_command }}"{% endif %}
+    export GD_Key="{{ letsencrypt_godaddy_api_key }}";
+    export GD_Secret="{{ letsencrypt_godaddy_api_secret }}";
+    "{{ letsencrypt_godaddy_acme_sh_install_dir }}/acme.sh" --install-cert -d "{{ primary_domain }}" \
+      --home "{{ letsencrypt_godaddy_acme_sh_install_dir }}" \
+      --config-home "{{ letsencrypt_godaddy_acme_sh_install_dir }}" \
+      --cert-file "{{ letsencrypt_godaddy_cert_install_path }}/{{ primary_domain }}/cert.pem" \
+      --key-file "{{ letsencrypt_godaddy_cert_install_path }}/{{ primary_domain }}/privkey.pem" \
+      --fullchain-file "{{ letsencrypt_godaddy_cert_install_path }}/{{ primary_domain }}/fullchain.pem" \
+      {% if letsencrypt_godaddy_service_reload_command %}--reloadcmd "{{ letsencrypt_godaddy_service_reload_command }}"{% endif %}
   register: acme_install
   changed_when: "'Cert success' in acme_install.stdout or 'Installing' in acme_install.stdout"
   notify: reload_service
