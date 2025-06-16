@@ -4,6 +4,6 @@
   become: true
   roles:
     - role: glusterfs_setup
-      glusterfs_nodes:
+      glusterfs_setup_nodes:
         - localhost
         - localhost

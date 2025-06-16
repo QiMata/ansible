@@ -37,6 +37,7 @@
   ansible.builtin.command: swapoff -a
   when: kubeadm_disable_swap | bool
   become: true
+  changed_when: false
 
 - name: Ensure swap is disabled in fstab
   ansible.builtin.replace:
@@ -58,6 +59,7 @@
     - kubeadm_role == 'control-plane'
     - not kubeadm_admin_conf.stat.exists
   become: true
+  changed_when: false
 
 - name: Create kube config directory for root
   ansible.builtin.file:
@@ -88,3 +90,4 @@
     - kubeadm_role == 'worker'
     - kubeadm_join_command | length > 0
   become: true
+  changed_when: false

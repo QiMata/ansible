@@ -4,6 +4,7 @@
   ansible.builtin.git:
     repo: 'https://github.com/codership/glb'
     dest: '/opt/glb'
+    version: HEAD
 
 - name: Bootstrap GLB
   ansible.builtin.command: './bootstrap.sh'
@@ -37,6 +38,7 @@
   ansible.builtin.template:
     src: 'glbd.cfg.j2'
     dest: '/etc/sysconfig/glbd.cfg'
+    mode: '0644'
 
 - name: Start GLB service
   ansible.builtin.service:

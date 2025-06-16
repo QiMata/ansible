@@ -5,4 +5,4 @@
   roles:
     - role: kong
       vars:
-        kong_database: off
+        kong_database: false
