@@ -4,7 +4,7 @@
   ansible.builtin.git:
     repo: 'https://github.com/codership/glb'
     dest: '/opt/glb'
-    version: HEAD
+    version: '1.0.0'
 
 - name: Bootstrap GLB
   ansible.builtin.command: './bootstrap.sh'

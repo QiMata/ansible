@@ -7,7 +7,7 @@
 
 - name: Add Elasticsearch repository
   ansible.builtin.apt_repository:
-    repo: "deb https://artifacts.elastic.co/packages/{{ es_version }}/apt stable main"
+    repo: "deb https://artifacts.elastic.co/packages/{{ elasticsearch_cluster_version }}/apt stable main"
     state: present
   become: true
 
@@ -28,9 +28,9 @@
   ansible.builtin.blockinfile:
     path: /etc/elasticsearch/elasticsearch.yml
     block: |
-      cluster.name: "{{ es_cluster_name }}"
-      node.roles: {{ es_node_roles }}
-      network.host: "{{ es_network_host }}"
+      cluster.name: "{{ elasticsearch_cluster_name }}"
+      node.roles: {{ elasticsearch_cluster_node_roles }}
+      network.host: "{{ elasticsearch_cluster_network_host }}"
   become: true
   notify: Restart Elasticsearch
 
@@ -38,6 +38,6 @@
   ansible.builtin.lineinfile:
     path: /etc/elasticsearch/jvm.options.d/heap_size.options
     create: true
-    line: "-Xms{{ es_heap_size }}\n-Xmx{{ es_heap_size }}"
+    line: "-Xms{{ elasticsearch_cluster_heap_size }}\n-Xmx{{ elasticsearch_cluster_heap_size }}"
   become: true
   notify: Restart Elasticsearch
