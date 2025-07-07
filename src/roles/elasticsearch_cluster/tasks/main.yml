@@ -39,5 +39,8 @@
     path: /etc/elasticsearch/jvm.options.d/heap_size.options
     create: true
     line: "-Xms{{ elasticsearch_cluster_heap_size }}\n-Xmx{{ elasticsearch_cluster_heap_size }}"
+    owner: root
+    group: elasticsearch
+    mode: '0644'
   become: true
   notify: Restart Elasticsearch
