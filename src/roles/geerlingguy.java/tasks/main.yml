@@ -1,0 +1,3 @@
+- name: Placeholder Java role
+  debug:
+    msg: "geerlingguy.java role is not installed"
