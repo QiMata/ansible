@@ -3,6 +3,7 @@
   ansible.builtin.shell: |
     pfSsh.php playback svc enable ssh
   when: pfsense_enable_ssh | bool
+  changed_when: false
 
 - name: Configure interfaces
   pfsensible.core.pfsense_interface:
