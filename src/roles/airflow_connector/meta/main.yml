@@ -1,0 +1,45 @@
+---
+galaxy_info:
+  author: "Ansible Automation"
+  description: "Ansible role for managing Apache Airflow connections"
+  company: "QiMata Technologies"
+  license: "MIT"
+  min_ansible_version: "2.9"
+  
+  platforms:
+    - name: Ubuntu
+      versions:
+        - 18.04
+        - 20.04
+        - 22.04
+    - name: Debian
+      versions:
+        - 10
+        - 11
+        - 12
+    - name: CentOS
+      versions:
+        - 7
+        - 8
+    - name: RHEL
+      versions:
+        - 7
+        - 8
+        - 9
+
+  galaxy_tags:
+    - airflow
+    - apache
+    - connections
+    - data
+    - workflow
+    - orchestration
+    - etl
+
+dependencies:
+  # This role assumes Apache Airflow is already installed
+  # Optionally depends on apache_airflow role
+  []
+
+collections:
+  - ansible.builtin

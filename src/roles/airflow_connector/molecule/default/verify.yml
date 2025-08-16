@@ -1,0 +1,37 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Verify airflow binary exists
+      ansible.builtin.stat:
+        path: /usr/local/bin/airflow
+      register: airflow_binary
+
+    - name: Assert airflow binary exists
+      ansible.builtin.assert:
+        that:
+          - airflow_binary.stat.exists
+          - airflow_binary.stat.executable
+
+    - name: Verify airflow home directory
+      ansible.builtin.stat:
+        path: /opt/airflow
+      register: airflow_home
+
+    - name: Assert airflow home exists
+      ansible.builtin.assert:
+        that:
+          - airflow_home.stat.exists
+          - airflow_home.stat.isdir
+
+    - name: Test airflow connections command
+      ansible.builtin.command: /usr/local/bin/airflow connections list
+      register: connections_list
+      changed_when: false
+
+    - name: Assert connections command works
+      ansible.builtin.assert:
+        that:
+          - connections_list.rc == 0
+          - "'Conn Id' in connections_list.stdout"

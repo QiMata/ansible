@@ -1,0 +1,243 @@
+---
+# Airflow Connector Configuration
+# This file contains example configurations for various Airflow connections
+
+# Enable airflow connector role features
+airflow_connector_enabled: true
+airflow_connector_list_connections: false
+airflow_connector_verbose: false
+airflow_connector_restart_services: false
+
+# Airflow installation paths (should match your apache_airflow role configuration)
+airflow_home: "{{ apache_airflow_home | default('/opt/airflow') }}"
+airflow_binary_path: "{{ apache_airflow_venv_path + '/bin/airflow' if apache_airflow_venv_path else '/usr/local/bin/airflow' }}"
+
+# Database Connections
+airflow_database_connections:
+  - conn_id: "postgres_dwh"
+    conn_type: "postgres"
+    host: "{{ postgres_dwh_host | default('localhost') }}"
+    port: 5432
+    login: "{{ postgres_dwh_user | default('airflow') }}"
+    password: "{{ postgres_dwh_password }}"
+    schema: "{{ postgres_dwh_database | default('warehouse') }}"
+    description: "Data warehouse PostgreSQL connection"
+    update_existing: true
+    extra:
+      sslmode: "prefer"
+      connect_timeout: 30
+
+  - conn_id: "mysql_analytics"
+    conn_type: "mysql"
+    host: "{{ mysql_analytics_host | default('localhost') }}"
+    port: 3306
+    login: "{{ mysql_analytics_user | default('airflow') }}"
+    password: "{{ mysql_analytics_password }}"
+    schema: "{{ mysql_analytics_database | default('analytics') }}"
+    description: "Analytics MySQL connection"
+    update_existing: true
+
+# API and HTTP Connections
+airflow_api_connections:
+  - conn_id: "external_api"
+    conn_type: "http"
+    host: "{{ external_api_host | default('api.example.com') }}"
+    port: 443
+    description: "External service API"
+    extra:
+      endpoint_url: "https://{{ external_api_host | default('api.example.com') }}/v1"
+      headers:
+        Authorization: "Bearer {{ external_api_token }}"
+        Content-Type: "application/json"
+        User-Agent: "Airflow/2.6.3"
+
+  - conn_id: "internal_api"
+    conn_type: "http"
+    host: "{{ internal_api_host | default('internal-api.local') }}"
+    port: 8080
+    description: "Internal service API"
+    extra:
+      endpoint_url: "http://{{ internal_api_host | default('internal-api.local') }}:8080/api/v1"
+
+# Cloud Provider Connections
+airflow_cloud_connections:
+  # AWS Connections
+  - conn_id: "aws_default"
+    conn_type: "aws"
+    description: "Default AWS connection"
+    extra:
+      aws_access_key_id: "{{ aws_access_key_id }}"
+      aws_secret_access_key: "{{ aws_secret_access_key }}"
+      region_name: "{{ aws_default_region | default('us-east-1') }}"
+
+  - conn_id: "aws_s3"
+    conn_type: "aws"
+    description: "AWS S3 connection for data lake"
+    extra:
+      aws_access_key_id: "{{ aws_s3_access_key_id | default(aws_access_key_id) }}"
+      aws_secret_access_key: "{{ aws_s3_secret_access_key | default(aws_secret_access_key) }}"
+      region_name: "{{ aws_s3_region | default('us-west-2') }}"
+
+  # Google Cloud Platform Connections
+  - conn_id: "gcp_default"
+    conn_type: "google_cloud_platform"
+    description: "Default GCP connection"
+    extra:
+      key_path: "{{ gcp_service_account_path | default('/opt/airflow/gcp-service-account.json') }}"
+      project: "{{ gcp_project_id }}"
+      scope: "https://www.googleapis.com/auth/cloud-platform"
+
+  - conn_id: "gcp_bigquery"
+    conn_type: "google_cloud_platform"
+    description: "GCP BigQuery connection"
+    extra:
+      key_path: "{{ gcp_service_account_path | default('/opt/airflow/gcp-service-account.json') }}"
+      project: "{{ gcp_project_id }}"
+      scope: "https://www.googleapis.com/auth/bigquery"
+
+  # Azure Connections
+  - conn_id: "azure_default"
+    conn_type: "azure"
+    description: "Default Azure connection"
+    extra:
+      client_id: "{{ azure_client_id }}"
+      client_secret: "{{ azure_client_secret }}"
+      tenant_id: "{{ azure_tenant_id }}"
+      subscription_id: "{{ azure_subscription_id }}"
+
+# Message Queue and Cache Connections
+airflow_messaging_connections:
+  - conn_id: "redis_default"
+    conn_type: "redis"
+    host: "{{ redis_host | default('localhost') }}"
+    port: "{{ redis_port | default(6379) }}"
+    description: "Default Redis connection"
+    extra:
+      db: "{{ redis_db | default(0) }}"
+      password: "{{ redis_password | default('') }}"
+
+  - conn_id: "redis_cache"
+    conn_type: "redis"
+    host: "{{ redis_cache_host | default(redis_host) | default('localhost') }}"
+    port: "{{ redis_cache_port | default(6379) }}"
+    description: "Redis cache connection"
+    extra:
+      db: "{{ redis_cache_db | default(1) }}"
+      password: "{{ redis_cache_password | default(redis_password) | default('') }}"
+
+# Big Data and Analytics Connections
+airflow_bigdata_connections:
+  - conn_id: "spark_default"
+    conn_type: "spark"
+    host: "{{ spark_master_host | default('spark-master') }}"
+    port: "{{ spark_master_port | default(7077) }}"
+    description: "Spark cluster connection"
+    extra:
+      spark_home: "{{ spark_home | default('/opt/spark') }}"
+      spark_binary: "spark-submit"
+
+  - conn_id: "elasticsearch_default"
+    conn_type: "elasticsearch"
+    host: "{{ elasticsearch_host | default('localhost') }}"
+    port: "{{ elasticsearch_port | default(9200) }}"
+    description: "Elasticsearch connection"
+    extra:
+      http_auth: "{{ elasticsearch_user | default('elastic') }}:{{ elasticsearch_password }}"
+      use_ssl: "{{ elasticsearch_use_ssl | default(false) }}"
+      verify_certs: "{{ elasticsearch_verify_certs | default(false) }}"
+
+  - conn_id: "mongodb_default"
+    conn_type: "mongo"
+    host: "{{ mongodb_host | default('localhost') }}"
+    port: "{{ mongodb_port | default(27017) }}"
+    login: "{{ mongodb_user | default('') }}"
+    password: "{{ mongodb_password | default('') }}"
+    schema: "{{ mongodb_database | default('') }}"
+    description: "MongoDB connection"
+
+# File Transfer Connections
+airflow_transfer_connections:
+  - conn_id: "sftp_default"
+    conn_type: "sftp"
+    host: "{{ sftp_host | default('sftp.example.com') }}"
+    port: "{{ sftp_port | default(22) }}"
+    login: "{{ sftp_user }}"
+    password: "{{ sftp_password }}"
+    description: "SFTP server connection"
+    extra:
+      key_file: "{{ sftp_key_file | default('') }}"
+      timeout: "{{ sftp_timeout | default(30) }}"
+
+  - conn_id: "ftp_default"
+    conn_type: "ftp"
+    host: "{{ ftp_host | default('ftp.example.com') }}"
+    port: "{{ ftp_port | default(21) }}"
+    login: "{{ ftp_user }}"
+    password: "{{ ftp_password }}"
+    description: "FTP server connection"
+
+# SSH and Remote Connections
+airflow_ssh_connections:
+  - conn_id: "ssh_default"
+    conn_type: "ssh"
+    host: "{{ ssh_host | default('remote-server.example.com') }}"
+    port: "{{ ssh_port | default(22) }}"
+    login: "{{ ssh_user }}"
+    password: "{{ ssh_password | default('') }}"
+    description: "Default SSH connection"
+    extra:
+      key_file: "{{ ssh_key_file | default('') }}"
+      timeout: "{{ ssh_timeout | default(30) }}"
+
+# Kubernetes Connection (if using KubernetesExecutor or KubernetesPodOperator)
+airflow_k8s_connections:
+  - conn_id: "kubernetes_default"
+    conn_type: "kubernetes"
+    description: "Kubernetes cluster connection"
+    extra:
+      in_cluster: "{{ k8s_in_cluster | default(true) }}"
+      kube_config_path: "{{ k8s_config_path | default('/opt/airflow/.kube/config') }}"
+      namespace: "{{ k8s_namespace | default('airflow') }}"
+
+# Slack Connection (for notifications)
+airflow_notification_connections:
+  - conn_id: "slack_default"
+    conn_type: "slack"
+    description: "Slack webhook for notifications"
+    extra:
+      webhook_token: "{{ slack_webhook_token }}"
+      channel: "{{ slack_channel | default('#airflow') }}"
+      username: "{{ slack_username | default('Airflow') }}"
+
+# Combine all connections
+airflow_connections: >-
+  {{
+    (airflow_database_connections | default([])) +
+    (airflow_api_connections | default([])) +
+    (airflow_cloud_connections | default([])) +
+    (airflow_messaging_connections | default([])) +
+    (airflow_bigdata_connections | default([])) +
+    (airflow_transfer_connections | default([])) +
+    (airflow_ssh_connections | default([])) +
+    (airflow_k8s_connections | default([])) +
+    (airflow_notification_connections | default([]))
+  }}
+
+# Additional custom connections (define in host_vars or override)
+airflow_custom_connections: []
+
+# Final connections list (includes custom connections)
+airflow_all_connections: "{{ airflow_connections + airflow_custom_connections }}"
+
+# Connections to delete (useful for cleanup)
+airflow_connections_to_delete: []
+# Example:
+# airflow_connections_to_delete:
+#   - "old_postgres_conn"
+#   - "deprecated_api"
+
+# Import/Export settings
+# airflow_connections_import_file: "/opt/airflow/connections/import.json"
+# airflow_connections_export_file: "/opt/airflow/backup/connections_{{ ansible_date_time.epoch }}.json"
+airflow_connections_export_format: "json"  # json, yaml, env
+airflow_connections_export_secure: true

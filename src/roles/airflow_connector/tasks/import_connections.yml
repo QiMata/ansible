@@ -1,0 +1,24 @@
+---
+# Import connections from file
+
+- name: Check if import file exists
+  ansible.builtin.stat:
+    path: "{{ airflow_connections_import_file }}"
+  register: import_file_stat
+
+- name: Fail if import file does not exist
+  ansible.builtin.fail:
+    msg: "Import file {{ airflow_connections_import_file }} does not exist"
+  when: not import_file_stat.stat.exists
+
+- name: Import connections from file
+  ansible.builtin.command: "{{ airflow_binary_path }} connections import {{ airflow_connections_import_file }}"
+  environment:
+    AIRFLOW_HOME: "{{ airflow_home }}"
+  register: import_result
+  changed_when: "'imported' in import_result.stdout"
+
+- name: Display import results
+  ansible.builtin.debug:
+    var: import_result.stdout_lines
+  when: airflow_connector_verbose | bool

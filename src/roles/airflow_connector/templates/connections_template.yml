@@ -1,0 +1,138 @@
+# Airflow Connections Configuration Template
+# Copy this file and customize for your environment
+
+airflow_connections:
+  # PostgreSQL Connections
+  - conn_id: "postgres_default"
+    conn_type: "postgres"
+    host: "localhost"
+    port: 5432
+    login: "airflow"
+    password: "{{ vault_postgres_password }}"
+    schema: "airflow"
+    description: "Default PostgreSQL connection"
+    update_existing: true
+    extra:
+      sslmode: "prefer"
+
+  # MySQL Connections  
+  - conn_id: "mysql_default"
+    conn_type: "mysql"
+    host: "localhost"
+    port: 3306
+    login: "airflow"
+    password: "{{ vault_mysql_password }}"
+    schema: "airflow"
+    description: "Default MySQL connection"
+    update_existing: true
+
+  # HTTP/API Connections
+  - conn_id: "http_default"
+    conn_type: "http"
+    host: "httpbin.org"
+    port: 80
+    description: "Default HTTP connection for testing"
+
+  - conn_id: "api_service"
+    conn_type: "http"
+    host: "api.example.com"
+    port: 443
+    description: "External API service"
+    extra:
+      endpoint_url: "https://api.example.com/v1"
+      headers:
+        Authorization: "Bearer {{ vault_api_token }}"
+        Content-Type: "application/json"
+
+  # Cloud Provider Connections
+  - conn_id: "aws_default"
+    conn_type: "aws"
+    description: "AWS connection"
+    extra:
+      aws_access_key_id: "{{ vault_aws_access_key }}"
+      aws_secret_access_key: "{{ vault_aws_secret_key }}"
+      region_name: "us-east-1"
+
+  - conn_id: "gcp_default"
+    conn_type: "google_cloud_platform"
+    description: "Google Cloud Platform connection"
+    extra:
+      key_path: "/opt/airflow/gcp-service-account.json"
+      project: "{{ gcp_project_id }}"
+      scope: "https://www.googleapis.com/auth/cloud-platform"
+
+  - conn_id: "azure_default"
+    conn_type: "azure"
+    description: "Azure connection"
+    extra:
+      client_id: "{{ vault_azure_client_id }}"
+      client_secret: "{{ vault_azure_client_secret }}"
+      tenant_id: "{{ vault_azure_tenant_id }}"
+      subscription_id: "{{ vault_azure_subscription_id }}"
+
+  # Message Queue Connections
+  - conn_id: "redis_default"
+    conn_type: "redis"
+    host: "localhost"
+    port: 6379
+    description: "Redis connection"
+    extra:
+      db: 0
+
+  # Big Data Connections
+  - conn_id: "spark_default"
+    conn_type: "spark"
+    host: "spark-master"
+    port: 7077
+    description: "Spark cluster connection"
+    extra:
+      spark_home: "/opt/spark"
+
+  - conn_id: "elasticsearch_default"
+    conn_type: "elasticsearch"
+    host: "localhost"
+    port: 9200
+    description: "Elasticsearch connection"
+    extra:
+      http_auth: "{{ vault_elasticsearch_user }}:{{ vault_elasticsearch_password }}"
+
+  # File Transfer Connections
+  - conn_id: "sftp_server"
+    conn_type: "sftp"
+    host: "sftp.example.com"
+    port: 22
+    login: "{{ vault_sftp_user }}"
+    password: "{{ vault_sftp_password }}"
+    description: "SFTP server connection"
+
+  - conn_id: "ftp_server"
+    conn_type: "ftp"
+    host: "ftp.example.com"
+    port: 21
+    login: "{{ vault_ftp_user }}"
+    password: "{{ vault_ftp_password }}"
+    description: "FTP server connection"
+
+  # SSH Connections
+  - conn_id: "ssh_server"
+    conn_type: "ssh"
+    host: "remote-server.example.com"
+    port: 22
+    login: "{{ vault_ssh_user }}"
+    password: "{{ vault_ssh_password }}"
+    description: "SSH connection to remote server"
+
+# Connections to delete (if needed)
+airflow_connections_to_delete: []
+  # - "old_connection_id"
+  # - "deprecated_api"
+
+# Import/Export settings
+# airflow_connections_import_file: "/path/to/connections.json"
+# airflow_connections_export_file: "/path/to/backup/connections.json"
+# airflow_connections_export_format: "json"  # json, yaml, env
+
+# Role behavior
+airflow_connector_list_connections: false
+airflow_connector_verbose: false
+airflow_connector_restart_services: false

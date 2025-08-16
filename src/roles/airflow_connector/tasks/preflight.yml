@@ -1,0 +1,30 @@
+---
+# Pre-flight checks for airflow_connector role
+
+- name: Check if Airflow is installed
+  ansible.builtin.command: "{{ airflow_binary_path }} version"
+  register: airflow_version_check
+  failed_when: false
+  changed_when: false
+
+- name: Fail if Airflow is not installed
+  ansible.builtin.fail:
+    msg: "Airflow is not installed or not found at {{ airflow_binary_path }}"
+  when: airflow_version_check.rc != 0
+
+- name: Check Airflow database connection
+  ansible.builtin.command: "{{ airflow_binary_path }} db check"
+  environment:
+    AIRFLOW_HOME: "{{ airflow_home }}"
+  register: airflow_db_check
+  failed_when: false
+  changed_when: false
+
+- name: Fail if Airflow database is not accessible
+  ansible.builtin.fail:
+    msg: "Airflow database is not accessible. Please ensure Airflow is properly configured."
+  when: airflow_db_check.rc != 0
+
+- name: Display Airflow version
+  ansible.builtin.debug:
+    msg: "Airflow version: {{ airflow_version_check.stdout_lines[0] if airflow_version_check.stdout_lines else 'Unknown' }}"

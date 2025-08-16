@@ -1,0 +1,24 @@
+---
+# Delete Airflow connections
+
+- name: Delete Airflow connections
+  ansible.builtin.command: "{{ airflow_binary_path }} connections delete {{ item }}"
+  environment:
+    AIRFLOW_HOME: "{{ airflow_home }}"
+  register: delete_result
+  changed_when: "'successfully deleted' in delete_result.stdout"
+  failed_when:
+    - delete_result.rc != 0
+    - "'does not exist' not in delete_result.stderr"
+  loop: "{{ airflow_connections_to_delete }}"
+  loop_control:
+    label: "{{ item }}"
+
+- name: Display deletion results
+  ansible.builtin.debug:
+    msg: "Connection {{ item }} deletion result: {{ delete_result.results[ansible_loop.index0].stdout if delete_result.results[ansible_loop.index0].stdout else delete_result.results[ansible_loop.index0].stderr }}"
+  loop: "{{ airflow_connections_to_delete }}"
+  loop_control:
+    extended: true
+    label: "{{ item }}"
+  when: airflow_connector_verbose | bool

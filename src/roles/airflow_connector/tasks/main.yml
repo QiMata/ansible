@@ -1,0 +1,22 @@
+---
+# Main tasks file for airflow_connector role
+# This role manages Airflow connections for various external systems
+
+- name: Include pre-flight checks
+  ansible.builtin.import_tasks: preflight.yml
+
+- name: Create Airflow connections
+  ansible.builtin.import_tasks: create_connections.yml
+  when: airflow_connections is defined and airflow_connections | length > 0
+
+- name: Delete Airflow connections
+  ansible.builtin.import_tasks: delete_connections.yml
+  when: airflow_connections_to_delete is defined and airflow_connections_to_delete | length > 0
+
+- name: Import connections from file
+  ansible.builtin.import_tasks: import_connections.yml
+  when: airflow_connections_import_file is defined
+
+- name: Export connections to file
+  ansible.builtin.import_tasks: export_connections.yml
+  when: airflow_connections_export_file is defined

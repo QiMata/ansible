@@ -1,0 +1,109 @@
+---
+# Default variables for airflow_connector role
+
+# Airflow installation paths
+airflow_home: "{{ apache_airflow_home | default('/opt/airflow') }}"
+airflow_binary_path: "{{ apache_airflow_venv_path + '/bin/airflow' if apache_airflow_venv_path else '/usr/local/bin/airflow' }}"
+
+# Airflow connections to create
+# Example:
+# airflow_connections:
+#   - conn_id: "postgres_default"
+#     conn_type: "postgres"
+#     host: "localhost"
+#     port: 5432
+#     login: "airflow"
+#     password: "airflow"
+#     schema: "airflow"
+#     description: "Default PostgreSQL connection"
+#     update_existing: true
+#     extra:
+#       sslmode: "prefer"
+#
+#   - conn_id: "mysql_default"
+#     conn_type: "mysql"
+#     host: "localhost"
+#     port: 3306
+#     login: "airflow"
+#     password: "airflow"
+#     schema: "airflow"
+#     description: "Default MySQL connection"
+#
+#   - conn_id: "http_default"
+#     conn_type: "http"
+#     host: "httpbin.org"
+#     description: "Default HTTP connection"
+#
+#   - conn_id: "aws_default"
+#     conn_type: "aws"
+#     extra:
+#       aws_access_key_id: "AKIA..."
+#       aws_secret_access_key: "..."
+#       region_name: "us-east-1"
+#
+#   - conn_id: "gcp_default"
+#     conn_type: "google_cloud_platform"
+#     extra:
+#       key_path: "/path/to/service-account.json"
+#       project: "my-project"
+#       scope: "https://www.googleapis.com/auth/cloud-platform"
+airflow_connections: []
+
+# Connection IDs to delete
+airflow_connections_to_delete: []
+
+# Import/Export settings
+# airflow_connections_import_file: "/path/to/connections.json"
+# airflow_connections_export_file: "/path/to/connections.json"
+# airflow_connections_export_format: "json"  # json, yaml, env
+# airflow_connections_export_conn_ids: []  # specific connection IDs to export
+airflow_connections_export_secure: true  # Set restrictive permissions on export file
+
+# Role behavior settings
+airflow_connector_list_connections: false  # List connections after creation
+airflow_connector_verbose: false  # Show detailed output
+
+# Common connection templates
+airflow_connector_templates:
+  postgres:
+    conn_type: "postgres"
+    port: 5432
+  mysql:
+    conn_type: "mysql"
+    port: 3306
+  http:
+    conn_type: "http"
+    port: 80
+  https:
+    conn_type: "http"
+    port: 443
+  ftp:
+    conn_type: "ftp"
+    port: 21
+  sftp:
+    conn_type: "sftp"
+    port: 22
+  ssh:
+    conn_type: "ssh"
+    port: 22
+  redis:
+    conn_type: "redis"
+    port: 6379
+  elasticsearch:
+    conn_type: "elasticsearch"
+    port: 9200
+  mongodb:
+    conn_type: "mongo"
+    port: 27017
+  aws:
+    conn_type: "aws"
+  gcp:
+    conn_type: "google_cloud_platform"
+  azure:
+    conn_type: "azure"
+  snowflake:
+    conn_type: "snowflake"
+  spark:
+    conn_type: "spark"
+  kubernetes:
+    conn_type: "kubernetes"

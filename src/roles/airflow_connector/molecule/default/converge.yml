@@ -1,0 +1,80 @@
+---
+- name: Converge
+  hosts: all
+  pre_tasks:
+    # Mock Airflow installation for testing
+    - name: Create airflow user
+      ansible.builtin.user:
+        name: airflow
+        shell: /bin/bash
+        home: /opt/airflow
+        create_home: true
+
+    - name: Create mock airflow binary
+      ansible.builtin.copy:
+        dest: /usr/local/bin/airflow
+        mode: '0755'
+        content: |
+          #!/bin/bash
+          # Mock Airflow CLI for testing
+          case "$1" in
+            "version")
+              echo "2.6.3"
+              ;;
+            "db")
+              if [ "$2" = "check" ]; then
+                echo "Database check successful"
+                exit 0
+              fi
+              ;;
+            "connections")
+              case "$2" in
+                "add")
+                  echo "Successfully added connection"
+                  ;;
+                "delete")
+                  echo "Successfully deleted connection"
+                  ;;
+                "list")
+                  echo "Conn Id | Conn Type | Host | Port | Schema"
+                  echo "test_conn | postgres | localhost | 5432 | testdb"
+                  ;;
+                "import")
+                  echo "Successfully imported connections"
+                  ;;
+                "export")
+                  echo '{"test_conn": {"conn_type": "postgres"}}' > "$3"
+                  echo "Successfully exported connections"
+                  ;;
+              esac
+              ;;
+          esac
+
+    - name: Create airflow home directory
+      ansible.builtin.file:
+        path: /opt/airflow
+        state: directory
+        owner: airflow
+        group: airflow
+        mode: '0755'
+
+  roles:
+    - role: airflow_connector
+      vars:
+        airflow_connections:
+          - conn_id: "test_postgres"
+            conn_type: "postgres"
+            host: "localhost"
+            port: 5432
+            login: "test_user"
+            password: "test_password"
+            schema: "test_db"
+            description: "Test PostgreSQL connection"
+            
+          - conn_id: "test_http"
+            conn_type: "http"
+            host: "httpbin.org"
+            description: "Test HTTP connection"
+            
+        airflow_connector_list_connections: true
+        airflow_connector_verbose: true

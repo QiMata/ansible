@@ -1,0 +1,30 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: podman
+platforms:
+  - name: instance
+    image: quay.io/ansible/molecule-ubuntu:20.04
+    pre_build_image: true
+    privileged: true
+    systemd: true
+    tmpfs:
+      - /run
+      - /tmp
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      callbacks_enabled: timer, profile_tasks
+      stdout_callback: community.general.yaml
+  inventory:
+    host_vars:
+      instance:
+        apache_airflow_home: /opt/airflow
+        apache_airflow_user: airflow
+        apache_airflow_group: airflow
+verifier:
+  name: ansible

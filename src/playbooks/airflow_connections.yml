@@ -1,0 +1,107 @@
+---
+# Example playbook for configuring Airflow connections
+# This playbook demonstrates how to use the airflow_connector role
+
+- name: Configure Airflow connections
+  hosts: airflow_nodes
+  become: true
+  vars:
+    # Database connections
+    postgres_connections:
+      - conn_id: "postgres_dwh"
+        conn_type: "postgres"
+        host: "{{ postgres_dwh_host }}"
+        port: 5432
+        login: "{{ postgres_dwh_user }}"
+        password: "{{ postgres_dwh_password }}"
+        schema: "warehouse"
+        description: "Data warehouse PostgreSQL connection"
+        update_existing: true
+        extra:
+          sslmode: "require"
+          
+      - conn_id: "postgres_analytics"
+        conn_type: "postgres"
+        host: "{{ postgres_analytics_host }}"
+        port: 5432
+        login: "{{ postgres_analytics_user }}"
+        password: "{{ postgres_analytics_password }}"
+        schema: "analytics"
+        description: "Analytics PostgreSQL connection"
+        update_existing: true
+
+    # API connections
+    api_connections:
+      - conn_id: "external_api"
+        conn_type: "http"
+        host: "api.external-service.com"
+        port: 443
+        description: "External service API"
+        extra:
+          endpoint_url: "https://api.external-service.com/v1"
+          headers:
+            Authorization: "Bearer {{ external_api_token }}"
+            Content-Type: "application/json"
+
+    # Cloud provider connections
+    cloud_connections:
+      - conn_id: "aws_s3"
+        conn_type: "aws"
+        description: "AWS S3 connection for data lake"
+        extra:
+          aws_access_key_id: "{{ aws_access_key }}"
+          aws_secret_access_key: "{{ aws_secret_key }}"
+          region_name: "us-west-2"
+          
+      - conn_id: "gcp_bigquery"
+        conn_type: "google_cloud_platform"
+        description: "GCP BigQuery connection"
+        extra:
+          key_path: "/opt/airflow/gcp-service-account.json"
+          project: "{{ gcp_project_id }}"
+          scope: "https://www.googleapis.com/auth/bigquery"
+
+    # Message queue connections
+    messaging_connections:
+      - conn_id: "redis_cache"
+        conn_type: "redis"
+        host: "{{ redis_host }}"
+        port: 6379
+        description: "Redis cache connection"
+        extra:
+          db: 0
+          password: "{{ redis_password }}"
+
+    # All connections combined
+    all_airflow_connections: "{{ postgres_connections + api_connections + cloud_connections + messaging_connections }}"
+
+  tasks:
+    - name: Display connection summary
+      ansible.builtin.debug:
+        msg: "Configuring {{ all_airflow_connections | length }} Airflow connections"
+
+    - name: Configure Airflow connections
+      ansible.builtin.include_role:
+        name: airflow_connector
+      vars:
+        airflow_connections: "{{ all_airflow_connections }}"
+        airflow_connector_list_connections: true
+        airflow_connector_verbose: true
+
+    - name: Backup connections to file
+      ansible.builtin.include_role:
+        name: airflow_connector
+      vars:
+        airflow_connections_export_file: "/opt/airflow/backup/connections_{{ ansible_date_time.epoch }}.json"
+        airflow_connections_export_format: "json"
+      tags: backup
+
+    - name: Cleanup old connections if needed
+      ansible.builtin.include_role:
+        name: airflow_connector
+      vars:
+        airflow_connections_to_delete:
+          - "old_postgres_conn"
+          - "deprecated_api"
+      when: cleanup_old_connections | default(false) | bool
+      tags: cleanup
