@@ -1,0 +1,53 @@
+# Proxmox Dynamic Inventory Configuration with Vault
+plugin: community.general.proxmox
+
+# Proxmox connection details from vault
+url: "{{ vault_proxmox_url }}"
+user: "{{ vault_proxmox_user }}"
+password: "{{ vault_proxmox_password }}"
+
+# SSL verification
+validate_certs: false
+
+# Cache settings
+cache: true
+cache_plugin: jsonfile
+cache_timeout: 3600
+cache_connection: /tmp/ansible-proxmox-cache
+
+# What to retrieve
+want_facts: true
+want_proxmox_nodes_ansible_host: true
+
+# Grouping options
+group_by_tags: true
+group_by_status: true
+group_by_type: true
+
+# Compose variables for easier access
+compose:
+  ansible_host: proxmox_ipconfig0.ip | default(proxmox_net0.ip) | default(proxmox_name)
+  vm_id: proxmox_vmid
+  vm_name: proxmox_name
+  vm_status: proxmox_status
+  vm_tags: proxmox_tags
+
+# Create groups based on Proxmox attributes
+keyed_groups:
+  # Group by status
+  - key: proxmox_status
+    prefix: status
+  
+  # Group by VM type
+  - key: proxmox_type
+    prefix: type
+  
+  # Group by tags
+  - key: proxmox_tags
+    prefix: tag
+    separator: "_"
+
+# Filters
+filters:
+  # Only include running VMs by default
+  - proxmox_status == "running"

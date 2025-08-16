@@ -1,0 +1,11 @@
+---
+# Proxmox connection details
+# Encrypt this file with: ansible-vault encrypt vault_proxmox.yml
+
+vault_proxmox_url: "https://your-proxmox-server:8006"
+vault_proxmox_user: "ansible@pve"
+vault_proxmox_password: "your-secure-password"
+
+# Alternative: API Token (recommended)
+# vault_proxmox_token_id: "ansible@pve!ansible-token"
+# vault_proxmox_token_secret: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
