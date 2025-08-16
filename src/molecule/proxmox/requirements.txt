@@ -1,0 +1,5 @@
+# Requirements for Proxmox Molecule testing
+molecule>=6.0.0
+ansible-core>=2.12
+requests
+urllib3

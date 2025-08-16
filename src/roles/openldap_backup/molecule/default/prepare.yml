@@ -1,0 +1,62 @@
+---
+- name: Prepare
+  hosts: all
+  become: true
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 600
+
+    - name: Install OpenLDAP utilities (for slapcat command)
+      ansible.builtin.apt:
+        name:
+          - slapd
+          - ldap-utils
+        state: present
+
+    - name: Install cron service
+      ansible.builtin.apt:
+        name: cron
+        state: present
+
+    - name: Start and enable cron service
+      ansible.builtin.systemd:
+        name: cron
+        state: started
+        enabled: true
+        daemon_reload: true
+
+    - name: Create test backup directory
+      ansible.builtin.file:
+        path: /var/backups/ldap
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Initialize slapd with minimal config (for testing)
+      ansible.builtin.shell: |
+        echo "slapd slapd/root_password password admin" | debconf-set-selections
+        echo "slapd slapd/root_password_again password admin" | debconf-set-selections
+        echo "slapd slapd/internal/adminpw password admin" | debconf-set-selections
+        echo "slapd slapd/internal/generated_adminpw password admin" | debconf-set-selections
+        echo "slapd slapd/password2 password admin" | debconf-set-selections
+        echo "slapd slapd/password1 password admin" | debconf-set-selections
+        echo "slapd slapd/domain string example.com" | debconf-set-selections
+        echo "slapd shared/organization string Example Organization" | debconf-set-selections
+        echo "slapd slapd/backend string MDB" | debconf-set-selections
+        echo "slapd slapd/purge_database boolean true" | debconf-set-selections
+        echo "slapd slapd/move_old_database boolean true" | debconf-set-selections
+        echo "slapd slapd/allow_ldap_v2 boolean false" | debconf-set-selections
+        echo "slapd slapd/no_configuration boolean false" | debconf-set-selections
+        dpkg-reconfigure -f noninteractive slapd
+      args:
+        creates: /etc/ldap/slapd.d
+
+    - name: Start and enable slapd service
+      ansible.builtin.systemd:
+        name: slapd
+        state: started
+        enabled: true
+        daemon_reload: true

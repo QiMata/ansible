@@ -1,6 +1,3 @@
----
-- name: Include LDAP servers playbook
-  import_playbook: ldap-servers.yml
 
-- name: Include LDAP clients playbook
-  import_playbook: ldap-clients.yml
+  - name: Include keycloak playbook
+    import_playbook: keycloak.yml

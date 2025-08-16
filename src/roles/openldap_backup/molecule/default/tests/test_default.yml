@@ -1,0 +1,129 @@
+---
+- name: Verify OpenLDAP Backup Setup
+  hosts: all
+  become: true
+  tasks:
+    - name: Check if backup script exists
+      ansible.builtin.stat:
+        path: /usr/local/sbin/ldap_backup.sh
+      register: backup_script
+
+    - name: Assert backup script exists
+      ansible.builtin.assert:
+        that:
+          - backup_script.stat.exists
+        fail_msg: "Backup script does not exist"
+
+    - name: Check backup script permissions
+      ansible.builtin.assert:
+        that:
+          - backup_script.stat.mode == '0700'
+          - backup_script.stat.pw_name == 'root'
+          - backup_script.stat.gr_name == 'root'
+        fail_msg: "Backup script has incorrect permissions"
+
+    - name: Verify backup script is executable
+      ansible.builtin.assert:
+        that:
+          - backup_script.stat.executable
+        fail_msg: "Backup script is not executable"
+
+    - name: Check if backup directory exists
+      ansible.builtin.stat:
+        path: /var/backups/ldap
+      register: backup_dir
+
+    - name: Check if cron job exists
+      ansible.builtin.shell: crontab -l | grep -q "ldap_backup.sh"
+      register: cron_check
+      failed_when: false
+      changed_when: false
+
+    - name: Assert cron job is scheduled
+      ansible.builtin.assert:
+        that:
+          - cron_check.rc == 0
+        fail_msg: "Cron job for LDAP backup is not scheduled"
+
+    - name: Verify cron job details
+      ansible.builtin.shell: crontab -l | grep "ldap_backup.sh"
+      register: cron_details
+      changed_when: false
+
+    - name: Assert cron job runs at 2 AM
+      ansible.builtin.assert:
+        that:
+          - "'0 2 * * *' in cron_details.stdout"
+        fail_msg: "Cron job is not scheduled for 2 AM daily"
+
+    - name: Test backup script functionality
+      ansible.builtin.shell: /usr/local/sbin/ldap_backup.sh
+      register: backup_test
+      failed_when: false
+
+    - name: Assert backup script runs without error
+      ansible.builtin.assert:
+        that:
+          - backup_test.rc == 0
+        fail_msg: "Backup script failed to execute: {{ backup_test.stderr }}"
+
+    - name: Check if backup files were created
+      ansible.builtin.find:
+        paths: /var/backups/ldap
+        patterns: "ldap-backup-*.tar.gz"
+      register: backup_files
+
+    - name: Assert backup files were created
+      ansible.builtin.assert:
+        that:
+          - backup_files.files | length > 0
+        fail_msg: "No backup files were created"
+
+    - name: Verify backup file contents
+      ansible.builtin.shell: |
+        cd /var/backups/ldap
+        tar -tzf {{ backup_files.files[0].path }}
+      register: backup_contents
+      when: backup_files.files | length > 0
+
+    - name: Assert backup contains expected files
+      ansible.builtin.assert:
+        that:
+          - "'config-' in backup_contents.stdout"
+          - "'data-' in backup_contents.stdout"
+        fail_msg: "Backup does not contain expected LDIF files"
+      when: backup_files.files | length > 0
+
+    - name: Check if slapcat command is available
+      ansible.builtin.command: which slapcat
+      register: slapcat_check
+      changed_when: false
+
+    - name: Assert slapcat is available
+      ansible.builtin.assert:
+        that:
+          - slapcat_check.rc == 0
+        fail_msg: "slapcat command is not available"
+
+    - name: Test slapcat for config database
+      ansible.builtin.shell: slapcat -b "cn=config" | head -5
+      register: slapcat_config
+      changed_when: false
+
+    - name: Assert config database can be dumped
+      ansible.builtin.assert:
+        that:
+          - slapcat_config.rc == 0
+          - "'dn: cn=config' in slapcat_config.stdout"
+        fail_msg: "Cannot dump config database with slapcat"
+
+    - name: Test slapcat for data database
+      ansible.builtin.shell: slapcat -b "dc=example,dc=com" | head -5
+      register: slapcat_data
+      changed_when: false
+
+    - name: Assert data database can be dumped
+      ansible.builtin.assert:
+        that:
+          - slapcat_data.rc == 0
+        fail_msg: "Cannot dump data database with slapcat"

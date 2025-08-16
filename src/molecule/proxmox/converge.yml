@@ -1,0 +1,13 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  tasks:
+    - name: "Include your role here"
+      include_role:
+        name: "{{ target_role | default('base') }}"
+      when: target_role is defined
+
+    - name: Default test task
+      debug:
+        msg: "Molecule test is running on {{ inventory_hostname }}"

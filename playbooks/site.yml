@@ -1,3 +1,0 @@
----
-- name: Include keycloak playbook
-  import_playbook: keycloak.yml

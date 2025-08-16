@@ -1,0 +1,94 @@
+---
+- name: Verify Elasticsearch Installation
+  hosts: all
+  become: true
+  tasks:
+    - name: Check if Elasticsearch is installed
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Assert Elasticsearch is installed
+      ansible.builtin.assert:
+        that:
+          - "'elasticsearch' in ansible_facts.packages"
+        fail_msg: "Elasticsearch package is not installed"
+
+    - name: Check if Elasticsearch service is running
+      ansible.builtin.service_facts:
+
+    - name: Assert Elasticsearch service is running
+      ansible.builtin.assert:
+        that:
+          - "ansible_facts.services['elasticsearch.service'].state == 'running'"
+        fail_msg: "Elasticsearch service is not running"
+
+    - name: Wait for Elasticsearch to be ready
+      ansible.builtin.uri:
+        url: "http://localhost:9200"
+        method: GET
+        status_code: 200
+      retries: 30
+      delay: 2
+      register: es_health_check
+
+    - name: Check Elasticsearch cluster health
+      ansible.builtin.uri:
+        url: "http://localhost:9200/_cluster/health"
+        method: GET
+        status_code: 200
+      register: cluster_health
+
+    - name: Assert cluster is healthy
+      ansible.builtin.assert:
+        that:
+          - "cluster_health.json.status in ['green', 'yellow']"
+        fail_msg: "Elasticsearch cluster is not healthy"
+
+    - name: Verify cluster name
+      ansible.builtin.assert:
+        that:
+          - "cluster_health.json.cluster_name == 'test-cluster'"
+        fail_msg: "Cluster name does not match expected value"
+
+    - name: Check if Java is installed
+      ansible.builtin.command: java -version
+      register: java_version
+      changed_when: false
+
+    - name: Assert Java is installed
+      ansible.builtin.assert:
+        that:
+          - "java_version.rc == 0"
+        fail_msg: "Java is not installed or not working"
+
+    - name: Check Elasticsearch configuration file exists
+      ansible.builtin.stat:
+        path: /etc/elasticsearch/elasticsearch.yml
+      register: es_config
+
+    - name: Assert Elasticsearch config exists
+      ansible.builtin.assert:
+        that:
+          - es_config.stat.exists
+        fail_msg: "Elasticsearch configuration file does not exist"
+
+    - name: Check if Elasticsearch is listening on port 9200
+      ansible.builtin.wait_for:
+        port: 9200
+        host: localhost
+        timeout: 10
+
+    - name: Verify Elasticsearch node info
+      ansible.builtin.uri:
+        url: "http://localhost:9200/_nodes"
+        method: GET
+        status_code: 200
+      register: node_info
+
+    - name: Assert node has expected roles
+      ansible.builtin.assert:
+        that:
+          - "'master' in node_info.json.nodes[node_info.json.nodes.keys() | list | first].roles"
+          - "'data' in node_info.json.nodes[node_info.json.nodes.keys() | list | first].roles"
+          - "'ingest' in node_info.json.nodes[node_info.json.nodes.keys() | list | first].roles"
+        fail_msg: "Node does not have expected roles"

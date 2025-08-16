@@ -1,0 +1,35 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: delegated
+  options:
+    managed: false
+    ansible_connection_options:
+      ansible_connection: ssh
+platforms:
+  - name: debian-test-instance
+    groups:
+      - debian
+      - test_instances
+provisioner:
+  name: ansible
+  playbooks:
+    create: create.yml
+    prepare: prepare.yml
+    converge: converge.yml
+    verify: verify.yml
+    destroy: destroy.yml
+  inventory:
+    host_vars:
+      debian-test-instance:
+        ansible_user: root
+        ansible_connection: ssh
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+  config_options:
+    defaults:
+      host_key_checking: false
+      stdout_callback: yaml
+      bin_ansible_callbacks: true
+verifier:
+  name: ansible

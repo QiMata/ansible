@@ -1,0 +1,32 @@
+---
+- name: Destroy Proxmox LXC container
+  hosts: localhost
+  gather_facts: false
+  vars:
+    proxmox_host: "{{ lookup('env', 'PROXMOX_HOST') | default('192.168.1.100') }}"
+    proxmox_user: "{{ lookup('env', 'PROXMOX_USER') | default('root@pam') }}"
+    proxmox_password: "{{ lookup('env', 'PROXMOX_PASSWORD') }}"
+    proxmox_node: "{{ lookup('env', 'PROXMOX_NODE') | default('pve') }}"
+    container_id: "{{ lookup('env', 'CONTAINER_ID') | default('999') }}"
+  tasks:
+    - name: Stop LXC container
+      uri:
+        url: "https://{{ proxmox_host }}:8006/api2/json/nodes/{{ proxmox_node }}/lxc/{{ container_id }}/status/stop"
+        method: POST
+        user: "{{ proxmox_user }}"
+        password: "{{ proxmox_password }}"
+        validate_certs: false
+      ignore_errors: true
+
+    - name: Wait for container to stop
+      pause:
+        seconds: 10
+
+    - name: Destroy LXC container
+      uri:
+        url: "https://{{ proxmox_host }}:8006/api2/json/nodes/{{ proxmox_node }}/lxc/{{ container_id }}"
+        method: DELETE
+        user: "{{ proxmox_user }}"
+        password: "{{ proxmox_password }}"
+        validate_certs: false
+      ignore_errors: true

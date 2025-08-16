@@ -1,0 +1,31 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: openldap-backup-instance
+    image: ubuntu:22.04
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    command: "/lib/systemd/systemd"
+    capabilities:
+      - SYS_ADMIN
+    tmpfs:
+      - /run
+      - /tmp
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      callbacks_enabled: profile_tasks, timer, yaml
+    ssh_connection:
+      pipelining: false
+  inventory:
+    host_vars:
+      openldap-backup-instance:
+        ldap_base_dn: "dc=example,dc=com"
+verifier:
+  name: ansible

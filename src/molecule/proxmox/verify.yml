@@ -1,0 +1,28 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check if container is accessible
+      ping:
+
+    - name: Verify Python is installed
+      command: python3 --version
+      register: python_version
+      changed_when: false
+
+    - name: Display Python version
+      debug:
+        var: python_version.stdout
+
+    - name: Verify SSH service is running
+      systemd:
+        name: ssh
+      register: ssh_status
+
+    - name: Assert SSH is active
+      assert:
+        that:
+          - ssh_status.status.ActiveState == "active"
+        fail_msg: "SSH service is not running"
+        success_msg: "SSH service is running correctly"

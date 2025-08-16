@@ -1,0 +1,28 @@
+---
+- name: Prepare
+  hosts: all
+  become: true
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 600
+
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - curl
+          - gnupg
+          - lsb-release
+          - apt-transport-https
+          - ca-certificates
+        state: present
+
+    - name: Install systemd for container
+      ansible.builtin.apt:
+        name: systemd
+        state: present
+
+    - name: Start systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
