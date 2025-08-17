@@ -1,0 +1,134 @@
+---
+# ================================
+# Version Control Integration
+# ================================
+
+- name: Install Git if not present
+  become: true
+  ansible.builtin.apt:
+    name: git
+    state: present
+  when: apache_nifi_version_control
+  tags: [nifi, git, version-control]
+
+- name: Create git configuration directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ apache_nifi_conf_dir }}/git"
+    state: directory
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0755'
+  when: apache_nifi_version_control
+  tags: [nifi, git, version-control]
+
+- name: Configure Git for NiFi user
+  become: true
+  ansible.builtin.git_config:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    scope: global
+  become_user: "{{ apache_nifi_user }}"
+  loop:
+    - { name: "user.name", value: "NiFi Service Account" }
+    - { name: "user.email", value: "nifi@{{ ansible_hostname }}" }
+    - { name: "init.defaultBranch", value: "main" }
+  when: apache_nifi_version_control
+  tags: [nifi, git, config]
+
+- name: Create Git credentials file
+  become: true
+  ansible.builtin.template:
+    src: git_credentials.j2
+    dest: "{{ apache_nifi_conf_dir }}/git/.git-credentials"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0600'
+  when: 
+    - apache_nifi_version_control
+    - apache_nifi_git_username != ""
+    - apache_nifi_git_token != ""
+  tags: [nifi, git, credentials]
+
+- name: Initialize local Git repository for config tracking
+  become: true
+  ansible.builtin.git:
+    repo: "{{ apache_nifi_git_repository }}"
+    dest: "{{ apache_nifi_conf_dir }}/git/config-repo"
+    version: "{{ apache_nifi_git_branch }}"
+    force: true
+  become_user: "{{ apache_nifi_user }}"
+  when: 
+    - apache_nifi_version_control
+    - apache_nifi_git_repository != ""
+  tags: [nifi, git, clone]
+
+- name: Create configuration drift detection script
+  become: true
+  ansible.builtin.template:
+    src: detect_config_drift.sh.j2
+    dest: "{{ apache_nifi_conf_dir }}/scripts/detect_config_drift.sh"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0755'
+  when: apache_nifi_config_drift_detection
+  tags: [nifi, git, drift-detection]
+
+- name: Create systemd service for config drift detection
+  become: true
+  ansible.builtin.template:
+    src: nifi-config-drift.service.j2
+    dest: /etc/systemd/system/nifi-config-drift.service
+    mode: '0644'
+  when: apache_nifi_config_drift_detection
+  notify:
+    - reload systemd
+  tags: [nifi, git, drift-detection, service]
+
+- name: Create systemd timer for config drift detection
+  become: true
+  ansible.builtin.template:
+    src: nifi-config-drift.timer.j2
+    dest: /etc/systemd/system/nifi-config-drift.timer
+    mode: '0644'
+  when: apache_nifi_config_drift_detection
+  notify:
+    - reload systemd
+    - restart nifi-config-drift.timer
+  tags: [nifi, git, drift-detection, timer]
+
+- name: Start and enable config drift detection timer
+  become: true
+  ansible.builtin.systemd:
+    name: nifi-config-drift.timer
+    state: started
+    enabled: true
+    daemon_reload: true
+  when: apache_nifi_config_drift_detection
+  tags: [nifi, git, drift-detection, timer]
+
+- name: Create configuration backup to Git script
+  become: true
+  ansible.builtin.template:
+    src: backup_config_to_git.sh.j2
+    dest: "{{ apache_nifi_conf_dir }}/scripts/backup_config_to_git.sh"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0755'
+  when: apache_nifi_version_control
+  tags: [nifi, git, backup]
+
+- name: Create cron job for configuration backup to Git
+  become: true
+  ansible.builtin.cron:
+    name: "NiFi config backup to Git"
+    cron_file: nifi_git_backup
+    user: "{{ apache_nifi_user }}"
+    job: "{{ apache_nifi_conf_dir }}/scripts/backup_config_to_git.sh >> {{ apache_nifi_home }}/logs/git_backup.log 2>&1"
+    minute: "0"
+    hour: "*/6"
+    day: "*"
+    month: "*"
+    weekday: "*"
+  when: apache_nifi_version_control
+  tags: [nifi, git, backup, cron]

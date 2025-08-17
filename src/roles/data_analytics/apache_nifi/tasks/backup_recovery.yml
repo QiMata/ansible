@@ -1,0 +1,138 @@
+---
+# ================================
+# Backup & Disaster Recovery Tasks
+# ================================
+
+- name: Create backup directories
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0750'
+  loop:
+    - "{{ apache_nifi_backup_location }}"
+    - "{{ apache_nifi_backup_location }}/config"
+    - "{{ apache_nifi_backup_location }}/flows"
+    - "{{ apache_nifi_backup_location }}/repositories"
+    - "{{ apache_nifi_backup_location }}/logs"
+  when: apache_nifi_backup_enabled
+  tags: [nifi, backup]
+
+- name: Install backup dependencies
+  become: true
+  ansible.builtin.apt:
+    name:
+      - rsync
+      - gzip
+      - tar
+      - gnupg
+    state: present
+  when: apache_nifi_backup_enabled
+  tags: [nifi, backup, dependencies]
+
+- name: Create backup encryption key
+  become: true
+  ansible.builtin.copy:
+    content: "{{ apache_nifi_backup_encryption_key }}"
+    dest: "{{ apache_nifi_conf_dir }}/.backup_key"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0600'
+  when: 
+    - apache_nifi_backup_enabled
+    - apache_nifi_backup_encrypt
+    - apache_nifi_backup_encryption_key != ""
+  tags: [nifi, backup, encryption]
+
+- name: Create backup script
+  become: true
+  ansible.builtin.template:
+    src: backup_nifi.sh.j2
+    dest: "{{ apache_nifi_conf_dir }}/scripts/backup_nifi.sh"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0750'
+  when: apache_nifi_backup_enabled
+  tags: [nifi, backup, script]
+
+- name: Create restore script
+  become: true
+  ansible.builtin.template:
+    src: restore_nifi.sh.j2
+    dest: "{{ apache_nifi_conf_dir }}/scripts/restore_nifi.sh"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0750'
+  when: apache_nifi_backup_enabled
+  tags: [nifi, backup, restore, script]
+
+- name: Create backup cleanup script
+  become: true
+  ansible.builtin.template:
+    src: cleanup_backups.sh.j2
+    dest: "{{ apache_nifi_conf_dir }}/scripts/cleanup_backups.sh"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0750'
+  when: apache_nifi_backup_enabled
+  tags: [nifi, backup, cleanup, script]
+
+- name: Create backup cron job
+  become: true
+  ansible.builtin.cron:
+    name: "NiFi backup"
+    cron_file: nifi_backup
+    user: "{{ apache_nifi_user }}"
+    job: "{{ apache_nifi_conf_dir }}/scripts/backup_nifi.sh >> {{ apache_nifi_home }}/logs/backup.log 2>&1"
+    minute: "{{ apache_nifi_backup_schedule.split(' ')[0] }}"
+    hour: "{{ apache_nifi_backup_schedule.split(' ')[1] }}"
+    day: "{{ apache_nifi_backup_schedule.split(' ')[2] }}"
+    month: "{{ apache_nifi_backup_schedule.split(' ')[3] }}"
+    weekday: "{{ apache_nifi_backup_schedule.split(' ')[4] }}"
+  when: apache_nifi_backup_enabled
+  tags: [nifi, backup, cron]
+
+- name: Create backup cleanup cron job
+  become: true
+  ansible.builtin.cron:
+    name: "NiFi backup cleanup"
+    cron_file: nifi_backup_cleanup
+    user: "{{ apache_nifi_user }}"
+    job: "{{ apache_nifi_conf_dir }}/scripts/cleanup_backups.sh >> {{ apache_nifi_home }}/logs/backup_cleanup.log 2>&1"
+    minute: "0"
+    hour: "3"
+    day: "*"
+    month: "*"
+    weekday: "*"
+  when: apache_nifi_backup_enabled
+  tags: [nifi, backup, cleanup, cron]
+
+- name: Perform restore if requested
+  become: true
+  block:
+    - name: Stop NiFi service
+      ansible.builtin.systemd:
+        name: nifi
+        state: stopped
+
+    - name: Run restore script
+      ansible.builtin.command:
+        cmd: "{{ apache_nifi_conf_dir }}/scripts/restore_nifi.sh {{ apache_nifi_restore_source }}"
+      become_user: "{{ apache_nifi_user }}"
+      register: restore_result
+
+    - name: Start NiFi service
+      ansible.builtin.systemd:
+        name: nifi
+        state: started
+
+    - name: Display restore results
+      ansible.builtin.debug:
+        var: restore_result.stdout_lines
+
+  when: 
+    - apache_nifi_restore_enabled
+    - apache_nifi_restore_source != ""
+  tags: [nifi, restore]

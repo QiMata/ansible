@@ -1,0 +1,25 @@
+[Unit]
+Description=NiFi Custom Metrics Service
+After=network.target nifi.service
+Wants=nifi.service
+
+[Service]
+Type=simple
+User={{ apache_nifi_user }}
+Group={{ apache_nifi_group }}
+WorkingDirectory={{ apache_nifi_conf_dir }}/scripts
+ExecStart=/usr/bin/python3 {{ apache_nifi_conf_dir }}/scripts/custom_metrics.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Security settings
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths={{ apache_nifi_home }}/logs
+
+[Install]
+WantedBy=multi-user.target

@@ -1,4 +1,43 @@
 java=java
+
+# JVM Memory Configuration
 java.arg.1=-Xms512m
-java.arg.2=-Xmx2g
+java.arg.2=-Xmx{{ apache_nifi_jvm_heap_size }}
+
+# JVM Performance Tuning
+{% if apache_nifi_jvm_monitoring %}
+java.arg.3=-XX:+UseG1GC
+java.arg.4=-XX:+UseStringDeduplication
+java.arg.5=-XX:MaxGCPauseMillis=500
+{% if apache_nifi_jvm_gc_logging %}
+java.arg.6=-Xlog:gc*:{{ apache_nifi_home }}/logs/nifi-gc.log:time,tags
+java.arg.7=-XX:+UnlockExperimentalVMOptions
+{% endif %}
+{% endif %}
+
+# JMX Configuration for Monitoring
+{% if apache_nifi_prometheus_jmx_exporter %}
+java.arg.8=-javaagent:{{ apache_nifi_home }}/lib/jmx_prometheus_javaagent.jar={{ apache_nifi_prometheus_jmx_port }}:{{ apache_nifi_conf_dir }}/monitoring/jmx_prometheus.yml
+{% endif %}
+
+# Security Properties
+{% if apache_nifi_sensitive_props_key != "" %}
+java.arg.9=-Dnifi.sensitive.props.key.protected={{ apache_nifi_sensitive_props_key }}
+java.arg.10=-Dnifi.sensitive.props.algorithm={{ apache_nifi_sensitive_props_algorithm }}
+{% endif %}
+
+# Remote Debugging (disabled by default)
+# java.arg.debug=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000
+
+# System Properties
+java.arg.20=-Djava.awt.headless=true
+java.arg.21=-Djava.protocol.handler.pkgs=sun.net.www.protocol
+java.arg.22=-Dsun.net.useExclusiveBind=false
+java.arg.23=-Djava.net.preferIPv4Stack=true
+
+# Custom JVM arguments
+{% for key, value in apache_nifi_custom_properties.items() %}
+java.arg.custom.{{ loop.index }}=-D{{ key }}={{ value }}
+{% endfor %}
+
 run.as={{ apache_nifi_user }}

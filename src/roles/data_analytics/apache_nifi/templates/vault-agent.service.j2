@@ -1,0 +1,31 @@
+[Unit]
+Description=Vault Agent for NiFi
+Wants=network-online.target
+After=network-online.target
+ConditionFileNotEmpty={{ apache_nifi_conf_dir }}/vault/agent.hcl
+
+[Service]
+Type=notify
+User={{ apache_nifi_user }}
+Group={{ apache_nifi_group }}
+ProtectSystem=full
+ProtectHome=read-only
+PrivateTmp=yes
+PrivateDevices=yes
+SecureBits=keep-caps
+AmbientCapabilities=CAP_IPC_LOCK
+CapabilityBoundingSet=CAP_SYSLOG CAP_IPC_LOCK
+NoNewPrivileges=yes
+ExecStart=/usr/local/bin/vault agent -config={{ apache_nifi_conf_dir }}/vault/agent.hcl
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+StartLimitIntervalSec=60
+StartLimitBurst=3
+LimitNOFILE=65536
+LimitMEMLOCK=infinity
+
+[Install]
+WantedBy=multi-user.target

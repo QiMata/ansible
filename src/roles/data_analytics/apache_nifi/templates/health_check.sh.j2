@@ -1,0 +1,272 @@
+#!/bin/bash
+# NiFi Health Check Script
+
+set -euo pipefail
+
+# Configuration
+NIFI_URL="{% if nifi_enable_https %}https://localhost:{{ nifi_secure_port }}{% else %}http://localhost:{{ nifi_listen_port }}{% endif %}"
+NIFI_API="${NIFI_URL}/nifi-api"
+CHECK_TIMEOUT="{{ apache_nifi_health_check_timeout }}"
+LOG_FILE="{{ apache_nifi_home }}/logs/health_check.log"
+
+# Health check results
+HEALTH_STATUS="HEALTHY"
+HEALTH_ISSUES=()
+
+# Logging function
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "${LOG_FILE}"
+}
+
+# Check NiFi service status
+check_service_status() {
+    log "Checking NiFi service status"
+    
+    if ! systemctl is-active --quiet nifi; then
+        HEALTH_STATUS="UNHEALTHY"
+        HEALTH_ISSUES+=("NiFi service is not running")
+        log "ERROR: NiFi service is not running"
+        return 1
+    fi
+    
+    log "NiFi service is running"
+    return 0
+}
+
+# Check NiFi API availability
+check_api_availability() {
+    log "Checking NiFi API availability"
+    
+    local response_code
+    response_code=$(curl -s -o /dev/null -w "%{http_code}" \
+        --connect-timeout "${CHECK_TIMEOUT}" \
+        --max-time "${CHECK_TIMEOUT}" \
+        {% if nifi_enable_https %}--insecure{% endif %} \
+        "${NIFI_API}/access/config" || echo "000")
+    
+    if [[ "${response_code}" != "200" ]]; then
+        HEALTH_STATUS="UNHEALTHY"
+        HEALTH_ISSUES+=("NiFi API not responding (HTTP ${response_code})")
+        log "ERROR: NiFi API not responding (HTTP ${response_code})"
+        return 1
+    fi
+    
+    log "NiFi API is responding"
+    return 0
+}
+
+# Check system resources
+check_system_resources() {
+    log "Checking system resources"
+    
+    # Check disk space
+    local disk_usage
+    disk_usage=$(df "{{ apache_nifi_home }}" | awk 'NR==2 {print $5}' | sed 's/%//')
+    
+    if [[ ${disk_usage} -gt 90 ]]; then
+        HEALTH_STATUS="UNHEALTHY"
+        HEALTH_ISSUES+=("Disk usage is ${disk_usage}% (> 90%)")
+        log "ERROR: High disk usage: ${disk_usage}%"
+    elif [[ ${disk_usage} -gt 80 ]]; then
+        HEALTH_ISSUES+=("Disk usage is ${disk_usage}% (> 80%)")
+        log "WARNING: Moderate disk usage: ${disk_usage}%"
+    fi
+    
+    # Check memory usage
+    local memory_usage
+    memory_usage=$(free | awk 'NR==2{printf "%.0f", $3*100/$2}')
+    
+    if [[ ${memory_usage} -gt 95 ]]; then
+        HEALTH_STATUS="UNHEALTHY"
+        HEALTH_ISSUES+=("Memory usage is ${memory_usage}% (> 95%)")
+        log "ERROR: High memory usage: ${memory_usage}%"
+    elif [[ ${memory_usage} -gt 85 ]]; then
+        HEALTH_ISSUES+=("Memory usage is ${memory_usage}% (> 85%)")
+        log "WARNING: Moderate memory usage: ${memory_usage}%"
+    fi
+    
+    log "System resources check completed"
+}
+
+# Check NiFi cluster status (if clustering enabled)
+check_cluster_status() {
+    {% if nifi_cluster_enabled %}
+    log "Checking NiFi cluster status"
+    
+    local cluster_response
+    cluster_response=$(curl -s --connect-timeout "${CHECK_TIMEOUT}" \
+        --max-time "${CHECK_TIMEOUT}" \
+        {% if nifi_enable_https %}--insecure{% endif %} \
+        "${NIFI_API}/controller/cluster" || echo '{"cluster":null}')
+    
+    if command -v jq &> /dev/null; then
+        local connected_nodes
+        connected_nodes=$(echo "${cluster_response}" | jq -r '.cluster.nodes[] | select(.status == "CONNECTED") | .nodeId' | wc -l)
+        
+        local total_nodes
+        total_nodes=$(echo "${cluster_response}" | jq -r '.cluster.nodes[] | .nodeId' | wc -l)
+        
+        if [[ ${connected_nodes} -lt ${total_nodes} ]]; then
+            HEALTH_STATUS="UNHEALTHY"
+            HEALTH_ISSUES+=("Only ${connected_nodes}/${total_nodes} cluster nodes connected")
+            log "ERROR: Cluster nodes disconnected: ${connected_nodes}/${total_nodes} connected"
+        else
+            log "All cluster nodes connected (${connected_nodes}/${total_nodes})"
+        fi
+    else
+        log "WARNING: jq not available, skipping detailed cluster check"
+    fi
+    {% else %}
+    log "Cluster mode not enabled, skipping cluster check"
+    {% endif %}
+}
+
+# Check flow file queues
+check_flow_queues() {
+    log "Checking flow file queues"
+    
+    local flow_response
+    flow_response=$(curl -s --connect-timeout "${CHECK_TIMEOUT}" \
+        --max-time "${CHECK_TIMEOUT}" \
+        {% if nifi_enable_https %}--insecure{% endif %} \
+        "${NIFI_API}/flow/status" || echo '{"controllerStatus":null}')
+    
+    if command -v jq &> /dev/null; then
+        local queued_count
+        queued_count=$(echo "${flow_response}" | jq -r '.controllerStatus.queuedCount // 0')
+        
+        local active_threads
+        active_threads=$(echo "${flow_response}" | jq -r '.controllerStatus.activeThreadCount // 0')
+        
+        # Check for excessive queue buildup
+        if [[ ${queued_count} -gt 100000 ]]; then
+            HEALTH_STATUS="UNHEALTHY"
+            HEALTH_ISSUES+=("High queue count: ${queued_count} flow files")
+            log "ERROR: High queue count: ${queued_count} flow files"
+        elif [[ ${queued_count} -gt 50000 ]]; then
+            HEALTH_ISSUES+=("Moderate queue count: ${queued_count} flow files")
+            log "WARNING: Moderate queue count: ${queued_count} flow files"
+        fi
+        
+        # Check for thread starvation
+        if [[ ${active_threads} -eq 0 && ${queued_count} -gt 0 ]]; then
+            HEALTH_STATUS="UNHEALTHY"
+            HEALTH_ISSUES+=("No active threads but ${queued_count} queued flow files")
+            log "ERROR: Potential thread starvation detected"
+        fi
+        
+        log "Queue status: ${queued_count} queued, ${active_threads} active threads"
+    else
+        log "WARNING: jq not available, skipping detailed queue check"
+    fi
+}
+
+# Check log files for errors
+check_log_errors() {
+    log "Checking for recent errors in logs"
+    
+    local log_dir="{{ apache_nifi_home }}/logs"
+    local error_count=0
+    
+    if [[ -d "${log_dir}" ]]; then
+        # Check for errors in the last 10 minutes
+        error_count=$(find "${log_dir}" -name "nifi-app*.log" -mmin -10 -exec grep -c "ERROR" {} + 2>/dev/null | awk '{sum+=$1} END {print sum+0}')
+        
+        if [[ ${error_count} -gt 10 ]]; then
+            HEALTH_STATUS="UNHEALTHY"
+            HEALTH_ISSUES+=("${error_count} errors found in recent logs")
+            log "ERROR: High error count in recent logs: ${error_count}"
+        elif [[ ${error_count} -gt 5 ]]; then
+            HEALTH_ISSUES+=("${error_count} errors found in recent logs")
+            log "WARNING: Moderate error count in recent logs: ${error_count}"
+        fi
+    fi
+    
+    log "Log error check completed: ${error_count} errors found"
+}
+
+# Generate health report
+generate_health_report() {
+    local report_file="{{ apache_nifi_home }}/logs/health_report.json"
+    
+    cat > "${report_file}" << EOF
+{
+    "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+    "hostname": "$(hostname)",
+    "status": "${HEALTH_STATUS}",
+    "issues": [
+$(printf '        "%s"' "${HEALTH_ISSUES[@]}" | sed 's/$/,/' | sed '$s/,$//')
+    ],
+    "checks_performed": [
+        "service_status",
+        "api_availability",
+        "system_resources",
+        {% if nifi_cluster_enabled %}"cluster_status",{% endif %}
+        "flow_queues",
+        "log_errors"
+    ]
+}
+EOF
+    
+    log "Health report generated: ${report_file}"
+}
+
+# Send alerts if unhealthy
+send_alerts() {
+    if [[ "${HEALTH_STATUS}" == "UNHEALTHY" ]]; then
+        log "NiFi is UNHEALTHY - sending alerts"
+        
+        # You can integrate with your alerting system here
+        # For example, send to Prometheus Alertmanager, PagerDuty, etc.
+        
+        # Example: Send to local syslog
+        logger -t nifi-health "CRITICAL: NiFi health check failed - ${HEALTH_ISSUES[*]}"
+        
+        # Example: Write to a file that monitoring systems can watch
+        echo "UNHEALTHY: ${HEALTH_ISSUES[*]}" > "{{ apache_nifi_home }}/logs/health_alert"
+    else
+        log "NiFi is HEALTHY"
+        
+        # Clear any existing alert files
+        rm -f "{{ apache_nifi_home }}/logs/health_alert"
+    fi
+}
+
+# Main health check function
+main() {
+    log "Starting NiFi health check"
+    
+    # Perform all health checks
+    check_service_status
+    check_api_availability && {
+        check_system_resources
+        check_cluster_status
+        check_flow_queues
+    }
+    check_log_errors
+    
+    # Generate report and send alerts
+    generate_health_report
+    send_alerts
+    
+    log "Health check completed - Status: ${HEALTH_STATUS}"
+    
+    # Exit with appropriate code
+    if [[ "${HEALTH_STATUS}" == "UNHEALTHY" ]]; then
+        exit 1
+    else
+        exit 0
+    fi
+}
+
+# Error handling
+trap 'log "ERROR: Health check failed on line $LINENO"' ERR
+
+# Install jq if not present (for JSON parsing)
+if ! command -v jq &> /dev/null; then
+    log "Installing jq for JSON parsing"
+    apt-get update && apt-get install -y jq
+fi
+
+# Run main function
+main "$@"

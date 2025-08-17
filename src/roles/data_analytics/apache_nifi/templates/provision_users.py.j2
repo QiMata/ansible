@@ -1,0 +1,239 @@
+#!/usr/bin/env python3
+"""
+NiFi User Provisioning Script
+Automatically provisions users and groups via NiFi API
+"""
+
+import json
+import requests
+import sys
+import time
+from urllib.parse import urljoin
+import urllib3
+
+# Disable SSL warnings for self-signed certificates
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+class NiFiUserProvisioner:
+    def __init__(self):
+        self.base_url = "https://localhost:{{ nifi_secure_port if nifi_enable_https else 'http://localhost:' + nifi_listen_port|string }}"
+        self.verify_ssl = False  # Set to True in production with proper certificates
+        self.session = requests.Session()
+        self.session.verify = self.verify_ssl
+        
+        # NiFi API endpoints
+        self.api_base = urljoin(self.base_url, "/nifi-api")
+        self.users_endpoint = urljoin(self.api_base, "/tenants/users")
+        self.groups_endpoint = urljoin(self.api_base, "/tenants/user-groups")
+        self.policies_endpoint = urljoin(self.api_base, "/policies")
+        
+        # Configuration
+        self.users = {{ apache_nifi_users | to_json }}
+        self.groups = {{ apache_nifi_groups | to_json }}
+        
+    def wait_for_nifi(self, max_attempts=30, delay=10):
+        """Wait for NiFi to be available"""
+        print("Waiting for NiFi to be available...")
+        
+        for attempt in range(max_attempts):
+            try:
+                response = self.session.get(urljoin(self.api_base, "/access/config"))
+                if response.status_code == 200:
+                    print("NiFi is available")
+                    return True
+            except requests.exceptions.RequestException:
+                pass
+            
+            print(f"Attempt {attempt + 1}/{max_attempts}: NiFi not ready, waiting {delay}s...")
+            time.sleep(delay)
+        
+        print("ERROR: NiFi did not become available within the timeout period")
+        return False
+    
+    def get_access_token(self):
+        """Get access token for API calls"""
+        # For certificate-based authentication, this would be handled differently
+        # This is a simplified version for development/testing
+        try:
+            response = self.session.post(urljoin(self.api_base, "/access/token"))
+            if response.status_code == 201:
+                token = response.text
+                self.session.headers.update({"Authorization": f"Bearer {token}"})
+                return True
+        except requests.exceptions.RequestException as e:
+            print(f"Failed to get access token: {e}")
+        
+        return False
+    
+    def create_user(self, user):
+        """Create a single user"""
+        user_data = {
+            "component": {
+                "identity": user["identity"],
+                "configurable": True
+            },
+            "revision": {
+                "version": 0
+            }
+        }
+        
+        try:
+            response = self.session.post(self.users_endpoint, json=user_data)
+            if response.status_code in [200, 201]:
+                print(f"Created user: {user['identity']}")
+                return response.json()
+            elif response.status_code == 409:
+                print(f"User already exists: {user['identity']}")
+                return self.get_existing_user(user["identity"])
+            else:
+                print(f"Failed to create user {user['identity']}: {response.status_code} - {response.text}")
+                return None
+        except requests.exceptions.RequestException as e:
+            print(f"Error creating user {user['identity']}: {e}")
+            return None
+    
+    def get_existing_user(self, identity):
+        """Get existing user by identity"""
+        try:
+            response = self.session.get(self.users_endpoint)
+            if response.status_code == 200:
+                users_data = response.json()
+                for user in users_data.get("users", []):
+                    if user.get("component", {}).get("identity") == identity:
+                        return user
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching existing user {identity}: {e}")
+        
+        return None
+    
+    def create_group(self, group):
+        """Create a single group"""
+        group_data = {
+            "component": {
+                "identity": group["name"],
+                "configurable": True,
+                "users": []
+            },
+            "revision": {
+                "version": 0
+            }
+        }
+        
+        try:
+            response = self.session.post(self.groups_endpoint, json=group_data)
+            if response.status_code in [200, 201]:
+                print(f"Created group: {group['name']}")
+                return response.json()
+            elif response.status_code == 409:
+                print(f"Group already exists: {group['name']}")
+                return self.get_existing_group(group["name"])
+            else:
+                print(f"Failed to create group {group['name']}: {response.status_code} - {response.text}")
+                return None
+        except requests.exceptions.RequestException as e:
+            print(f"Error creating group {group['name']}: {e}")
+            return None
+    
+    def get_existing_group(self, name):
+        """Get existing group by name"""
+        try:
+            response = self.session.get(self.groups_endpoint)
+            if response.status_code == 200:
+                groups_data = response.json()
+                for group in groups_data.get("userGroups", []):
+                    if group.get("component", {}).get("identity") == name:
+                        return group
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching existing group {name}: {e}")
+        
+        return None
+    
+    def add_user_to_group(self, user_data, group_data):
+        """Add user to group"""
+        if not user_data or not group_data:
+            return False
+        
+        group_id = group_data["id"]
+        user_id = user_data["id"]
+        
+        # Get current group data
+        try:
+            response = self.session.get(f"{self.groups_endpoint}/{group_id}")
+            if response.status_code != 200:
+                print(f"Failed to fetch group data: {response.status_code}")
+                return False
+            
+            current_group = response.json()
+            users_list = current_group["component"].get("users", [])
+            
+            # Check if user is already in group
+            for existing_user in users_list:
+                if existing_user["id"] == user_id:
+                    print(f"User {user_data['component']['identity']} already in group {group_data['component']['identity']}")
+                    return True
+            
+            # Add user to group
+            users_list.append({
+                "id": user_id,
+                "component": user_data["component"]
+            })
+            
+            update_data = current_group.copy()
+            update_data["component"]["users"] = users_list
+            
+            response = self.session.put(f"{self.groups_endpoint}/{group_id}", json=update_data)
+            if response.status_code == 200:
+                print(f"Added user {user_data['component']['identity']} to group {group_data['component']['identity']}")
+                return True
+            else:
+                print(f"Failed to add user to group: {response.status_code} - {response.text}")
+                return False
+                
+        except requests.exceptions.RequestException as e:
+            print(f"Error adding user to group: {e}")
+            return False
+    
+    def provision_all(self):
+        """Provision all users and groups"""
+        if not self.wait_for_nifi():
+            return False
+        
+        # Note: In a production environment with proper authentication,
+        # you would need to handle authentication properly here
+        
+        print("Starting user and group provisioning...")
+        
+        # Create groups first
+        created_groups = {}
+        for group in self.groups:
+            group_data = self.create_group(group)
+            if group_data:
+                created_groups[group["name"]] = group_data
+        
+        # Create users and assign to groups
+        created_users = {}
+        for user in self.users:
+            user_data = self.create_user(user)
+            if user_data:
+                created_users[user["username"]] = user_data
+                
+                # Assign user to groups
+                for group_name in user.get("groups", []):
+                    if group_name in created_groups:
+                        self.add_user_to_group(user_data, created_groups[group_name])
+        
+        print("Users provisioned successfully")
+        return True
+
+def main():
+    provisioner = NiFiUserProvisioner()
+    
+    if provisioner.provision_all():
+        print("User provisioning completed successfully")
+        sys.exit(0)
+    else:
+        print("User provisioning failed")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

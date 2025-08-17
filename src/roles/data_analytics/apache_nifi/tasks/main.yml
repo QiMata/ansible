@@ -5,5 +5,27 @@
 - name: Include configuration tasks
   ansible.builtin.import_tasks: config.yml
 
+- name: Include security tasks
+  ansible.builtin.import_tasks: security.yml
+
+- name: Include user management tasks
+  ansible.builtin.import_tasks: user_management.yml
+  when: apache_nifi_auto_provision_users
+
+- name: Include monitoring tasks
+  ansible.builtin.import_tasks: monitoring.yml
+
+- name: Include backup and recovery tasks
+  ansible.builtin.import_tasks: backup_recovery.yml
+  when: apache_nifi_backup_enabled
+
+- name: Include template management tasks
+  ansible.builtin.import_tasks: template_management.yml
+  when: apache_nifi_template_deployment or apache_nifi_config_validation
+
+- name: Include version control tasks
+  ansible.builtin.import_tasks: version_control.yml
+  when: apache_nifi_version_control
+
 - name: Include service tasks
   ansible.builtin.import_tasks: service.yml

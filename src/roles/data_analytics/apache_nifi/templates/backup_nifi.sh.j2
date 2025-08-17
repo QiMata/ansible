@@ -1,0 +1,185 @@
+#!/bin/bash
+# NiFi Backup Script
+
+set -euo pipefail
+
+# Configuration
+BACKUP_DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_ROOT="{{ apache_nifi_backup_location }}"
+BACKUP_DIR="${BACKUP_ROOT}/${BACKUP_DATE}"
+NIFI_HOME="{{ apache_nifi_home }}"
+NIFI_CONF_DIR="{{ apache_nifi_conf_dir }}"
+NIFI_USER="{{ apache_nifi_user }}"
+RETENTION_DAYS="{{ apache_nifi_backup_retention_days }}"
+COMPRESS="{{ apache_nifi_backup_compress | lower }}"
+ENCRYPT="{{ apache_nifi_backup_encrypt | lower }}"
+ENCRYPTION_KEY_FILE="{{ apache_nifi_conf_dir }}/.backup_key"
+
+# Logging function
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >&2
+}
+
+# Create backup directory
+create_backup_dir() {
+    log "Creating backup directory: ${BACKUP_DIR}"
+    mkdir -p "${BACKUP_DIR}"
+    chmod 750 "${BACKUP_DIR}"
+}
+
+# Backup configuration files
+backup_config() {
+    {% if apache_nifi_backup_config %}
+    log "Backing up configuration files"
+    cp -r "${NIFI_CONF_DIR}" "${BACKUP_DIR}/conf"
+    {% endif %}
+}
+
+# Backup flow definitions
+backup_flows() {
+    {% if apache_nifi_backup_flows %}
+    log "Backing up flow definitions"
+    if [[ -d "${NIFI_HOME}/conf/flow.xml.gz" ]]; then
+        cp "${NIFI_HOME}/conf/flow.xml.gz" "${BACKUP_DIR}/"
+    fi
+    
+    # Backup flow registry if present
+    if [[ -d "${NIFI_HOME}/flow_storage" ]]; then
+        cp -r "${NIFI_HOME}/flow_storage" "${BACKUP_DIR}/"
+    fi
+    {% endif %}
+}
+
+# Backup repositories
+backup_repositories() {
+    {% if apache_nifi_backup_repositories %}
+    log "Backing up repositories"
+    
+    # FlowFile Repository
+    if [[ -d "${NIFI_HOME}/flowfile_repository" ]]; then
+        rsync -av "${NIFI_HOME}/flowfile_repository/" "${BACKUP_DIR}/flowfile_repository/"
+    fi
+    
+    # Content Repository
+    if [[ -d "${NIFI_HOME}/content_repository" ]]; then
+        rsync -av "${NIFI_HOME}/content_repository/" "${BACKUP_DIR}/content_repository/"
+    fi
+    
+    # Provenance Repository
+    if [[ -d "${NIFI_HOME}/provenance_repository" ]]; then
+        rsync -av "${NIFI_HOME}/provenance_repository/" "${BACKUP_DIR}/provenance_repository/"
+    fi
+    
+    # State Repository
+    if [[ -d "${NIFI_HOME}/state" ]]; then
+        cp -r "${NIFI_HOME}/state" "${BACKUP_DIR}/"
+    fi
+    {% endif %}
+}
+
+# Backup logs
+backup_logs() {
+    {% if apache_nifi_backup_logs %}
+    log "Backing up logs"
+    if [[ -d "${NIFI_HOME}/logs" ]]; then
+        cp -r "${NIFI_HOME}/logs" "${BACKUP_DIR}/"
+    fi
+    {% endif %}
+}
+
+# Create backup metadata
+create_metadata() {
+    log "Creating backup metadata"
+    cat > "${BACKUP_DIR}/backup_metadata.json" << EOF
+{
+    "backup_date": "${BACKUP_DATE}",
+    "nifi_version": "{{ apache_nifi_version }}",
+    "hostname": "$(hostname)",
+    "nifi_home": "${NIFI_HOME}",
+    "backup_components": {
+        "config": {{ apache_nifi_backup_config | lower }},
+        "flows": {{ apache_nifi_backup_flows | lower }},
+        "repositories": {{ apache_nifi_backup_repositories | lower }},
+        "logs": {{ apache_nifi_backup_logs | lower }}
+    },
+    "compressed": ${COMPRESS},
+    "encrypted": ${ENCRYPT}
+}
+EOF
+}
+
+# Compress backup
+compress_backup() {
+    if [[ "${COMPRESS}" == "true" ]]; then
+        log "Compressing backup"
+        cd "${BACKUP_ROOT}"
+        tar -czf "${BACKUP_DATE}.tar.gz" "${BACKUP_DATE}/"
+        rm -rf "${BACKUP_DATE}/"
+        log "Backup compressed to: ${BACKUP_ROOT}/${BACKUP_DATE}.tar.gz"
+    fi
+}
+
+# Encrypt backup
+encrypt_backup() {
+    if [[ "${ENCRYPT}" == "true" && -f "${ENCRYPTION_KEY_FILE}" ]]; then
+        log "Encrypting backup"
+        local backup_file="${BACKUP_ROOT}/${BACKUP_DATE}"
+        
+        if [[ "${COMPRESS}" == "true" ]]; then
+            backup_file="${backup_file}.tar.gz"
+        fi
+        
+        if [[ -f "${backup_file}" ]]; then
+            gpg --cipher-algo AES256 --compress-algo 1 --symmetric \
+                --passphrase-file "${ENCRYPTION_KEY_FILE}" \
+                --output "${backup_file}.gpg" "${backup_file}"
+            rm "${backup_file}"
+            log "Backup encrypted to: ${backup_file}.gpg"
+        elif [[ -d "${backup_file}" ]]; then
+            cd "${BACKUP_ROOT}"
+            tar -c "${BACKUP_DATE}" | gpg --cipher-algo AES256 --compress-algo 1 --symmetric \
+                --passphrase-file "${ENCRYPTION_KEY_FILE}" \
+                --output "${BACKUP_DATE}.tar.gpg"
+            rm -rf "${BACKUP_DATE}/"
+            log "Backup encrypted to: ${BACKUP_ROOT}/${BACKUP_DATE}.tar.gpg"
+        fi
+    fi
+}
+
+# Set proper ownership
+set_ownership() {
+    log "Setting backup ownership"
+    chown -R "${NIFI_USER}:${NIFI_USER}" "${BACKUP_ROOT}"
+}
+
+# Main backup function
+main() {
+    log "Starting NiFi backup"
+    
+    # Check if NiFi is running
+    if systemctl is-active --quiet nifi; then
+        log "NiFi is running - backup will be hot backup"
+    else
+        log "NiFi is not running - backup will be cold backup"
+    fi
+    
+    create_backup_dir
+    backup_config
+    backup_flows
+    backup_repositories
+    backup_logs
+    create_metadata
+    
+    compress_backup
+    encrypt_backup
+    set_ownership
+    
+    log "NiFi backup completed successfully"
+    log "Backup location: ${BACKUP_DIR}"
+}
+
+# Error handling
+trap 'log "ERROR: Backup failed on line $LINENO"' ERR
+
+# Run main function
+main "$@"

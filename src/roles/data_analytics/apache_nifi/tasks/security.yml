@@ -1,0 +1,74 @@
+---
+# ================================
+# Security & Hardening Tasks
+# ================================
+
+- name: Generate sensitive properties key if not provided
+  ansible.builtin.set_fact:
+    apache_nifi_sensitive_props_key: "{{ ansible_date_time.epoch }}{{ ansible_hostname }}{{ 999999999 | random }}"
+  when: apache_nifi_sensitive_props_key == ""
+  tags: [nifi, security, sensitive-props]
+
+- name: Create sensitive properties key file
+  become: true
+  ansible.builtin.copy:
+    content: "{{ apache_nifi_sensitive_props_key }}"
+    dest: "{{ apache_nifi_conf_dir }}/nifi.sensitive.props.key"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0600'
+  tags: [nifi, security, sensitive-props]
+
+- name: Apply security hardening
+  become: true
+  block:
+    - name: Set strict file permissions on config directory
+      ansible.builtin.file:
+        path: "{{ apache_nifi_conf_dir }}"
+        state: directory
+        owner: "{{ apache_nifi_user }}"
+        group: "{{ apache_nifi_group }}"
+        mode: '0750'
+      when: apache_nifi_file_permissions_strict
+
+    - name: Set strict permissions on keystore files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        owner: "{{ apache_nifi_user }}"
+        group: "{{ apache_nifi_group }}"
+        mode: '0600'
+      loop:
+        - "{{ apache_nifi_keystore_path }}"
+        - "{{ apache_nifi_truststore_path }}"
+      when: apache_nifi_enable_https
+
+    - name: Disable unnecessary network services
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: stopped
+        enabled: false
+      loop:
+        - telnet
+        - rsh
+        - rexec
+      failed_when: false
+      when: apache_nifi_disable_unnecessary_services
+
+    - name: Configure system security limits
+      ansible.builtin.lineinfile:
+        path: /etc/security/limits.conf
+        line: "{{ apache_nifi_user }} {{ item.type }} {{ item.item }} {{ item.value }}"
+        create: true
+      loop:
+        - { type: "soft", item: "nofile", value: "65536" }
+        - { type: "hard", item: "nofile", value: "65536" }
+        - { type: "soft", item: "nproc", value: "32768" }
+        - { type: "hard", item: "nproc", value: "32768" }
+
+  when: apache_nifi_security_hardening
+  tags: [nifi, security, hardening]
+
+- name: Include Vault integration tasks
+  ansible.builtin.include_tasks: vault_integration.yml
+  when: apache_nifi_vault_integration
+  tags: [nifi, security, vault]

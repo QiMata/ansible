@@ -1,0 +1,340 @@
+#!/bin/bash
+# NiFi Restore Script
+
+set -euo pipefail
+
+# Configuration
+NIFI_HOME="{{ apache_nifi_home }}"
+NIFI_CONF_DIR="{{ apache_nifi_conf_dir }}"
+NIFI_USER="{{ apache_nifi_user }}"
+BACKUP_ROOT="{{ apache_nifi_backup_location }}"
+VALIDATE_RESTORE="{{ apache_nifi_restore_validate | lower }}"
+ENCRYPTION_KEY_FILE="{{ apache_nifi_conf_dir }}/.backup_key"
+
+# Logging function
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >&2
+}
+
+# Usage function
+usage() {
+    cat << EOF
+Usage: $0 <backup_source>
+
+backup_source can be:
+  - A backup directory path
+  - A compressed backup file (.tar.gz)
+  - An encrypted backup file (.tar.gpg or .tar.gz.gpg)
+  - "latest" to restore from the most recent backup
+
+Examples:
+  $0 /var/backups/nifi/20231201_140000
+  $0 /var/backups/nifi/20231201_140000.tar.gz
+  $0 latest
+EOF
+    exit 1
+}
+
+# Find latest backup
+find_latest_backup() {
+    log "Finding latest backup"
+    
+    local latest_backup=""
+    local latest_timestamp=0
+    
+    for backup_item in "${BACKUP_ROOT}"/*; do
+        if [[ -d "${backup_item}" ]]; then
+            local timestamp=$(stat -c %Y "${backup_item}")
+            if [[ ${timestamp} -gt ${latest_timestamp} ]]; then
+                latest_timestamp=${timestamp}
+                latest_backup="${backup_item}"
+            fi
+        elif [[ -f "${backup_item}" && "${backup_item}" =~ \.(tar\.gz|tar\.gpg)$ ]]; then
+            local timestamp=$(stat -c %Y "${backup_item}")
+            if [[ ${timestamp} -gt ${latest_timestamp} ]]; then
+                latest_timestamp=${timestamp}
+                latest_backup="${backup_item}"
+            fi
+        fi
+    done
+    
+    if [[ -z "${latest_backup}" ]]; then
+        log "ERROR: No backups found in ${BACKUP_ROOT}"
+        exit 1
+    fi
+    
+    log "Latest backup found: ${latest_backup}"
+    echo "${latest_backup}"
+}
+
+# Decrypt backup if needed
+decrypt_backup() {
+    local backup_file="$1"
+    
+    if [[ "${backup_file}" =~ \.gpg$ ]]; then
+        log "Decrypting backup file"
+        
+        if [[ ! -f "${ENCRYPTION_KEY_FILE}" ]]; then
+            log "ERROR: Encryption key file not found: ${ENCRYPTION_KEY_FILE}"
+            exit 1
+        fi
+        
+        local decrypted_file="${backup_file%.gpg}"
+        gpg --batch --yes --quiet --decrypt \
+            --passphrase-file "${ENCRYPTION_KEY_FILE}" \
+            --output "${decrypted_file}" "${backup_file}"
+        
+        echo "${decrypted_file}"
+    else
+        echo "${backup_file}"
+    fi
+}
+
+# Extract backup if needed
+extract_backup() {
+    local backup_source="$1"
+    
+    if [[ -f "${backup_source}" && "${backup_source}" =~ \.tar\.gz$ ]]; then
+        log "Extracting compressed backup"
+        local extract_dir="${BACKUP_ROOT}/restore_$(date +%Y%m%d_%H%M%S)"
+        mkdir -p "${extract_dir}"
+        tar -xzf "${backup_source}" -C "${extract_dir}" --strip-components=1
+        echo "${extract_dir}"
+    elif [[ -f "${backup_source}" && "${backup_source}" =~ \.tar$ ]]; then
+        log "Extracting tar backup"
+        local extract_dir="${BACKUP_ROOT}/restore_$(date +%Y%m%d_%H%M%S)"
+        mkdir -p "${extract_dir}"
+        tar -xf "${backup_source}" -C "${extract_dir}" --strip-components=1
+        echo "${extract_dir}"
+    else
+        echo "${backup_source}"
+    fi
+}
+
+# Validate backup
+validate_backup() {
+    local backup_dir="$1"
+    
+    if [[ "${VALIDATE_RESTORE}" != "true" ]]; then
+        return 0
+    fi
+    
+    log "Validating backup"
+    
+    # Check if backup metadata exists
+    if [[ ! -f "${backup_dir}/backup_metadata.json" ]]; then
+        log "WARNING: Backup metadata not found"
+        return 1
+    fi
+    
+    # Check if essential directories exist based on metadata
+    local metadata_file="${backup_dir}/backup_metadata.json"
+    
+    if command -v jq &> /dev/null; then
+        local has_config=$(jq -r '.backup_components.config' "${metadata_file}")
+        local has_flows=$(jq -r '.backup_components.flows' "${metadata_file}")
+        local has_repos=$(jq -r '.backup_components.repositories' "${metadata_file}")
+        
+        if [[ "${has_config}" == "true" && ! -d "${backup_dir}/conf" ]]; then
+            log "ERROR: Configuration backup expected but not found"
+            return 1
+        fi
+        
+        if [[ "${has_flows}" == "true" && ! -f "${backup_dir}/flow.xml.gz" && ! -d "${backup_dir}/flow_storage" ]]; then
+            log "ERROR: Flow backup expected but not found"
+            return 1
+        fi
+        
+        if [[ "${has_repos}" == "true" && ! -d "${backup_dir}/flowfile_repository" && ! -d "${backup_dir}/content_repository" ]]; then
+            log "ERROR: Repository backup expected but not found"
+            return 1
+        fi
+    fi
+    
+    log "Backup validation passed"
+    return 0
+}
+
+# Stop NiFi service
+stop_nifi() {
+    log "Stopping NiFi service"
+    if systemctl is-active --quiet nifi; then
+        systemctl stop nifi
+        
+        # Wait for NiFi to fully stop
+        local timeout=60
+        while systemctl is-active --quiet nifi && [[ ${timeout} -gt 0 ]]; do
+            sleep 2
+            ((timeout -= 2))
+        done
+        
+        if systemctl is-active --quiet nifi; then
+            log "ERROR: Failed to stop NiFi within timeout"
+            exit 1
+        fi
+    fi
+    log "NiFi stopped"
+}
+
+# Restore configuration
+restore_config() {
+    local backup_dir="$1"
+    
+    if [[ -d "${backup_dir}/conf" ]]; then
+        log "Restoring configuration"
+        
+        # Backup current config
+        if [[ -d "${NIFI_CONF_DIR}" ]]; then
+            mv "${NIFI_CONF_DIR}" "${NIFI_CONF_DIR}.backup.$(date +%Y%m%d_%H%M%S)"
+        fi
+        
+        # Restore config
+        cp -r "${backup_dir}/conf" "${NIFI_CONF_DIR}"
+        chown -R "${NIFI_USER}:${NIFI_USER}" "${NIFI_CONF_DIR}"
+    fi
+}
+
+# Restore flows
+restore_flows() {
+    local backup_dir="$1"
+    
+    if [[ -f "${backup_dir}/flow.xml.gz" ]]; then
+        log "Restoring flow definition"
+        cp "${backup_dir}/flow.xml.gz" "${NIFI_CONF_DIR}/"
+        chown "${NIFI_USER}:${NIFI_USER}" "${NIFI_CONF_DIR}/flow.xml.gz"
+    fi
+    
+    if [[ -d "${backup_dir}/flow_storage" ]]; then
+        log "Restoring flow storage"
+        if [[ -d "${NIFI_HOME}/flow_storage" ]]; then
+            rm -rf "${NIFI_HOME}/flow_storage.backup.$(date +%Y%m%d_%H%M%S)"
+            mv "${NIFI_HOME}/flow_storage" "${NIFI_HOME}/flow_storage.backup.$(date +%Y%m%d_%H%M%S)"
+        fi
+        cp -r "${backup_dir}/flow_storage" "${NIFI_HOME}/"
+        chown -R "${NIFI_USER}:${NIFI_USER}" "${NIFI_HOME}/flow_storage"
+    fi
+}
+
+# Restore repositories
+restore_repositories() {
+    local backup_dir="$1"
+    
+    # FlowFile Repository
+    if [[ -d "${backup_dir}/flowfile_repository" ]]; then
+        log "Restoring FlowFile repository"
+        if [[ -d "${NIFI_HOME}/flowfile_repository" ]]; then
+            rm -rf "${NIFI_HOME}/flowfile_repository"
+        fi
+        cp -r "${backup_dir}/flowfile_repository" "${NIFI_HOME}/"
+        chown -R "${NIFI_USER}:${NIFI_USER}" "${NIFI_HOME}/flowfile_repository"
+    fi
+    
+    # Content Repository
+    if [[ -d "${backup_dir}/content_repository" ]]; then
+        log "Restoring Content repository"
+        if [[ -d "${NIFI_HOME}/content_repository" ]]; then
+            rm -rf "${NIFI_HOME}/content_repository"
+        fi
+        cp -r "${backup_dir}/content_repository" "${NIFI_HOME}/"
+        chown -R "${NIFI_USER}:${NIFI_USER}" "${NIFI_HOME}/content_repository"
+    fi
+    
+    # Provenance Repository
+    if [[ -d "${backup_dir}/provenance_repository" ]]; then
+        log "Restoring Provenance repository"
+        if [[ -d "${NIFI_HOME}/provenance_repository" ]]; then
+            rm -rf "${NIFI_HOME}/provenance_repository"
+        fi
+        cp -r "${backup_dir}/provenance_repository" "${NIFI_HOME}/"
+        chown -R "${NIFI_USER}:${NIFI_USER}" "${NIFI_HOME}/provenance_repository"
+    fi
+    
+    # State Repository
+    if [[ -d "${backup_dir}/state" ]]; then
+        log "Restoring State repository"
+        if [[ -d "${NIFI_HOME}/state" ]]; then
+            rm -rf "${NIFI_HOME}/state"
+        fi
+        cp -r "${backup_dir}/state" "${NIFI_HOME}/"
+        chown -R "${NIFI_USER}:${NIFI_USER}" "${NIFI_HOME}/state"
+    fi
+}
+
+# Start NiFi service
+start_nifi() {
+    log "Starting NiFi service"
+    systemctl start nifi
+    
+    # Wait for NiFi to start
+    local timeout=120
+    while ! systemctl is-active --quiet nifi && [[ ${timeout} -gt 0 ]]; do
+        sleep 5
+        ((timeout -= 5))
+    done
+    
+    if ! systemctl is-active --quiet nifi; then
+        log "ERROR: Failed to start NiFi within timeout"
+        exit 1
+    fi
+    
+    log "NiFi started successfully"
+}
+
+# Main restore function
+main() {
+    local backup_source="$1"
+    
+    # Handle "latest" keyword
+    if [[ "${backup_source}" == "latest" ]]; then
+        backup_source=$(find_latest_backup)
+    fi
+    
+    # Validate backup source exists
+    if [[ ! -e "${backup_source}" ]]; then
+        log "ERROR: Backup source not found: ${backup_source}"
+        exit 1
+    fi
+    
+    log "Starting NiFi restore from: ${backup_source}"
+    
+    # Decrypt if needed
+    backup_source=$(decrypt_backup "${backup_source}")
+    
+    # Extract if needed
+    local backup_dir=$(extract_backup "${backup_source}")
+    
+    # Validate backup
+    if ! validate_backup "${backup_dir}"; then
+        log "ERROR: Backup validation failed"
+        exit 1
+    fi
+    
+    # Stop NiFi
+    stop_nifi
+    
+    # Restore components
+    restore_config "${backup_dir}"
+    restore_flows "${backup_dir}"
+    restore_repositories "${backup_dir}"
+    
+    # Start NiFi
+    start_nifi
+    
+    # Cleanup temporary extraction directory if created
+    if [[ "${backup_dir}" =~ /restore_ ]]; then
+        rm -rf "${backup_dir}"
+    fi
+    
+    log "NiFi restore completed successfully"
+}
+
+# Check arguments
+if [[ $# -ne 1 ]]; then
+    usage
+fi
+
+# Error handling
+trap 'log "ERROR: Restore failed on line $LINENO"' ERR
+
+# Run main function
+main "$1"

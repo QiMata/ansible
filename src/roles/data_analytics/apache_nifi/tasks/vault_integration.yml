@@ -1,0 +1,112 @@
+---
+# ================================
+# HashiCorp Vault Integration
+# ================================
+
+- name: Check if Vault role is available
+  ansible.builtin.stat:
+    path: "{{ playbook_dir }}/roles/security_identity/vault"
+  register: vault_role_available
+  delegate_to: localhost
+  tags: [nifi, vault]
+
+- name: Ensure Vault CLI is installed
+  become: true
+  ansible.builtin.get_url:
+    url: "https://releases.hashicorp.com/vault/1.15.2/vault_1.15.2_linux_amd64.zip"
+    dest: "/tmp/vault.zip"
+    mode: '0644'
+  tags: [nifi, vault]
+
+- name: Extract and install Vault CLI
+  become: true
+  ansible.builtin.unarchive:
+    src: "/tmp/vault.zip"
+    dest: "/usr/local/bin"
+    remote_src: true
+    creates: "/usr/local/bin/vault"
+    mode: '0755'
+  tags: [nifi, vault]
+
+- name: Create Vault configuration directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ apache_nifi_conf_dir }}/vault"
+    state: directory
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0750'
+  tags: [nifi, vault]
+
+- name: Create Vault agent configuration
+  become: true
+  ansible.builtin.template:
+    src: vault-agent.hcl.j2
+    dest: "{{ apache_nifi_conf_dir }}/vault/agent.hcl"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0640'
+  notify: restart nifi
+  tags: [nifi, vault, config]
+
+- name: Create Vault token file (if using token auth)
+  become: true
+  ansible.builtin.copy:
+    content: "{{ apache_nifi_vault_token }}"
+    dest: "{{ apache_nifi_conf_dir }}/vault/.vault-token"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0600'
+  when: apache_nifi_vault_token != ""
+  tags: [nifi, vault]
+
+- name: Create Vault AppRole files (if using AppRole auth)
+  become: true
+  block:
+    - name: Create role_id file
+      ansible.builtin.copy:
+        content: "{{ apache_nifi_vault_role_id }}"
+        dest: "{{ apache_nifi_conf_dir }}/vault/.role_id"
+        owner: "{{ apache_nifi_user }}"
+        group: "{{ apache_nifi_group }}"
+        mode: '0600'
+
+    - name: Create secret_id file
+      ansible.builtin.copy:
+        content: "{{ apache_nifi_vault_secret_id }}"
+        dest: "{{ apache_nifi_conf_dir }}/vault/.secret_id"
+        owner: "{{ apache_nifi_user }}"
+        group: "{{ apache_nifi_group }}"
+        mode: '0600'
+  when: apache_nifi_vault_role_id != "" and apache_nifi_vault_secret_id != ""
+  tags: [nifi, vault]
+
+- name: Create Vault secret fetching script
+  become: true
+  ansible.builtin.template:
+    src: fetch_vault_secrets.sh.j2
+    dest: "{{ apache_nifi_conf_dir }}/vault/fetch_secrets.sh"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0750'
+  tags: [nifi, vault]
+
+- name: Create systemd service for Vault agent
+  become: true
+  ansible.builtin.template:
+    src: vault-agent.service.j2
+    dest: /etc/systemd/system/vault-agent-nifi.service
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart vault-agent-nifi
+  tags: [nifi, vault, service]
+
+- name: Start and enable Vault agent service
+  become: true
+  ansible.builtin.systemd:
+    name: vault-agent-nifi
+    state: started
+    enabled: true
+    daemon_reload: true
+  tags: [nifi, vault, service]

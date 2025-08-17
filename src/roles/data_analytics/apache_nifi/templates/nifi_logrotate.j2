@@ -1,0 +1,61 @@
+# NiFi log rotation configuration
+
+{{ apache_nifi_home }}/logs/*.log {
+    daily
+    rotate {{ apache_nifi_log_retention_days }}
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0644 {{ apache_nifi_user }} {{ apache_nifi_group }}
+    
+    postrotate
+        # Signal NiFi to reopen log files
+        if systemctl is-active --quiet nifi; then
+            systemctl reload nifi || true
+        fi
+    endscript
+}
+
+{{ apache_nifi_home }}/logs/*.out {
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0644 {{ apache_nifi_user }} {{ apache_nifi_group }}
+}
+
+# Custom metrics logs
+{{ apache_nifi_home }}/logs/custom_metrics.log {
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0644 {{ apache_nifi_user }} {{ apache_nifi_group }}
+}
+
+# Health check logs
+{{ apache_nifi_home }}/logs/health_check.log {
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0644 {{ apache_nifi_user }} {{ apache_nifi_group }}
+}
+
+# Backup logs
+{{ apache_nifi_home }}/logs/backup*.log {
+    weekly
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0644 {{ apache_nifi_user }} {{ apache_nifi_group }}
+}

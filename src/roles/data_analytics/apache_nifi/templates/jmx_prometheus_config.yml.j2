@@ -1,0 +1,70 @@
+---
+# JMX metrics from NiFi
+startDelaySeconds: 0
+ssl: false
+lowercaseOutputName: false
+lowercaseOutputLabelNames: false
+
+rules:
+  # Processor metrics
+  - pattern: "org.apache.nifi.processors<type=ProcessorMetrics, name=(.+)><>(.+)"
+    name: nifi_processor_$2
+    labels:
+      processor: $1
+    type: GAUGE
+
+  # Flow file metrics
+  - pattern: "org.apache.nifi<type=FlowFileRepository><>(.+)"
+    name: nifi_flowfile_repository_$1
+    type: GAUGE
+
+  # Content repository metrics
+  - pattern: "org.apache.nifi<type=ContentRepository><>(.+)"
+    name: nifi_content_repository_$1
+    type: GAUGE
+
+  # Provenance repository metrics
+  - pattern: "org.apache.nifi<type=ProvenanceRepository><>(.+)"
+    name: nifi_provenance_repository_$1
+    type: GAUGE
+
+  # Connection metrics
+  - pattern: "org.apache.nifi.connections<type=ConnectionMetrics, name=(.+)><>(.+)"
+    name: nifi_connection_$2
+    labels:
+      connection: $1
+    type: GAUGE
+
+  # JVM metrics
+  - pattern: "java.lang<type=Memory><>(.+)"
+    name: jvm_memory_$1
+    type: GAUGE
+
+  - pattern: "java.lang<type=GarbageCollector, name=(.+)><>(.+)"
+    name: jvm_gc_$2
+    labels:
+      gc: $1
+    type: GAUGE
+
+  - pattern: "java.lang<type=Threading><>(.+)"
+    name: jvm_threads_$1
+    type: GAUGE
+
+  # NiFi cluster metrics
+  - pattern: "org.apache.nifi.cluster<type=(.+)><>(.+)"
+    name: nifi_cluster_$1_$2
+    type: GAUGE
+
+  # NiFi bulletin metrics
+  - pattern: "org.apache.nifi.bulletin<type=BulletinRepository><>(.+)"
+    name: nifi_bulletin_$1
+    type: GAUGE
+
+  # Custom application metrics
+  {% if apache_nifi_prometheus_custom_metrics %}
+  - pattern: "nifi.custom<type=(.+), name=(.+)><>(.+)"
+    name: nifi_custom_$1_$3
+    labels:
+      metric_name: $2
+    type: GAUGE
+  {% endif %}

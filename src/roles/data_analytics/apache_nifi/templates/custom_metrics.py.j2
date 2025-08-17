@@ -1,0 +1,260 @@
+#!/usr/bin/env python3
+"""
+NiFi Custom Metrics Collection Script
+Collects custom metrics and exposes them for Prometheus
+"""
+
+import json
+import logging
+import time
+import requests
+import sys
+from datetime import datetime
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import threading
+import urllib3
+
+# Disable SSL warnings
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('{{ apache_nifi_home }}/logs/custom_metrics.log'),
+        logging.StreamHandler()
+    ]
+)
+
+logger = logging.getLogger(__name__)
+
+class NiFiMetricsCollector:
+    def __init__(self):
+        self.nifi_url = "{% if nifi_enable_https %}https://localhost:{{ nifi_secure_port }}{% else %}http://localhost:{{ nifi_listen_port }}{% endif %}"
+        self.api_base = f"{self.nifi_url}/nifi-api"
+        self.verify_ssl = False
+        self.metrics_data = {}
+        self.last_collection = None
+        
+    def collect_flow_metrics(self):
+        """Collect flow-level metrics"""
+        try:
+            response = requests.get(
+                f"{self.api_base}/flow/status",
+                verify=self.verify_ssl,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                controller_status = data.get('controllerStatus', {})
+                
+                self.metrics_data.update({
+                    'nifi_active_threads': controller_status.get('activeThreadCount', 0),
+                    'nifi_queued_count': controller_status.get('queuedCount', 0),
+                    'nifi_queued_size': controller_status.get('queuedContentSize', 0),
+                    'nifi_running_components': controller_status.get('runningCount', 0),
+                    'nifi_stopped_components': controller_status.get('stoppedCount', 0),
+                    'nifi_invalid_components': controller_status.get('invalidCount', 0),
+                    'nifi_disabled_components': controller_status.get('disabledCount', 0)
+                })
+                
+                logger.debug("Flow metrics collected successfully")
+                
+        except Exception as e:
+            logger.error(f"Failed to collect flow metrics: {e}")
+    
+    def collect_system_diagnostics(self):
+        """Collect system diagnostics"""
+        try:
+            response = requests.get(
+                f"{self.api_base}/system-diagnostics",
+                verify=self.verify_ssl,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                system_diagnostics = data.get('systemDiagnostics', {})
+                
+                # Aggregate stats
+                aggregate_snapshot = system_diagnostics.get('aggregateSnapshot', {})
+                
+                self.metrics_data.update({
+                    'nifi_heap_used': aggregate_snapshot.get('heapUtilization', {}).get('utilizedBytes', 0),
+                    'nifi_heap_max': aggregate_snapshot.get('heapUtilization', {}).get('maxBytes', 0),
+                    'nifi_non_heap_used': aggregate_snapshot.get('nonHeapUtilization', {}).get('utilizedBytes', 0),
+                    'nifi_disk_usage': aggregate_snapshot.get('totalDiskBytes', 0),
+                    'nifi_processor_load_avg': aggregate_snapshot.get('processorLoadAverage', 0),
+                    'nifi_flow_file_repository_usage': aggregate_snapshot.get('flowFileRepositoryStorageUsage', {}).get('usedSpace', 0),
+                    'nifi_content_repository_usage': sum([
+                        repo.get('usedSpace', 0) 
+                        for repo in aggregate_snapshot.get('contentRepositoryStorageUsage', [])
+                    ]),
+                    'nifi_provenance_repository_usage': sum([
+                        repo.get('usedSpace', 0) 
+                        for repo in aggregate_snapshot.get('provenanceRepositoryStorageUsage', [])
+                    ])
+                })
+                
+                logger.debug("System diagnostics collected successfully")
+                
+        except Exception as e:
+            logger.error(f"Failed to collect system diagnostics: {e}")
+    
+    def collect_cluster_metrics(self):
+        """Collect cluster-specific metrics"""
+        try:
+            response = requests.get(
+                f"{self.api_base}/controller/cluster",
+                verify=self.verify_ssl,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                cluster = data.get('cluster', {})
+                
+                if cluster:
+                    nodes = cluster.get('nodes', [])
+                    connected_nodes = len([n for n in nodes if n.get('status') == 'CONNECTED'])
+                    
+                    self.metrics_data.update({
+                        'nifi_cluster_total_nodes': len(nodes),
+                        'nifi_cluster_connected_nodes': connected_nodes,
+                        'nifi_cluster_disconnected_nodes': len(nodes) - connected_nodes
+                    })
+                    
+                    logger.debug("Cluster metrics collected successfully")
+                
+        except Exception as e:
+            logger.debug(f"No cluster metrics available (likely standalone): {e}")
+    
+    def collect_connection_metrics(self):
+        """Collect connection queue metrics"""
+        try:
+            response = requests.get(
+                f"{self.api_base}/flow/process-groups/root",
+                verify=self.verify_ssl,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                process_group = data.get('processGroupFlow', {})
+                
+                total_queued_count = 0
+                total_queued_size = 0
+                max_queue_count = 0
+                
+                for connection in process_group.get('flow', {}).get('connections', []):
+                    status = connection.get('status', {}).get('aggregateSnapshot', {})
+                    queued_count = status.get('queuedCount', 0)
+                    queued_size = status.get('queuedSizeBytes', 0)
+                    
+                    total_queued_count += queued_count
+                    total_queued_size += queued_size
+                    max_queue_count = max(max_queue_count, queued_count)
+                
+                self.metrics_data.update({
+                    'nifi_connections_total_queued_count': total_queued_count,
+                    'nifi_connections_total_queued_size': total_queued_size,
+                    'nifi_connections_max_queue_count': max_queue_count
+                })
+                
+                logger.debug("Connection metrics collected successfully")
+                
+        except Exception as e:
+            logger.error(f"Failed to collect connection metrics: {e}")
+    
+    def collect_all_metrics(self):
+        """Collect all custom metrics"""
+        logger.info("Starting metrics collection")
+        
+        self.collect_flow_metrics()
+        self.collect_system_diagnostics()
+        self.collect_cluster_metrics()
+        self.collect_connection_metrics()
+        
+        # Add timestamp
+        self.metrics_data['nifi_metrics_last_collection'] = int(time.time())
+        self.last_collection = datetime.now()
+        
+        logger.info(f"Metrics collection completed. Collected {len(self.metrics_data)} metrics")
+    
+    def get_prometheus_format(self):
+        """Format metrics for Prometheus"""
+        output = []
+        
+        for metric_name, value in self.metrics_data.items():
+            # Add help text
+            output.append(f"# HELP {metric_name} NiFi custom metric")
+            output.append(f"# TYPE {metric_name} gauge")
+            output.append(f"{metric_name} {value}")
+            output.append("")
+        
+        return "\n".join(output)
+
+class MetricsHandler(BaseHTTPRequestHandler):
+    def __init__(self, collector, *args, **kwargs):
+        self.collector = collector
+        super().__init__(*args, **kwargs)
+    
+    def do_GET(self):
+        if self.path == "/metrics":
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain; charset=utf-8')
+            self.end_headers()
+            
+            try:
+                # Collect fresh metrics
+                self.collector.collect_all_metrics()
+                metrics_output = self.collector.get_prometheus_format()
+                self.wfile.write(metrics_output.encode('utf-8'))
+            except Exception as e:
+                logger.error(f"Error generating metrics: {e}")
+                self.wfile.write(f"# Error generating metrics: {e}\n".encode('utf-8'))
+        
+        elif self.path == "/health":
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            
+            health_data = {
+                "status": "healthy",
+                "last_collection": self.collector.last_collection.isoformat() if self.collector.last_collection else None,
+                "metrics_count": len(self.collector.metrics_data)
+            }
+            
+            self.wfile.write(json.dumps(health_data).encode('utf-8'))
+        
+        else:
+            self.send_response(404)
+            self.end_headers()
+    
+    def log_message(self, format, *args):
+        # Suppress default logging
+        pass
+
+def main():
+    collector = NiFiMetricsCollector()
+    
+    # Create HTTP server
+    def handler(*args, **kwargs):
+        MetricsHandler(collector, *args, **kwargs)
+    
+    server = HTTPServer(('0.0.0.0', 9998), handler)
+    
+    logger.info("Starting NiFi custom metrics server on port 9998")
+    logger.info("Metrics endpoint: http://localhost:9998/metrics")
+    logger.info("Health endpoint: http://localhost:9998/health")
+    
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        logger.info("Shutting down metrics server")
+        server.server_close()
+
+if __name__ == "__main__":
+    main()

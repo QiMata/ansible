@@ -1,0 +1,114 @@
+---
+# ================================
+# Template & Configuration Management
+# ================================
+
+- name: Create template directories
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0755'
+  loop:
+    - "{{ apache_nifi_config_templates_dir }}"
+    - "{{ apache_nifi_conf_dir }}/flows"
+    - "{{ apache_nifi_conf_dir }}/validation"
+  tags: [nifi, templates, config]
+
+- name: Deploy flow templates
+  become: true
+  ansible.builtin.copy:
+    src: "{{ item.source }}"
+    dest: "{{ apache_nifi_config_templates_dir }}/{{ item.name }}.xml"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0644'
+    backup: true
+  loop: "{{ apache_nifi_templates }}"
+  when: 
+    - apache_nifi_template_deployment
+    - apache_nifi_templates | length > 0
+  tags: [nifi, templates, deploy]
+
+- name: Create template deployment script
+  become: true
+  ansible.builtin.template:
+    src: deploy_templates.py.j2
+    dest: "{{ apache_nifi_conf_dir }}/scripts/deploy_templates.py"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0755'
+  when: apache_nifi_template_deployment
+  tags: [nifi, templates, script]
+
+- name: Deploy templates automatically
+  become: true
+  ansible.builtin.command:
+    cmd: python3 "{{ apache_nifi_conf_dir }}/scripts/deploy_templates.py"
+  become_user: "{{ apache_nifi_user }}"
+  when: 
+    - apache_nifi_template_deployment
+    - apache_nifi_templates | selectattr('auto_deploy', 'equalto', true) | list | length > 0
+  register: template_deploy_result
+  changed_when: "'Templates deployed successfully' in template_deploy_result.stdout"
+  tags: [nifi, templates, auto-deploy]
+
+- name: Create configuration validation script
+  become: true
+  ansible.builtin.template:
+    src: validate_config.py.j2
+    dest: "{{ apache_nifi_conf_dir }}/scripts/validate_config.py"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0755'
+  when: apache_nifi_config_validation
+  tags: [nifi, config, validation]
+
+- name: Run configuration validation
+  become: true
+  ansible.builtin.command:
+    cmd: python3 "{{ apache_nifi_conf_dir }}/scripts/validate_config.py"
+  become_user: "{{ apache_nifi_user }}"
+  when: apache_nifi_config_validation
+  register: config_validation_result
+  failed_when: config_validation_result.rc != 0
+  tags: [nifi, config, validation]
+
+- name: Display validation results
+  ansible.builtin.debug:
+    var: config_validation_result.stdout_lines
+  when: 
+    - apache_nifi_config_validation
+    - config_validation_result is defined
+  tags: [nifi, config, validation]
+
+- name: Create connectivity test script
+  become: true
+  ansible.builtin.template:
+    src: test_connectivity.py.j2
+    dest: "{{ apache_nifi_conf_dir }}/scripts/test_connectivity.py"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0755'
+  when: apache_nifi_connectivity_tests | length > 0
+  tags: [nifi, connectivity, tests]
+
+- name: Run connectivity tests
+  become: true
+  ansible.builtin.command:
+    cmd: python3 "{{ apache_nifi_conf_dir }}/scripts/test_connectivity.py"
+  become_user: "{{ apache_nifi_user }}"
+  when: apache_nifi_connectivity_tests | length > 0
+  register: connectivity_test_result
+  failed_when: connectivity_test_result.rc != 0
+  tags: [nifi, connectivity, tests]
+
+- name: Display connectivity test results
+  ansible.builtin.debug:
+    var: connectivity_test_result.stdout_lines
+  when: 
+    - apache_nifi_connectivity_tests | length > 0
+    - connectivity_test_result is defined
+  tags: [nifi, connectivity, tests]

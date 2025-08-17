@@ -30,3 +30,174 @@ nifi_admin_identity: ""
 
 apache_nifi_elk_integration: false
 apache_nifi_prometheus_integration: false
+
+# ================================
+# Enhanced Security Features
+# ================================
+
+# HashiCorp Vault Integration
+apache_nifi_vault_integration: false
+apache_nifi_vault_url: ""
+apache_nifi_vault_token: ""
+apache_nifi_vault_secret_path: "secret/nifi"
+apache_nifi_vault_role_id: ""
+apache_nifi_vault_secret_id: ""
+
+# Sensitive Properties Encryption
+apache_nifi_sensitive_props_key: ""
+apache_nifi_sensitive_props_algorithm: "NIFI_PBKDF2_AES_GCM_256"
+
+# Security Hardening
+apache_nifi_security_hardening: true
+apache_nifi_disable_unnecessary_services: true
+apache_nifi_file_permissions_strict: true
+
+# ================================
+# User & Role Management
+# ================================
+
+# Automated User/Group Provisioning
+apache_nifi_auto_provision_users: false
+apache_nifi_users: []
+# Example:
+# - username: "analyst1"
+#   identity: "CN=analyst1,OU=Users,DC=example,DC=com"
+#   groups: ["analysts"]
+# - username: "admin2"
+#   identity: "CN=admin2,OU=Users,DC=example,DC=com"
+#   groups: ["administrators"]
+
+apache_nifi_groups: []
+# Example:
+# - name: "analysts"
+#   policies: ["view the user interface", "access the controller"]
+# - name: "administrators"
+#   policies: ["view the user interface", "access the controller", "modify the controller"]
+
+# Role-based Access Control Templates
+apache_nifi_rbac_templates: []
+# Example:
+# - name: "data_analyst_template"
+#   policies:
+#     - "view the user interface"
+#     - "access the controller"
+#     - "query provenance"
+#   resource_policies:
+#     - resource: "/flow"
+#       action: "read"
+#     - resource: "/data/process-groups/*"
+#       action: "read"
+
+# ================================
+# Monitoring & Observability
+# ================================
+
+# Enhanced Prometheus Integration
+apache_nifi_prometheus_jmx_exporter: true
+apache_nifi_prometheus_jmx_port: 9999
+apache_nifi_prometheus_custom_metrics: true
+apache_nifi_prometheus_endpoint: "/nifi-api/prometheus"
+
+# Performance Monitoring
+apache_nifi_jvm_monitoring: true
+apache_nifi_jvm_heap_size: "2g"
+apache_nifi_jvm_gc_logging: true
+apache_nifi_performance_metrics: true
+
+# Enhanced Logging
+apache_nifi_structured_logging: true
+apache_nifi_log_level: "INFO"
+apache_nifi_log_rotation: true
+apache_nifi_log_retention_days: 30
+
+# Alerting Rules
+apache_nifi_alerting_enabled: false
+apache_nifi_alerting_rules: []
+# Example:
+# - name: "nifi_down"
+#   expr: "up{job=\"nifi\"} == 0"
+#   for: "5m"
+#   severity: "critical"
+#   summary: "NiFi instance is down"
+
+# ================================
+# Backup & Disaster Recovery
+# ================================
+
+# Backup Configuration
+apache_nifi_backup_enabled: false
+apache_nifi_backup_schedule: "0 2 * * *"  # Daily at 2 AM
+apache_nifi_backup_retention_days: 7
+apache_nifi_backup_location: "/var/backups/nifi"
+apache_nifi_backup_compress: true
+apache_nifi_backup_encrypt: false
+apache_nifi_backup_encryption_key: ""
+
+# What to backup
+apache_nifi_backup_config: true
+apache_nifi_backup_flows: true
+apache_nifi_backup_repositories: true
+apache_nifi_backup_logs: false
+
+# Restore Configuration
+apache_nifi_restore_enabled: false
+apache_nifi_restore_source: ""
+apache_nifi_restore_validate: true
+
+# ================================
+# Template & Configuration Management
+# ================================
+
+# Flow Template Management
+apache_nifi_template_deployment: false
+apache_nifi_templates: []
+# Example:
+# - name: "data_ingestion_template"
+#   source: "templates/data_ingestion.xml"
+#   description: "Standard data ingestion flow"
+#   auto_deploy: true
+
+# Environment-specific Configuration
+apache_nifi_environment: "production"  # development, staging, production
+apache_nifi_config_validation: true
+apache_nifi_config_templates_dir: "{{ apache_nifi_conf_dir }}/templates"
+
+# Version Control Integration
+apache_nifi_version_control: false
+apache_nifi_git_repository: ""
+apache_nifi_git_branch: "main"
+apache_nifi_git_username: ""
+apache_nifi_git_token: ""
+apache_nifi_config_drift_detection: false
+
+# Configuration Testing
+apache_nifi_connectivity_tests: []
+# Example:
+# - name: "ldap_connectivity"
+#   type: "ldap"
+#   host: "{{ nifi_ldap_url }}"
+# - name: "zookeeper_connectivity"
+#   type: "tcp"
+#   host: "{{ nifi_zookeeper_connect }}"
+
+# ================================
+# Advanced Features
+# ================================
+
+# Custom Properties
+apache_nifi_custom_properties: {}
+# Example:
+# nifi.content.repository.implementation: org.apache.nifi.controller.repository.FileSystemRepository
+# nifi.provenance.repository.implementation: org.apache.nifi.provenance.VolatileProvenanceRepository
+
+# Extension Management
+apache_nifi_extensions: []
+# Example:
+# - name: "nifi-aws-nar"
+#   version: "1.19.1"
+#   url: "https://repo1.maven.org/maven2/org/apache/nifi/nifi-aws-nar/1.19.1/nifi-aws-nar-1.19.1.nar"
+
+# Health Checks
+apache_nifi_health_checks: true
+apache_nifi_health_check_interval: "30s"
+apache_nifi_health_check_timeout: "10s"

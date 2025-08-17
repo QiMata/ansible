@@ -2,7 +2,7 @@
 galaxy_info:
   role_name: apache_nifi
   author: Example Inc.
-  description: Install & configure Apache NiFi with LDAP, HA, ELK, Prometheus
+  description: Install & configure Apache NiFi with enhanced security, monitoring, backup, and management features
   license: MIT
   min_ansible_version: "2.11"
   platforms:
@@ -10,4 +10,12 @@ galaxy_info:
       releases: [bullseye, bookworm]
     - name: Ubuntu
       releases: [focal, jammy]
-dependencies: []
+
+dependencies:
+  # Optional dependency on Vault role for secrets management
+  - role: security_identity/vault
+    when: apache_nifi_vault_integration | default(false)
+  
+  # Optional dependency on Prometheus role for monitoring
+  - role: monitoring_observability/prometheus
+    when: apache_nifi_prometheus_integration | default(false)

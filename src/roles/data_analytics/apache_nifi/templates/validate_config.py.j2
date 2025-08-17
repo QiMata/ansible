@@ -1,0 +1,310 @@
+#!/usr/bin/env python3
+"""
+NiFi Configuration Validation Script
+Validates NiFi configuration files and settings
+"""
+
+import json
+import os
+import sys
+import xml.etree.ElementTree as ET
+from pathlib import Path
+import re
+
+class NiFiConfigValidator:
+    def __init__(self):
+        self.conf_dir = Path("{{ apache_nifi_conf_dir }}")
+        self.errors = []
+        self.warnings = []
+        
+    def log_error(self, message):
+        """Log validation error"""
+        self.errors.append(message)
+        print(f"ERROR: {message}")
+    
+    def log_warning(self, message):
+        """Log validation warning"""
+        self.warnings.append(message)
+        print(f"WARNING: {message}")
+    
+    def log_info(self, message):
+        """Log informational message"""
+        print(f"INFO: {message}")
+    
+    def validate_nifi_properties(self):
+        """Validate nifi.properties file"""
+        self.log_info("Validating nifi.properties")
+        
+        properties_file = self.conf_dir / "nifi.properties"
+        if not properties_file.exists():
+            self.log_error("nifi.properties file not found")
+            return False
+        
+        try:
+            with open(properties_file, 'r') as f:
+                content = f.read()
+            
+            # Check for required properties
+            required_props = [
+                'nifi.web.http.port',
+                'nifi.web.http.host',
+                'nifi.flow.configuration.file',
+                'nifi.flowfile.repository.directory',
+                'nifi.content.repository.directory.default',
+                'nifi.provenance.repository.directory.default'
+            ]
+            
+            for prop in required_props:
+                if f"{prop}=" not in content:
+                    self.log_error(f"Required property '{prop}' not found in nifi.properties")
+            
+            # Validate HTTPS configuration if enabled
+            {% if nifi_enable_https %}
+            https_props = [
+                'nifi.web.https.port',
+                'nifi.security.keystore',
+                'nifi.security.truststore'
+            ]
+            
+            for prop in https_props:
+                if f"{prop}=" not in content:
+                    self.log_error(f"HTTPS property '{prop}' not found in nifi.properties")
+            {% endif %}
+            
+            # Check for sensitive properties encryption
+            {% if apache_nifi_sensitive_props_key != "" %}
+            if "nifi.sensitive.props.key=" not in content:
+                self.log_warning("Sensitive properties key not configured in nifi.properties")
+            {% endif %}
+            
+            # Validate cluster configuration if enabled
+            {% if nifi_cluster_enabled %}
+            cluster_props = [
+                'nifi.cluster.is.node',
+                'nifi.cluster.node.address',
+                'nifi.cluster.node.protocol.port',
+                'nifi.zookeeper.connect.string'
+            ]
+            
+            for prop in cluster_props:
+                if f"{prop}=" not in content:
+                    self.log_error(f"Cluster property '{prop}' not found in nifi.properties")
+            {% endif %}
+            
+            self.log_info("nifi.properties validation completed")
+            return True
+            
+        except Exception as e:
+            self.log_error(f"Failed to validate nifi.properties: {e}")
+            return False
+    
+    def validate_xml_files(self):
+        """Validate XML configuration files"""
+        xml_files = [
+            "authorizers.xml",
+            "login-identity-providers.xml"
+        ]
+        
+        {% if apache_nifi_auto_provision_users %}
+        xml_files.extend(["users.xml", "authorizations.xml"])
+        {% endif %}
+        
+        for xml_file in xml_files:
+            self.log_info(f"Validating {xml_file}")
+            
+            xml_path = self.conf_dir / xml_file
+            if not xml_path.exists():
+                self.log_warning(f"{xml_file} not found")
+                continue
+            
+            try:
+                ET.parse(xml_path)
+                self.log_info(f"{xml_file} is valid XML")
+            except ET.ParseError as e:
+                self.log_error(f"{xml_file} is invalid XML: {e}")
+            except Exception as e:
+                self.log_error(f"Failed to parse {xml_file}: {e}")
+    
+    def validate_bootstrap_conf(self):
+        """Validate bootstrap.conf file"""
+        self.log_info("Validating bootstrap.conf")
+        
+        bootstrap_file = self.conf_dir / "bootstrap.conf"
+        if not bootstrap_file.exists():
+            self.log_error("bootstrap.conf file not found")
+            return False
+        
+        try:
+            with open(bootstrap_file, 'r') as f:
+                content = f.read()
+            
+            # Check for required entries
+            if "java=" not in content:
+                self.log_error("Java executable not specified in bootstrap.conf")
+            
+            if "run.as=" not in content:
+                self.log_error("Run as user not specified in bootstrap.conf")
+            
+            # Validate memory settings
+            heap_settings = re.findall(r'java\.arg\.\d+=-Xm[sx](\d+[gmGM]?)', content)
+            if not heap_settings:
+                self.log_warning("No heap memory settings found in bootstrap.conf")
+            
+            self.log_info("bootstrap.conf validation completed")
+            return True
+            
+        except Exception as e:
+            self.log_error(f"Failed to validate bootstrap.conf: {e}")
+            return False
+    
+    def validate_keystore_files(self):
+        """Validate keystore and truststore files"""
+        {% if nifi_enable_https %}
+        self.log_info("Validating keystore files")
+        
+        keystore_path = Path("{{ apache_nifi_keystore_path }}")
+        truststore_path = Path("{{ apache_nifi_truststore_path }}")
+        
+        if not keystore_path.exists():
+            self.log_error(f"Keystore file not found: {keystore_path}")
+        else:
+            # Check keystore permissions
+            stat_info = keystore_path.stat()
+            if stat_info.st_mode & 0o077:
+                self.log_warning(f"Keystore file {keystore_path} has overly permissive permissions")
+        
+        if not truststore_path.exists():
+            self.log_error(f"Truststore file not found: {truststore_path}")
+        else:
+            # Check truststore permissions
+            stat_info = truststore_path.stat()
+            if stat_info.st_mode & 0o077:
+                self.log_warning(f"Truststore file {truststore_path} has overly permissive permissions")
+        {% else %}
+        self.log_info("HTTPS not enabled, skipping keystore validation")
+        {% endif %}
+    
+    def validate_directories(self):
+        """Validate NiFi directories and permissions"""
+        self.log_info("Validating directories and permissions")
+        
+        directories = [
+            "{{ apache_nifi_home }}",
+            "{{ apache_nifi_conf_dir }}",
+            "{{ apache_nifi_home }}/logs"
+        ]
+        
+        for directory in directories:
+            dir_path = Path(directory)
+            if not dir_path.exists():
+                self.log_error(f"Directory not found: {directory}")
+                continue
+            
+            # Check ownership
+            try:
+                import pwd
+                import grp
+                
+                stat_info = dir_path.stat()
+                owner = pwd.getpwuid(stat_info.st_uid).pw_name
+                group = grp.getgrgid(stat_info.st_gid).gr_name
+                
+                if owner != "{{ apache_nifi_user }}":
+                    self.log_error(f"Directory {directory} not owned by {{ apache_nifi_user }} (owned by {owner})")
+                
+                if group != "{{ apache_nifi_group }}":
+                    self.log_warning(f"Directory {directory} not in group {{ apache_nifi_group }} (group: {group})")
+                    
+            except Exception as e:
+                self.log_warning(f"Could not check ownership of {directory}: {e}")
+    
+    def validate_environment_config(self):
+        """Validate environment-specific configuration"""
+        self.log_info("Validating environment-specific configuration")
+        
+        environment = "{{ apache_nifi_environment }}"
+        
+        # Development environment checks
+        if environment == "development":
+            if {{ nifi_enable_https | lower }}:
+                self.log_warning("HTTPS enabled in development environment - consider using HTTP for easier testing")
+        
+        # Production environment checks
+        elif environment == "production":
+            if not {{ nifi_enable_https | lower }}:
+                self.log_error("HTTPS should be enabled in production environment")
+            
+            if not {{ apache_nifi_security_hardening | lower }}:
+                self.log_warning("Security hardening should be enabled in production environment")
+            
+            if not {{ apache_nifi_backup_enabled | lower }}:
+                self.log_warning("Backup should be enabled in production environment")
+    
+    def generate_report(self):
+        """Generate validation report"""
+        self.log_info("Generating validation report")
+        
+        report = {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "environment": "{{ apache_nifi_environment }}",
+            "validation_status": "PASSED" if not self.errors else "FAILED",
+            "errors": self.errors,
+            "warnings": self.warnings,
+            "summary": {
+                "total_errors": len(self.errors),
+                "total_warnings": len(self.warnings)
+            }
+        }
+        
+        report_file = self.conf_dir / "validation" / "config_validation_report.json"
+        report_file.parent.mkdir(exist_ok=True)
+        
+        with open(report_file, 'w') as f:
+            json.dump(report, f, indent=2)
+        
+        print(f"\nValidation report written to: {report_file}")
+        return report
+    
+    def run_validation(self):
+        """Run all validation checks"""
+        print("Starting NiFi configuration validation")
+        print("=" * 50)
+        
+        self.validate_nifi_properties()
+        self.validate_xml_files()
+        self.validate_bootstrap_conf()
+        self.validate_keystore_files()
+        self.validate_directories()
+        self.validate_environment_config()
+        
+        report = self.generate_report()
+        
+        print("=" * 50)
+        print(f"Validation completed: {report['validation_status']}")
+        print(f"Errors: {len(self.errors)}, Warnings: {len(self.warnings)}")
+        
+        if self.errors:
+            print("\nERRORS:")
+            for error in self.errors:
+                print(f"  - {error}")
+        
+        if self.warnings:
+            print("\nWARNINGS:")
+            for warning in self.warnings:
+                print(f"  - {warning}")
+        
+        return len(self.errors) == 0
+
+def main():
+    validator = NiFiConfigValidator()
+    success = validator.run_validation()
+    
+    if success:
+        print("\nConfiguration validation PASSED")
+        sys.exit(0)
+    else:
+        print("\nConfiguration validation FAILED")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

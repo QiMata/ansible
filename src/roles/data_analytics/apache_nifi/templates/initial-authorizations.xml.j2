@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<authorizations>
+    <policies>
+        <!-- Admin Policies -->
+        {% if nifi_admin_identity != "" %}
+        <policy identifier="admin-flow-policy" resource="/flow" action="R">
+            <user identifier="{{ nifi_admin_identity | hash('sha256') }}"/>
+        </policy>
+        <policy identifier="admin-controller-policy" resource="/controller" action="RW">
+            <user identifier="{{ nifi_admin_identity | hash('sha256') }}"/>
+        </policy>
+        <policy identifier="admin-system-policy" resource="/system" action="R">
+            <user identifier="{{ nifi_admin_identity | hash('sha256') }}"/>
+        </policy>
+        <policy identifier="admin-provenance-policy" resource="/provenance" action="R">
+            <user identifier="{{ nifi_admin_identity | hash('sha256') }}"/>
+        </policy>
+        <policy identifier="admin-restricted-components-policy" resource="/restricted-components" action="W">
+            <user identifier="{{ nifi_admin_identity | hash('sha256') }}"/>
+        </policy>
+        <policy identifier="admin-policies-policy" resource="/policies" action="RW">
+            <user identifier="{{ nifi_admin_identity | hash('sha256') }}"/>
+        </policy>
+        <policy identifier="admin-tenants-policy" resource="/tenants" action="RW">
+            <user identifier="{{ nifi_admin_identity | hash('sha256') }}"/>
+        </policy>
+        {% endif %}
+        
+        <!-- Group-based Policies -->
+        {% for group in apache_nifi_groups %}
+        {% for policy in group.policies %}
+        {% set policy_map = {
+            'view the user interface': '/flow:R',
+            'access the controller': '/controller:R',
+            'modify the controller': '/controller:RW',
+            'query provenance': '/provenance:R',
+            'access restricted components': '/restricted-components:W'
+        } %}
+        {% if policy in policy_map %}
+        {% set resource_action = policy_map[policy].split(':') %}
+        <policy identifier="{{ group.name }}-{{ policy | replace(' ', '-') }}-policy" resource="{{ resource_action[0] }}" action="{{ resource_action[1] }}">
+            {% for user in apache_nifi_users %}
+            {% if group.name in user.groups %}
+            <user identifier="{{ user.identity | hash('sha256') }}"/>
+            {% endif %}
+            {% endfor %}
+        </policy>
+        {% endif %}
+        {% endfor %}
+        {% endfor %}
+        
+        <!-- RBAC Template Policies -->
+        {% for template in apache_nifi_rbac_templates %}
+        {% for policy in template.policies %}
+        {% set policy_map = {
+            'view the user interface': '/flow:R',
+            'access the controller': '/controller:R',
+            'modify the controller': '/controller:RW',
+            'query provenance': '/provenance:R'
+        } %}
+        {% if policy in policy_map %}
+        {% set resource_action = policy_map[policy].split(':') %}
+        <policy identifier="{{ template.name }}-{{ policy | replace(' ', '-') }}-policy" resource="{{ resource_action[0] }}" action="{{ resource_action[1] }}">
+            <!-- Users will be assigned to this template via separate mechanism -->
+        </policy>
+        {% endif %}
+        {% endfor %}
+        
+        {% for resource_policy in template.resource_policies %}
+        <policy identifier="{{ template.name }}-{{ resource_policy.resource | replace('/', '-') }}-{{ resource_policy.action }}-policy" resource="{{ resource_policy.resource }}" action="{{ resource_policy.action }}">
+            <!-- Users will be assigned to this template via separate mechanism -->
+        </policy>
+        {% endfor %}
+        {% endfor %}
+    </policies>
+    
+    <tenants>
+        <!-- Groups -->
+        {% for group in apache_nifi_groups %}
+        <group identifier="{{ group.name | hash('sha256') }}" name="{{ group.name }}">
+            {% for user in apache_nifi_users %}
+            {% if group.name in user.groups %}
+            <user identifier="{{ user.identity | hash('sha256') }}"/>
+            {% endif %}
+            {% endfor %}
+        </group>
+        {% endfor %}
+    </tenants>
+</authorizations>

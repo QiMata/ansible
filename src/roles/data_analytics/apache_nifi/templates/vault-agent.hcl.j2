@@ -1,0 +1,58 @@
+pid_file = "{{ apache_nifi_conf_dir }}/vault/agent.pid"
+exit_after_auth = false
+disable_mlock = true
+
+vault {
+  address = "{{ apache_nifi_vault_url }}"
+  retry {
+    num_retries = 5
+  }
+}
+
+{% if apache_nifi_vault_token != "" %}
+auto_auth {
+  method "token" {
+    config = {
+      token_file_path = "{{ apache_nifi_conf_dir }}/vault/.vault-token"
+    }
+  }
+}
+{% elif apache_nifi_vault_role_id != "" and apache_nifi_vault_secret_id != "" %}
+auto_auth {
+  method "approle" {
+    config = {
+      role_id_file_path = "{{ apache_nifi_conf_dir }}/vault/.role_id"
+      secret_id_file_path = "{{ apache_nifi_conf_dir }}/vault/.secret_id"
+    }
+  }
+}
+{% endif %}
+
+template_config {
+  static_secret_render_interval = "5m"
+  exit_on_retry_failure = true
+}
+
+template {
+  source = "{{ apache_nifi_conf_dir }}/vault/nifi-secrets.tpl"
+  destination = "{{ apache_nifi_conf_dir }}/vault/nifi-secrets.properties"
+  command = "systemctl reload nifi"
+  command_timeout = "30s"
+  perms = "0600"
+}
+
+listener "unix" {
+  address = "{{ apache_nifi_conf_dir }}/vault/agent.sock"
+  tls_disable = true
+  socket_mode = "0600"
+  socket_user = "{{ apache_nifi_user }}"
+  socket_group = "{{ apache_nifi_group }}"
+}
+
+cache {
+  use_auto_auth_token = true
+}
+
+api_proxy {
+  use_auto_auth_token = true
+}

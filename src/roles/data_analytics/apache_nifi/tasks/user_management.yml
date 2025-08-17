@@ -1,0 +1,86 @@
+---
+# ================================
+# User & Role Management Tasks
+# ================================
+
+- name: Create users configuration directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ apache_nifi_conf_dir }}/users"
+    state: directory
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0750'
+  when: apache_nifi_auto_provision_users
+  tags: [nifi, users, rbac]
+
+- name: Generate initial users configuration
+  become: true
+  ansible.builtin.template:
+    src: initial-users.xml.j2
+    dest: "{{ apache_nifi_conf_dir }}/users.xml"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0640'
+    backup: true
+  when: apache_nifi_auto_provision_users
+  notify: restart nifi
+  tags: [nifi, users, rbac]
+
+- name: Generate initial authorizations configuration
+  become: true
+  ansible.builtin.template:
+    src: initial-authorizations.xml.j2
+    dest: "{{ apache_nifi_conf_dir }}/authorizations.xml"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0640'
+    backup: true
+  when: apache_nifi_auto_provision_users
+  notify: restart nifi
+  tags: [nifi, users, rbac]
+
+- name: Create RBAC policy templates
+  become: true
+  ansible.builtin.template:
+    src: "rbac_template_{{ item.name }}.xml.j2"
+    dest: "{{ apache_nifi_config_templates_dir }}/{{ item.name }}.xml"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0640'
+  loop: "{{ apache_nifi_rbac_templates }}"
+  when: apache_nifi_rbac_templates | length > 0
+  tags: [nifi, rbac, templates]
+
+- name: Create user provisioning script
+  become: true
+  ansible.builtin.template:
+    src: provision_users.py.j2
+    dest: "{{ apache_nifi_conf_dir }}/scripts/provision_users.py"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0750'
+  when: apache_nifi_auto_provision_users
+  tags: [nifi, users, scripts]
+
+- name: Create scripts directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ apache_nifi_conf_dir }}/scripts"
+    state: directory
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0750'
+  tags: [nifi, scripts]
+
+- name: Run user provisioning script
+  become: true
+  ansible.builtin.command:
+    cmd: python3 "{{ apache_nifi_conf_dir }}/scripts/provision_users.py"
+  become_user: "{{ apache_nifi_user }}"
+  when: 
+    - apache_nifi_auto_provision_users
+    - apache_nifi_users | length > 0
+  register: user_provision_result
+  changed_when: "'Users provisioned successfully' in user_provision_result.stdout"
+  tags: [nifi, users, provision]

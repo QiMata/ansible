@@ -1,0 +1,152 @@
+---
+# ================================
+# Enhanced Monitoring & Observability
+# ================================
+
+- name: Create monitoring directories
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0755'
+  loop:
+    - "{{ apache_nifi_conf_dir }}/monitoring"
+    - "{{ apache_nifi_home }}/logs/monitoring"
+  tags: [nifi, monitoring]
+
+- name: Install JMX Prometheus Exporter
+  become: true
+  ansible.builtin.get_url:
+    url: "https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/0.19.0/jmx_prometheus_javaagent-0.19.0.jar"
+    dest: "{{ apache_nifi_home }}/lib/jmx_prometheus_javaagent.jar"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0644'
+  when: apache_nifi_prometheus_jmx_exporter
+  tags: [nifi, monitoring, prometheus, jmx]
+
+- name: Create JMX Prometheus configuration
+  become: true
+  ansible.builtin.template:
+    src: jmx_prometheus_config.yml.j2
+    dest: "{{ apache_nifi_conf_dir }}/monitoring/jmx_prometheus.yml"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0644'
+  when: apache_nifi_prometheus_jmx_exporter
+  notify: restart nifi
+  tags: [nifi, monitoring, prometheus, jmx]
+
+- name: Create custom metrics collection script
+  become: true
+  ansible.builtin.template:
+    src: custom_metrics.py.j2
+    dest: "{{ apache_nifi_conf_dir }}/scripts/custom_metrics.py"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0755'
+  when: apache_nifi_prometheus_custom_metrics
+  tags: [nifi, monitoring, prometheus, custom-metrics]
+
+- name: Create systemd service for custom metrics
+  become: true
+  ansible.builtin.template:
+    src: nifi-custom-metrics.service.j2
+    dest: /etc/systemd/system/nifi-custom-metrics.service
+    mode: '0644'
+  when: apache_nifi_prometheus_custom_metrics
+  notify:
+    - reload systemd
+    - restart nifi-custom-metrics
+  tags: [nifi, monitoring, prometheus, service]
+
+- name: Start and enable custom metrics service
+  become: true
+  ansible.builtin.systemd:
+    name: nifi-custom-metrics
+    state: started
+    enabled: true
+    daemon_reload: true
+  when: apache_nifi_prometheus_custom_metrics
+  tags: [nifi, monitoring, prometheus, service]
+
+- name: Configure structured logging
+  become: true
+  ansible.builtin.template:
+    src: logback.xml.j2
+    dest: "{{ apache_nifi_conf_dir }}/logback.xml"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0644'
+    backup: true
+  when: apache_nifi_structured_logging
+  notify: restart nifi
+  tags: [nifi, monitoring, logging]
+
+- name: Create log rotation configuration
+  become: true
+  ansible.builtin.template:
+    src: nifi_logrotate.j2
+    dest: /etc/logrotate.d/nifi
+    mode: '0644'
+  when: apache_nifi_log_rotation
+  tags: [nifi, monitoring, logging, logrotate]
+
+- name: Create health check script
+  become: true
+  ansible.builtin.template:
+    src: health_check.sh.j2
+    dest: "{{ apache_nifi_conf_dir }}/scripts/health_check.sh"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0755'
+  when: apache_nifi_health_checks
+  tags: [nifi, monitoring, health]
+
+- name: Create systemd service for health checks
+  become: true
+  ansible.builtin.template:
+    src: nifi-health-check.service.j2
+    dest: /etc/systemd/system/nifi-health-check.service
+    mode: '0644'
+  when: apache_nifi_health_checks
+  notify:
+    - reload systemd
+  tags: [nifi, monitoring, health, service]
+
+- name: Create systemd timer for health checks
+  become: true
+  ansible.builtin.template:
+    src: nifi-health-check.timer.j2
+    dest: /etc/systemd/system/nifi-health-check.timer
+    mode: '0644'
+  when: apache_nifi_health_checks
+  notify:
+    - reload systemd
+    - restart nifi-health-check.timer
+  tags: [nifi, monitoring, health, timer]
+
+- name: Start and enable health check timer
+  become: true
+  ansible.builtin.systemd:
+    name: nifi-health-check.timer
+    state: started
+    enabled: true
+    daemon_reload: true
+  when: apache_nifi_health_checks
+  tags: [nifi, monitoring, health, timer]
+
+- name: Create alerting rules configuration
+  become: true
+  ansible.builtin.template:
+    src: nifi_alert_rules.yml.j2
+    dest: "{{ apache_nifi_conf_dir }}/monitoring/alert_rules.yml"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0644'
+  when: 
+    - apache_nifi_alerting_enabled
+    - apache_nifi_alerting_rules | length > 0
+  tags: [nifi, monitoring, alerting]

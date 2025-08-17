@@ -1,0 +1,60 @@
+# NiFi Alert Rules for Prometheus
+groups:
+  - name: nifi.rules
+    rules:
+    {% for rule in apache_nifi_alerting_rules %}
+      - alert: {{ rule.name }}
+        expr: {{ rule.expr }}
+        for: {{ rule.for | default('5m') }}
+        labels:
+          severity: {{ rule.severity | default('warning') }}
+        annotations:
+          summary: "{{ rule.summary | default('NiFi Alert') }}"
+          description: "{{ rule.description | default(rule.summary) }}"
+    {% endfor %}
+    
+    # Default NiFi alerting rules
+      - alert: NiFiDown
+        expr: up{job="nifi"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "NiFi instance is down"
+          description: "NiFi instance {{ $labels.instance }} has been down for more than 5 minutes."
+      
+      - alert: NiFiHighMemoryUsage
+        expr: jvm_memory_heap_used / jvm_memory_heap_max > 0.9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "NiFi high memory usage"
+          description: "NiFi instance {{ $labels.instance }} is using {{ $value | humanizePercentage }} of available heap memory."
+      
+      - alert: NiFiHighQueueCount
+        expr: nifi_connection_QueuedCount > 10000
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "NiFi high queue count"
+          description: "NiFi connection {{ $labels.connection }} has {{ $value }} queued flow files."
+      
+      - alert: NiFiClusterNodeDown
+        expr: nifi_cluster_connected_nodes < nifi_cluster_total_nodes
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "NiFi cluster node down"
+          description: "NiFi cluster has {{ $value }} connected nodes out of {{ $labels.total_nodes }} total nodes."
+      
+      - alert: NiFiHighErrorRate
+        expr: increase(nifi_processor_errors_total[5m]) > 50
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "NiFi high error rate"
+          description: "NiFi processor {{ $labels.processor }} has {{ $value }} errors in the last 5 minutes."
