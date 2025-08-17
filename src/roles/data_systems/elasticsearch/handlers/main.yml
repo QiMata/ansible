@@ -1,4 +1,8 @@
 ---
+# ============================================================================
+# ELASTICSEARCH HANDLERS
+# ============================================================================
+
 - name: Update apt cache
   ansible.builtin.apt:
     update_cache: true
@@ -8,3 +12,68 @@
     name: elasticsearch
     state: restarted
     enabled: true
+  notify: wait for elasticsearch
+
+- name: Reload elasticsearch
+  ansible.builtin.service:
+    name: elasticsearch
+    state: reloaded
+
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Wait for elasticsearch
+  ansible.builtin.uri:
+    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}"
+    method: GET
+    status_code: [200, 401]
+  register: es_wait
+  until: es_wait.status in [200, 401]
+  retries: 30
+  delay: 10
+
+- name: Validate cluster health
+  ansible.builtin.uri:
+    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cluster/health"
+    method: GET
+  register: cluster_health_check
+  until: cluster_health_check.json.status != "red"
+  retries: 10
+  delay: 30
+  when: es_validate_cluster_health
+
+- name: Reload elasticsearch config
+  ansible.builtin.uri:
+    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_nodes/reload_secure_settings"
+    method: POST
+    body_format: json
+    body: {}
+    headers:
+      Content-Type: "application/json"
+    status_code: [200, 400]
+  ignore_errors: true
+
+- name: Update elasticsearch passwords
+  ansible.builtin.shell: |
+    /usr/share/elasticsearch/bin/elasticsearch-setup-passwords auto --batch
+  register: password_setup
+  when: es_enable_security
+  ignore_errors: true
+
+- name: Backup elasticsearch data
+  ansible.builtin.uri:
+    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_snapshot/backup-repo/automated-backup-{{ ansible_date_time.epoch }}"
+    method: PUT
+    body_format: json
+    body:
+      indices: "*"
+      ignore_unavailable: true
+      include_global_state: false
+    headers:
+      Content-Type: "application/json"
+    status_code: [200, 201, 400]
+  when: 
+    - es_snapshot_repositories | length > 0
+    - es_backup_before_upgrade
+  ignore_errors: true

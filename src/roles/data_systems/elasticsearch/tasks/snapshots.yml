@@ -1,0 +1,170 @@
+---
+# ============================================================================
+# SNAPSHOT AND BACKUP CONFIGURATION TASKS
+# ============================================================================
+
+- name: Create snapshot repository directories
+  ansible.builtin.file:
+    path: "{{ item.settings.location }}"
+    state: directory
+    owner: elasticsearch
+    group: elasticsearch
+    mode: '0750'
+    recurse: true
+  loop: "{{ es_snapshot_repositories }}"
+  when: 
+    - item.type == "fs"
+    - item.settings.location is defined
+
+- name: Create snapshot repositories
+  ansible.builtin.uri:
+    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_snapshot/{{ item.name }}"
+    method: PUT
+    body_format: json
+    body:
+      type: "{{ item.type }}"
+      settings: "{{ item.settings }}"
+    headers:
+      Content-Type: "application/json"
+    status_code: [200, 201]
+  loop: "{{ es_snapshot_repositories }}"
+  when: 
+    - es_wait_for_cluster
+  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+  run_once: true
+
+- name: Verify snapshot repositories
+  ansible.builtin.uri:
+    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_snapshot/{{ item.name }}/_verify"
+    method: POST
+    headers:
+      Content-Type: "application/json"
+    status_code: [200, 400]
+  loop: "{{ es_snapshot_repositories }}"
+  register: repo_verification
+  when: 
+    - es_wait_for_cluster
+  ignore_errors: true
+  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+  run_once: true
+
+- name: Display repository verification results
+  ansible.builtin.debug:
+    msg: "Repository {{ item.item.name }} verification: {{ 'PASSED' if item.status == 200 else 'FAILED' }}"
+  loop: "{{ repo_verification.results | default([]) }}"
+  when: repo_verification is defined
+
+- name: Create snapshot lifecycle policies
+  ansible.builtin.uri:
+    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_slm/policy/{{ item.name }}"
+    method: PUT
+    body_format: json
+    body:
+      schedule: "{{ item.schedule }}"
+      name: "{{ item.snapshot_name | default('<' + item.name + '-{now/d}>') }}"
+      repository: "{{ item.repository }}"
+      config: "{{ item.config | default({}) }}"
+      retention: "{{ item.retention | default({}) }}"
+    headers:
+      Content-Type: "application/json"
+    status_code: [200, 201]
+  loop: "{{ es_snapshot_policies }}"
+  when: 
+    - es_wait_for_cluster
+  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+  run_once: true
+
+- name: Create backup retention cleanup script
+  ansible.builtin.template:
+    src: cleanup-snapshots.sh.j2
+    dest: /usr/local/bin/cleanup-elasticsearch-snapshots.sh
+    owner: root
+    group: root
+    mode: '0755'
+  when: es_backup_retention_days > 0
+
+- name: Create cron job for snapshot cleanup
+  ansible.builtin.cron:
+    name: "Elasticsearch snapshot cleanup"
+    minute: "0"
+    hour: "2"
+    job: "/usr/local/bin/cleanup-elasticsearch-snapshots.sh"
+    user: root
+  when: es_backup_retention_days > 0
+
+- name: Create manual snapshot script
+  ansible.builtin.template:
+    src: manual-snapshot.sh.j2
+    dest: /usr/local/bin/elasticsearch-manual-snapshot.sh
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Test snapshot creation
+  ansible.builtin.uri:
+    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_snapshot/{{ es_snapshot_repositories[0].name }}/test-snapshot-{{ ansible_date_time.epoch }}"
+    method: PUT
+    body_format: json
+    body:
+      indices: ".kibana*"
+      ignore_unavailable: true
+      include_global_state: false
+      metadata:
+        taken_by: "ansible"
+        purpose: "test"
+    headers:
+      Content-Type: "application/json"
+    status_code: [200, 201, 400]
+  when: 
+    - es_snapshot_repositories | length > 0
+    - es_wait_for_cluster
+  register: test_snapshot
+  ignore_errors: true
+  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+  run_once: true
+
+- name: Check test snapshot status
+  ansible.builtin.uri:
+    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_snapshot/{{ es_snapshot_repositories[0].name }}/test-snapshot-{{ ansible_date_time.epoch }}"
+    method: GET
+    headers:
+      Content-Type: "application/json"
+    status_code: [200, 404]
+  when: 
+    - test_snapshot is defined
+    - test_snapshot.status in [200, 201]
+    - es_wait_for_cluster
+  register: snapshot_status
+  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+  run_once: true
+
+- name: Delete test snapshot
+  ansible.builtin.uri:
+    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_snapshot/{{ es_snapshot_repositories[0].name }}/test-snapshot-{{ ansible_date_time.epoch }}"
+    method: DELETE
+    headers:
+      Content-Type: "application/json"
+    status_code: [200, 404]
+  when: 
+    - test_snapshot is defined
+    - test_snapshot.status in [200, 201]
+    - es_wait_for_cluster
+  ignore_errors: true
+  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+  run_once: true
+
+- name: Create snapshot monitoring script
+  ansible.builtin.template:
+    src: monitor-snapshots.sh.j2
+    dest: /usr/local/bin/monitor-elasticsearch-snapshots.sh
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Setup snapshot monitoring cron
+  ansible.builtin.cron:
+    name: "Elasticsearch snapshot monitoring"
+    minute: "*/30"
+    job: "/usr/local/bin/monitor-elasticsearch-snapshots.sh"
+    user: root
+  when: es_snapshot_repositories | length > 0

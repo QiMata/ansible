@@ -1,0 +1,140 @@
+---
+# ============================================================================
+# INDEX TEMPLATE MANAGEMENT TASKS
+# ============================================================================
+
+- name: Create component templates
+  ansible.builtin.uri:
+    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_component_template/{{ item.name }}"
+    method: PUT
+    body_format: json
+    body: "{{ item.template }}"
+    headers:
+      Content-Type: "application/json"
+    status_code: [200, 201]
+  loop: "{{ es_component_templates }}"
+  when: 
+    - es_wait_for_cluster
+  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+  run_once: true
+
+- name: Create index templates
+  ansible.builtin.uri:
+    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_index_template/{{ item.name }}"
+    method: PUT
+    body_format: json
+    body:
+      index_patterns: "{{ item.index_patterns }}"
+      template:
+        settings: "{{ item.settings | default({}) }}"
+        mappings: "{{ item.mappings | default({}) }}"
+        aliases: "{{ item.aliases | default({}) }}"
+      priority: "{{ item.priority | default(100) }}"
+      version: "{{ item.version | default(1) }}"
+      _meta: "{{ item._meta | default({}) }}"
+      composed_of: "{{ item.composed_of | default([]) }}"
+    headers:
+      Content-Type: "application/json"
+    status_code: [200, 201]
+  loop: "{{ es_index_templates }}"
+  when: 
+    - es_wait_for_cluster
+  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+  run_once: true
+
+- name: Create index lifecycle policies
+  ansible.builtin.uri:
+    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_ilm/policy/{{ item.name }}"
+    method: PUT
+    body_format: json
+    body:
+      policy:
+        phases: "{{ item.phases }}"
+        _meta: "{{ item._meta | default({}) }}"
+    headers:
+      Content-Type: "application/json"
+    status_code: [200, 201]
+  loop: "{{ es_index_lifecycle_policies }}"
+  when: 
+    - es_wait_for_cluster
+  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+  run_once: true
+
+- name: Create custom analyzers
+  ansible.builtin.uri:
+    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cluster/settings"
+    method: PUT
+    body_format: json
+    body:
+      persistent:
+        index:
+          analysis:
+            analyzer: "{{ es_custom_analyzers }}"
+            filter: "{{ es_custom_filters }}"
+            tokenizer: "{{ es_custom_tokenizers }}"
+    headers:
+      Content-Type: "application/json"
+    status_code: [200, 400]
+  when: 
+    - es_custom_analyzers | length > 0 or es_custom_filters | length > 0 or es_custom_tokenizers | length > 0
+    - es_wait_for_cluster
+  ignore_errors: true
+  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+  run_once: true
+
+- name: Install custom dictionaries
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "/etc/elasticsearch/{{ item.name }}"
+    owner: root
+    group: elasticsearch
+    mode: '0644'
+  loop: "{{ es_custom_dictionaries }}"
+  when: es_custom_dictionaries | length > 0
+  notify: restart elasticsearch
+
+- name: Verify index templates creation
+  ansible.builtin.uri:
+    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_index_template/{{ item.name }}"
+    method: GET
+    headers:
+      Content-Type: "application/json"
+    status_code: [200, 404]
+  loop: "{{ es_index_templates }}"
+  register: template_verification
+  when: 
+    - es_wait_for_cluster
+  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+  run_once: true
+
+- name: Display template verification results
+  ansible.builtin.debug:
+    msg: "Template {{ item.item.name }} status: {{ item.status }}"
+  loop: "{{ template_verification.results | default([]) }}"
+  when: template_verification is defined
+
+- name: Create template backup
+  ansible.builtin.uri:
+    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_index_template"
+    method: GET
+    headers:
+      Content-Type: "application/json"
+    status_code: [200]
+  register: all_templates
+  when: 
+    - es_wait_for_cluster
+  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+  run_once: true
+
+- name: Save template backup to file
+  ansible.builtin.copy:
+    content: "{{ all_templates.json | to_nice_json }}"
+    dest: "/etc/elasticsearch/templates-backup-{{ ansible_date_time.epoch }}.json"
+    owner: root
+    group: elasticsearch
+    mode: '0640'
+  when: 
+    - all_templates is defined
+    - all_templates.json is defined
+  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+  run_once: true

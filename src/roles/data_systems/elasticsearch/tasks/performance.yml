@@ -1,0 +1,131 @@
+---
+# ============================================================================
+# PERFORMANCE TUNING TASKS
+# ============================================================================
+
+- name: Configure JVM additional options
+  ansible.builtin.template:
+    src: jvm.options.d/custom.options.j2
+    dest: /etc/elasticsearch/jvm.options.d/custom.options
+    owner: root
+    group: elasticsearch
+    mode: '0644'
+  when: es_jvm_options | length > 0
+  notify: restart elasticsearch
+
+- name: Configure thread pool settings
+  ansible.builtin.uri:
+    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cluster/settings"
+    method: PUT
+    body_format: json
+    body:
+      persistent:
+        thread_pool: "{{ es_thread_pool_settings }}"
+    headers:
+      Content-Type: "application/json"
+    status_code: [200, 400]
+  when: 
+    - es_thread_pool_settings | length > 0
+    - es_wait_for_cluster
+  ignore_errors: true
+  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+  run_once: true
+
+- name: Configure circuit breaker settings
+  ansible.builtin.uri:
+    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cluster/settings"
+    method: PUT
+    body_format: json
+    body:
+      persistent:
+        indices:
+          breaker: "{{ es_circuit_breaker_settings }}"
+    headers:
+      Content-Type: "application/json"
+    status_code: [200, 400]
+  when: 
+    - es_circuit_breaker_settings | length > 0
+    - es_wait_for_cluster
+  ignore_errors: true
+  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+  run_once: true
+
+- name: Configure cache settings
+  ansible.builtin.uri:
+    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cluster/settings"
+    method: PUT
+    body_format: json
+    body:
+      persistent: "{{ es_cache_settings }}"
+    headers:
+      Content-Type: "application/json"
+    status_code: [200, 400]
+  when: 
+    - es_cache_settings | length > 0
+    - es_wait_for_cluster
+  ignore_errors: true
+  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+  run_once: true
+
+- name: Set vm.max_map_count for Elasticsearch
+  ansible.posix.sysctl:
+    name: vm.max_map_count
+    value: '262144'
+    state: present
+    reload: true
+
+- name: Set vm.swappiness
+  ansible.posix.sysctl:
+    name: vm.swappiness
+    value: '1'
+    state: present
+    reload: true
+
+- name: Configure file descriptor limits
+  ansible.builtin.lineinfile:
+    path: /etc/security/limits.conf
+    regexp: '^elasticsearch.*nofile'
+    line: "elasticsearch soft nofile 65536\nelasticsearch hard nofile 65536"
+    create: true
+
+- name: Configure process limits
+  ansible.builtin.lineinfile:
+    path: /etc/security/limits.conf
+    regexp: '^elasticsearch.*nproc'
+    line: "elasticsearch soft nproc 4096\nelasticsearch hard nproc 4096"
+    create: true
+
+- name: Configure memory locking limits
+  ansible.builtin.lineinfile:
+    path: /etc/security/limits.conf
+    regexp: '^elasticsearch.*memlock'
+    line: "elasticsearch soft memlock unlimited\nelasticsearch hard memlock unlimited"
+    create: true
+  when: es_bootstrap_memory_lock
+
+- name: Configure systemd service for memory locking
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/system/elasticsearch.service.d/override.conf
+    regexp: '^LimitMEMLOCK='
+    line: "LimitMEMLOCK=infinity"
+    create: true
+  when: es_bootstrap_memory_lock
+  notify: 
+    - reload systemd
+    - restart elasticsearch
+
+- name: Create systemd override directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/elasticsearch.service.d
+    state: directory
+    mode: '0755'
+  when: es_bootstrap_memory_lock
+
+- name: Configure I/O scheduler for data disks
+  ansible.builtin.shell: |
+    for disk in $(lsblk -no NAME,MOUNTPOINT | grep "{{ item }}" | awk '{print $1}' | sed 's/[0-9]*$//'); do
+      echo deadline > /sys/block/${disk}/queue/scheduler
+    done
+  loop: "{{ es_data_paths }}"
+  changed_when: false
+  ignore_errors: true

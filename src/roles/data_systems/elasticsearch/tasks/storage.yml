@@ -1,0 +1,95 @@
+---
+# ============================================================================
+# STORAGE CONFIGURATION TASKS
+# ============================================================================
+
+- name: Create Elasticsearch data directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: elasticsearch
+    group: elasticsearch
+    mode: '0750'
+    recurse: true
+  loop: "{{ es_data_paths }}"
+
+- name: Create Elasticsearch log directory
+  ansible.builtin.file:
+    path: "{{ es_log_path }}"
+    state: directory
+    owner: elasticsearch
+    group: elasticsearch
+    mode: '0750'
+    recurse: true
+
+- name: Create Elasticsearch PID directory
+  ansible.builtin.file:
+    path: "{{ es_pid_path }}"
+    state: directory
+    owner: elasticsearch
+    group: elasticsearch
+    mode: '0755'
+    recurse: true
+
+- name: Create snapshot repository directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: elasticsearch
+    group: elasticsearch
+    mode: '0750'
+    recurse: true
+  loop: "{{ es_path_repo }}"
+  when: es_path_repo | length > 0
+
+- name: Set up systemd tmpfiles configuration for PID directory
+  ansible.builtin.template:
+    src: elasticsearch-tmpfiles.conf.j2
+    dest: /etc/tmpfiles.d/elasticsearch.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart elasticsearch
+
+- name: Configure filesystem storage type
+  ansible.builtin.lineinfile:
+    path: /etc/elasticsearch/elasticsearch.yml
+    regexp: '^index\.store\.type:'
+    line: "index.store.type: {{ es_store_type }}"
+    create: true
+  when: es_store_type != "fs"
+  notify: restart elasticsearch
+
+- name: Configure memory mapping settings
+  ansible.builtin.lineinfile:
+    path: /etc/elasticsearch/elasticsearch.yml
+    regexp: '^node\.store\.allow_mmap:'
+    line: "node.store.allow_mmap: {{ es_allow_mmapfs | lower }}"
+    create: true
+  notify: restart elasticsearch
+
+- name: Check disk space for data directories
+  ansible.builtin.shell: |
+    df -h {{ item }} | tail -1 | awk '{print $5}' | sed 's/%//'
+  register: disk_usage
+  loop: "{{ es_data_paths }}"
+  changed_when: false
+
+- name: Warn about high disk usage
+  ansible.builtin.debug:
+    msg: "WARNING: Disk usage on {{ item.item }} is {{ item.stdout }}%"
+  loop: "{{ disk_usage.results }}"
+  when: 
+    - item.stdout is defined
+    - item.stdout | int > 80
+
+- name: Set filesystem permissions for Elasticsearch directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: elasticsearch
+    group: elasticsearch
+    recurse: true
+  loop:
+    - "{{ es_config_path }}"
+    - "{{ es_log_path }}"
+  ignore_errors: true
