@@ -44,3 +44,124 @@ superset_feature_flags: {}
 superset_service_name: "superset"
 
 superset_marker_file: "{{ superset_config_dir }}/.admin_created"
+
+# SSL/TLS Configuration
+superset_ssl_enabled: false
+superset_ssl_cert_path: "/etc/ssl/certs/superset.crt"
+superset_ssl_key_path: "/etc/ssl/private/superset.key"
+superset_ssl_ca_path: ""
+superset_ssl_protocols: "TLSv1.2 TLSv1.3"
+superset_ssl_ciphers: "ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM:DHE+CHACHA20:!aNULL:!MD5:!DSS"
+superset_ssl_dhparam_path: "/etc/ssl/certs/dhparam.pem"
+
+# Celery Worker Configuration
+superset_celery_enabled: false
+superset_celery_workers: 2
+superset_celery_beat_enabled: false
+superset_celery_beat_schedule: {}
+superset_celery_worker_log_level: "info"
+superset_celery_worker_concurrency: 4
+superset_celery_result_backend: "{{ superset_celery_broker_url }}"
+
+# Database Management
+superset_db_auto_create: false
+superset_db_validate_connection: true
+superset_db_backup_enabled: false
+superset_db_backup_schedule: "0 2 * * *"  # Daily at 2 AM
+superset_db_backup_retention_days: 7
+superset_db_backup_path: "/var/backups/superset"
+
+# Authentication Configuration
+superset_auth_type: "AUTH_DB"  # AUTH_DB, AUTH_LDAP, AUTH_OAUTH
+superset_ldap_enabled: false
+superset_ldap_server: ""
+superset_ldap_use_tls: true
+superset_ldap_bind_user: ""
+superset_ldap_bind_password: ""
+superset_ldap_basedn: ""
+superset_ldap_search: ""
+superset_ldap_uid_field: "uid"
+superset_ldap_firstname_field: "givenName"
+superset_ldap_lastname_field: "sn"
+superset_ldap_email_field: "mail"
+
+# OAuth Configuration
+superset_oauth_enabled: false
+superset_oauth_providers: []
+# Example:
+# superset_oauth_providers:
+#   - name: "google"
+#     client_id: "your-client-id"
+#     client_secret: "your-client-secret"
+#     server_metadata_url: "https://accounts.google.com/.well-known/openid-configuration"
+
+# Monitoring and Logging
+superset_log_level: "INFO"
+superset_log_file: "/var/log/superset/superset.log"
+superset_log_max_bytes: 104857600  # 100MB
+superset_log_backup_count: 5
+superset_enable_access_log: true
+superset_access_log_file: "/var/log/superset/access.log"
+
+# Metrics/Monitoring
+superset_metrics_enabled: false
+superset_metrics_port: 9090
+superset_health_check_enabled: true
+superset_health_check_path: "/health"
+
+# Advanced Configuration
+superset_email_enabled: false
+superset_smtp_host: ""
+superset_smtp_port: 587
+superset_smtp_use_tls: true
+superset_smtp_username: ""
+superset_smtp_password: ""
+superset_smtp_mail_from: "superset@example.com"
+
+# Visualization Plugins
+superset_custom_plugins: []
+# Example:
+# superset_custom_plugins:
+#   - name: "custom-chart-plugin"
+#     package: "superset-plugin-chart-custom"
+#     version: "latest"
+
+# Row Level Security
+superset_rls_enabled: false
+
+# Performance and Caching
+superset_cache_config:
+  CACHE_TYPE: "SimpleCache"
+  CACHE_DEFAULT_TIMEOUT: 300
+
+superset_results_cache_config:
+  CACHE_TYPE: "SimpleCache"
+  CACHE_DEFAULT_TIMEOUT: 3600
+
+superset_thumbnail_cache_config:
+  CACHE_TYPE: "SimpleCache"
+  CACHE_DEFAULT_TIMEOUT: 86400
+
+# Advanced Gunicorn Options
+superset_gunicorn_timeout: 300
+superset_gunicorn_keepalive: 2
+superset_gunicorn_max_requests: 1000
+superset_gunicorn_max_requests_jitter: 100
+superset_gunicorn_preload_app: true
+superset_gunicorn_worker_class: "sync"
+superset_gunicorn_worker_connections: 1000
+
+# Security Enhancements
+superset_firewall_enabled: false
+superset_firewall_allowed_ips: []
+superset_fail2ban_enabled: false
+superset_csp_enabled: false
+superset_csp_policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';"
+superset_rate_limiting_enabled: false
+superset_rate_limit_per_minute: 100
+
+# Backup and Recovery
+superset_config_backup_enabled: false
+superset_config_backup_schedule: "0 3 * * *"  # Daily at 3 AM
+superset_config_backup_path: "/var/backups/superset-config"
+superset_config_backup_retention_days: 30

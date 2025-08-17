@@ -1,0 +1,264 @@
+---
+# Example Playbook: Complete Superset Deployment with Enhanced Features
+# This playbook demonstrates how to deploy Apache Superset with all enterprise features enabled
+
+- name: Deploy Apache Superset with Enhanced Features
+  hosts: superset_servers
+  become: yes
+  vars:
+    # Core Configuration - These should be overridden in your inventory
+    superset_version: "3.0.0"
+    superset_secret_key: "{{ vault_superset_secret_key }}"
+    superset_admin_password: "{{ vault_superset_admin_password }}"
+    superset_admin_email: "admin@company.com"
+    
+    # Database Configuration
+    superset_database_uri: "postgresql://superset:{{ vault_superset_db_password }}@{{ hostvars[groups['postgresql'][0]]['ansible_default_ipv4']['address'] }}/superset"
+    superset_db_validate_connection: true
+    superset_db_auto_create: true
+    superset_db_backup_enabled: true
+    superset_db_backup_schedule: "0 2 * * *"  # Daily at 2 AM
+    superset_db_backup_retention_days: 14
+    
+    # SSL/TLS Configuration
+    superset_ssl_enabled: true
+    superset_ssl_cert_path: "/etc/ssl/certs/superset.crt"
+    superset_ssl_key_path: "/etc/ssl/private/superset.key"
+    
+    # Celery Configuration for Background Tasks
+    superset_celery_enabled: true
+    superset_celery_workers: 4
+    superset_celery_beat_enabled: true
+    superset_celery_broker_url: "redis://{{ hostvars[groups['redis'][0]]['ansible_default_ipv4']['address'] }}:6379/1"
+    superset_celery_result_backend: "redis://{{ hostvars[groups['redis'][0]]['ansible_default_ipv4']['address'] }}:6379/1"
+    
+    # Caching Configuration
+    superset_redis_url: "redis://{{ hostvars[groups['redis'][0]]['ansible_default_ipv4']['address'] }}:6379/0"
+    
+    # Authentication Configuration - LDAP
+    superset_auth_type: "AUTH_LDAP"
+    superset_ldap_enabled: true
+    superset_ldap_server: "{{ hostvars[groups['ldap'][0]]['ansible_default_ipv4']['address'] }}"
+    superset_ldap_use_tls: true
+    superset_ldap_bind_user: "cn=superset,ou=service,dc=company,dc=com"
+    superset_ldap_bind_password: "{{ vault_ldap_bind_password }}"
+    superset_ldap_basedn: "ou=users,dc=company,dc=com"
+    superset_ldap_search: "ou=users,dc=company,dc=com"
+    superset_ldap_uid_field: "uid"
+    superset_ldap_firstname_field: "givenName"
+    superset_ldap_lastname_field: "sn"
+    superset_ldap_email_field: "mail"
+    
+    # OAuth Configuration (alternative to LDAP)
+    # superset_auth_type: "AUTH_OAUTH"
+    # superset_oauth_enabled: true
+    # superset_oauth_providers:
+    #   - name: "google"
+    #     client_id: "{{ vault_google_client_id }}"
+    #     client_secret: "{{ vault_google_client_secret }}"
+    #     server_metadata_url: "https://accounts.google.com/.well-known/openid-configuration"
+    #   - name: "github"
+    #     client_id: "{{ vault_github_client_id }}"
+    #     client_secret: "{{ vault_github_client_secret }}"
+    
+    # Security Configuration
+    superset_firewall_enabled: true
+    superset_firewall_allowed_ips:
+      - "10.0.0.0/8"         # Internal network
+      - "192.168.0.0/16"     # Private network
+      - "172.16.0.0/12"      # Docker networks
+    superset_fail2ban_enabled: true
+    superset_csp_enabled: true
+    superset_csp_policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' wss: https:; font-src 'self' https:;"
+    superset_rate_limiting_enabled: true
+    superset_rate_limit_per_minute: 200
+    
+    # Monitoring Configuration
+    superset_metrics_enabled: true
+    superset_metrics_port: 9090
+    superset_health_check_enabled: true
+    superset_health_check_path: "/health"
+    superset_log_level: "INFO"
+    superset_log_max_bytes: 104857600  # 100MB
+    superset_log_backup_count: 10
+    superset_enable_access_log: true
+    
+    # Email Configuration for Reports and Alerts
+    superset_email_enabled: true
+    superset_smtp_host: "smtp.company.com"
+    superset_smtp_port: 587
+    superset_smtp_use_tls: true
+    superset_smtp_username: "superset@company.com"
+    superset_smtp_password: "{{ vault_smtp_password }}"
+    superset_smtp_mail_from: "superset@company.com"
+    
+    # Backup Configuration
+    superset_config_backup_enabled: true
+    superset_config_backup_schedule: "0 3 * * *"  # Daily at 3 AM
+    superset_config_backup_retention_days: 90
+    superset_config_backup_path: "/var/backups/superset-config"
+    
+    # Performance Tuning
+    superset_gunicorn_workers: 8
+    superset_gunicorn_worker_class: "gevent"
+    superset_gunicorn_timeout: 300
+    superset_gunicorn_keepalive: 2
+    superset_gunicorn_max_requests: 1000
+    superset_gunicorn_max_requests_jitter: 100
+    superset_gunicorn_preload_app: true
+    superset_gunicorn_worker_connections: 1000
+    
+    # Advanced Caching Configuration
+    superset_cache_config:
+      CACHE_TYPE: "RedisCache"
+      CACHE_DEFAULT_TIMEOUT: 300
+      CACHE_KEY_PREFIX: "superset_cache"
+    
+    superset_results_cache_config:
+      CACHE_TYPE: "RedisCache"
+      CACHE_DEFAULT_TIMEOUT: 3600
+      CACHE_KEY_PREFIX: "superset_results"
+    
+    superset_thumbnail_cache_config:
+      CACHE_TYPE: "RedisCache"
+      CACHE_DEFAULT_TIMEOUT: 86400
+      CACHE_KEY_PREFIX: "superset_thumbnails"
+    
+    # Feature Flags - Enable Advanced Features
+    superset_feature_flags:
+      # Dashboard Features
+      DASHBOARD_NATIVE_FILTERS: true
+      DASHBOARD_CROSS_FILTERS: true
+      DASHBOARD_RBAC: true
+      
+      # Analytics Features
+      ENABLE_TEMPLATE_PROCESSING: true
+      ROW_LEVEL_SECURITY: true
+      
+      # Alert and Reporting
+      ALERT_REPORTS: true
+      
+      # Performance Features
+      GLOBAL_ASYNC_QUERIES: true
+      
+      # Security Features
+      ENABLE_CORS: false
+      
+      # Experimental Features
+      THUMBNAILS: true
+      THUMBNAILS_SQLA_LISTENERS: true
+    
+    # Custom Visualization Plugins (if any)
+    superset_custom_plugins:
+      - name: "custom-chart-plugin"
+        package: "superset-plugin-chart-custom"
+        version: "latest"
+    
+    # Row Level Security Configuration
+    superset_rls_enabled: true
+    
+    # Additional Python packages for database connectivity
+    superset_additional_python_packages:
+      - "psycopg2-binary"     # PostgreSQL
+      - "redis"               # Redis
+      - "celery[redis]"       # Celery with Redis
+      - "gevent"              # For gevent workers
+      - "prometheus-client"   # For metrics
+      - "authlib"             # For OAuth
+      - "python-ldap"         # For LDAP
+
+  pre_tasks:
+    - name: Ensure required collections are installed
+      community.general.ansible_galaxy_install:
+        type: collection
+        name: "{{ item }}"
+      loop:
+        - community.crypto
+        - community.postgresql
+        - community.mysql
+        - community.general
+      delegate_to: localhost
+      run_once: true
+      tags: ['always']
+
+    - name: Verify PostgreSQL connectivity
+      postgresql_ping:
+        login_host: "{{ hostvars[groups['postgresql'][0]]['ansible_default_ipv4']['address'] }}"
+        login_user: postgres
+        login_password: "{{ vault_postgres_admin_password }}"
+      delegate_to: "{{ groups['postgresql'][0] }}"
+      when: "'postgresql' in superset_database_uri"
+      tags: ['superset', 'superset_database']
+
+    - name: Verify Redis connectivity
+      community.general.redis_info:
+        login_host: "{{ hostvars[groups['redis'][0]]['ansible_default_ipv4']['address'] }}"
+        login_port: 6379
+      delegate_to: "{{ groups['redis'][0] }}"
+      when: superset_redis_url != ""
+      tags: ['superset', 'superset_config']
+
+  roles:
+    - role: apache_superset
+
+  post_tasks:
+    - name: Wait for Superset to be ready
+      uri:
+        url: "{{ 'https' if superset_ssl_enabled else 'http' }}://{{ ansible_fqdn }}:{{ superset_gunicorn_bind.split(':')[1] }}/health"
+        method: GET
+        status_code: 200
+        validate_certs: false  # For self-signed certificates
+      retries: 30
+      delay: 10
+      tags: ['superset', 'superset_service']
+
+    - name: Display Superset access information
+      debug:
+        msg:
+          - "Superset is now available at:"
+          - "URL: {{ 'https' if superset_ssl_enabled else 'http' }}://{{ ansible_fqdn }}:{{ superset_gunicorn_bind.split(':')[1] }}"
+          - "Username: {{ superset_admin_username }}"
+          - "Password: [Check your vault variables]"
+          - ""
+          - "Services enabled:"
+          - "  - SSL/TLS: {{ superset_ssl_enabled }}"
+          - "  - Celery Workers: {{ superset_celery_enabled }}"
+          - "  - LDAP Authentication: {{ superset_ldap_enabled }}"
+          - "  - OAuth Authentication: {{ superset_oauth_enabled }}"
+          - "  - Firewall: {{ superset_firewall_enabled }}"
+          - "  - Fail2ban: {{ superset_fail2ban_enabled }}"
+          - "  - Database Backups: {{ superset_db_backup_enabled }}"
+          - "  - Config Backups: {{ superset_config_backup_enabled }}"
+          - "  - Health Checks: {{ superset_health_check_enabled }}"
+          - "  - Metrics: {{ superset_metrics_enabled }}"
+      tags: ['superset']
+
+    - name: Verify Celery workers are running
+      command: systemctl status superset-worker
+      register: celery_status
+      when: superset_celery_enabled
+      failed_when: false
+      tags: ['superset', 'superset_celery']
+
+    - name: Display Celery worker status
+      debug:
+        var: celery_status.stdout_lines
+      when: superset_celery_enabled and celery_status is defined
+      tags: ['superset', 'superset_celery']
+
+# Example inventory structure for this playbook:
+# [superset_servers]
+# superset01.company.com
+# superset02.company.com
+#
+# [postgresql]
+# db01.company.com
+#
+# [redis]
+# redis01.company.com
+#
+# [ldap]
+# ldap01.company.com
+#
+# [superset_servers:vars]
+# # Override variables here or in group_vars/superset_servers.yml

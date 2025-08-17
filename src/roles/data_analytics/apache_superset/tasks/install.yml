@@ -18,3 +18,22 @@
     state: present
     update_cache: true
   become: true
+
+- name: Install additional security packages
+  ansible.builtin.apt:
+    name:
+      - ufw
+      - fail2ban
+      - logrotate
+    state: present
+  when: superset_firewall_enabled or superset_fail2ban_enabled
+  become: true
+
+- name: Install SSL/TLS packages
+  ansible.builtin.apt:
+    name:
+      - openssl
+      - ca-certificates
+    state: present
+  when: superset_ssl_enabled
+  become: true

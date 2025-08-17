@@ -4,3 +4,24 @@
     name: "{{ superset_service_name }}"
     state: restarted
     daemon_reload: true
+
+- name: reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: restart superset-worker
+  ansible.builtin.systemd:
+    name: "{{ superset_service_name }}-worker"
+    state: restarted
+    daemon_reload: true
+
+- name: restart superset-beat
+  ansible.builtin.systemd:
+    name: "{{ superset_service_name }}-beat"
+    state: restarted
+    daemon_reload: true
+
+- name: restart fail2ban
+  ansible.builtin.systemd:
+    name: fail2ban
+    state: restarted

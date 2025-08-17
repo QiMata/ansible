@@ -1,0 +1,12 @@
+# Fail2ban filter for Superset
+# Matches failed login attempts
+
+[Definition]
+
+# Match failed login attempts in Superset logs
+failregex = .*ERROR.*Login failed for user.*<HOST>.*
+            .*WARNING.*Failed login attempt from <HOST>.*
+            .*ERROR.*Authentication failed.*<HOST>.*
+
+# Ignore successful logins
+ignoreregex = .*INFO.*User.*logged in successfully.*

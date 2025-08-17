@@ -8,9 +8,55 @@ User={{ superset_user }}
 Group={{ superset_group }}
 WorkingDirectory={{ superset_install_dir }}
 Environment=SUPERSET_CONFIG_PATH={{ superset_config_path }}
-ExecStart={{ superset_venv_dir }}/bin/gunicorn -w {{ superset_gunicorn_workers }} -k gevent --timeout 120 -b {{ superset_gunicorn_bind }} --limit-request-line 0 --limit-request-field_size 0 superset.app:create_app()
-Restart=on-failure
-RestartSec=5
+{% if superset_ssl_enabled %}
+ExecStart={{ superset_venv_dir }}/bin/gunicorn \
+    -w {{ superset_gunicorn_workers }} \
+    -k {{ superset_gunicorn_worker_class }} \
+    --timeout {{ superset_gunicorn_timeout }} \
+    --keepalive {{ superset_gunicorn_keepalive }} \
+    --max-requests {{ superset_gunicorn_max_requests }} \
+    --max-requests-jitter {{ superset_gunicorn_max_requests_jitter }} \
+    {% if superset_gunicorn_preload_app %}--preload{% endif %} \
+    --worker-connections {{ superset_gunicorn_worker_connections }} \
+    -b {{ superset_gunicorn_bind }} \
+    --certfile {{ superset_ssl_cert_path }} \
+    --keyfile {{ superset_ssl_key_path }} \
+    {% if superset_ssl_ca_path %}--ca-certs {{ superset_ssl_ca_path }}{% endif %} \
+    --ssl-version TLSv1_2 \
+    --ciphers {{ superset_ssl_ciphers }} \
+    --limit-request-line 0 \
+    --limit-request-field_size 0 \
+    {% if superset_enable_access_log %}--access-logfile {{ superset_access_log_file }}{% endif %} \
+    --log-file {{ superset_log_file }} \
+    --log-level {{ superset_log_level.lower() }} \
+    superset.app:create_app()
+{% else %}
+ExecStart={{ superset_venv_dir }}/bin/gunicorn \
+    -w {{ superset_gunicorn_workers }} \
+    -k {{ superset_gunicorn_worker_class }} \
+    --timeout {{ superset_gunicorn_timeout }} \
+    --keepalive {{ superset_gunicorn_keepalive }} \
+    --max-requests {{ superset_gunicorn_max_requests }} \
+    --max-requests-jitter {{ superset_gunicorn_max_requests_jitter }} \
+    {% if superset_gunicorn_preload_app %}--preload{% endif %} \
+    --worker-connections {{ superset_gunicorn_worker_connections }} \
+    -b {{ superset_gunicorn_bind }} \
+    --limit-request-line 0 \
+    --limit-request-field_size 0 \
+    {% if superset_enable_access_log %}--access-logfile {{ superset_access_log_file }}{% endif %} \
+    --log-file {{ superset_log_file }} \
+    --log-level {{ superset_log_level.lower() }} \
+    superset.app:create_app()
+{% endif %}
+Restart=always
+RestartSec=10
+
+# Security
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths={{ superset_install_dir }} {{ superset_log_file | dirname }} {% if superset_enable_access_log %}{{ superset_access_log_file | dirname }}{% endif %}
 
 [Install]
 WantedBy=multi-user.target

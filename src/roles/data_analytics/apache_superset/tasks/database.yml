@@ -1,0 +1,86 @@
+---
+# Database Management Tasks
+
+- name: Install database clients for connection validation
+  ansible.builtin.apt:
+    name:
+      - postgresql-client
+      - mysql-client
+    state: present
+  when: superset_db_validate_connection or superset_db_auto_create
+  tags: ['superset', 'superset_database']
+
+- name: Parse database URI
+  ansible.builtin.set_fact:
+    db_uri_parsed: "{{ superset_database_uri | regex_search('([^:]+)://(?:([^:]+)(?::([^@]+))?@)?([^:/]+)(?::([0-9]+))?/(.+)') }}"
+  when: superset_db_validate_connection or superset_db_auto_create
+  tags: ['superset', 'superset_database']
+
+- name: Extract database connection details
+  ansible.builtin.set_fact:
+    db_type: "{{ superset_database_uri.split('://')[0] }}"
+    db_connection_string: "{{ superset_database_uri.split('://')[1] }}"
+  when: superset_db_validate_connection or superset_db_auto_create
+  tags: ['superset', 'superset_database']
+
+- name: Validate PostgreSQL database connection
+  community.postgresql.postgresql_ping:
+    db: "{{ db_connection_string.split('/')[-1] }}"
+    login_host: "{{ db_connection_string.split('@')[-1].split('/')[0].split(':')[0] if '@' in db_connection_string else 'localhost' }}"
+    login_port: "{{ db_connection_string.split('@')[-1].split('/')[0].split(':')[1] if '@' in db_connection_string and ':' in db_connection_string.split('@')[-1].split('/')[0] else 5432 }}"
+    login_user: "{{ db_connection_string.split('@')[0].split(':')[0] if '@' in db_connection_string else 'postgres' }}"
+    login_password: "{{ db_connection_string.split('@')[0].split(':')[1] if '@' in db_connection_string and ':' in db_connection_string.split('@')[0] else '' }}"
+  when: 
+    - superset_db_validate_connection
+    - db_type == 'postgresql'
+  register: pg_connection_test
+  failed_when: false
+  tags: ['superset', 'superset_database']
+
+- name: Create PostgreSQL database if auto-create is enabled
+  community.postgresql.postgresql_db:
+    name: "{{ db_connection_string.split('/')[-1] }}"
+    login_host: "{{ db_connection_string.split('@')[-1].split('/')[0].split(':')[0] if '@' in db_connection_string else 'localhost' }}"
+    login_port: "{{ db_connection_string.split('@')[-1].split('/')[0].split(':')[1] if '@' in db_connection_string and ':' in db_connection_string.split('@')[-1].split('/')[0] else 5432 }}"
+    login_user: "{{ db_connection_string.split('@')[0].split(':')[0] if '@' in db_connection_string else 'postgres' }}"
+    login_password: "{{ db_connection_string.split('@')[0].split(':')[1] if '@' in db_connection_string and ':' in db_connection_string.split('@')[0] else '' }}"
+    state: present
+  when:
+    - superset_db_auto_create
+    - db_type == 'postgresql'
+    - pg_connection_test is defined and pg_connection_test.failed
+  tags: ['superset', 'superset_database']
+
+- name: Validate MySQL database connection
+  community.mysql.mysql_info:
+    login_host: "{{ db_connection_string.split('@')[-1].split('/')[0].split(':')[0] if '@' in db_connection_string else 'localhost' }}"
+    login_port: "{{ db_connection_string.split('@')[-1].split('/')[0].split(':')[1] if '@' in db_connection_string and ':' in db_connection_string.split('@')[-1].split('/')[0] else 3306 }}"
+    login_user: "{{ db_connection_string.split('@')[0].split(':')[0] if '@' in db_connection_string else 'root' }}"
+    login_password: "{{ db_connection_string.split('@')[0].split(':')[1] if '@' in db_connection_string and ':' in db_connection_string.split('@')[0] else '' }}"
+    login_db: "{{ db_connection_string.split('/')[-1] }}"
+  when:
+    - superset_db_validate_connection
+    - db_type in ['mysql', 'mysql+pymysql']
+  register: mysql_connection_test
+  failed_when: false
+  tags: ['superset', 'superset_database']
+
+- name: Create MySQL database if auto-create is enabled
+  community.mysql.mysql_db:
+    name: "{{ db_connection_string.split('/')[-1] }}"
+    login_host: "{{ db_connection_string.split('@')[-1].split('/')[0].split(':')[0] if '@' in db_connection_string else 'localhost' }}"
+    login_port: "{{ db_connection_string.split('@')[-1].split('/')[0].split(':')[1] if '@' in db_connection_string and ':' in db_connection_string.split('@')[-1].split('/')[0] else 3306 }}"
+    login_user: "{{ db_connection_string.split('@')[0].split(':')[0] if '@' in db_connection_string else 'root' }}"
+    login_password: "{{ db_connection_string.split('@')[0].split(':')[1] if '@' in db_connection_string and ':' in db_connection_string.split('@')[0] else '' }}"
+    state: present
+  when:
+    - superset_db_auto_create
+    - db_type in ['mysql', 'mysql+pymysql']
+    - mysql_connection_test is defined and mysql_connection_test.failed
+  tags: ['superset', 'superset_database']
+
+- name: Display database connection validation results
+  ansible.builtin.debug:
+    msg: "Database connection validation {{ 'successful' if not (pg_connection_test.failed | default(false)) and not (mysql_connection_test.failed | default(false)) else 'failed' }}"
+  when: superset_db_validate_connection
+  tags: ['superset', 'superset_database']

@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Superset Health Check every 5 minutes
+Requires={{ superset_service_name }}-health-check.service
+
+[Timer]
+OnCalendar=*:0/5
+Persistent=true
+
+[Install]
+WantedBy=timers.target

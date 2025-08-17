@@ -1,0 +1,105 @@
+---
+# Backup and Recovery Tasks
+# Note: For PostgreSQL-specific backups, consider using the postgres_backup role
+
+- name: Create backup directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ superset_user }}"
+    group: "{{ superset_group }}"
+    mode: '0750'
+  loop:
+    - "{{ superset_db_backup_path }}"
+    - "{{ superset_config_backup_path }}"
+  when: item != ""
+  tags: ['superset', 'superset_backup']
+
+- name: Create database backup script
+  ansible.builtin.template:
+    src: backup_database.sh.j2
+    dest: "{{ superset_install_dir }}/backup_database.sh"
+    owner: "{{ superset_user }}"
+    group: "{{ superset_group }}"
+    mode: '0750'
+  when: superset_db_backup_enabled
+  tags: ['superset', 'superset_backup']
+
+- name: Create configuration backup script
+  ansible.builtin.template:
+    src: backup_config.sh.j2
+    dest: "{{ superset_install_dir }}/backup_config.sh"
+    owner: "{{ superset_user }}"
+    group: "{{ superset_group }}"
+    mode: '0750'
+  when: superset_config_backup_enabled
+  tags: ['superset', 'superset_backup']
+
+- name: Create database backup cleanup script
+  ansible.builtin.template:
+    src: cleanup_db_backups.sh.j2
+    dest: "{{ superset_install_dir }}/cleanup_db_backups.sh"
+    owner: "{{ superset_user }}"
+    group: "{{ superset_group }}"
+    mode: '0750'
+  when: superset_db_backup_enabled
+  tags: ['superset', 'superset_backup']
+
+- name: Create config backup cleanup script
+  ansible.builtin.template:
+    src: cleanup_config_backups.sh.j2
+    dest: "{{ superset_install_dir }}/cleanup_config_backups.sh"
+    owner: "{{ superset_user }}"
+    group: "{{ superset_group }}"
+    mode: '0750'
+  when: superset_config_backup_enabled
+  tags: ['superset', 'superset_backup']
+
+- name: Schedule database backup cron job
+  ansible.builtin.cron:
+    name: "Superset database backup"
+    cron: "{{ superset_db_backup_schedule }}"
+    user: "{{ superset_user }}"
+    job: "{{ superset_install_dir }}/backup_database.sh"
+    state: present
+  when: superset_db_backup_enabled
+  tags: ['superset', 'superset_backup']
+
+- name: Schedule configuration backup cron job
+  ansible.builtin.cron:
+    name: "Superset configuration backup"
+    cron: "{{ superset_config_backup_schedule }}"
+    user: "{{ superset_user }}"
+    job: "{{ superset_install_dir }}/backup_config.sh"
+    state: present
+  when: superset_config_backup_enabled
+  tags: ['superset', 'superset_backup']
+
+- name: Schedule database backup cleanup cron job
+  ansible.builtin.cron:
+    name: "Superset database backup cleanup"
+    cron: "30 3 * * *"  # Daily at 3:30 AM
+    user: "{{ superset_user }}"
+    job: "{{ superset_install_dir }}/cleanup_db_backups.sh"
+    state: present
+  when: superset_db_backup_enabled
+  tags: ['superset', 'superset_backup']
+
+- name: Schedule config backup cleanup cron job
+  ansible.builtin.cron:
+    name: "Superset config backup cleanup"
+    cron: "35 3 * * *"  # Daily at 3:35 AM
+    user: "{{ superset_user }}"
+    job: "{{ superset_install_dir }}/cleanup_config_backups.sh"
+    state: present
+  when: superset_config_backup_enabled
+  tags: ['superset', 'superset_backup']
+
+- name: Display backup configuration
+  ansible.builtin.debug:
+    msg:
+      - "Database backup enabled: {{ superset_db_backup_enabled }}"
+      - "Database backup schedule: {{ superset_db_backup_schedule if superset_db_backup_enabled else 'N/A' }}"
+      - "Config backup enabled: {{ superset_config_backup_enabled }}"
+      - "Config backup schedule: {{ superset_config_backup_schedule if superset_config_backup_enabled else 'N/A' }}"
+  tags: ['superset', 'superset_backup']

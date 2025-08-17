@@ -1,0 +1,20 @@
+#!/bin/bash
+# Cleanup old database backups
+
+set -e
+
+BACKUP_DIR="{{ superset_db_backup_path }}"
+RETENTION_DAYS="{{ superset_db_backup_retention_days }}"
+
+if [ ! -d "${BACKUP_DIR}" ]; then
+  echo "Backup directory does not exist: ${BACKUP_DIR}"
+  exit 0
+fi
+
+echo "Cleaning up database backups older than ${RETENTION_DAYS} days from ${BACKUP_DIR}"
+
+# Remove old backup files
+find "${BACKUP_DIR}" -name "superset_db_*.sql.gz" -mtime +${RETENTION_DAYS} -delete
+find "${BACKUP_DIR}" -name "superset_db_*.db.gz" -mtime +${RETENTION_DAYS} -delete
+
+echo "Database backup cleanup completed at $(date)"

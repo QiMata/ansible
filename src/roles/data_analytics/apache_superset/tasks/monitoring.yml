@@ -1,0 +1,86 @@
+---
+# Monitoring and Logging Tasks
+# Note: For Prometheus server setup, use the prometheus role instead
+
+- name: Create log directory
+  ansible.builtin.file:
+    path: "{{ item | dirname }}"
+    state: directory
+    owner: "{{ superset_user }}"
+    group: "{{ superset_group }}"
+    mode: '0755'
+  loop:
+    - "{{ superset_log_file }}"
+    - "{{ superset_access_log_file }}"
+  tags: ['superset', 'superset_monitoring']
+
+- name: Configure log rotation for Superset logs
+  ansible.builtin.template:
+    src: superset-logrotate.j2
+    dest: /etc/logrotate.d/superset
+    owner: root
+    group: root
+    mode: '0644'
+  tags: ['superset', 'superset_monitoring']
+
+- name: Install monitoring dependencies
+  ansible.builtin.pip:
+    name:
+      - prometheus-flask-exporter
+      - statsd
+    virtualenv: "{{ superset_venv_dir }}"
+    virtualenv_command: python3 -m venv
+  when: superset_metrics_enabled
+  tags: ['superset', 'superset_monitoring']
+
+- name: Create Superset health check script
+  ansible.builtin.template:
+    src: health_check.py.j2
+    dest: "{{ superset_install_dir }}/health_check.py"
+    owner: "{{ superset_user }}"
+    group: "{{ superset_group }}"
+    mode: '0755'
+  when: superset_health_check_enabled
+  tags: ['superset', 'superset_monitoring']
+
+- name: Create health check systemd service
+  ansible.builtin.template:
+    src: superset-health-check.service.j2
+    dest: "/etc/systemd/system/{{ superset_service_name }}-health-check.service"
+    owner: root
+    group: root
+    mode: '0644'
+  when: superset_health_check_enabled
+  notify:
+    - reload systemd
+  tags: ['superset', 'superset_monitoring']
+
+- name: Create health check timer
+  ansible.builtin.template:
+    src: superset-health-check.timer.j2
+    dest: "/etc/systemd/system/{{ superset_service_name }}-health-check.timer"
+    owner: root
+    group: root
+    mode: '0644'
+  when: superset_health_check_enabled
+  notify:
+    - reload systemd
+  tags: ['superset', 'superset_monitoring']
+
+- name: Enable and start health check timer
+  ansible.builtin.systemd:
+    name: "{{ superset_service_name }}-health-check.timer"
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: superset_health_check_enabled
+  tags: ['superset', 'superset_monitoring']
+
+- name: Display monitoring configuration
+  ansible.builtin.debug:
+    msg:
+      - "Log level: {{ superset_log_level }}"
+      - "Log file: {{ superset_log_file }}"
+      - "Metrics enabled: {{ superset_metrics_enabled }}"
+      - "Health check enabled: {{ superset_health_check_enabled }}"
+  tags: ['superset', 'superset_monitoring']

@@ -1,0 +1,11 @@
+[Unit]
+Description=Superset Health Check
+After=network.target
+
+[Service]
+Type=oneshot
+User={{ superset_user }}
+Group={{ superset_group }}
+ExecStart={{ superset_venv_dir }}/bin/python {{ superset_install_dir }}/health_check.py
+StandardOutput=journal
+StandardError=journal

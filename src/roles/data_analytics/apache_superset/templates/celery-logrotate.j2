@@ -1,0 +1,13 @@
+/var/log/celery/*.log {
+    daily
+    missingok
+    rotate 52
+    compress
+    delaycompress
+    notifempty
+    create 644 {{ superset_user }} {{ superset_group }}
+    postrotate
+        systemctl reload {{ superset_service_name }}-worker >/dev/null 2>&1 || true
+        systemctl reload {{ superset_service_name }}-beat >/dev/null 2>&1 || true
+    endscript
+}

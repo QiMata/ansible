@@ -1,0 +1,12 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  tasks:
+    - name: Include apache_superset role
+      include_role:
+        name: apache_superset
+      vars:
+        superset_ssl_enabled: true
+        superset_secret_key: "test-secret-key-for-ssl-testing"
+        superset_admin_password: "TestPassword123!"

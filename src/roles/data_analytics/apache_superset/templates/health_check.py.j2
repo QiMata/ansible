@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+"""
+Superset Health Check Script
+Checks if Superset is responding and healthy
+"""
+
+import requests
+import sys
+import json
+from datetime import datetime
+
+SUPERSET_URL = "http://{{ superset_gunicorn_bind.split(':')[0] if superset_gunicorn_bind.split(':')[0] != '0.0.0.0' else '127.0.0.1' }}:{{ superset_gunicorn_bind.split(':')[1] }}"
+HEALTH_ENDPOINT = "{{ superset_health_check_path }}"
+TIMEOUT = 30
+
+def check_health():
+    """Check Superset health"""
+    try:
+        response = requests.get(
+            f"{SUPERSET_URL}{HEALTH_ENDPOINT}",
+            timeout=TIMEOUT
+        )
+        
+        if response.status_code == 200:
+            print(f"[{datetime.now().isoformat()}] Superset health check: OK")
+            return True
+        else:
+            print(f"[{datetime.now().isoformat()}] Superset health check: FAILED - HTTP {response.status_code}")
+            return False
+            
+    except requests.exceptions.RequestException as e:
+        print(f"[{datetime.now().isoformat()}] Superset health check: FAILED - {str(e)}")
+        return False
+
+def check_login_page():
+    """Check if login page is accessible"""
+    try:
+        response = requests.get(
+            f"{SUPERSET_URL}/login/",
+            timeout=TIMEOUT
+        )
+        
+        if response.status_code == 200:
+            print(f"[{datetime.now().isoformat()}] Superset login page: OK")
+            return True
+        else:
+            print(f"[{datetime.now().isoformat()}] Superset login page: FAILED - HTTP {response.status_code}")
+            return False
+            
+    except requests.exceptions.RequestException as e:
+        print(f"[{datetime.now().isoformat()}] Superset login page: FAILED - {str(e)}")
+        return False
+
+if __name__ == "__main__":
+    health_ok = check_health()
+    login_ok = check_login_page()
+    
+    if health_ok and login_ok:
+        print(f"[{datetime.now().isoformat()}] All Superset health checks passed")
+        sys.exit(0)
+    else:
+        print(f"[{datetime.now().isoformat()}] Superset health checks failed")
+        sys.exit(1)

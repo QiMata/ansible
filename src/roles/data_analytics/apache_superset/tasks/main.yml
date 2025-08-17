@@ -11,9 +11,40 @@
   ansible.builtin.import_tasks: config.yml
   tags: ['superset', 'superset_config']
 
+- name: Include SSL/TLS configuration tasks
+  ansible.builtin.import_tasks: ssl.yml
+  when: superset_ssl_enabled
+  tags: ['superset', 'superset_ssl']
+
+- name: Include database management tasks
+  ansible.builtin.import_tasks: database.yml
+  tags: ['superset', 'superset_database']
+
+- name: Include authentication configuration tasks
+  ansible.builtin.import_tasks: auth.yml
+  tags: ['superset', 'superset_auth']
+
+- name: Include monitoring and logging tasks
+  ansible.builtin.import_tasks: monitoring.yml
+  tags: ['superset', 'superset_monitoring']
+
+- name: Include security tasks
+  ansible.builtin.import_tasks: security.yml
+  tags: ['superset', 'superset_security']
+
+- name: Include backup tasks
+  ansible.builtin.import_tasks: backup.yml
+  when: superset_db_backup_enabled or superset_config_backup_enabled
+  tags: ['superset', 'superset_backup']
+
 - name: Include database initialization tasks
   ansible.builtin.import_tasks: init_db.yml
   tags: ['superset', 'superset_db']
+
+- name: Include Celery worker tasks
+  ansible.builtin.import_tasks: celery.yml
+  when: superset_celery_enabled
+  tags: ['superset', 'superset_celery']
 
 - name: Include service tasks
   ansible.builtin.import_tasks: service.yml

@@ -2,10 +2,29 @@
 galaxy_info:
   role_name: apache_superset
   author: Example Inc.
-  description: "Deploy Apache Superset on Debian-based systems"
+  description: "Deploy Apache Superset on Debian-based systems with enhanced features"
   license: "MIT"
   min_ansible_version: "2.12"
   platforms:
     - name: Debian
       versions: ["bullseye", "bookworm"]
-dependencies: []
+    - name: Ubuntu
+      versions: ["focal", "jammy"]
+
+dependencies:
+  # Optional dependencies - only used when specific features are enabled
+  # Users should include these roles in their playbooks when needed
+  # - role: security_identity.letsencrypt.letsencrypt_setup
+  #   when: superset_ssl_enabled and use_letsencrypt | default(false)
+  # - role: monitoring_observability.prometheus
+  #   when: superset_metrics_enabled and use_prometheus_role | default(false)
+  # - role: data_systems.postgresql
+  #   when: superset_database_uri.startswith('postgresql') and setup_postgresql | default(false)
+  # - role: security_identity.openldap.open_ldap_setup
+  #   when: superset_ldap_enabled and setup_ldap_server | default(false)
+
+collections:
+  - community.crypto
+  - community.general
+  - community.postgresql
+  - community.mysql

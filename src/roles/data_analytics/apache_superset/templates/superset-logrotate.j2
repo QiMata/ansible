@@ -1,0 +1,25 @@
+{{ superset_log_file }} {
+    daily
+    missingok
+    rotate {{ superset_log_backup_count }}
+    compress
+    delaycompress
+    notifempty
+    copytruncate
+    create 644 {{ superset_user }} {{ superset_group }}
+    size {{ superset_log_max_bytes }}
+}
+
+{% if superset_enable_access_log %}
+{{ superset_access_log_file }} {
+    daily
+    missingok
+    rotate {{ superset_log_backup_count }}
+    compress
+    delaycompress
+    notifempty
+    copytruncate
+    create 644 {{ superset_user }} {{ superset_group }}
+    size {{ superset_log_max_bytes }}
+}
+{% endif %}
