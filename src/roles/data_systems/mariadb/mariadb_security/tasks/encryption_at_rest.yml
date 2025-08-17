@@ -1,0 +1,29 @@
+---
+# Encryption at Rest Tasks
+
+- name: Create encryption key directory
+  ansible.builtin.file:
+    path: "{{ mariadb_encryption_key_file | dirname }}"
+    state: directory
+    owner: mysql
+    group: mysql
+    mode: '0700'
+
+- name: Generate encryption key file
+  ansible.builtin.shell: |
+    openssl rand -hex 32 > {{ mariadb_encryption_key_file }}
+    chown mysql:mysql {{ mariadb_encryption_key_file }}
+    chmod 600 {{ mariadb_encryption_key_file }}
+  args:
+    creates: "{{ mariadb_encryption_key_file }}"
+  when: mariadb_encryption_at_rest_enabled | bool
+
+- name: Configure encryption at rest
+  ansible.builtin.template:
+    src: encryption.cnf.j2
+    dest: /etc/mysql/mariadb.conf.d/50-encryption.cnf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart mariadb
+  when: mariadb_encryption_at_rest_enabled | bool

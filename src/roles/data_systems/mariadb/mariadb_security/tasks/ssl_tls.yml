@@ -1,0 +1,196 @@
+---
+# SSL/TLS Configuration Tasks
+
+- name: Create SSL directory
+  ansible.builtin.file:
+    path: "{{ mariadb_ssl_directory }}"
+    state: directory
+    owner: mysql
+    group: mysql
+    mode: '0750'
+
+- name: Generate CA private key
+  community.crypto.openssl_privatekey:
+    path: "{{ mariadb_ssl_directory }}/ca-key.pem"
+    size: "{{ mariadb_ssl_key_size }}"
+    owner: mysql
+    group: mysql
+    mode: '0600'
+  when: mariadb_ssl_generate_ca | bool
+
+- name: Generate CA certificate
+  community.crypto.x509_certificate:
+    path: "{{ mariadb_ssl_ca_cert }}"
+    privatekey_path: "{{ mariadb_ssl_directory }}/ca-key.pem"
+    provider: selfsigned
+    selfsigned_not_after: "+{{ mariadb_ssl_days }}d"
+    subject:
+      C: "{{ mariadb_ssl_country }}"
+      ST: "{{ mariadb_ssl_state }}"
+      L: "{{ mariadb_ssl_city }}"
+      O: "{{ mariadb_ssl_organization }}"
+      OU: "{{ mariadb_ssl_org_unit }}"
+      CN: "MariaDB CA"
+      emailAddress: "{{ mariadb_ssl_email }}"
+    basic_constraints:
+      - "CA:TRUE"
+    basic_constraints_critical: true
+    key_usage:
+      - keyCertSign
+      - cRLSign
+    key_usage_critical: true
+    owner: mysql
+    group: mysql
+    mode: '0644'
+  when: mariadb_ssl_generate_ca | bool
+
+- name: Generate server private key
+  community.crypto.openssl_privatekey:
+    path: "{{ mariadb_ssl_server_key }}"
+    size: "{{ mariadb_ssl_key_size }}"
+    owner: mysql
+    group: mysql
+    mode: '0600'
+  when: mariadb_ssl_generate_certs | bool
+
+- name: Generate server certificate signing request
+  community.crypto.openssl_csr:
+    path: "{{ mariadb_ssl_directory }}/server-req.pem"
+    privatekey_path: "{{ mariadb_ssl_server_key }}"
+    subject:
+      C: "{{ mariadb_ssl_country }}"
+      ST: "{{ mariadb_ssl_state }}"
+      L: "{{ mariadb_ssl_city }}"
+      O: "{{ mariadb_ssl_organization }}"
+      OU: "{{ mariadb_ssl_org_unit }}"
+      CN: "{{ ansible_fqdn }}"
+      emailAddress: "{{ mariadb_ssl_email }}"
+    subject_alt_name:
+      - "DNS:{{ ansible_fqdn }}"
+      - "DNS:{{ ansible_hostname }}"
+      - "IP:{{ ansible_default_ipv4.address }}"
+      - "IP:127.0.0.1"
+    key_usage:
+      - digitalSignature
+      - keyEncipherment
+    extended_key_usage:
+      - serverAuth
+    owner: mysql
+    group: mysql
+    mode: '0644'
+  when: mariadb_ssl_generate_certs | bool
+
+- name: Generate server certificate
+  community.crypto.x509_certificate:
+    path: "{{ mariadb_ssl_server_cert }}"
+    csr_path: "{{ mariadb_ssl_directory }}/server-req.pem"
+    ownca_path: "{{ mariadb_ssl_ca_cert }}"
+    ownca_privatekey_path: "{{ mariadb_ssl_directory }}/ca-key.pem"
+    provider: ownca
+    ownca_not_after: "+{{ mariadb_ssl_days }}d"
+    owner: mysql
+    group: mysql
+    mode: '0644'
+  when: mariadb_ssl_generate_certs | bool
+
+- name: Generate client private key
+  community.crypto.openssl_privatekey:
+    path: "{{ mariadb_ssl_client_key }}"
+    size: "{{ mariadb_ssl_key_size }}"
+    owner: mysql
+    group: mysql
+    mode: '0600'
+  when: mariadb_ssl_generate_certs | bool
+
+- name: Generate client certificate signing request
+  community.crypto.openssl_csr:
+    path: "{{ mariadb_ssl_directory }}/client-req.pem"
+    privatekey_path: "{{ mariadb_ssl_client_key }}"
+    subject:
+      C: "{{ mariadb_ssl_country }}"
+      ST: "{{ mariadb_ssl_state }}"
+      L: "{{ mariadb_ssl_city }}"
+      O: "{{ mariadb_ssl_organization }}"
+      OU: "{{ mariadb_ssl_org_unit }}"
+      CN: "MariaDB Client"
+      emailAddress: "{{ mariadb_ssl_email }}"
+    key_usage:
+      - digitalSignature
+      - keyEncipherment
+    extended_key_usage:
+      - clientAuth
+    owner: mysql
+    group: mysql
+    mode: '0644'
+  when: mariadb_ssl_generate_certs | bool
+
+- name: Generate client certificate
+  community.crypto.x509_certificate:
+    path: "{{ mariadb_ssl_client_cert }}"
+    csr_path: "{{ mariadb_ssl_directory }}/client-req.pem"
+    ownca_path: "{{ mariadb_ssl_ca_cert }}"
+    ownca_privatekey_path: "{{ mariadb_ssl_directory }}/ca-key.pem"
+    provider: ownca
+    ownca_not_after: "+{{ mariadb_ssl_days }}d"
+    owner: mysql
+    group: mysql
+    mode: '0644'
+  when: mariadb_ssl_generate_certs | bool
+
+- name: Generate Galera SSL certificates
+  block:
+    - name: Generate Galera private key
+      community.crypto.openssl_privatekey:
+        path: "{{ mariadb_galera_ssl_key }}"
+        size: "{{ mariadb_ssl_key_size }}"
+        owner: mysql
+        group: mysql
+        mode: '0600'
+
+    - name: Generate Galera certificate signing request
+      community.crypto.openssl_csr:
+        path: "{{ mariadb_ssl_directory }}/galera-req.pem"
+        privatekey_path: "{{ mariadb_galera_ssl_key }}"
+        subject:
+          C: "{{ mariadb_ssl_country }}"
+          ST: "{{ mariadb_ssl_state }}"
+          L: "{{ mariadb_ssl_city }}"
+          O: "{{ mariadb_ssl_organization }}"
+          OU: "{{ mariadb_ssl_org_unit }}"
+          CN: "{{ ansible_fqdn }}"
+          emailAddress: "{{ mariadb_ssl_email }}"
+        subject_alt_name:
+          - "DNS:{{ ansible_fqdn }}"
+          - "DNS:{{ ansible_hostname }}"
+          - "IP:{{ ansible_default_ipv4.address }}"
+        key_usage:
+          - digitalSignature
+          - keyEncipherment
+        extended_key_usage:
+          - serverAuth
+          - clientAuth
+        owner: mysql
+        group: mysql
+        mode: '0644'
+
+    - name: Generate Galera certificate
+      community.crypto.x509_certificate:
+        path: "{{ mariadb_galera_ssl_cert }}"
+        csr_path: "{{ mariadb_ssl_directory }}/galera-req.pem"
+        ownca_path: "{{ mariadb_ssl_ca_cert }}"
+        ownca_privatekey_path: "{{ mariadb_ssl_directory }}/ca-key.pem"
+        provider: ownca
+        ownca_not_after: "+{{ mariadb_ssl_days }}d"
+        owner: mysql
+        group: mysql
+        mode: '0644'
+  when: mariadb_galera_ssl_enabled | bool and mariadb_ssl_generate_certs | bool
+
+- name: Configure MariaDB SSL settings
+  ansible.builtin.template:
+    src: ssl.cnf.j2
+    dest: /etc/mysql/mariadb.conf.d/50-ssl.cnf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart mariadb

@@ -1,0 +1,27 @@
+---
+# Binary Logging Configuration Tasks
+
+- name: Create binary log directory
+  ansible.builtin.file:
+    path: /var/log/mysql/binlog
+    state: directory
+    owner: mysql
+    group: mysql
+    mode: '0750'
+
+- name: Configure binary logging
+  ansible.builtin.template:
+    src: binlog.cnf.j2
+    dest: /etc/mysql/mariadb.conf.d/60-binlog.cnf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart mariadb
+
+- name: Setup binary log rotation
+  ansible.builtin.cron:
+    name: "MariaDB binary log cleanup"
+    minute: "0"
+    hour: "2"
+    job: "/usr/bin/mysql -e 'PURGE BINARY LOGS BEFORE DATE(NOW() - INTERVAL {{ mariadb_binlog_expire_logs_days }} DAY);'"
+    user: root

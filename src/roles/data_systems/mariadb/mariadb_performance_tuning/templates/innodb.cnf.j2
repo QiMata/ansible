@@ -1,0 +1,34 @@
+[mysqld]
+# InnoDB Performance Configuration
+
+# Buffer Pool Settings
+innodb_buffer_pool_size = {{ mariadb_innodb_buffer_pool_size }}
+innodb_buffer_pool_instances = {{ mariadb_innodb_buffer_pool_instances }}
+
+# Log File Settings
+innodb_log_file_size = {{ mariadb_innodb_log_file_size }}
+innodb_log_buffer_size = {{ mariadb_innodb_log_buffer_size }}
+innodb_flush_log_at_trx_commit = {{ mariadb_innodb_flush_log_at_trx_commit }}
+
+# File and I/O Settings
+innodb_flush_method = {{ mariadb_innodb_flush_method }}
+innodb_file_per_table = {{ '1' if mariadb_innodb_file_per_table else '0' }}
+innodb_read_io_threads = {{ mariadb_innodb_read_io_threads }}
+innodb_write_io_threads = {{ mariadb_innodb_write_io_threads }}
+
+# Concurrency Settings
+innodb_thread_concurrency = {{ mariadb_innodb_thread_concurrency }}
+innodb_lock_wait_timeout = {{ mariadb_innodb_lock_wait_timeout }}
+innodb_rollback_on_timeout = {{ '1' if mariadb_innodb_rollback_on_timeout else '0' }}
+
+# Monitoring and Debugging
+innodb_print_all_deadlocks = {{ '1' if mariadb_innodb_print_all_deadlocks else '0' }}
+
+# Adaptive Features
+innodb_adaptive_hash_index = {{ '1' if mariadb_innodb_adaptive_hash_index else '0' }}
+innodb_change_buffering = {{ mariadb_innodb_change_buffering }}
+innodb_old_blocks_time = {{ mariadb_innodb_old_blocks_time }}
+innodb_stats_on_metadata = {{ '1' if mariadb_innodb_stats_on_metadata else '0' }}
+
+# Checksum algorithm
+innodb_checksum_algorithm = crc32

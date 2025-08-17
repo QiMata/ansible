@@ -1,0 +1,121 @@
+---
+# MariaDB Advanced Backups Role Default Variables
+
+# Backup Strategy Configuration
+mariadb_backup_strategy: "mariabackup"  # mariabackup, mysqldump, or both
+mariadb_backup_type: "full"  # full, incremental, or both
+mariadb_backup_schedule_enabled: true
+
+# Mariabackup Configuration
+mariadb_mariabackup_enabled: true
+mariadb_mariabackup_user: "backup"
+mariadb_mariabackup_password: "backup_password"
+mariadb_mariabackup_defaults_file: "/etc/mysql/backup.cnf"
+mariadb_mariabackup_datadir: "/var/lib/mysql"
+mariadb_mariabackup_tmpdir: "/tmp"
+
+# Backup Storage Configuration
+mariadb_backup_base_dir: "/backup/mariadb"
+mariadb_backup_full_dir: "{{ mariadb_backup_base_dir }}/full"
+mariadb_backup_incremental_dir: "{{ mariadb_backup_base_dir }}/incremental"
+mariadb_backup_logs_dir: "{{ mariadb_backup_base_dir }}/logs"
+
+# Backup Scheduling
+mariadb_backup_full_schedule:
+  minute: "0"
+  hour: "2"
+  day: "*"
+  month: "*"
+  weekday: "0"  # Sunday
+
+mariadb_backup_incremental_schedule:
+  minute: "0"
+  hour: "*/6"  # Every 6 hours
+  day: "*"
+  month: "*"
+  weekday: "*"
+
+# Backup Retention
+mariadb_backup_retention_days: 30
+mariadb_backup_full_retention_count: 4  # Keep 4 full backups
+mariadb_backup_incremental_retention_days: 7
+
+# Point-in-Time Recovery (PITR)
+mariadb_pitr_enabled: true
+mariadb_binlog_backup_enabled: true
+mariadb_binlog_backup_dir: "{{ mariadb_backup_base_dir }}/binlogs"
+mariadb_binlog_backup_schedule:
+  minute: "*/15"  # Every 15 minutes
+  hour: "*"
+  day: "*"
+  month: "*"
+  weekday: "*"
+
+# Compression Configuration
+mariadb_backup_compression_enabled: true
+mariadb_backup_compression_method: "gzip"  # gzip, lz4, xz
+mariadb_backup_compression_level: 6
+mariadb_backup_parallel_compression: true
+mariadb_backup_compression_threads: "{{ ansible_processor_vcpus }}"
+
+# Encryption Configuration
+mariadb_backup_encryption_enabled: false
+mariadb_backup_encryption_key_file: "/etc/mysql/backup-encryption.key"
+mariadb_backup_encryption_algorithm: "AES256"
+
+# Cross-Datacenter Replication
+mariadb_backup_remote_storage_enabled: false
+mariadb_backup_remote_type: "rsync"  # rsync, s3, gcs, azure
+mariadb_backup_remote_host: ""
+mariadb_backup_remote_user: ""
+mariadb_backup_remote_path: ""
+mariadb_backup_remote_key_file: ""
+
+# S3 Configuration (if using S3)
+mariadb_backup_s3_bucket: ""
+mariadb_backup_s3_region: "us-east-1"
+mariadb_backup_s3_access_key: ""
+mariadb_backup_s3_secret_key: ""
+mariadb_backup_s3_endpoint: ""
+
+# Backup Verification
+mariadb_backup_verification_enabled: true
+mariadb_backup_test_restore_enabled: false
+mariadb_backup_test_restore_schedule:
+  minute: "0"
+  hour: "4"
+  day: "*"
+  month: "*"
+  weekday: "6"  # Saturday
+
+# Backup Integrity Testing
+mariadb_backup_integrity_check_enabled: true
+mariadb_backup_checksum_enabled: true
+mariadb_backup_checksum_algorithm: "sha256"
+
+# Monitoring and Alerting
+mariadb_backup_monitoring_enabled: true
+mariadb_backup_alert_email: "backup-admin@example.com"
+mariadb_backup_alert_on_failure: true
+mariadb_backup_alert_on_success: false
+
+# Performance Settings
+mariadb_backup_parallel_enabled: true
+mariadb_backup_parallel_threads: "{{ ansible_processor_vcpus }}"
+mariadb_backup_throttle_enabled: false
+mariadb_backup_throttle_rate: "10M"  # Throttle backup I/O
+
+# Galera-Specific Settings
+mariadb_galera_backup_enabled: false
+mariadb_galera_backup_node_selection: "auto"  # auto, manual, or specific node
+mariadb_galera_backup_preferred_node: ""
+mariadb_galera_backup_coordination: true
+
+# Legacy mysqldump settings (for compatibility)
+mariadb_mysqldump_enabled: true
+mariadb_mysqldump_single_transaction: true
+mariadb_mysqldump_routines: true
+mariadb_mysqldump_triggers: true
+mariadb_mysqldump_events: true
+mariadb_mysqldump_quick: true
+mariadb_mysqldump_lock_tables: false

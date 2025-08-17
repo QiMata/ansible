@@ -1,0 +1,22 @@
+[mysql]
+# SSL Settings for MariaDB Security
+
+[mysqld]
+# SSL/TLS Configuration
+ssl-ca={{ mariadb_ssl_ca_cert }}
+ssl-cert={{ mariadb_ssl_server_cert }}
+ssl-key={{ mariadb_ssl_server_key }}
+ssl-cipher={{ mariadb_ssl_cipher }}
+
+# Require SSL for all connections
+require_secure_transport=ON
+
+{% if mariadb_galera_ssl_enabled %}
+# Galera SSL Configuration
+wsrep_provider_options="socket.ssl_cert={{ mariadb_galera_ssl_cert }};socket.ssl_key={{ mariadb_galera_ssl_key }};socket.ssl_ca={{ mariadb_galera_ssl_ca }};socket.ssl_cipher={{ mariadb_ssl_cipher }}"
+{% endif %}
+
+[client]
+ssl-ca={{ mariadb_ssl_ca_cert }}
+ssl-cert={{ mariadb_ssl_client_cert }}
+ssl-key={{ mariadb_ssl_client_key }}

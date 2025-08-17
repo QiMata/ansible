@@ -1,0 +1,12 @@
+[mysqld]
+# Query Cache Configuration
+query_cache_type = {{ mariadb_query_cache_type }}
+query_cache_size = {{ mariadb_query_cache_size }}
+query_cache_limit = {{ mariadb_query_cache_limit }}
+query_cache_min_res_unit = {{ mariadb_query_cache_min_res_unit }}
+
+# MyISAM Key Buffer
+key_buffer_size = {{ mariadb_key_buffer_size }}
+myisam_sort_buffer_size = {{ mariadb_myisam_sort_buffer_size }}
+myisam_max_sort_file_size = {{ mariadb_myisam_max_sort_file_size }}
+myisam_repair_threads = {{ mariadb_myisam_repair_threads }}

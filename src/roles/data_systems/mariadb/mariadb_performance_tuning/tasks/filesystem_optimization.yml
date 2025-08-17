@@ -1,0 +1,48 @@
+---
+# Filesystem Optimization Tasks
+
+- name: Install performance monitoring tools
+  ansible.builtin.apt:
+    name:
+      - iotop
+      - sysstat
+      - htop
+    state: present
+    update_cache: true
+  when: ansible_os_family == "Debian"
+
+- name: Configure kernel parameters for MariaDB
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: true
+  loop:
+    - { name: "vm.swappiness", value: "1" }
+    - { name: "vm.dirty_ratio", value: "15" }
+    - { name: "vm.dirty_background_ratio", value: "5" }
+    - { name: "net.core.rmem_max", value: "16777216" }
+    - { name: "net.core.wmem_max", value: "16777216" }
+    - { name: "net.ipv4.tcp_rmem", value: "4096 65536 16777216" }
+    - { name: "net.ipv4.tcp_wmem", value: "4096 65536 16777216" }
+
+- name: Check current mount options for MariaDB data directory
+  ansible.builtin.shell: |
+    findmnt -n -o OPTIONS "{{ mariadb_datadir | default('/var/lib/mysql') }}"
+  register: current_mount_options
+  changed_when: false
+  failed_when: false
+
+- name: Display current mount options
+  ansible.builtin.debug:
+    msg: "Current mount options: {{ current_mount_options.stdout }}"
+
+- name: Recommend filesystem optimizations
+  ansible.builtin.debug:
+    msg: |
+      For optimal performance, consider:
+      1. Mount data directory with 'noatime,nodiratime' options
+      2. Use XFS or ext4 filesystem
+      3. Consider separate disk for binary logs
+      4. Use RAID 10 for data files
+      Current mount options: {{ current_mount_options.stdout | default('unknown') }}

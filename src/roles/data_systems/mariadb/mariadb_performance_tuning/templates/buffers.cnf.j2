@@ -1,0 +1,16 @@
+[mysqld]
+# Buffer Configuration
+sort_buffer_size = {{ mariadb_sort_buffer_size }}
+read_buffer_size = {{ mariadb_read_buffer_size }}
+read_rnd_buffer_size = {{ mariadb_read_rnd_buffer_size }}
+join_buffer_size = {{ mariadb_join_buffer_size }}
+
+# Temporary Table Configuration
+tmp_table_size = {{ mariadb_tmp_table_size }}
+max_heap_table_size = {{ mariadb_max_heap_table_size }}
+tmpdir = {{ mariadb_tmpdir }}
+
+# Optimizer Configuration
+optimizer_search_depth = {{ mariadb_optimizer_search_depth }}
+optimizer_prune_level = {{ mariadb_optimizer_prune_level }}
+optimizer_switch = {{ mariadb_optimizer_switch }}

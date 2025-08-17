@@ -1,0 +1,13 @@
+[mysqld]
+# Audit Logging Configuration
+plugin-load-add=server_audit.so
+server_audit=FORCE_PLUS_PERMANENT
+server_audit_logging={{ '1' if mariadb_audit_enabled else '0' }}
+server_audit_events={{ mariadb_audit_log_policy }}
+server_audit_file_path={{ mariadb_audit_log_file }}
+server_audit_file_rotate_size={{ mariadb_audit_log_file_size }}
+server_audit_file_rotations={{ mariadb_audit_log_rotations }}
+server_audit_incl_users=root
+
+# Log all database activities
+server_audit_events=CONNECT,QUERY,TABLE

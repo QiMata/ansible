@@ -1,0 +1,79 @@
+---
+# Security Hardening Tasks
+
+- name: Remove anonymous users
+  community.mysql.mysql_user:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: ""
+    host_all: true
+    state: absent
+  when: mariadb_remove_anonymous_users | bool
+
+- name: Remove test database
+  community.mysql.mysql_db:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: test
+    state: absent
+  when: mariadb_remove_test_database | bool
+
+- name: Remove remote root access
+  community.mysql.mysql_user:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: root
+    host: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ ansible_fqdn }}"
+    - "{{ ansible_hostname }}"
+    - "{{ ansible_default_ipv4.address }}"
+    - "%"
+  when: mariadb_remove_remote_root | bool
+  ignore_errors: true
+
+- name: Create security hardening configuration
+  ansible.builtin.template:
+    src: security.cnf.j2
+    dest: /etc/mysql/mariadb.conf.d/50-security.cnf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart mariadb
+
+- name: Set secure file permissions on MariaDB configuration
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: root
+    group: mysql
+    mode: '0640'
+  loop:
+    - /etc/mysql/my.cnf
+    - /etc/mysql/mariadb.cnf
+  ignore_errors: true
+
+- name: Set secure directory permissions
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: mysql
+    group: mysql
+    mode: '0750'
+    state: directory
+  loop:
+    - /var/lib/mysql
+    - /var/log/mysql
+  ignore_errors: true
+
+- name: Remove history files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /root/.mysql_history
+    - /home/*/.mysql_history
+  ignore_errors: true
+
+- name: Create mysql history symlink to /dev/null
+  ansible.builtin.file:
+    src: /dev/null
+    dest: /root/.mysql_history
+    state: link
+    force: true

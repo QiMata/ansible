@@ -1,0 +1,21 @@
+---
+# Galera Performance Optimization Tasks
+
+- name: Configure Galera performance settings
+  ansible.builtin.template:
+    src: galera_performance.cnf.j2
+    dest: /etc/mysql/mariadb.conf.d/60-galera-performance.cnf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart mariadb
+
+- name: Optimize Galera flow control
+  community.mysql.mysql_variables:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    variable: "{{ item.variable }}"
+    value: "{{ item.value }}"
+  loop:
+    - { variable: "wsrep_slave_threads", value: "{{ mariadb_wsrep_slave_threads }}" }
+    - { variable: "wsrep_certify_nonPK", value: "{{ 'ON' if mariadb_wsrep_certify_nonPK else 'OFF' }}" }
+  ignore_errors: true

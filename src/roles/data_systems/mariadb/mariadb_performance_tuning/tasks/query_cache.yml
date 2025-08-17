@@ -1,0 +1,17 @@
+---
+# Query Cache Configuration Tasks
+
+- name: Configure query cache settings
+  ansible.builtin.template:
+    src: query_cache.cnf.j2
+    dest: /etc/mysql/mariadb.conf.d/60-query-cache.cnf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart mariadb
+
+- name: Flush query cache
+  community.mysql.mysql_query:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    query: "FLUSH QUERY CACHE"
+  ignore_errors: true

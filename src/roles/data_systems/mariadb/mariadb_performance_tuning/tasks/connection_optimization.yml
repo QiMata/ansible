@@ -1,0 +1,29 @@
+---
+# Connection Optimization Tasks
+
+- name: Configure connection and thread settings
+  ansible.builtin.template:
+    src: connections.cnf.j2
+    dest: /etc/mysql/mariadb.conf.d/60-connections.cnf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart mariadb
+
+- name: Configure buffer settings
+  ansible.builtin.template:
+    src: buffers.cnf.j2
+    dest: /etc/mysql/mariadb.conf.d/60-buffers.cnf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart mariadb
+
+- name: Configure network and timeout settings
+  ansible.builtin.template:
+    src: network.cnf.j2
+    dest: /etc/mysql/mariadb.conf.d/60-network.cnf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart mariadb

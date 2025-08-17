@@ -1,0 +1,42 @@
+---
+- name: Include backup user setup tasks
+  include_tasks: backup_user_setup.yml
+
+- name: Include backup directory setup tasks
+  include_tasks: backup_directories.yml
+
+- name: Include Mariabackup tasks
+  include_tasks: mariabackup_setup.yml
+  when: mariadb_mariabackup_enabled | bool
+
+- name: Include point-in-time recovery tasks
+  include_tasks: pitr_setup.yml
+  when: mariadb_pitr_enabled | bool
+
+- name: Include backup scheduling tasks
+  include_tasks: backup_scheduling.yml
+  when: mariadb_backup_schedule_enabled | bool
+
+- name: Include backup compression tasks
+  include_tasks: backup_compression.yml
+  when: mariadb_backup_compression_enabled | bool
+
+- name: Include backup encryption tasks
+  include_tasks: backup_encryption.yml
+  when: mariadb_backup_encryption_enabled | bool
+
+- name: Include remote storage tasks
+  include_tasks: remote_storage.yml
+  when: mariadb_backup_remote_storage_enabled | bool
+
+- name: Include backup verification tasks
+  include_tasks: backup_verification.yml
+  when: mariadb_backup_verification_enabled | bool
+
+- name: Include Galera backup coordination tasks
+  include_tasks: galera_backup_coordination.yml
+  when: mariadb_galera_backup_enabled | bool
+
+- name: Include backup monitoring tasks
+  include_tasks: backup_monitoring.yml
+  when: mariadb_backup_monitoring_enabled | bool

@@ -1,0 +1,41 @@
+---
+# Audit Logging Tasks
+
+- name: Install MariaDB audit plugin
+  community.mysql.mysql_query:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    query: "INSTALL PLUGIN server_audit SONAME 'server_audit'"
+  ignore_errors: true
+
+- name: Create audit log directory
+  ansible.builtin.file:
+    path: "{{ mariadb_audit_log_file | dirname }}"
+    state: directory
+    owner: mysql
+    group: mysql
+    mode: '0750'
+
+- name: Configure audit logging
+  ansible.builtin.template:
+    src: audit.cnf.j2
+    dest: /etc/mysql/mariadb.conf.d/50-audit.cnf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart mariadb
+
+- name: Configure logrotate for audit logs
+  ansible.builtin.template:
+    src: audit_logrotate.j2
+    dest: /etc/logrotate.d/mariadb-audit
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Set audit log file permissions
+  ansible.builtin.file:
+    path: "{{ mariadb_audit_log_file }}"
+    owner: mysql
+    group: mysql
+    mode: '0640'
+    state: touch

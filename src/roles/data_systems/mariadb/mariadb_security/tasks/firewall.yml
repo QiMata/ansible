@@ -1,0 +1,35 @@
+---
+# Firewall Configuration Tasks
+
+- name: Install UFW
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+    update_cache: true
+  when: ansible_os_family == "Debian"
+
+- name: Allow MariaDB port from specific IPs
+  community.general.ufw:
+    rule: allow
+    port: "{{ mariadb_port }}"
+    src: "{{ item }}"
+    proto: tcp
+  loop: "{{ mariadb_firewall_allowed_ips }}"
+  when: mariadb_firewall_allowed_ips | length > 0
+
+- name: Allow Galera ports from cluster nodes
+  community.general.ufw:
+    rule: allow
+    port: "{{ item.1 }}"
+    src: "{{ hostvars[item.0]['service_ip'] | default(hostvars[item.0]['ansible_default_ipv4']['address']) }}"
+    proto: tcp
+  loop: "{{ (groups[galera_cluster_nodes_group] | default([])) | product(['4567', '4568', '4444']) | list }}"
+  when: 
+    - galera_cluster_nodes_group is defined
+    - groups[galera_cluster_nodes_group] is defined
+
+- name: Enable UFW
+  community.general.ufw:
+    state: enabled
+    policy: deny
+    direction: incoming

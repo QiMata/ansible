@@ -1,0 +1,36 @@
+---
+- name: Include Prometheus exporter tasks
+  include_tasks: prometheus_exporter.yml
+  when: mariadb_prometheus_exporter_enabled | bool
+
+- name: Include Galera monitoring tasks
+  include_tasks: galera_monitoring.yml
+  when: mariadb_galera_monitoring_enabled | bool
+
+- name: Include performance monitoring tasks
+  include_tasks: performance_monitoring.yml
+  when: mariadb_performance_monitoring_enabled | bool
+
+- name: Include health check tasks
+  include_tasks: health_checks.yml
+  when: mariadb_health_checks_enabled | bool
+
+- name: Include log aggregation tasks
+  include_tasks: log_aggregation.yml
+  when: mariadb_log_aggregation_enabled | bool
+
+- name: Include split-brain detection tasks
+  include_tasks: split_brain_detection.yml
+  when: mariadb_split_brain_detection_enabled | bool
+
+- name: Include sync monitoring tasks
+  include_tasks: sync_monitoring.yml
+  when: mariadb_sync_monitoring_enabled | bool
+
+- name: Include alerting configuration tasks
+  include_tasks: alerting.yml
+  when: mariadb_alerting_enabled | bool
+
+- name: Include Grafana dashboard tasks
+  include_tasks: grafana_dashboard.yml
+  when: mariadb_grafana_dashboard_enabled | bool

@@ -1,0 +1,39 @@
+---
+- name: Include InnoDB optimization tasks
+  include_tasks: innodb_optimization.yml
+
+- name: Include query cache configuration tasks
+  include_tasks: query_cache.yml
+  when: mariadb_query_cache_enabled | bool
+
+- name: Include connection optimization tasks
+  include_tasks: connection_optimization.yml
+
+- name: Include logging configuration tasks
+  include_tasks: logging_optimization.yml
+
+- name: Include performance schema tasks
+  include_tasks: performance_schema.yml
+  when: mariadb_performance_schema_enabled | bool
+
+- name: Include binary logging tasks
+  include_tasks: binary_logging.yml
+  when: mariadb_binlog_enabled | bool
+
+- name: Include Galera performance tasks
+  include_tasks: galera_performance.yml
+  when: mariadb_galera_performance_enabled | bool
+
+- name: Include connection pooling tasks
+  include_tasks: connection_pooling.yml
+  when: mariadb_connection_pooling_enabled | bool
+
+- name: Include filesystem optimization tasks
+  include_tasks: filesystem_optimization.yml
+  when: mariadb_fs_optimizations_enabled | bool
+
+- name: Restart MariaDB service
+  ansible.builtin.service:
+    name: mariadb
+    state: restarted
+  notify: restart mariadb

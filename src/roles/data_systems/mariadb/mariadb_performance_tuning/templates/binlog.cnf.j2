@@ -1,0 +1,18 @@
+[mysqld]
+# Binary Logging Configuration
+log_bin = /var/log/mysql/binlog/mysql-bin
+binlog_format = {{ mariadb_binlog_format }}
+expire_logs_days = {{ mariadb_binlog_expire_logs_days }}
+max_binlog_size = {{ mariadb_max_binlog_size }}
+sync_binlog = {{ mariadb_sync_binlog }}
+binlog_cache_size = {{ mariadb_binlog_cache_size }}
+binlog_stmt_cache_size = {{ mariadb_binlog_stmt_cache_size }}
+
+# GTID (Global Transaction Identifier) for easier replication management
+gtid_strict_mode = ON
+log_slave_updates = ON
+
+# Binlog safety
+binlog_checksum = CRC32
+master_verify_checksum = ON
+slave_sql_verify_checksum = ON

@@ -1,0 +1,17 @@
+[mysqld]
+# Connection and Thread Configuration
+max_connections = {{ mariadb_max_connections }}
+max_user_connections = {{ mariadb_max_user_connections }}
+thread_cache_size = {{ mariadb_thread_cache_size }}
+thread_stack = {{ mariadb_thread_stack }}
+thread_handling = {{ mariadb_thread_handling }}
+
+{% if mariadb_thread_handling == "pool-of-threads" %}
+# Thread Pool Configuration
+thread_pool_size = {{ mariadb_thread_pool_size }}
+thread_pool_max_threads = {{ mariadb_thread_pool_max_threads }}
+{% endif %}
+
+# Table Cache Configuration
+table_open_cache = {{ mariadb_table_open_cache }}
+table_definition_cache = {{ mariadb_table_definition_cache }}

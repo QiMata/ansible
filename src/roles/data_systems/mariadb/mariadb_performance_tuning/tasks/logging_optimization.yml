@@ -1,0 +1,42 @@
+---
+# Logging Optimization Tasks
+
+- name: Create slow query log directory
+  ansible.builtin.file:
+    path: "{{ mariadb_slow_query_log_file | dirname }}"
+    state: directory
+    owner: mysql
+    group: mysql
+    mode: '0750'
+
+- name: Configure slow query logging
+  ansible.builtin.template:
+    src: slow_query.cnf.j2
+    dest: /etc/mysql/mariadb.conf.d/60-slow-query.cnf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart mariadb
+
+- name: Setup logrotate for slow query log
+  ansible.builtin.template:
+    src: slow_query_logrotate.j2
+    dest: /etc/logrotate.d/mariadb-slow-query
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Install pt-query-digest for slow query analysis
+  ansible.builtin.apt:
+    name: percona-toolkit
+    state: present
+    update_cache: true
+  when: ansible_os_family == "Debian"
+
+- name: Create slow query analysis script
+  ansible.builtin.template:
+    src: analyze_slow_queries.sh.j2
+    dest: /usr/local/bin/analyze_slow_queries.sh
+    owner: root
+    group: root
+    mode: '0755'

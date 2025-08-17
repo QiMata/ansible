@@ -1,0 +1,33 @@
+---
+# InnoDB Optimization Tasks
+
+- name: Configure InnoDB settings
+  ansible.builtin.template:
+    src: innodb.cnf.j2
+    dest: /etc/mysql/mariadb.conf.d/60-innodb-performance.cnf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart mariadb
+
+- name: Ensure InnoDB log files are properly sized
+  block:
+    - name: Stop MariaDB for log file resize
+      ansible.builtin.service:
+        name: mariadb
+        state: stopped
+
+    - name: Remove old InnoDB log files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /var/lib/mysql/ib_logfile0
+        - /var/lib/mysql/ib_logfile1
+      when: mariadb_innodb_log_file_size != "256M"  # Only if different from default
+
+    - name: Start MariaDB after log file resize
+      ansible.builtin.service:
+        name: mariadb
+        state: started
+  when: mariadb_innodb_log_file_size != "256M"

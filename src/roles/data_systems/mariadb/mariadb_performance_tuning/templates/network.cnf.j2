@@ -1,0 +1,12 @@
+[mysqld]
+# Network and Timeout Configuration
+max_allowed_packet = {{ mariadb_max_allowed_packet }}
+connect_timeout = {{ mariadb_connect_timeout }}
+wait_timeout = {{ mariadb_wait_timeout }}
+interactive_timeout = {{ mariadb_interactive_timeout }}
+net_read_timeout = {{ mariadb_net_read_timeout }}
+net_write_timeout = {{ mariadb_net_write_timeout }}
+
+# Connection limit settings
+back_log = {{ (mariadb_max_connections * 0.1) | round | int }}
+max_connect_errors = 999999

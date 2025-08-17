@@ -1,0 +1,13 @@
+[mysqld]
+# Slow Query Log Configuration
+slow_query_log = {{ '1' if mariadb_slow_query_log_enabled else '0' }}
+slow_query_log_file = {{ mariadb_slow_query_log_file }}
+long_query_time = {{ mariadb_long_query_time }}
+log_queries_not_using_indexes = {{ '1' if mariadb_log_queries_not_using_indexes else '0' }}
+log_slow_admin_statements = {{ '1' if mariadb_log_slow_admin_statements else '0' }}
+log_slow_slave_statements = {{ '1' if mariadb_log_slow_slave_statements else '0' }}
+min_examined_row_limit = {{ mariadb_min_examined_row_limit }}
+
+# Additional slow query log settings
+log_slow_rate_limit = 1
+log_slow_verbosity = query_plan

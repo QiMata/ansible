@@ -1,0 +1,23 @@
+#!/bin/bash
+# Slow Query Analysis Script
+
+SLOW_LOG="{{ mariadb_slow_query_log_file }}"
+REPORT_DIR="/var/log/mysql/analysis"
+DATE=$(date +%Y%m%d)
+
+# Create report directory
+mkdir -p $REPORT_DIR
+
+# Analyze slow queries from the last 24 hours
+pt-query-digest \
+    --since=24h \
+    --output=json \
+    $SLOW_LOG > $REPORT_DIR/slow_query_analysis_$DATE.json
+
+# Generate summary report
+pt-query-digest \
+    --since=24h \
+    --limit=20 \
+    $SLOW_LOG > $REPORT_DIR/slow_query_summary_$DATE.txt
+
+echo "Slow query analysis completed. Reports saved to $REPORT_DIR"

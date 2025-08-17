@@ -1,0 +1,19 @@
+[mysqld]
+# Galera Performance Configuration
+wsrep_slave_threads = {{ mariadb_wsrep_slave_threads }}
+wsrep_certify_nonPK = {{ 'ON' if mariadb_wsrep_certify_nonPK else 'OFF' }}
+wsrep_max_ws_rows = {{ mariadb_wsrep_max_ws_rows }}
+wsrep_max_ws_size = {{ mariadb_wsrep_max_ws_size }}
+wsrep_replicate_myisam = {{ 'ON' if mariadb_wsrep_replicate_myisam else 'OFF' }}
+
+# Flow control tuning
+wsrep_flow_control_paused_ns = 0
+wsrep_flow_control_sent_ns = 0
+wsrep_flow_control_recv_ns = 0
+
+# Provider options for performance
+wsrep_provider_options = "gcache.size=1G;gcs.fc_limit=256;gcs.fc_factor=0.99;gcs.fc_master_slave=NO"
+
+# Parallel applying
+wsrep_slave_FK_checks = OFF
+wsrep_slave_UK_checks = OFF

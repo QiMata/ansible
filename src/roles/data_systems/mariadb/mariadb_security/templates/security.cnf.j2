@@ -1,0 +1,39 @@
+[mysqld]
+# Security Hardening Settings
+
+# Network Security
+bind-address={{ mariadb_bind_address }}
+port={{ mariadb_port }}
+{% if mariadb_skip_networking %}
+skip-networking
+{% endif %}
+
+# Disable dangerous functions
+local-infile={{ '1' if not mariadb_local_infile else '0' }}
+skip-show-database={{ '1' if mariadb_skip_show_database else '0' }}
+secure-auth={{ '1' if mariadb_secure_auth else '0' }}
+
+# SQL Mode
+sql-mode={{ mariadb_sql_mode }}
+
+# Logging
+log-error=/var/log/mysql/error.log
+general-log=0
+general-log-file=/var/log/mysql/general.log
+
+# Disable symbolic links
+symbolic-links=0
+
+# Lower case table names (for consistency)
+lower_case_table_names=1
+
+# Connection limits
+max_connections=200
+max_user_connections=50
+
+# Timeout settings
+wait_timeout=300
+interactive_timeout=300
+
+# Disable load_file() and into outfile
+secure_file_priv=/tmp

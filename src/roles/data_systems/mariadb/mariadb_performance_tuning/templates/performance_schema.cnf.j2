@@ -1,0 +1,24 @@
+[mysqld]
+# Performance Schema Configuration
+performance_schema = {{ '1' if mariadb_performance_schema_enabled else '0' }}
+
+{% if mariadb_performance_schema_enabled %}
+# Memory allocation for Performance Schema
+performance_schema_max_memory = {{ mariadb_performance_schema_max_memory }}
+
+# Table sizes
+performance_schema_digests_size = {{ mariadb_performance_schema_digests_size }}
+performance_schema_events_statements_history_size = {{ mariadb_performance_schema_events_statements_history_size }}
+performance_schema_events_statements_history_long_size = {{ mariadb_performance_schema_events_statements_history_long_size }}
+
+# Enable useful instruments
+performance_schema_instrument = 'statement/%=ON'
+performance_schema_instrument = 'stage/%=ON'
+performance_schema_instrument = 'wait/io/%=ON'
+
+# Enable consumers
+performance_schema_consumer_events_statements_current = ON
+performance_schema_consumer_events_statements_history = ON
+performance_schema_consumer_events_statements_history_long = ON
+performance_schema_consumer_statements_digest = ON
+{% endif %}

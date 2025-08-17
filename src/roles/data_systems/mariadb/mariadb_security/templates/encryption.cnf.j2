@@ -1,0 +1,16 @@
+[mysqld]
+# Encryption at Rest Configuration
+plugin-load-add=file_key_management.so
+file_key_management=FORCE_PLUS_PERMANENT
+file_key_management_filename={{ mariadb_encryption_key_file }}
+encrypt_tables=ON
+encrypt_tmp_disk_tables=ON
+encrypt_tmp_files=ON
+encrypt_binlog=ON
+aria_encrypt_tables=ON
+
+# InnoDB Encryption
+innodb_encrypt_tables=ON
+innodb_encrypt_log=ON
+innodb_encryption_threads=4
+innodb_encryption_rotate_key_age=1

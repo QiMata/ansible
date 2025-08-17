@@ -1,0 +1,68 @@
+---
+# MariaDB Monitoring Role Default Variables
+
+# Prometheus MySQL Exporter Configuration
+mariadb_prometheus_exporter_enabled: true
+mariadb_prometheus_exporter_version: "0.14.0"
+mariadb_prometheus_exporter_port: 9104
+mariadb_prometheus_exporter_user: "exporter"
+mariadb_prometheus_exporter_password: "exporter_password"
+mariadb_prometheus_exporter_listen_address: "0.0.0.0"
+
+# Galera Cluster Monitoring
+mariadb_galera_monitoring_enabled: true
+mariadb_galera_health_check_interval: 30
+mariadb_galera_alert_thresholds:
+  cluster_size_min: 3
+  wsrep_local_state_comment_alert: ["Joining", "Error", "Undefined"]
+  wsrep_flow_control_paused_threshold: 0.1
+  wsrep_cert_deps_distance_threshold: 100
+
+# Performance Monitoring
+mariadb_performance_monitoring_enabled: true
+mariadb_slow_query_monitoring: true
+mariadb_connection_monitoring: true
+mariadb_replication_monitoring: true
+
+# Log Aggregation (ELK Stack)
+mariadb_log_aggregation_enabled: false
+mariadb_filebeat_enabled: false
+mariadb_logstash_host: "localhost"
+mariadb_logstash_port: 5044
+mariadb_elasticsearch_hosts: ["localhost:9200"]
+
+# Health Check Scripts
+mariadb_health_checks_enabled: true
+mariadb_health_check_dir: "/usr/local/bin/mariadb-health"
+mariadb_health_check_user: "health_check"
+mariadb_health_check_password: "health_check_password"
+
+# Nagios/NRPE Integration
+mariadb_nagios_enabled: false
+mariadb_nagios_plugins_dir: "/usr/lib/nagios/plugins"
+
+# Split-brain Detection
+mariadb_split_brain_detection_enabled: true
+mariadb_split_brain_check_interval: 60
+mariadb_split_brain_notification_email: "admin@example.com"
+
+# Node Synchronization Monitoring
+mariadb_sync_monitoring_enabled: true
+mariadb_sync_lag_threshold: 100  # seconds
+mariadb_sync_check_interval: 30
+
+# Alerting Configuration
+mariadb_alerting_enabled: true
+mariadb_alert_email: "dba@example.com"
+mariadb_alert_smtp_server: "localhost"
+mariadb_alert_smtp_port: 587
+
+# Grafana Dashboard
+mariadb_grafana_dashboard_enabled: false
+mariadb_grafana_url: "http://localhost:3000"
+mariadb_grafana_admin_user: "admin"
+mariadb_grafana_admin_password: "admin"
+
+# Custom Metrics Collection
+mariadb_custom_metrics_enabled: true
+mariadb_custom_metrics_interval: 60

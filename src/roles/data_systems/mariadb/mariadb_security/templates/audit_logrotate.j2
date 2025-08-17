@@ -1,0 +1,12 @@
+{{ mariadb_audit_log_file }} {
+    daily
+    missingok
+    rotate {{ mariadb_audit_log_rotations }}
+    compress
+    delaycompress
+    notifempty
+    su mysql mysql
+    postrotate
+        /usr/bin/mysqladmin --defaults-file=/etc/mysql/debian.cnf flush-logs
+    endscript
+}

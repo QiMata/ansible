@@ -1,0 +1,108 @@
+---
+# MariaDB Security Role Default Variables
+
+# SSL/TLS Configuration
+mariadb_ssl_enabled: true
+mariadb_ssl_ca_cert: "/etc/mysql/ssl/ca-cert.pem"
+mariadb_ssl_server_cert: "/etc/mysql/ssl/server-cert.pem" 
+mariadb_ssl_server_key: "/etc/mysql/ssl/server-key.pem"
+mariadb_ssl_client_cert: "/etc/mysql/ssl/client-cert.pem"
+mariadb_ssl_client_key: "/etc/mysql/ssl/client-key.pem"
+mariadb_ssl_cipher: "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-SHA384"
+mariadb_ssl_directory: "/etc/mysql/ssl"
+mariadb_ssl_key_size: 2048
+mariadb_ssl_days: 3650
+mariadb_ssl_country: "US"
+mariadb_ssl_state: "CA"
+mariadb_ssl_city: "San Francisco"
+mariadb_ssl_organization: "Organization"
+mariadb_ssl_org_unit: "IT Department"
+mariadb_ssl_email: "admin@example.com"
+
+# Certificate Authority settings
+mariadb_ssl_generate_ca: true
+mariadb_ssl_generate_certs: true
+
+# Galera SSL settings
+mariadb_galera_ssl_enabled: true
+mariadb_galera_ssl_cert: "/etc/mysql/ssl/galera-cert.pem"
+mariadb_galera_ssl_key: "/etc/mysql/ssl/galera-key.pem"
+mariadb_galera_ssl_ca: "/etc/mysql/ssl/ca-cert.pem"
+
+# Password Validation Plugin
+mariadb_password_validation_enabled: true
+mariadb_password_validation_policy: "MEDIUM"
+mariadb_password_validation_length: 12
+mariadb_password_validation_mixed_case_count: 1
+mariadb_password_validation_number_count: 1
+mariadb_password_validation_special_char_count: 1
+mariadb_password_validation_dictionary_file: ""
+
+# Security Hardening
+mariadb_security_hardening_enabled: true
+mariadb_remove_anonymous_users: true
+mariadb_remove_remote_root: true
+mariadb_remove_test_database: true
+mariadb_disallow_root_login_remotely: true
+
+# User Management
+mariadb_users: []
+# Example:
+# mariadb_users:
+#   - name: "app_user"
+#     password: "secure_password"
+#     hosts: ["localhost", "10.0.0.%"]
+#     privileges: "app_db.*:ALL"
+#     state: "present"
+#     require_ssl: true
+#   - name: "read_only_user"
+#     password: "read_password"
+#     hosts: ["10.0.1.%"]
+#     privileges: "app_db.*:SELECT"
+#     state: "present"
+
+# Role-based Access Control
+mariadb_roles: []
+# Example:
+# mariadb_roles:
+#   - name: "app_role"
+#     privileges: "app_db.*:SELECT,INSERT,UPDATE,DELETE"
+#   - name: "admin_role"
+#     privileges: "*.*:ALL"
+
+# Audit Logging
+mariadb_audit_enabled: true
+mariadb_audit_log_file: "/var/log/mysql/audit.log"
+mariadb_audit_log_policy: "ALL"
+mariadb_audit_log_strategy: "ASYNCHRONOUS"
+mariadb_audit_log_buffer_size: "1M"
+mariadb_audit_log_file_size: "100M"
+mariadb_audit_log_rotations: 10
+
+# Additional Security Settings
+mariadb_local_infile: false
+mariadb_skip_show_database: true
+mariadb_secure_auth: true
+mariadb_sql_mode: "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+
+# Network Security
+mariadb_bind_address: "{{ hostvars[inventory_hostname]['service_ip'] | default('127.0.0.1') }}"
+mariadb_skip_networking: false
+mariadb_port: 3306
+
+# Firewall Rules (if using UFW)
+mariadb_firewall_enabled: false
+mariadb_firewall_allowed_ips: []
+# Example:
+# mariadb_firewall_allowed_ips:
+#   - "10.0.0.0/24"
+#   - "192.168.1.100"
+
+# SSL Certificate Rotation
+mariadb_ssl_auto_renewal: false
+mariadb_ssl_renewal_days_before_expiry: 30
+
+# Encryption at Rest
+mariadb_encryption_at_rest_enabled: false
+mariadb_encryption_key_management_plugin: "file_key_management"
+mariadb_encryption_key_file: "/etc/mysql/encryption/keyfile.enc"

@@ -1,0 +1,38 @@
+---
+# Connection Pooling Tasks (ProxySQL)
+
+- name: Install ProxySQL
+  ansible.builtin.apt:
+    deb: https://github.com/sysown/proxysql/releases/download/v2.4.4/proxysql_2.4.4-ubuntu20_amd64.deb
+    state: present
+  when: ansible_distribution == "Ubuntu" and ansible_distribution_version == "20.04"
+
+- name: Install ProxySQL (Debian)
+  ansible.builtin.apt:
+    deb: https://github.com/sysown/proxysql/releases/download/v2.4.4/proxysql_2.4.4-debian11_amd64.deb
+    state: present
+  when: ansible_distribution == "Debian"
+
+- name: Create ProxySQL configuration
+  ansible.builtin.template:
+    src: proxysql.cnf.j2
+    dest: /etc/proxysql.cnf
+    owner: proxysql
+    group: proxysql
+    mode: '0640'
+  notify: restart proxysql
+
+- name: Create monitor user for ProxySQL
+  community.mysql.mysql_user:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: "{{ mariadb_proxysql_monitor_username }}"
+    password: "{{ mariadb_proxysql_monitor_password }}"
+    host: "localhost"
+    priv: "*.*:REPLICATION CLIENT"
+    state: present
+
+- name: Start and enable ProxySQL
+  ansible.builtin.service:
+    name: proxysql
+    state: started
+    enabled: true

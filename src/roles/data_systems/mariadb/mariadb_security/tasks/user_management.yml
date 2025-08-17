@@ -1,0 +1,60 @@
+---
+# User Management Tasks
+
+- name: Create MariaDB roles
+  community.mysql.mysql_query:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    query: "CREATE ROLE IF NOT EXISTS {{ item.name }}"
+  loop: "{{ mariadb_roles }}"
+  when: mariadb_roles | length > 0
+
+- name: Grant privileges to roles
+  community.mysql.mysql_query:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    query: "GRANT {{ item.privileges }} TO {{ item.name }}"
+  loop: "{{ mariadb_roles }}"
+  when: mariadb_roles | length > 0
+
+- name: Create MariaDB users
+  community.mysql.mysql_user:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: "{{ item.name }}"
+    password: "{{ item.password }}"
+    host: "{{ host_item }}"
+    priv: "{{ item.privileges | default('') }}"
+    state: "{{ item.state | default('present') }}"
+    tls_requires:
+      SSL: "{{ item.require_ssl | default(false) }}"
+  loop: "{{ mariadb_users }}"
+  loop_control:
+    loop_var: item
+  vars:
+    host_item: "{{ item.hosts | first if item.hosts is defined and item.hosts | length > 0 else 'localhost' }}"
+  when: mariadb_users | length > 0
+
+- name: Grant additional host access for users
+  community.mysql.mysql_user:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: "{{ item.0.name }}"
+    password: "{{ item.0.password }}"
+    host: "{{ item.1 }}"
+    priv: "{{ item.0.privileges | default('') }}"
+    state: "{{ item.0.state | default('present') }}"
+    tls_requires:
+      SSL: "{{ item.0.require_ssl | default(false) }}"
+  loop: "{{ mariadb_users | subelements('hosts', skip_missing=True) }}"
+  when: mariadb_users | length > 0
+
+- name: Grant roles to users
+  community.mysql.mysql_query:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    query: "GRANT {{ item.1 }} TO '{{ item.0.name }}'@'{{ item.0.hosts | first if item.0.hosts is defined else 'localhost' }}'"
+  loop: "{{ mariadb_users | subelements('roles', skip_missing=True) }}"
+  when: mariadb_users | length > 0 and item.0.roles is defined
+
+- name: Set default roles for users
+  community.mysql.mysql_query:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    query: "SET DEFAULT ROLE {{ item.roles | join(', ') }} FOR '{{ item.name }}'@'{{ item.hosts | first if item.hosts is defined else 'localhost' }}'"
+  loop: "{{ mariadb_users }}"
+  when: mariadb_users | length > 0 and item.roles is defined
