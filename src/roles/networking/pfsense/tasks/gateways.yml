@@ -1,0 +1,31 @@
+---
+# Gateway Configuration
+- name: Configure gateways
+  pfsensible.core.pfsense_gateway:
+    name: "{{ item.name }}"
+    interface: "{{ item.interface }}"
+    gateway: "{{ item.gateway | default('dynamic') }}"
+    ipprotocol: "{{ item.ipprotocol | default('inet') }}"
+    priority: "{{ item.priority | default(1) }}"
+    weight: "{{ item.weight | default(1) }}"
+    monitor: "{{ item.monitor | default(omit) }}"
+    monitor_disable: "{{ item.monitor_disable | default(false) }}"
+    action_disable: "{{ item.action_disable | default(false) }}"
+    force_down: "{{ item.force_down | default(false) }}"
+    descr: "{{ item.descr | default(omit) }}"
+    nonlocalgateway: "{{ item.nonlocalgateway | default(false) }}"
+    state: present
+  loop: "{{ pfsense_gateways }}"
+  when: pfsense_gateways is defined
+  notify: reload pfsense routing
+
+- name: Configure gateway groups
+  pfsensible.core.pfsense_gateway_group:
+    name: "{{ item.name }}"
+    members: "{{ item.members }}"
+    trigger: "{{ item.trigger | default('down') }}"
+    descr: "{{ item.descr | default(omit) }}"
+    state: present
+  loop: "{{ pfsense_gateway_groups | default([]) }}"
+  when: pfsense_gateway_groups is defined
+  notify: reload pfsense routing

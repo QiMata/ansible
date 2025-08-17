@@ -1,0 +1,236 @@
+---
+# pfSense Role Default Variables
+
+# Global Configuration
+pfsense_host: "{{ ansible_host }}"
+pfsense_username: admin
+pfsense_password: "{{ vault_pfsense_password | default('pfsense') }}"
+pfsense_scheme: https
+pfsense_port: 443
+pfsense_timeout: 30
+pfsense_validate_certs: false
+
+# Component Configuration Flags
+pfsense_configure_system_settings: true
+pfsense_configure_certificates: false
+pfsense_configure_interfaces: true
+pfsense_configure_vlans: false
+pfsense_configure_gateways: true
+pfsense_configure_static_routes: false
+pfsense_configure_dhcp: true
+pfsense_configure_dns: true
+pfsense_configure_aliases: false
+pfsense_configure_nat: true
+pfsense_configure_firewall_rules: true
+pfsense_configure_traffic_shaping: false
+pfsense_configure_user_auth: false
+pfsense_configure_captive_portal: false
+pfsense_configure_openvpn: false
+pfsense_configure_ipsec: false
+pfsense_configure_packages: false
+pfsense_perform_backup: false
+pfsense_perform_updates: false
+
+# System Settings
+pfsense_system_settings:
+  hostname: pfsense
+  domain: local
+  timezone: America/New_York
+  language: en_US
+  theme: pfSense
+  dns_servers:
+    - 8.8.8.8
+    - 8.8.4.4
+  dns_search_domains: []
+  ntp_servers:
+    - pool.ntp.org
+  webgui_settings:
+    protocol: https
+    port: 443
+    max_processes: 2
+    redirect_http: true
+    login_autocomplete: false
+    anti_lockout: true
+
+# Interface Configuration
+pfsense_interfaces: []
+# Example:
+# pfsense_interfaces:
+#   - interface: wan
+#     enable: true
+#     descr: "WAN Interface"
+#     type: dhcp
+#   - interface: lan
+#     enable: true
+#     descr: "LAN Interface"
+#     type: static
+#     ipaddr: 192.168.1.1
+#     subnet: 24
+
+# VLAN Configuration
+pfsense_vlans: []
+# Example:
+# pfsense_vlans:
+#   - tag: 10
+#     if: igb1
+#     descr: "Management VLAN"
+#   - tag: 20
+#     if: igb1
+#     descr: "Guest VLAN"
+
+# Gateway Configuration
+pfsense_gateways: []
+# Example:
+# pfsense_gateways:
+#   - name: WAN_DHCP
+#     interface: wan
+#     gateway: dynamic
+#     priority: 1
+#     weight: 1
+#     monitor: true
+
+# Static Routes
+pfsense_static_routes: []
+# Example:
+# pfsense_static_routes:
+#   - network: "10.0.0.0/8"
+#     gateway: "192.168.1.254"
+#     descr: "Route to internal network"
+
+# DHCP Server Configuration
+pfsense_dhcp_servers: []
+# Example:
+# pfsense_dhcp_servers:
+#   - interface: lan
+#     enable: true
+#     range_from: "192.168.1.100"
+#     range_to: "192.168.1.200"
+#     dns_servers:
+#       - "192.168.1.1"
+#     default_lease_time: 7200
+#     max_lease_time: 86400
+
+# DNS Configuration
+pfsense_dns_resolver:
+  enable: true
+  network_interfaces: all
+  outgoing_interfaces: all
+  enable_ssl: false
+  enable_forwarding: false
+  dhcp_registration: true
+  static_dhcp_registration: true
+  custom_options: []
+
+pfsense_dns_forwarder:
+  enable: false
+
+# Aliases Configuration
+pfsense_aliases: []
+# Example:
+# pfsense_aliases:
+#   - name: "RFC1918_Networks"
+#     type: network
+#     address:
+#       - "10.0.0.0/8"
+#       - "172.16.0.0/12"
+#       - "192.168.0.0/16"
+#     descr: "Private Networks"
+
+# NAT Rules
+pfsense_nat_rules: []
+# Example:
+# pfsense_nat_rules:
+#   - interface: wan
+#     protocol: tcp
+#     source: any
+#     destination_port: 80
+#     target: "192.168.1.10"
+#     local_port: 80
+#     descr: "Web Server NAT"
+
+# Firewall Rules
+pfsense_firewall_rules: []
+# Example:
+# pfsense_firewall_rules:
+#   - interface: lan
+#     action: pass
+#     protocol: any
+#     source: lan_net
+#     destination: any
+#     descr: "Allow LAN to any"
+
+# Traffic Shaping
+pfsense_traffic_shaping:
+  enable: false
+  limiters: []
+  queues: []
+
+# User Authentication
+pfsense_user_auth:
+  local_users: []
+  auth_servers: []
+  # Example:
+  # local_users:
+  #   - username: "admin2"
+  #     password: "{{ vault_admin2_password }}"
+  #     full_name: "Secondary Admin"
+  #     groups: ["admins"]
+
+# Captive Portal
+pfsense_captive_portal:
+  zones: []
+  # Example:
+  # zones:
+  #   - zone: "guest"
+  #     interface: guest
+  #     enable: true
+  #     auth_method: local
+  #     idle_timeout: 60
+  #     hard_timeout: 480
+
+# OpenVPN Configuration
+pfsense_openvpn:
+  servers: []
+  clients: []
+  # Example:
+  # servers:
+  #   - descr: "Remote Access VPN"
+  #     mode: "server_user"
+  #     protocol: "udp4"
+  #     interface: "wan"
+  #     local_port: 1194
+  #     tunnel_network: "10.8.0.0/24"
+
+# IPsec Site-to-Site VPN
+pfsense_ipsec:
+  enable: false
+  phase1: []
+  phase2: []
+  # Example:
+  # phase1:
+  #   - descr: "Site-to-Site VPN"
+  #     interface: "wan"
+  #     remote_gateway: "203.0.113.1"
+  #     pre_shared_key: "{{ vault_ipsec_psk }}"
+
+# Package Management
+pfsense_packages:
+  install: []
+  remove: []
+  # Example:
+  # install:
+  #   - pfBlockerNG
+  #   - Suricata
+
+# Backup Configuration
+pfsense_backup:
+  enabled: false
+  local_path: "/tmp/pfsense_backup.xml"
+  remote_backup: false
+  encryption_password: "{{ vault_backup_password | default('') }}"
+
+# Update Configuration
+pfsense_updates:
+  check_for_updates: false
+  auto_update: false
+  backup_before_update: true

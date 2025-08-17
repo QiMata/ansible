@@ -1,0 +1,15 @@
+# pfSense Inventory Example
+
+[pfsense_firewalls]
+fw01.company.local ansible_host=192.168.1.1
+fw02.company.local ansible_host=10.1.1.1
+
+[pfsense_firewalls:vars]
+ansible_connection=local
+pfsense_scheme=https
+pfsense_port=443
+pfsense_username=admin
+pfsense_validate_certs=false
+pfsense_timeout=30
+
+# Use group_vars/pfsense_firewalls.yml for additional configuration

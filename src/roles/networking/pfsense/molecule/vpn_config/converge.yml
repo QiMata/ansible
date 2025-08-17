@@ -1,0 +1,277 @@
+---
+- name: Converge - VPN Configuration Test
+  hosts: all
+  gather_facts: false
+  vars:
+    # Enable VPN-related features
+    pfsense_configure_system_settings: true
+    pfsense_configure_interfaces: true
+    pfsense_configure_certificates: true
+    pfsense_configure_openvpn: true
+    pfsense_configure_ipsec: true
+    pfsense_configure_firewall_rules: true
+    pfsense_configure_nat: true
+    
+    # Basic system for VPN testing
+    pfsense_system_settings:
+      hostname: pfsense-vpn
+      domain: vpn.test
+      timezone: UTC
+      dns_servers:
+        - 8.8.8.8
+        - 1.1.1.1
+    
+    # Basic interfaces
+    pfsense_interfaces:
+      - interface: wan
+        enable: true
+        descr: "WAN Interface"
+        type: static
+        ipaddr: 203.0.113.1
+        subnet: 24
+      - interface: lan
+        enable: true
+        descr: "LAN Interface"
+        type: static
+        ipaddr: 192.168.1.1
+        subnet: 24
+    
+    # Certificate configuration for VPN
+    pfsense_generated_certificates:
+      - name: "VPN_CA"
+        method: "internal"
+        keylen: 2048
+        digest_alg: "sha256"
+        lifetime: 3650
+        dn_country: "US"
+        dn_state: "Test State"
+        dn_city: "Test City"
+        dn_organization: "Test Org"
+        dn_organizationalunit: "IT"
+        dn_commonname: "VPN CA"
+      - name: "VPN_Server_Cert"
+        method: "internal"
+        caref: "VPN_CA"
+        keylen: 2048
+        digest_alg: "sha256"
+        lifetime: 365
+        dn_country: "US"
+        dn_state: "Test State"
+        dn_city: "Test City"
+        dn_organization: "Test Org"
+        dn_organizationalunit: "IT"
+        dn_commonname: "vpn.test"
+        dn_sans:
+          - "vpn.test"
+          - "203.0.113.1"
+    
+    # OpenVPN server configuration
+    pfsense_openvpn:
+      servers:
+        - descr: "Remote Access VPN Server"
+          mode: "server_user"
+          protocol: "udp4"
+          interface: "wan"
+          local_port: 1194
+          caref: "VPN_CA"
+          crtref: "VPN_Server_Cert"
+          tunnel_network: "10.8.0.0/24"
+          local_network: "192.168.1.0/24"
+          dns_server_enable: true
+          dns_server1: "192.168.1.1"
+          dns_server2: "8.8.8.8"
+          gwredir: true
+          compression: "adaptive"
+          client2client: false
+          maxclients: 50
+          duplicate_cn: false
+          custom_options: "push \"redirect-gateway def1\""
+        - descr: "Site-to-Site OpenVPN"
+          mode: "p2p_tls"
+          protocol: "udp4"
+          interface: "wan"
+          local_port: 1195
+          caref: "VPN_CA"
+          crtref: "VPN_Server_Cert"
+          tunnel_network: "10.9.0.0/30"
+          remote_network: "10.10.0.0/24"
+          local_network: "192.168.1.0/24"
+          compression: "adaptive"
+      
+      clients:
+        - descr: "Branch Office VPN Client"
+          mode: "p2p_tls"
+          protocol: "udp4"
+          interface: "wan"
+          server_addr: "203.0.113.100"
+          server_port: 1194
+          caref: "VPN_CA"
+          crtref: "VPN_Server_Cert"
+          tunnel_network: "10.11.0.0/30"
+          remote_network: "192.168.100.0/24"
+          compression: "adaptive"
+    
+    # IPsec Site-to-Site VPN
+    pfsense_ipsec:
+      enable: true
+      phase1:
+        - descr: "Site-to-Site IPsec VPN"
+          interface: "wan"
+          remote_gateway: "203.0.113.200"
+          iketype: "ikev2"
+          protocol: "inet"
+          myid_type: "myaddress"
+          peerid_type: "peeraddress"
+          encryption: "aes256"
+          hash: "sha256"
+          dhgroup: "14"
+          lifetime: 28800
+          authentication_method: "pre_shared_key"
+          pre_shared_key: "{{ vault_ipsec_psk | default('test_preshared_key_123') }}"
+          nat_traversal: "on"
+          dpd_delay: 10
+          dpd_maxfail: 5
+        - descr: "Mobile IPsec VPN"
+          interface: "wan"
+          remote_gateway: "0.0.0.0"
+          iketype: "ikev2"
+          protocol: "inet"
+          myid_type: "fqdn"
+          myid_data: "vpn.test"
+          peerid_type: "any"
+          encryption: "aes256"
+          hash: "sha256"
+          dhgroup: "14"
+          lifetime: 28800
+          authentication_method: "eap-mschapv2"
+          mobike: "on"
+          nat_traversal: "on"
+      
+      phase2:
+        - ikeid: 1
+          descr: "Site-to-Site Tunnel"
+          localid_type: "network"
+          localid_address: "192.168.1.0"
+          localid_netbits: 24
+          remoteid_type: "network"
+          remoteid_address: "192.168.200.0"
+          remoteid_netbits: 24
+          protocol: "esp"
+          encryption: "aes256"
+          hash: "sha256"
+          pfsgroup: "14"
+          lifetime: 3600
+          keepalive: true
+        - ikeid: 2
+          descr: "Mobile IPsec Pool"
+          localid_type: "network"
+          localid_address: "192.168.1.0"
+          localid_netbits: 24
+          remoteid_type: "network"
+          remoteid_address: "10.12.0.0"
+          remoteid_netbits: 24
+          protocol: "esp"
+          encryption: "aes256"
+          hash: "sha256"
+          pfsgroup: "14"
+          lifetime: 3600
+    
+    # Firewall rules for VPN traffic
+    pfsense_firewall_rules:
+      # OpenVPN rules
+      - interface: wan
+        action: pass
+        protocol: udp
+        source: any
+        destination: wan_address
+        destination_port: "1194"
+        descr: "Allow OpenVPN Remote Access"
+      - interface: wan
+        action: pass
+        protocol: udp
+        source: any
+        destination: wan_address
+        destination_port: "1195"
+        descr: "Allow OpenVPN Site-to-Site"
+      
+      # IPsec rules
+      - interface: wan
+        action: pass
+        protocol: udp
+        source: any
+        destination: wan_address
+        destination_port: "500"
+        descr: "Allow IPsec IKE"
+      - interface: wan
+        action: pass
+        protocol: udp
+        source: any
+        destination: wan_address
+        destination_port: "4500"
+        descr: "Allow IPsec NAT-T"
+      - interface: wan
+        action: pass
+        protocol: esp
+        source: any
+        destination: wan_address
+        descr: "Allow IPsec ESP"
+      
+      # OpenVPN tunnel rules
+      - interface: openvpn
+        action: pass
+        protocol: any
+        source: "10.8.0.0/24"
+        destination: "192.168.1.0/24"
+        descr: "Allow VPN clients to LAN"
+      - interface: openvpn
+        action: pass
+        protocol: any
+        source: "10.9.0.0/30"
+        destination: "192.168.1.0/24"
+        descr: "Allow Site-to-Site OpenVPN to LAN"
+      
+      # IPsec tunnel rules
+      - interface: ipsec
+        action: pass
+        protocol: any
+        source: "192.168.200.0/24"
+        destination: "192.168.1.0/24"
+        descr: "Allow IPsec remote network to LAN"
+      - interface: ipsec
+        action: pass
+        protocol: any
+        source: "10.12.0.0/24"
+        destination: "192.168.1.0/24"
+        descr: "Allow Mobile IPsec to LAN"
+      
+      # LAN to VPN networks
+      - interface: lan
+        action: pass
+        protocol: any
+        source: "192.168.1.0/24"
+        destination: "10.8.0.0/24"
+        descr: "Allow LAN to OpenVPN clients"
+      - interface: lan
+        action: pass
+        protocol: any
+        source: "192.168.1.0/24"
+        destination: "192.168.200.0/24"
+        descr: "Allow LAN to IPsec remote network"
+    
+    # NAT rules for VPN (if needed)
+    pfsense_nat_rules:
+      - interface: wan
+        protocol: udp
+        destination_port: "1194"
+        target: "wan_address"
+        local_port: "1194"
+        descr: "OpenVPN Remote Access NAT"
+      - interface: wan
+        protocol: udp
+        destination_port: "1195"
+        target: "wan_address"
+        local_port: "1195"
+        descr: "OpenVPN Site-to-Site NAT"
+
+  roles:
+    - role: networking.pfsense

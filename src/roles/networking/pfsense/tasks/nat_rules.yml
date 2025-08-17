@@ -1,0 +1,42 @@
+---
+# NAT Rules Configuration
+- name: Configure NAT port forward rules
+  pfsensible.core.pfsense_nat_port_forward:
+    interface: "{{ item.interface }}"
+    protocol: "{{ item.protocol | default('tcp') }}"
+    source: "{{ item.source | default('any') }}"
+    source_port: "{{ item.source_port | default(omit) }}"
+    destination: "{{ item.destination | default('any') }}"
+    destination_port: "{{ item.destination_port }}"
+    target: "{{ item.target }}"
+    local_port: "{{ item.local_port | default(item.destination_port) }}"
+    descr: "{{ item.descr | default(omit) }}"
+    disabled: "{{ item.disabled | default(false) }}"
+    nordr: "{{ item.nordr | default(false) }}"
+    nosync: "{{ item.nosync | default(false) }}"
+    associated_rule: "{{ item.associated_rule | default('add_associated') }}"
+    state: present
+  loop: "{{ pfsense_nat_rules }}"
+  when: pfsense_nat_rules is defined
+  notify: reload firewall nat
+
+- name: Configure NAT outbound rules
+  pfsensible.core.pfsense_nat_outbound:
+    mode: "{{ pfsense_nat_outbound.mode | default('automatic') }}"
+    rules: "{{ pfsense_nat_outbound.rules | default([]) }}"
+  when: pfsense_nat_outbound is defined
+  notify: reload firewall nat
+
+- name: Configure NAT 1:1 rules
+  pfsensible.core.pfsense_nat_one_to_one:
+    interface: "{{ item.interface }}"
+    external: "{{ item.external }}"
+    internal: "{{ item.internal }}"
+    destination: "{{ item.destination | default('any') }}"
+    descr: "{{ item.descr | default(omit) }}"
+    disabled: "{{ item.disabled | default(false) }}"
+    nobinat: "{{ item.nobinat | default(false) }}"
+    state: present
+  loop: "{{ pfsense_nat_one_to_one | default([]) }}"
+  when: pfsense_nat_one_to_one is defined
+  notify: reload firewall nat

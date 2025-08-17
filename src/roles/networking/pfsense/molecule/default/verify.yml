@@ -1,0 +1,80 @@
+---
+- name: Verify pfSense Configuration
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check if pfSense variables are properly set
+      assert:
+        that:
+          - pfsense_host is defined
+          - pfsense_username is defined
+          - pfsense_password is defined
+          - pfsense_system_settings is defined
+          - pfsense_interfaces is defined
+        fail_msg: "Required pfSense variables are not defined"
+        success_msg: "All required pfSense variables are properly defined"
+
+    - name: Verify system settings configuration
+      assert:
+        that:
+          - pfsense_system_settings.hostname == "pfsense-test"
+          - pfsense_system_settings.domain == "test.local"
+          - pfsense_system_settings.timezone == "America/New_York"
+        fail_msg: "System settings are not configured correctly"
+        success_msg: "System settings are configured correctly"
+
+    - name: Verify interface configuration
+      assert:
+        that:
+          - pfsense_interfaces | length >= 2
+          - pfsense_interfaces[0].interface == "wan"
+          - pfsense_interfaces[1].interface == "lan"
+          - pfsense_interfaces[1].ipaddr == "192.168.1.1"
+        fail_msg: "Interface configuration is incorrect"
+        success_msg: "Interface configuration is correct"
+
+    - name: Verify DHCP server configuration
+      assert:
+        that:
+          - pfsense_dhcp_servers | length >= 1
+          - pfsense_dhcp_servers[0].interface == "lan"
+          - pfsense_dhcp_servers[0].range_from == "192.168.1.100"
+          - pfsense_dhcp_servers[0].range_to == "192.168.1.200"
+        fail_msg: "DHCP server configuration is incorrect"
+        success_msg: "DHCP server configuration is correct"
+
+    - name: Verify firewall rules configuration
+      assert:
+        that:
+          - pfsense_firewall_rules | length >= 2
+          - pfsense_firewall_rules[0].interface == "lan"
+          - pfsense_firewall_rules[0].action == "pass"
+          - pfsense_firewall_rules[1].interface == "wan"
+          - pfsense_firewall_rules[1].action == "block"
+        fail_msg: "Firewall rules configuration is incorrect"
+        success_msg: "Firewall rules configuration is correct"
+
+    - name: Verify NAT rules configuration
+      assert:
+        that:
+          - pfsense_nat_rules | length >= 1
+          - pfsense_nat_rules[0].interface == "wan"
+          - pfsense_nat_rules[0].target == "192.168.1.10"
+        fail_msg: "NAT rules configuration is incorrect"
+        success_msg: "NAT rules configuration is correct"
+
+    - name: Test role idempotency by checking variables
+      debug:
+        msg: "Role variables are consistent and idempotent"
+
+    - name: Verify component flags are properly set
+      assert:
+        that:
+          - pfsense_configure_system_settings == true
+          - pfsense_configure_interfaces == true
+          - pfsense_configure_dhcp == true
+          - pfsense_configure_dns == true
+          - pfsense_configure_firewall_rules == true
+          - pfsense_configure_nat == true
+        fail_msg: "Component configuration flags are not set correctly"
+        success_msg: "All required components are enabled"

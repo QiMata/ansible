@@ -1,0 +1,79 @@
+---
+# IPsec Site-to-Site VPN Configuration
+- name: Configure IPsec Phase 1 entries
+  pfsensible.core.pfsense_ipsec_phase1:
+    ikeid: "{{ item.ikeid | default(omit) }}"
+    interface: "{{ item.interface }}"
+    remote_gateway: "{{ item.remote_gateway }}"
+    description: "{{ item.descr | default(omit) }}"
+    iketype: "{{ item.iketype | default('ikev1') }}"
+    protocol: "{{ item.protocol | default('inet') }}"
+    myid_type: "{{ item.myid_type | default('myaddress') }}"
+    myid_data: "{{ item.myid_data | default(omit) }}"
+    peerid_type: "{{ item.peerid_type | default('peeraddress') }}"
+    peerid_data: "{{ item.peerid_data | default(omit) }}"
+    encryption: "{{ item.encryption | default('aes256') }}"
+    hash: "{{ item.hash | default('sha256') }}"
+    dhgroup: "{{ item.dhgroup | default('14') }}"
+    lifetime: "{{ item.lifetime | default(28800) }}"
+    authentication_method: "{{ item.authentication_method | default('pre_shared_key') }}"
+    pre_shared_key: "{{ item.pre_shared_key }}"
+    certref: "{{ item.certref | default(omit) }}"
+    caref: "{{ item.caref | default(omit) }}"
+    reauth_enable: "{{ item.reauth_enable | default(false) }}"
+    rekey_time: "{{ item.rekey_time | default(omit) }}"
+    rand_time: "{{ item.rand_time | default(omit) }}"
+    dpd_delay: "{{ item.dpd_delay | default(10) }}"
+    dpd_maxfail: "{{ item.dpd_maxfail | default(5) }}"
+    nat_traversal: "{{ item.nat_traversal | default('on') }}"
+    mobike: "{{ item.mobike | default('off') }}"
+    splitconn: "{{ item.splitconn | default(false) }}"
+    disabled: "{{ item.disabled | default(false) }}"
+    state: present
+  loop: "{{ pfsense_ipsec.phase1 | default([]) }}"
+  when: pfsense_ipsec.phase1 is defined
+  no_log: true
+  notify: restart ipsec
+
+- name: Configure IPsec Phase 2 entries
+  pfsensible.core.pfsense_ipsec_phase2:
+    ikeid: "{{ item.ikeid }}"
+    uniqid: "{{ item.uniqid | default(omit) }}"
+    mode: "{{ item.mode | default('tunnel') }}"
+    description: "{{ item.descr | default(omit) }}"
+    localid_type: "{{ item.localid_type | default('network') }}"
+    localid_address: "{{ item.localid_address }}"
+    localid_netbits: "{{ item.localid_netbits | default(24) }}"
+    remoteid_type: "{{ item.remoteid_type | default('network') }}"
+    remoteid_address: "{{ item.remoteid_address }}"
+    remoteid_netbits: "{{ item.remoteid_netbits | default(24) }}"
+    protocol: "{{ item.protocol | default('esp') }}"
+    encryption: "{{ item.encryption | default('aes256') }}"
+    hash: "{{ item.hash | default('sha256') }}"
+    pfsgroup: "{{ item.pfsgroup | default('14') }}"
+    lifetime: "{{ item.lifetime | default(3600) }}"
+    pinghost: "{{ item.pinghost | default(omit) }}"
+    keepalive: "{{ item.keepalive | default(false) }}"
+    disabled: "{{ item.disabled | default(false) }}"
+    state: present
+  loop: "{{ pfsense_ipsec.phase2 | default([]) }}"
+  when: pfsense_ipsec.phase2 is defined
+  notify: restart ipsec
+
+- name: Enable IPsec if configured
+  pfsensible.core.pfsense_ipsec:
+    enable: "{{ pfsense_ipsec.enable | default(true) }}"
+    unityhybrid: "{{ pfsense_ipsec.unityhybrid | default(false) }}"
+    strictcrlpolicy: "{{ pfsense_ipsec.strictcrlpolicy | default(false) }}"
+    makebeforebreak: "{{ pfsense_ipsec.makebeforebreak | default(false) }}"
+    noshuntlaninterfaces: "{{ pfsense_ipsec.noshuntlaninterfaces | default(false) }}"
+    compression: "{{ pfsense_ipsec.compression | default(false) }}"
+    enableinterfacesuse: "{{ pfsense_ipsec.enableinterfacesuse | default(false) }}"
+    acceptunencryptedmainmode: "{{ pfsense_ipsec.acceptunencryptedmainmode | default(false) }}"
+    bypass: "{{ pfsense_ipsec.bypass | default(false) }}"
+    maxmss_enable: "{{ pfsense_ipsec.maxmss_enable | default(false) }}"
+    maxmss: "{{ pfsense_ipsec.maxmss | default(1400) }}"
+  when: 
+    - pfsense_ipsec is defined
+    - pfsense_ipsec.phase1 is defined or pfsense_ipsec.phase2 is defined
+  notify: restart ipsec

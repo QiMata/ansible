@@ -1,0 +1,56 @@
+---
+# System Updates
+- name: Check for system updates
+  pfsensible.core.pfsense_update:
+    check_only: true
+  register: update_check
+  when: pfsense_updates.check_for_updates | default(false)
+
+- name: Display available updates
+  debug:
+    var: update_check.updates
+  when: 
+    - pfsense_updates.check_for_updates | default(false)
+    - update_check.updates is defined
+
+- name: Create backup before update
+  include_tasks: backup.yml
+  vars:
+    pfsense_backup:
+      enabled: true
+      local_path: "/tmp/pfsense_pre_update_backup.xml"
+      cleanup_local: false
+  when: 
+    - pfsense_updates.auto_update | default(false)
+    - pfsense_updates.backup_before_update | default(true)
+    - update_check.updates is defined
+    - update_check.updates | length > 0
+
+- name: Install system updates
+  pfsensible.core.pfsense_update:
+    install: true
+    reboot: "{{ pfsense_updates.reboot_after_update | default(false) }}"
+  register: update_result
+  when: 
+    - pfsense_updates.auto_update | default(false)
+    - update_check.updates is defined
+    - update_check.updates | length > 0
+
+- name: Display update results
+  debug:
+    var: update_result
+  when: 
+    - pfsense_updates.auto_update | default(false)
+    - update_result is defined
+
+- name: Wait for system to come back online after reboot
+  wait_for_connection:
+    connect_timeout: 20
+    sleep: 5
+    delay: 60
+    timeout: 300
+  when: 
+    - pfsense_updates.auto_update | default(false)
+    - pfsense_updates.reboot_after_update | default(false)
+    - update_result is succeeded
+    - update_result.reboot_required | default(false)

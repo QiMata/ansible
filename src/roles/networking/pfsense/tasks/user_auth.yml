@@ -1,0 +1,64 @@
+---
+# User Authentication Configuration
+- name: Create local users
+  pfsensible.core.pfsense_user:
+    name: "{{ item.username }}"
+    password: "{{ item.password }}"
+    full_name: "{{ item.full_name | default(omit) }}"
+    email: "{{ item.email | default(omit) }}"
+    expires: "{{ item.expires | default(omit) }}"
+    disabled: "{{ item.disabled | default(false) }}"
+    scope: "{{ item.scope | default('user') }}"
+    uid: "{{ item.uid | default(omit) }}"
+    groups: "{{ item.groups | default([]) }}"
+    priv: "{{ item.privileges | default([]) }}"
+    state: present
+  loop: "{{ pfsense_user_auth.local_users | default([]) }}"
+  when: pfsense_user_auth.local_users is defined
+  no_log: true
+
+- name: Create user groups
+  pfsensible.core.pfsense_group:
+    name: "{{ item.name }}"
+    scope: "{{ item.scope | default('local') }}"
+    description: "{{ item.description | default(omit) }}"
+    priv: "{{ item.privileges | default([]) }}"
+    state: present
+  loop: "{{ pfsense_user_auth.groups | default([]) }}"
+  when: pfsense_user_auth.groups is defined
+
+- name: Configure LDAP authentication servers
+  pfsensible.core.pfsense_authserver_ldap:
+    name: "{{ item.name }}"
+    host: "{{ item.host }}"
+    port: "{{ item.port | default(389) }}"
+    transport: "{{ item.transport | default('tcp') }}"
+    ca: "{{ item.ca | default(omit) }}"
+    protver: "{{ item.protver | default(3) }}"
+    timeout: "{{ item.timeout | default(25) }}"
+    scope: "{{ item.scope | default('subtree') }}"
+    basedn: "{{ item.basedn }}"
+    authcn: "{{ item.authcn | default(omit) }}"
+    binddn: "{{ item.binddn | default(omit) }}"
+    bindpw: "{{ item.bindpw | default(omit) }}"
+    attr_user: "{{ item.attr_user | default('samAccountName') }}"
+    attr_group: "{{ item.attr_group | default('cn') }}"
+    attr_member: "{{ item.attr_member | default('member') }}"
+    state: present
+  loop: "{{ pfsense_user_auth.ldap_servers | default([]) }}"
+  when: pfsense_user_auth.ldap_servers is defined
+  no_log: true
+
+- name: Configure RADIUS authentication servers
+  pfsensible.core.pfsense_authserver_radius:
+    name: "{{ item.name }}"
+    host: "{{ item.host }}"
+    port: "{{ item.port | default(1812) }}"
+    secret: "{{ item.secret }}"
+    timeout: "{{ item.timeout | default(5) }}"
+    nasip_attribute: "{{ item.nasip_attribute | default(omit) }}"
+    acct_port: "{{ item.acct_port | default(1813) }}"
+    state: present
+  loop: "{{ pfsense_user_auth.radius_servers | default([]) }}"
+  when: pfsense_user_auth.radius_servers is defined
+  no_log: true

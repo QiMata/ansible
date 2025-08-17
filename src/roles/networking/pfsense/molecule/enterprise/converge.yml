@@ -1,0 +1,255 @@
+---
+- name: Converge - Enterprise pfSense Configuration
+  hosts: all
+  gather_facts: false
+  vars:
+    # Enable all enterprise features
+    pfsense_configure_system_settings: true
+    pfsense_configure_interfaces: true
+    pfsense_configure_vlans: true
+    pfsense_configure_dhcp: true
+    pfsense_configure_dns: true
+    pfsense_configure_aliases: true
+    pfsense_configure_firewall_rules: true
+    pfsense_configure_nat: true
+    pfsense_configure_traffic_shaping: true
+    pfsense_configure_user_auth: true
+    pfsense_configure_captive_portal: true
+    pfsense_configure_packages: true
+    pfsense_perform_backup: true
+    
+    # Enterprise system settings
+    pfsense_system_settings:
+      hostname: pfsense-enterprise
+      domain: enterprise.corp
+      timezone: America/New_York
+      dns_servers:
+        - 1.1.1.1
+        - 8.8.8.8
+      ntp_servers:
+        - pool.ntp.org
+        - time.nist.gov
+      webgui_settings:
+        protocol: https
+        port: 8443
+        redirect_http: true
+    
+    # Multiple interfaces including VLANs
+    pfsense_interfaces:
+      - interface: wan
+        enable: true
+        descr: "WAN Interface"
+        type: dhcp
+      - interface: lan
+        enable: true
+        descr: "LAN Interface"
+        type: static
+        ipaddr: 10.0.1.1
+        subnet: 24
+      - interface: opt1
+        enable: true
+        descr: "DMZ Interface"
+        type: static
+        ipaddr: 10.0.100.1
+        subnet: 24
+      - interface: opt2
+        enable: true
+        descr: "Management Interface"
+        type: static
+        ipaddr: 10.0.200.1
+        subnet: 24
+    
+    # VLANs configuration
+    pfsense_vlans:
+      - tag: 10
+        if: igb1
+        descr: "Management VLAN"
+        configure_interface: true
+        type: static
+        ipaddr: 10.0.10.1
+        subnet: 24
+      - tag: 20
+        if: igb1
+        descr: "Guest VLAN"
+        configure_interface: true
+        type: static
+        ipaddr: 10.0.20.1
+        subnet: 24
+      - tag: 30
+        if: igb1
+        descr: "Voice VLAN"
+        configure_interface: true
+        type: static
+        ipaddr: 10.0.30.1
+        subnet: 24
+    
+    # Multiple DHCP servers
+    pfsense_dhcp_servers:
+      - interface: lan
+        enable: true
+        range_from: "10.0.1.100"
+        range_to: "10.0.1.200"
+        dns_servers:
+          - "10.0.1.1"
+        default_lease_time: 3600
+        static_mappings:
+          - mac: "00:11:22:33:44:55"
+            ipaddr: "10.0.1.10"
+            hostname: "server01"
+            descr: "Main server"
+      - interface: opt1
+        enable: true
+        range_from: "10.0.100.10"
+        range_to: "10.0.100.50"
+        dns_servers:
+          - "10.0.100.1"
+      - interface: opt2
+        enable: true
+        range_from: "10.0.200.10"
+        range_to: "10.0.200.30"
+        dns_servers:
+          - "10.0.200.1"
+    
+    # DNS with custom overrides
+    pfsense_dns_resolver:
+      enable: true
+      dhcp_registration: true
+      static_dhcp_registration: true
+    
+    pfsense_dns_host_overrides:
+      - host: "mail"
+        domain: "enterprise.corp"
+        ip: "10.0.1.10"
+        descr: "Mail server"
+      - host: "www"
+        domain: "enterprise.corp"
+        ip: "10.0.100.10"
+        descr: "Web server"
+    
+    # Enterprise aliases
+    pfsense_aliases:
+      - name: "RFC1918_Networks"
+        type: network
+        address:
+          - "10.0.0.0/8"
+          - "172.16.0.0/12"
+          - "192.168.0.0/16"
+        descr: "Private Networks"
+      - name: "DMZ_Servers"
+        type: host
+        address:
+          - "10.0.100.10"
+          - "10.0.100.11"
+          - "10.0.100.12"
+        descr: "DMZ Server IPs"
+      - name: "Management_Ports"
+        type: port
+        address:
+          - "22"
+          - "443"
+          - "3389"
+        descr: "Management ports"
+    
+    # Comprehensive firewall rules
+    pfsense_firewall_rules:
+      # LAN rules
+      - interface: lan
+        action: pass
+        protocol: any
+        source: lan_net
+        destination: any
+        descr: "Allow LAN to any"
+      
+      # DMZ rules
+      - interface: opt1
+        action: pass
+        protocol: tcp
+        source: opt1_net
+        destination: any
+        destination_port: "80,443"
+        descr: "Allow DMZ HTTP/HTTPS outbound"
+      - interface: opt1
+        action: block
+        protocol: any
+        source: opt1_net
+        destination: "RFC1918_Networks"
+        descr: "Block DMZ to private networks"
+      
+      # Management rules
+      - interface: opt2
+        action: pass
+        protocol: tcp
+        source: opt2_net
+        destination: any
+        destination_port: "Management_Ports"
+        descr: "Allow management traffic"
+    
+    # NAT rules for DMZ
+    pfsense_nat_rules:
+      - interface: wan
+        protocol: tcp
+        destination_port: "80"
+        target: "10.0.100.10"
+        local_port: "80"
+        descr: "Web Server HTTP"
+      - interface: wan
+        protocol: tcp
+        destination_port: "443"
+        target: "10.0.100.10"
+        local_port: "443"
+        descr: "Web Server HTTPS"
+    
+    # Traffic shaping for enterprise
+    pfsense_traffic_shaping:
+      enable: true
+      limiters:
+        - name: "Upload_100M"
+          bandwidth: 100
+          bandwidthtype: "Mb"
+          mask: "srcaddress"
+          descr: "Upload limiter 100Mbps"
+        - name: "Download_100M"
+          bandwidth: 100
+          bandwidthtype: "Mb"
+          mask: "dstaddress"
+          descr: "Download limiter 100Mbps"
+    
+    # User authentication
+    pfsense_user_auth:
+      local_users:
+        - username: "netadmin"
+          password: "{{ vault_netadmin_password | default('complex_password') }}"
+          full_name: "Network Administrator"
+          groups: ["admins"]
+        - username: "readonly"
+          password: "{{ vault_readonly_password | default('readonly_password') }}"
+          full_name: "Read Only User"
+          groups: ["readonly"]
+    
+    # Captive portal for guest network
+    pfsense_captive_portal:
+      zones:
+        - zone: "guest"
+          interface: "opt1_vlan20"
+          enable: true
+          auth_method: "local"
+          idle_timeout: 60
+          hard_timeout: 480
+          concurrent_user_logins: false
+    
+    # Enterprise packages
+    pfsense_packages:
+      install:
+        - pfBlockerNG
+        - ntopng
+        - Suricata
+    
+    # Backup configuration
+    pfsense_backup:
+      enabled: true
+      local_path: "/tmp/pfsense_enterprise_backup.xml"
+      encryption_password: "{{ vault_backup_password | default('backup_password') }}"
+      cleanup_local: false
+
+  roles:
+    - role: networking.pfsense

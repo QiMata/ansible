@@ -1,0 +1,21 @@
+---
+# Static Routes Configuration
+- name: Configure static routes
+  pfsensible.core.pfsense_route:
+    network: "{{ item.network }}"
+    gateway: "{{ item.gateway }}"
+    descr: "{{ item.descr | default(omit) }}"
+    disabled: "{{ item.disabled | default(false) }}"
+    state: present
+  loop: "{{ pfsense_static_routes }}"
+  when: pfsense_static_routes is defined
+  notify: reload pfsense routing
+
+- name: Remove old static routes
+  pfsensible.core.pfsense_route:
+    network: "{{ item.network }}"
+    gateway: "{{ item.gateway }}"
+    state: absent
+  loop: "{{ pfsense_remove_routes | default([]) }}"
+  when: pfsense_remove_routes is defined
+  notify: reload pfsense routing

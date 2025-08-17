@@ -1,0 +1,40 @@
+---
+# Backup Configuration
+- name: Create configuration backup
+  pfsensible.core.pfsense_backup:
+    target: "{{ pfsense_backup.local_path | default('/tmp/pfsense_backup.xml') }}"
+    encryption_password: "{{ pfsense_backup.encryption_password | default(omit) }}"
+    no_packages: "{{ pfsense_backup.no_packages | default(false) }}"
+    no_rrd: "{{ pfsense_backup.no_rrd | default(true) }}"
+  when: 
+    - pfsense_backup.enabled | default(false)
+  register: backup_result
+
+- name: Copy backup to remote location
+  copy:
+    src: "{{ pfsense_backup.local_path | default('/tmp/pfsense_backup.xml') }}"
+    dest: "{{ pfsense_backup.remote_path }}"
+    backup: yes
+  delegate_to: "{{ pfsense_backup.remote_host }}"
+  when: 
+    - pfsense_backup.enabled | default(false)
+    - pfsense_backup.remote_backup | default(false)
+    - pfsense_backup.remote_host is defined
+    - pfsense_backup.remote_path is defined
+    - backup_result is succeeded
+
+- name: Clean up local backup file
+  file:
+    path: "{{ pfsense_backup.local_path | default('/tmp/pfsense_backup.xml') }}"
+    state: absent
+  when: 
+    - pfsense_backup.enabled | default(false)
+    - pfsense_backup.cleanup_local | default(true)
+    - backup_result is succeeded
+
+- name: Verify backup was created
+  debug:
+    msg: "Backup created successfully at {{ pfsense_backup.local_path | default('/tmp/pfsense_backup.xml') }}"
+  when: 
+    - pfsense_backup.enabled | default(false)
+    - backup_result is succeeded

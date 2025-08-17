@@ -1,0 +1,74 @@
+---
+dependency:
+  name: galaxy
+  options:
+    requirements-file: requirements.yml
+    
+driver:
+  name: docker
+  
+platforms:
+  - name: pfsense-test
+    image: quay.io/ansible/molecule-docker-runner-image:latest
+    pre_build_image: true
+    override_command: false
+    systemd: true
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    capabilities:
+      - SYS_ADMIN
+    tmpfs:
+      - /tmp
+      - /run
+    networks:
+      - name: pfsense-network
+        ipv4_address: 172.20.0.10
+    exposed_ports:
+      - 443/tcp
+      - 80/tcp
+    published_ports:
+      - 8443:443/tcp
+      - 8080:80/tcp
+
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      host_key_checking: false
+      timeout: 30
+      gathering: smart
+      fact_caching: memory
+    ssh_connection:
+      pipelining: true
+  inventory:
+    host_vars:
+      pfsense-test:
+        ansible_connection: local
+        pfsense_host: 172.20.0.10
+        pfsense_port: 443
+        pfsense_scheme: https
+        pfsense_username: admin
+        pfsense_password: pfsense
+        pfsense_validate_certs: false
+        pfsense_timeout: 30
+
+verifier:
+  name: ansible
+
+scenario:
+  name: default
+  test_sequence:
+    - dependency
+    - lint
+    - cleanup
+    - destroy
+    - syntax
+    - create
+    - prepare
+    - converge
+    - idempotence
+    - side_effect
+    - verify
+    - cleanup
+    - destroy

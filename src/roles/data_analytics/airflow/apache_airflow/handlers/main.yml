@@ -1,0 +1,56 @@
+---
+- name: reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart airflow-webserver
+  ansible.builtin.service:
+    name: airflow-webserver
+    state: restarted
+    enabled: true
+
+- name: Restart airflow-scheduler
+  ansible.builtin.service:
+    name: airflow-scheduler
+    state: restarted
+    enabled: true
+
+- name: Restart airflow-worker
+  ansible.builtin.service:
+    name: airflow-worker
+    state: restarted
+    enabled: true
+
+- name: restart airflow worker
+  ansible.builtin.systemd:
+    name: airflow-worker
+    state: restarted
+  when: ansible_service_mgr == "systemd"
+
+- name: restart airflow flower
+  ansible.builtin.systemd:
+    name: airflow-flower
+    state: restarted
+  when: ansible_service_mgr == "systemd"
+
+- name: restart airflow webserver
+  ansible.builtin.systemd:
+    name: airflow-webserver
+    state: restarted
+  when: ansible_service_mgr == "systemd"
+
+- name: restart airflow scheduler
+  ansible.builtin.systemd:
+    name: airflow-scheduler
+    state: restarted
+  when: ansible_service_mgr == "systemd"
+
+- name: restart airflow services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: restarted
+  loop:
+    - airflow-webserver
+    - airflow-scheduler
+    - airflow-worker
+  when: ansible_service_mgr == "systemd"

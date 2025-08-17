@@ -1,0 +1,27 @@
+---
+galaxy_info:
+  author: Systems Admin Team
+  description: Comprehensive pfSense firewall configuration role
+  company: Your Organization
+  license: MIT
+  min_ansible_version: 2.9
+  platforms:
+    - name: pfSense
+      versions:
+        - 2.6
+        - 2.7
+        - 23.01
+        - 23.05
+        - 23.09
+  galaxy_tags:
+    - networking
+    - firewall
+    - pfsense
+    - vpn
+    - security
+    - routing
+
+dependencies: []
+
+collections:
+  - pfsensible.core

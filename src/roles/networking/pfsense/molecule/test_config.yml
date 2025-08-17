@@ -1,0 +1,115 @@
+---
+# Molecule Test Configuration for pfSense Role
+
+# This file contains shared test configurations and utilities
+# for all Molecule scenarios
+
+# Mock pfSense API responses for testing
+pfsense_mock_responses:
+  system_info:
+    version: "23.09"
+    platform: "pfSense"
+    hostname: "test-pfsense"
+  
+  interfaces:
+    - name: "wan"
+      enable: true
+      type: "dhcp"
+    - name: "lan" 
+      enable: true
+      type: "static"
+      ipaddr: "192.168.1.1"
+      subnet: 24
+
+# Common test variables
+test_common_vars:
+  pfsense_scheme: https
+  pfsense_port: 443
+  pfsense_username: admin
+  pfsense_password: pfsense
+  pfsense_validate_certs: false
+  pfsense_timeout: 30
+
+# Test network configurations
+test_networks:
+  basic:
+    lan_network: "192.168.100.0/24"
+    lan_gateway: "192.168.100.1"
+    dhcp_range:
+      start: "192.168.100.10"
+      end: "192.168.100.50"
+  
+  enterprise:
+    lan_network: "10.0.1.0/24"
+    lan_gateway: "10.0.1.1"
+    dmz_network: "10.0.100.0/24"
+    dmz_gateway: "10.0.100.1"
+    mgmt_network: "10.0.200.0/24"
+    mgmt_gateway: "10.0.200.1"
+  
+  vpn:
+    lan_network: "192.168.1.0/24"
+    openvpn_network: "10.8.0.0/24"
+    ipsec_remote: "192.168.200.0/24"
+    ipsec_tunnel: "10.12.0.0/24"
+
+# Expected test results for verification
+expected_results:
+  basic_config:
+    interface_count: 2
+    dhcp_server_count: 1
+    firewall_rule_count: 1
+  
+  enterprise_config:
+    interface_count: 4
+    vlan_count: 3
+    dhcp_server_count: 3
+    alias_count: 3
+    firewall_rule_count: 5
+    nat_rule_count: 2
+  
+  vpn_config:
+    openvpn_server_count: 2
+    openvpn_client_count: 1
+    ipsec_phase1_count: 2
+    ipsec_phase2_count: 2
+    certificate_count: 2
+    vpn_firewall_rule_count: 10
+
+# Test validation functions
+validation_tasks:
+  - name: "system_settings"
+    description: "Validate system configuration"
+    checks:
+      - hostname_set
+      - domain_configured
+      - timezone_correct
+  
+  - name: "network_interfaces"
+    description: "Validate network interface configuration"
+    checks:
+      - interfaces_configured
+      - ip_addresses_assigned
+      - interface_descriptions_set
+  
+  - name: "dhcp_services"
+    description: "Validate DHCP server configuration"
+    checks:
+      - dhcp_ranges_configured
+      - dns_servers_assigned
+      - lease_times_set
+  
+  - name: "firewall_security"
+    description: "Validate firewall rules and security"
+    checks:
+      - rules_configured
+      - default_deny_policy
+      - logging_enabled
+  
+  - name: "vpn_connectivity"
+    description: "Validate VPN configuration"
+    checks:
+      - certificates_present
+      - openvpn_configured
+      - ipsec_configured
+      - vpn_rules_present

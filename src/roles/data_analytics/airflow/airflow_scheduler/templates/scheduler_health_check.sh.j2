@@ -1,0 +1,41 @@
+#!/bin/bash
+# Airflow Scheduler Health Check Script
+
+AIRFLOW_HOME="{{ airflow_scheduler_home }}"
+SCHEDULER_PID_FILE="/var/run/airflow/scheduler.pid"
+LOG_FILE="${AIRFLOW_HOME}/logs/scheduler/health_check.log"
+
+# Function to log messages
+log_message() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${LOG_FILE}"
+}
+
+# Check if scheduler process is running
+if systemctl is-active --quiet airflow-scheduler; then
+    log_message "Scheduler service is active"
+    
+    # Check if scheduler is responsive by checking recent heartbeat
+    if [ -f "${AIRFLOW_HOME}/airflow.db" ]; then
+        LAST_HEARTBEAT=$(sqlite3 "${AIRFLOW_HOME}/airflow.db" "SELECT MAX(latest_heartbeat) FROM job WHERE job_type='SchedulerJob';" 2>/dev/null)
+        CURRENT_TIME=$(date +%s)
+        
+        if [ -n "$LAST_HEARTBEAT" ]; then
+            HEARTBEAT_TIME=$(date -d "$LAST_HEARTBEAT" +%s 2>/dev/null || echo 0)
+            TIME_DIFF=$((CURRENT_TIME - HEARTBEAT_TIME))
+            
+            if [ $TIME_DIFF -gt {{ airflow_scheduler_zombie_task_threshold }} ]; then
+                log_message "WARNING: Scheduler heartbeat is stale (${TIME_DIFF}s old). Restarting scheduler."
+                systemctl restart airflow-scheduler
+            else
+                log_message "Scheduler heartbeat is healthy (${TIME_DIFF}s old)"
+            fi
+        else
+            log_message "WARNING: No scheduler heartbeat found in database"
+        fi
+    else
+        log_message "WARNING: Airflow database not found"
+    fi
+else
+    log_message "ERROR: Scheduler service is not active. Starting scheduler."
+    systemctl start airflow-scheduler
+fi

@@ -1,0 +1,88 @@
+---
+- name: Converge - Basic pfSense Configuration Test
+  hosts: all
+  gather_facts: false
+  vars:
+    # Basic system configuration
+    pfsense_configure_system_settings: true
+    pfsense_configure_interfaces: true
+    pfsense_configure_dhcp: true
+    pfsense_configure_dns: true
+    pfsense_configure_firewall_rules: true
+    pfsense_configure_nat: true
+    
+    # Mock pfSense API responses for testing
+    pfsense_mock_mode: true
+    
+    # System settings
+    pfsense_system_settings:
+      hostname: pfsense-test
+      domain: test.local
+      timezone: America/New_York
+      dns_servers:
+        - 8.8.8.8
+        - 1.1.1.1
+      ntp_servers:
+        - pool.ntp.org
+    
+    # Interface configuration
+    pfsense_interfaces:
+      - interface: wan
+        enable: true
+        descr: "WAN Interface"
+        type: dhcp
+      - interface: lan
+        enable: true
+        descr: "LAN Interface"
+        type: static
+        ipaddr: 192.168.1.1
+        subnet: 24
+    
+    # DHCP configuration
+    pfsense_dhcp_servers:
+      - interface: lan
+        enable: true
+        range_from: "192.168.1.100"
+        range_to: "192.168.1.200"
+        dns_servers:
+          - "192.168.1.1"
+        default_lease_time: 7200
+    
+    # DNS configuration
+    pfsense_dns_resolver:
+      enable: true
+      dhcp_registration: true
+      static_dhcp_registration: true
+    
+    # Basic firewall rules
+    pfsense_firewall_rules:
+      - interface: lan
+        action: pass
+        protocol: any
+        source: lan_net
+        destination: any
+        descr: "Allow LAN to any"
+      - interface: wan
+        action: block
+        protocol: any
+        source: any
+        destination: any
+        descr: "Block all WAN traffic"
+    
+    # Basic NAT rules
+    pfsense_nat_rules:
+      - interface: wan
+        protocol: tcp
+        destination_port: "80"
+        target: "192.168.1.10"
+        local_port: "80"
+        descr: "Web Server NAT"
+
+  pre_tasks:
+    - name: Mock pfSense API calls for testing
+      set_fact:
+        ansible_check_mode: false
+      when: pfsense_mock_mode | default(false)
+
+  roles:
+    - role: networking.pfsense

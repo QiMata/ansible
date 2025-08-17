@@ -1,0 +1,36 @@
+[Unit]
+Description=Airflow Scheduler
+After=network.target postgresql.service redis.service
+Wants=postgresql.service redis.service
+
+[Service]
+Type=notify
+User={{ airflow_scheduler_user }}
+Group={{ airflow_scheduler_group }}
+WorkingDirectory={{ airflow_scheduler_home }}
+Environment=AIRFLOW_HOME={{ airflow_scheduler_home }}
+Environment=PYTHONPATH={{ airflow_scheduler_home }}
+ExecStart={{ airflow_scheduler_home }}/venv/bin/airflow scheduler
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=600
+StartLimitBurst=3
+MemoryLimit={{ airflow_scheduler_memory_limit }}
+LimitNOFILE=65536
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=airflow-scheduler
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths={{ airflow_scheduler_home }}
+
+[Install]
+WantedBy=multi-user.target

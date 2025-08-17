@@ -1,0 +1,83 @@
+---
+- name: Install database client packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - "{{ apache_airflow_database_packages[apache_airflow_database_type] }}"
+  when: apache_airflow_database_type != "sqlite"
+
+- name: Create airflow database user (PostgreSQL)
+  postgresql_user:
+    name: "{{ apache_airflow_database_user }}"
+    password: "{{ apache_airflow_database_password }}"
+    role_attr_flags: CREATEDB
+    state: present
+  become: true
+  become_user: postgres
+  when: 
+    - apache_airflow_database_type == "postgresql"
+    - apache_airflow_manage_database | default(true)
+  delegate_to: "{{ apache_airflow_database_host }}"
+
+- name: Create airflow database (PostgreSQL)
+  postgresql_db:
+    name: "{{ apache_airflow_database_name }}"
+    owner: "{{ apache_airflow_database_user }}"
+    state: present
+  become: true
+  become_user: postgres
+  when: 
+    - apache_airflow_database_type == "postgresql"
+    - apache_airflow_manage_database | default(true)
+  delegate_to: "{{ apache_airflow_database_host }}"
+
+- name: Create airflow database user (MySQL)
+  mysql_user:
+    name: "{{ apache_airflow_database_user }}"
+    password: "{{ apache_airflow_database_password }}"
+    priv: "{{ apache_airflow_database_name }}.*:ALL"
+    host: "%"
+    state: present
+  when: 
+    - apache_airflow_database_type == "mysql"
+    - apache_airflow_manage_database | default(true)
+  delegate_to: "{{ apache_airflow_database_host }}"
+
+- name: Create airflow database (MySQL)
+  mysql_db:
+    name: "{{ apache_airflow_database_name }}"
+    state: present
+  when: 
+    - apache_airflow_database_type == "mysql"
+    - apache_airflow_manage_database | default(true)
+  delegate_to: "{{ apache_airflow_database_host }}"
+
+- name: Wait for database to be ready
+  wait_for:
+    host: "{{ apache_airflow_database_host }}"
+    port: "{{ apache_airflow_database_port }}"
+    timeout: 300
+  when: apache_airflow_database_type != "sqlite"
+
+- name: Initialize airflow database
+  ansible.builtin.command:
+    cmd: "{{ apache_airflow_python_executable }} -m airflow db init"
+  environment:
+    AIRFLOW_HOME: "{{ apache_airflow_home }}"
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "{{ apache_airflow_database_url }}"
+  become: true
+  become_user: "{{ apache_airflow_user }}"
+  register: db_init_result
+  changed_when: "'DB: airflow' in db_init_result.stdout"
+
+- name: Upgrade airflow database schema
+  ansible.builtin.command:
+    cmd: "{{ apache_airflow_python_executable }} -m airflow db upgrade"
+  environment:
+    AIRFLOW_HOME: "{{ apache_airflow_home }}"
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "{{ apache_airflow_database_url }}"
+  become: true
+  become_user: "{{ apache_airflow_user }}"
+  register: db_upgrade_result
+  changed_when: "'Upgrade' in db_upgrade_result.stdout"

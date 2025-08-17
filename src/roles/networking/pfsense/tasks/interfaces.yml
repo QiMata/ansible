@@ -1,0 +1,30 @@
+---
+# Interface Configuration
+- name: Configure network interfaces
+  pfsensible.core.pfsense_interface:
+    interface: "{{ item.interface }}"
+    enable: "{{ item.enable | default(true) }}"
+    descr: "{{ item.descr | default(omit) }}"
+    type: "{{ item.type | default('none') }}"
+    ipaddr: "{{ item.ipaddr | default(omit) }}"
+    subnet: "{{ item.subnet | default(omit) }}"
+    gateway: "{{ item.gateway | default(omit) }}"
+    blockpriv: "{{ item.blockpriv | default(omit) }}"
+    blockbogons: "{{ item.blockbogons | default(omit) }}"
+    spoofmac: "{{ item.spoofmac | default(omit) }}"
+    mtu: "{{ item.mtu | default(omit) }}"
+    mss: "{{ item.mss | default(omit) }}"
+    speed_duplex: "{{ item.speed_duplex | default(omit) }}"
+  loop: "{{ pfsense_interfaces }}"
+  when: pfsense_interfaces is defined
+  notify: reload pfsense interfaces
+
+- name: Enable interfaces
+  pfsensible.core.pfsense_interface:
+    interface: "{{ item.interface }}"
+    enable: true
+  loop: "{{ pfsense_interfaces }}"
+  when: 
+    - pfsense_interfaces is defined
+    - item.enable | default(true)
+  notify: reload pfsense interfaces

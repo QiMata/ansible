@@ -1,0 +1,53 @@
+---
+dependency:
+  name: galaxy
+  options:
+    requirements-file: requirements.yml
+
+driver:
+  name: docker
+
+platforms:
+  - name: pfsense-basic
+    image: quay.io/ansible/molecule-docker-runner-image:latest
+    pre_build_image: true
+    override_command: false
+    systemd: true
+    privileged: true
+
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      host_key_checking: false
+      timeout: 30
+  inventory:
+    host_vars:
+      pfsense-basic:
+        ansible_connection: local
+        pfsense_host: 127.0.0.1
+        pfsense_port: 443
+        pfsense_scheme: https
+        pfsense_username: admin
+        pfsense_password: pfsense
+        pfsense_validate_certs: false
+        pfsense_timeout: 30
+
+verifier:
+  name: ansible
+
+scenario:
+  name: basic_config
+  test_sequence:
+    - dependency
+    - lint
+    - cleanup
+    - destroy
+    - syntax
+    - create
+    - prepare
+    - converge
+    - idempotence
+    - verify
+    - cleanup
+    - destroy

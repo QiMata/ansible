@@ -1,0 +1,65 @@
+---
+- name: Ensure airflow scheduler configuration directory exists
+  ansible.builtin.file:
+    path: "{{ airflow_scheduler_home }}/config"
+    state: directory
+    owner: "{{ airflow_scheduler_user }}"
+    group: "{{ airflow_scheduler_group }}"
+    mode: '0755'
+
+- name: Configure airflow scheduler
+  ansible.builtin.template:
+    src: scheduler_config.j2
+    dest: "{{ airflow_scheduler_home }}/config/scheduler.cfg"
+    owner: "{{ airflow_scheduler_user }}"
+    group: "{{ airflow_scheduler_group }}"
+    mode: '0644'
+  notify: restart airflow scheduler
+
+- name: Create airflow scheduler systemd service
+  ansible.builtin.template:
+    src: airflow-scheduler.service.j2
+    dest: /etc/systemd/system/airflow-scheduler.service
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart airflow scheduler
+
+- name: Create scheduler log directory
+  ansible.builtin.file:
+    path: "{{ airflow_scheduler_home }}/logs/scheduler"
+    state: directory
+    owner: "{{ airflow_scheduler_user }}"
+    group: "{{ airflow_scheduler_group }}"
+    mode: '0755'
+
+- name: Create scheduler PID directory
+  ansible.builtin.file:
+    path: /var/run/airflow
+    state: directory
+    owner: "{{ airflow_scheduler_user }}"
+    group: "{{ airflow_scheduler_group }}"
+    mode: '0755'
+
+- name: Enable and start airflow scheduler service
+  ansible.builtin.systemd:
+    name: airflow-scheduler
+    enabled: "{{ airflow_scheduler_service_enabled }}"
+    state: "{{ airflow_scheduler_service_state }}"
+    daemon_reload: true
+  when: ansible_service_mgr == "systemd"
+
+- name: Create scheduler health check script
+  ansible.builtin.template:
+    src: scheduler_health_check.sh.j2
+    dest: "{{ airflow_scheduler_home }}/bin/scheduler_health_check.sh"
+    owner: "{{ airflow_scheduler_user }}"
+    group: "{{ airflow_scheduler_group }}"
+    mode: '0755'
+
+- name: Setup scheduler monitoring cron job
+  ansible.builtin.cron:
+    name: "airflow scheduler health check"
+    minute: "*/5"
+    job: "{{ airflow_scheduler_home }}/bin/scheduler_health_check.sh"
+    user: "{{ airflow_scheduler_user }}"

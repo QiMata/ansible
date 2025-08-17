@@ -1,0 +1,28 @@
+---
+# Airflow Scheduler Configuration
+airflow_scheduler_user: "{{ apache_airflow_user | default('airflow') }}"
+airflow_scheduler_group: "{{ apache_airflow_group | default('airflow') }}"
+airflow_scheduler_home: "{{ apache_airflow_home | default('/opt/airflow') }}"
+
+# Scheduler specific settings
+airflow_scheduler_instances: 1
+airflow_scheduler_heartrate: 5
+airflow_scheduler_max_threads: 2
+airflow_scheduler_catchup_by_default: false
+airflow_scheduler_max_tis_per_query: 512
+airflow_scheduler_dag_dir_list_interval: 300
+airflow_scheduler_zombie_task_threshold: 300
+airflow_scheduler_processor_poll_interval: 1
+
+# Service configuration
+airflow_scheduler_service_enabled: true
+airflow_scheduler_service_state: started
+airflow_scheduler_restart_on_failure: true
+
+# Resource limits
+airflow_scheduler_memory_limit: "2G"
+airflow_scheduler_cpu_limit: "1000m"
+
+# Logging
+airflow_scheduler_log_level: "INFO"
+airflow_scheduler_log_format: "[%%(asctime)s] {%%(filename)s:%%(lineno)d} %%(levelname)s - %%(message)s"

@@ -1,0 +1,53 @@
+# -*- coding: utf-8 -*-
+# Airflow Webserver Configuration
+
+import os
+from flask_appbuilder.security.manager import AUTH_DB
+{% if airflow_webserver_auth_backend %}
+from flask_appbuilder.security.manager import {{ airflow_webserver_auth_backend }}
+{% endif %}
+
+# Base configuration
+basedir = os.path.abspath(os.path.dirname(__file__))
+
+# Security configuration
+SECRET_KEY = "{{ airflow_webserver_secret_key }}"
+CSRF_ENABLED = {{ airflow_webserver_csrf_enabled | lower }}
+WTF_CSRF_ENABLED = {{ airflow_webserver_csrf_enabled | lower }}
+
+# Session configuration
+PERMANENT_SESSION_LIFETIME = {{ airflow_webserver_session_timeout_minutes * 60 }}
+
+# Authentication
+{% if airflow_webserver_authenticate %}
+AUTH_TYPE = {{ airflow_webserver_auth_backend | default('AUTH_DB') }}
+{% else %}
+AUTH_TYPE = AUTH_DB
+{% endif %}
+
+# RBAC
+AUTH_ROLE_ADMIN = 'Admin'
+AUTH_ROLE_PUBLIC = 'Public'
+AUTH_USER_REGISTRATION = False
+AUTH_USER_REGISTRATION_ROLE = "Public"
+
+# Filter by owner
+FILTER_BY_OWNER = {{ airflow_webserver_filter_by_owner | lower }}
+
+{% if airflow_webserver_enable_proxy_fix %}
+# Proxy configuration for load balancers
+ENABLE_PROXY_FIX = True
+PROXY_FIX_CONFIG = {
+    'x_for': {{ airflow_webserver_proxy_fix_x_for }},
+    'x_proto': {{ airflow_webserver_proxy_fix_x_proto }},
+    'x_host': {{ airflow_webserver_proxy_fix_x_host }},
+    'x_port': {{ airflow_webserver_proxy_fix_x_port }},
+}
+{% endif %}
+
+# Logging
+import logging
+logging.basicConfig(
+    level=logging.{{ airflow_webserver_log_level }},
+    format='[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s'
+)

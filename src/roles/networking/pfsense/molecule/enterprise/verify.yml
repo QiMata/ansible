@@ -1,0 +1,134 @@
+---
+- name: Verify Enterprise Configuration
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Verify enterprise system configuration
+      assert:
+        that:
+          - pfsense_system_settings.hostname == "pfsense-enterprise"
+          - pfsense_system_settings.domain == "enterprise.corp"
+          - pfsense_system_settings.webgui_settings.port == 8443
+        fail_msg: "Enterprise system settings verification failed"
+        success_msg: "Enterprise system settings verified"
+
+    - name: Verify multiple interfaces are configured
+      assert:
+        that:
+          - pfsense_interfaces | length >= 4
+          - pfsense_interfaces | selectattr('interface', 'equalto', 'opt1') | list | length == 1
+          - pfsense_interfaces | selectattr('interface', 'equalto', 'opt2') | list | length == 1
+        fail_msg: "Multiple interfaces verification failed"
+        success_msg: "Multiple interfaces verified"
+
+    - name: Verify VLAN configuration
+      assert:
+        that:
+          - pfsense_vlans | length >= 3
+          - pfsense_vlans | selectattr('tag', 'equalto', 10) | list | length == 1
+          - pfsense_vlans | selectattr('tag', 'equalto', 20) | list | length == 1
+          - pfsense_vlans | selectattr('tag', 'equalto', 30) | list | length == 1
+        fail_msg: "VLAN configuration verification failed"
+        success_msg: "VLAN configuration verified"
+
+    - name: Verify multiple DHCP servers
+      assert:
+        that:
+          - pfsense_dhcp_servers | length >= 3
+          - pfsense_dhcp_servers | selectattr('interface', 'equalto', 'lan') | list | length == 1
+          - pfsense_dhcp_servers | selectattr('interface', 'equalto', 'opt1') | list | length == 1
+          - pfsense_dhcp_servers | selectattr('interface', 'equalto', 'opt2') | list | length == 1
+        fail_msg: "Multiple DHCP servers verification failed"
+        success_msg: "Multiple DHCP servers verified"
+
+    - name: Verify DNS host overrides
+      assert:
+        that:
+          - pfsense_dns_host_overrides | length >= 2
+          - pfsense_dns_host_overrides | selectattr('host', 'equalto', 'mail') | list | length == 1
+          - pfsense_dns_host_overrides | selectattr('host', 'equalto', 'www') | list | length == 1
+        fail_msg: "DNS host overrides verification failed"
+        success_msg: "DNS host overrides verified"
+
+    - name: Verify enterprise aliases
+      assert:
+        that:
+          - pfsense_aliases | length >= 3
+          - pfsense_aliases | selectattr('name', 'equalto', 'RFC1918_Networks') | list | length == 1
+          - pfsense_aliases | selectattr('name', 'equalto', 'DMZ_Servers') | list | length == 1
+          - pfsense_aliases | selectattr('name', 'equalto', 'Management_Ports') | list | length == 1
+        fail_msg: "Enterprise aliases verification failed"
+        success_msg: "Enterprise aliases verified"
+
+    - name: Verify comprehensive firewall rules
+      assert:
+        that:
+          - pfsense_firewall_rules | length >= 5
+          - pfsense_firewall_rules | selectattr('interface', 'equalto', 'lan') | list | length >= 1
+          - pfsense_firewall_rules | selectattr('interface', 'equalto', 'opt1') | list | length >= 2
+          - pfsense_firewall_rules | selectattr('interface', 'equalto', 'opt2') | list | length >= 1
+        fail_msg: "Comprehensive firewall rules verification failed"
+        success_msg: "Comprehensive firewall rules verified"
+
+    - name: Verify NAT rules for DMZ
+      assert:
+        that:
+          - pfsense_nat_rules | length >= 2
+          - pfsense_nat_rules | selectattr('target', 'equalto', '10.0.100.10') | list | length >= 2
+        fail_msg: "DMZ NAT rules verification failed"
+        success_msg: "DMZ NAT rules verified"
+
+    - name: Verify traffic shaping configuration
+      assert:
+        that:
+          - pfsense_traffic_shaping.enable == true
+          - pfsense_traffic_shaping.limiters | length >= 2
+        fail_msg: "Traffic shaping verification failed"
+        success_msg: "Traffic shaping verified"
+
+    - name: Verify user authentication
+      assert:
+        that:
+          - pfsense_user_auth.local_users | length >= 2
+          - pfsense_user_auth.local_users | selectattr('username', 'equalto', 'netadmin') | list | length == 1
+          - pfsense_user_auth.local_users | selectattr('username', 'equalto', 'readonly') | list | length == 1
+        fail_msg: "User authentication verification failed"
+        success_msg: "User authentication verified"
+
+    - name: Verify captive portal configuration
+      assert:
+        that:
+          - pfsense_captive_portal.zones | length >= 1
+          - pfsense_captive_portal.zones[0].zone == "guest"
+        fail_msg: "Captive portal verification failed"
+        success_msg: "Captive portal verified"
+
+    - name: Verify enterprise packages
+      assert:
+        that:
+          - pfsense_packages.install | length >= 3
+          - "'pfBlockerNG' in pfsense_packages.install"
+          - "'ntopng' in pfsense_packages.install"
+          - "'Suricata' in pfsense_packages.install"
+        fail_msg: "Enterprise packages verification failed"
+        success_msg: "Enterprise packages verified"
+
+    - name: Verify backup configuration
+      assert:
+        that:
+          - pfsense_backup.enabled == true
+          - pfsense_backup.local_path == "/tmp/pfsense_enterprise_backup.xml"
+        fail_msg: "Backup configuration verification failed"
+        success_msg: "Backup configuration verified"
+
+    - name: Verify all enterprise features are enabled
+      assert:
+        that:
+          - pfsense_configure_vlans == true
+          - pfsense_configure_traffic_shaping == true
+          - pfsense_configure_user_auth == true
+          - pfsense_configure_captive_portal == true
+          - pfsense_configure_packages == true
+          - pfsense_perform_backup == true
+        fail_msg: "Not all enterprise features are enabled"
+        success_msg: "All enterprise features are properly enabled"

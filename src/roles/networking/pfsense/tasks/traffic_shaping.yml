@@ -1,0 +1,60 @@
+---
+# Traffic Shaping/QoS Configuration
+- name: Configure traffic shaping limiters
+  pfsensible.core.pfsense_limiter:
+    name: "{{ item.name }}"
+    bandwidth: "{{ item.bandwidth }}"
+    bandwidthtype: "{{ item.bandwidthtype | default('Mb') }}"
+    mask: "{{ item.mask | default('none') }}"
+    buckets: "{{ item.buckets | default(omit) }}"
+    ecn: "{{ item.ecn | default(false) }}"
+    qlimit: "{{ item.qlimit | default(omit) }}"
+    plr: "{{ item.plr | default(omit) }}"
+    delay: "{{ item.delay | default(omit) }}"
+    scheduler: "{{ item.scheduler | default('FIFO') }}"
+    descr: "{{ item.descr | default(omit) }}"
+    state: present
+  loop: "{{ pfsense_traffic_shaping.limiters | default([]) }}"
+  when: 
+    - pfsense_traffic_shaping.enable | default(false)
+    - pfsense_traffic_shaping.limiters is defined
+  notify: reload firewall
+
+- name: Configure traffic shaping queues
+  pfsensible.core.pfsense_traffic_shaper:
+    interface: "{{ item.interface }}"
+    scheduler: "{{ item.scheduler | default('HFSC') }}"
+    bandwidthtype: "{{ item.bandwidthtype | default('Mb') }}"
+    bandwidth: "{{ item.bandwidth }}"
+    enabled: "{{ item.enabled | default(true) }}"
+    qlimit: "{{ item.qlimit | default(omit) }}"
+    tbrconfig: "{{ item.tbrconfig | default(omit) }}"
+    priority: "{{ item.priority | default(omit) }}"
+    state: present
+  loop: "{{ pfsense_traffic_shaping.queues | default([]) }}"
+  when: 
+    - pfsense_traffic_shaping.enable | default(false)
+    - pfsense_traffic_shaping.queues is defined
+  notify: reload firewall
+
+- name: Configure traffic shaping rules
+  pfsensible.core.pfsense_rule:
+    interface: "{{ item.interface }}"
+    action: "{{ item.action | default('pass') }}"
+    protocol: "{{ item.protocol | default('any') }}"
+    source: "{{ item.source | default('any') }}"
+    destination: "{{ item.destination | default('any') }}"
+    destination_port: "{{ item.destination_port | default(omit) }}"
+    in_queue: "{{ item.in_queue | default(omit) }}"
+    out_queue: "{{ item.out_queue | default(omit) }}"
+    ackqueue: "{{ item.ackqueue | default(omit) }}"
+    defaultqueue: "{{ item.defaultqueue | default(omit) }}"
+    dnpipe: "{{ item.dnpipe | default(omit) }}"
+    pdnpipe: "{{ item.pdnpipe | default(omit) }}"
+    descr: "{{ item.descr | default(omit) }}"
+    state: present
+  loop: "{{ pfsense_traffic_shaping.rules | default([]) }}"
+  when: 
+    - pfsense_traffic_shaping.enable | default(false)
+    - pfsense_traffic_shaping.rules is defined
+  notify: reload firewall filter

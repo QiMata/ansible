@@ -1,0 +1,100 @@
+---
+- name: Install executor-specific packages
+  ansible.builtin.pip:
+    name: "{{ apache_airflow_executor_packages[apache_airflow_executor] | default([]) }}"
+    virtualenv: "{{ apache_airflow_venv_path if apache_airflow_venv_path else omit }}"
+    virtualenv_python: "{{ apache_airflow_python if apache_airflow_venv_path else omit }}"
+  become: true
+  become_user: "{{ apache_airflow_user }}"
+  when: apache_airflow_executor_packages[apache_airflow_executor] | default([]) | length > 0
+
+- name: Install redis server (for CeleryExecutor)
+  ansible.builtin.package:
+    name: redis-server
+    state: present
+  when: 
+    - apache_airflow_executor == "CeleryExecutor"
+    - apache_airflow_broker_type == "redis"
+    - apache_airflow_install_broker | default(false)
+
+- name: Start and enable redis service
+  ansible.builtin.systemd:
+    name: redis-server
+    state: started
+    enabled: true
+  when: 
+    - apache_airflow_executor == "CeleryExecutor"
+    - apache_airflow_broker_type == "redis"
+    - apache_airflow_install_broker | default(false)
+
+- name: Install RabbitMQ server (for CeleryExecutor)
+  ansible.builtin.package:
+    name: rabbitmq-server
+    state: present
+  when: 
+    - apache_airflow_executor == "CeleryExecutor"
+    - apache_airflow_broker_type == "rabbitmq"
+    - apache_airflow_install_broker | default(false)
+
+- name: Start and enable RabbitMQ service
+  ansible.builtin.systemd:
+    name: rabbitmq-server
+    state: started
+    enabled: true
+  when: 
+    - apache_airflow_executor == "CeleryExecutor"
+    - apache_airflow_broker_type == "rabbitmq"
+    - apache_airflow_install_broker | default(false)
+
+- name: Create celery worker systemd service
+  ansible.builtin.template:
+    src: airflow-worker.service.j2
+    dest: /etc/systemd/system/airflow-worker.service
+    mode: '0644'
+  when: apache_airflow_executor == "CeleryExecutor"
+  notify:
+    - reload systemd
+    - restart airflow worker
+
+- name: Create celery flower systemd service
+  ansible.builtin.template:
+    src: airflow-flower.service.j2
+    dest: /etc/systemd/system/airflow-flower.service
+    mode: '0644'
+  when: 
+    - apache_airflow_executor == "CeleryExecutor"
+    - "'flower' in apache_airflow_systemd_units_enabled"
+  notify:
+    - reload systemd
+    - restart airflow flower
+
+- name: Wait for message broker to be ready (Redis)
+  wait_for:
+    host: "{{ apache_airflow_broker_host }}"
+    port: "{{ apache_airflow_broker_port }}"
+    timeout: 300
+  when: 
+    - apache_airflow_executor == "CeleryExecutor"
+    - apache_airflow_broker_type == "redis"
+
+- name: Wait for message broker to be ready (RabbitMQ)
+  wait_for:
+    host: "{{ apache_airflow_broker_host }}"
+    port: 5672
+    timeout: 300
+  when: 
+    - apache_airflow_executor == "CeleryExecutor"
+    - apache_airflow_broker_type == "rabbitmq"
+
+- name: Test celery worker connection
+  ansible.builtin.command:
+    cmd: "{{ apache_airflow_python_executable }} -m celery inspect ping"
+  environment:
+    AIRFLOW_HOME: "{{ apache_airflow_home }}"
+    AIRFLOW__CELERY__BROKER_URL: "{{ apache_airflow_broker_url }}"
+  become: true
+  become_user: "{{ apache_airflow_user }}"
+  register: celery_ping_result
+  failed_when: false
+  changed_when: false
+  when: apache_airflow_executor == "CeleryExecutor"

@@ -1,0 +1,45 @@
+---
+- name: Prepare test environment
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Create mock pfSense environment
+      block:
+        - name: Set up test environment variables
+          set_fact:
+            test_environment: true
+            mock_pfsense_api: true
+
+        - name: Create temporary directories for testing
+          file:
+            path: "{{ item }}"
+            state: directory
+            mode: '0755'
+          loop:
+            - /tmp/pfsense_test
+            - /tmp/pfsense_test/config
+            - /tmp/pfsense_test/logs
+          delegate_to: localhost
+
+        - name: Create mock pfSense configuration file
+          copy:
+            content: |
+              <?xml version="1.0"?>
+              <pfsense>
+                <version>23.09</version>
+                <lastchange>Mock pfSense Configuration for Testing</lastchange>
+                <system>
+                  <hostname>pfsense-test</hostname>
+                  <domain>test.local</domain>
+                </system>
+              </pfsense>
+            dest: /tmp/pfsense_test/config/config.xml
+          delegate_to: localhost
+
+        - name: Display test environment setup
+          debug:
+            msg: "Mock pfSense test environment prepared successfully"
+      rescue:
+        - name: Handle preparation failures
+          debug:
+            msg: "Test environment preparation failed, continuing with limited testing"

@@ -1,0 +1,66 @@
+---
+# pfSense Handlers
+
+- name: reload pfsense config
+  pfsensible.core.pfsense_reload:
+    target: all
+
+- name: reload pfsense interfaces
+  pfsensible.core.pfsense_reload:
+    target: interfaces
+
+- name: reload pfsense routing
+  pfsensible.core.pfsense_reload:
+    target: routing
+
+- name: reload firewall filter
+  pfsensible.core.pfsense_reload:
+    target: filter
+
+- name: reload firewall nat
+  pfsensible.core.pfsense_reload:
+    target: nat
+
+- name: reload firewall
+  pfsensible.core.pfsense_reload:
+    target: filter,nat
+
+- name: restart dhcp
+  pfsensible.core.pfsense_service:
+    name: dhcpd
+    state: restarted
+
+- name: restart unbound
+  pfsensible.core.pfsense_service:
+    name: unbound
+    state: restarted
+
+- name: stop dnsmasq
+  pfsensible.core.pfsense_service:
+    name: dnsmasq
+    state: stopped
+
+- name: restart openvpn
+  pfsensible.core.pfsense_service:
+    name: openvpn
+    state: restarted
+
+- name: restart ipsec
+  pfsensible.core.pfsense_service:
+    name: ipsec
+    state: restarted
+
+- name: restart captive portal
+  pfsensible.core.pfsense_service:
+    name: captiveportal
+    state: restarted
+
+- name: restart ntpd
+  pfsensible.core.pfsense_service:
+    name: ntpd
+    state: restarted
+
+- name: restart syslogd
+  pfsensible.core.pfsense_service:
+    name: syslogd
+    state: restarted

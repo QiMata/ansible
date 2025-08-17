@@ -1,0 +1,65 @@
+---
+- name: Converge - Basic pfSense Setup
+  hosts: all
+  gather_facts: false
+  vars:
+    # Minimal configuration for basic setup
+    pfsense_configure_system_settings: true
+    pfsense_configure_interfaces: true
+    pfsense_configure_dhcp: true
+    pfsense_configure_dns: true
+    
+    # Disable advanced features for basic test
+    pfsense_configure_vlans: false
+    pfsense_configure_traffic_shaping: false
+    pfsense_configure_openvpn: false
+    pfsense_configure_ipsec: false
+    pfsense_configure_captive_portal: false
+    
+    # Basic system configuration
+    pfsense_system_settings:
+      hostname: pfsense-basic
+      domain: basic.local
+      timezone: UTC
+      dns_servers:
+        - 8.8.8.8
+      ntp_servers:
+        - pool.ntp.org
+    
+    # Simple interface setup
+    pfsense_interfaces:
+      - interface: wan
+        enable: true
+        descr: "WAN"
+        type: dhcp
+      - interface: lan
+        enable: true
+        descr: "LAN" 
+        type: static
+        ipaddr: 192.168.100.1
+        subnet: 24
+    
+    # Basic DHCP
+    pfsense_dhcp_servers:
+      - interface: lan
+        enable: true
+        range_from: "192.168.100.10"
+        range_to: "192.168.100.50"
+    
+    # Basic DNS
+    pfsense_dns_resolver:
+      enable: true
+      dhcp_registration: false
+      static_dhcp_registration: false
+    
+    # Minimal firewall rules
+    pfsense_firewall_rules:
+      - interface: lan
+        action: pass
+        protocol: any
+        source: any
+        destination: any
+        descr: "Allow all LAN traffic"
+
+  roles:
+    - role: networking.pfsense

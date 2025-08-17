@@ -1,0 +1,338 @@
+---
+# Enterprise Airflow Deployment Playbook
+# This playbook demonstrates a complete enterprise Airflow setup with:
+# - PostgreSQL metadata database
+# - CeleryExecutor with Redis broker
+# - Multiple scheduler instances for HA
+# - Separate scheduler and webserver nodes
+# - SSL/TLS certificates
+# - LDAP/Active Directory integration
+# - RBAC (Role-Based Access Control)
+
+- name: Deploy Enterprise Apache Airflow Infrastructure
+  hosts: all
+  become: true
+  vars:
+    # Common Airflow settings
+    apache_airflow_version: "2.6.3"
+    apache_airflow_user: "airflow"
+    apache_airflow_group: "airflow"
+    apache_airflow_home: "/opt/airflow"
+    
+    # Enterprise executor configuration
+    apache_airflow_executor: "CeleryExecutor"
+    apache_airflow_parallelism: 64
+    apache_airflow_max_active_runs_per_dag: 32
+    apache_airflow_max_active_tasks_per_dag: 32
+    
+    # Multiple Scheduler Configuration (HA)
+    apache_airflow_scheduler_instances: 2
+    apache_airflow_scheduler_heartbeat_sec: 3
+    apache_airflow_scheduler_processor_poll_interval: 1
+    
+    # PostgreSQL metadata database
+    apache_airflow_database_type: "postgresql"
+    apache_airflow_database_host: "{{ groups['database'][0] }}"
+    apache_airflow_database_port: 5432
+    apache_airflow_database_name: "airflow_prod"
+    apache_airflow_database_user: "airflow_user"
+    apache_airflow_database_password: "{{ vault_airflow_db_password }}"
+    
+    # Redis message broker
+    apache_airflow_broker_type: "redis"
+    apache_airflow_broker_host: "{{ groups['redis'][0] }}"
+    apache_airflow_broker_port: 6379
+    apache_airflow_broker_vhost: "0"
+    
+    # Celery configuration for separate worker nodes
+    apache_airflow_celery_worker_concurrency: 16
+    apache_airflow_celery_flower_port: 5555
+    apache_airflow_worker_autoscale: "32,4"
+    apache_airflow_worker_max_tasks_per_child: 1000
+    
+    # SSL/TLS Configuration
+    apache_airflow_ssl_enabled: true
+    apache_airflow_ssl_use_step_ca: true  # Use internal CA
+    # apache_airflow_ssl_use_letsencrypt: true  # Alternative: Use Let's Encrypt
+    
+    # LDAP/Active Directory Integration
+    apache_airflow_ldap_enabled: true
+    apache_airflow_ldap_server: "ldap://{{ groups['openldap_servers'][0] }}"
+    apache_airflow_ldap_port: 389
+    apache_airflow_ldap_use_tls: true
+    apache_airflow_ldap_bind_user: "cn=admin,dc=company,dc=com"
+    apache_airflow_ldap_bind_password: "{{ vault_ldap_admin_password }}"
+    apache_airflow_ldap_basedn: "dc=company,dc=com"
+    apache_airflow_ldap_user_filter: "objectClass=inetOrgPerson"
+    apache_airflow_ldap_user_name_attr: "uid"
+    apache_airflow_ldap_user_email_attr: "mail"
+    apache_airflow_ldap_group_filter: "objectClass=groupOfNames"
+    apache_airflow_ldap_group_name_attr: "cn"
+    apache_airflow_ldap_group_member_attr: "member"
+    
+    # LDAP Group to Role Mapping
+    apache_airflow_ldap_admin_groups: ["airflow_admins", "it_admins"]
+    apache_airflow_ldap_op_groups: ["airflow_operators", "data_engineers"]
+    apache_airflow_ldap_user_groups: ["airflow_users", "data_analysts"]
+    apache_airflow_ldap_viewer_groups: ["airflow_viewers", "business_users"]
+    
+    # RBAC Configuration
+    apache_airflow_rbac_enabled: true
+    apache_airflow_rbac_auth_type: "LDAP"
+    apache_airflow_rbac_user_registration: false
+    apache_airflow_rbac_user_registration_role: "Viewer"
+    
+    # Security
+    apache_airflow_fernet_key: "{{ vault_airflow_fernet_key }}"
+    
+  tasks:
+    - name: Install base packages
+      ansible.builtin.package:
+        name:
+          - python3
+          - python3-pip
+          - python3-venv
+          - build-essential
+          - libpq-dev
+          - libldap2-dev
+          - libsasl2-dev
+          - libssl-dev
+        state: present
+
+# Database setup
+- name: Setup PostgreSQL Database
+  hosts: database
+  become: true
+  roles:
+    - role: postgresql
+      vars:
+        postgresql_version: "14"
+        postgresql_databases:
+          - name: "{{ apache_airflow_database_name }}"
+            owner: "{{ apache_airflow_database_user }}"
+        postgresql_users:
+          - name: "{{ apache_airflow_database_user }}"
+            password: "{{ vault_airflow_db_password }}"
+            priv: "ALL"
+
+# Redis broker setup
+- name: Setup Redis Message Broker
+  hosts: redis
+  become: true
+  roles:
+    - role: redis
+      vars:
+        redis_bind_interface: "0.0.0.0"
+        redis_port: 6379
+        redis_maxmemory: "2gb"
+        redis_maxmemory_policy: "allkeys-lru"
+
+# LDAP/Active Directory setup
+- name: Setup LDAP Server
+  hosts: openldap_servers
+  become: true
+  roles:
+    - role: openldap_server
+      vars:
+        openldap_domain: "company.com"
+        openldap_admin_password: "{{ vault_ldap_admin_password }}"
+        openldap_base_dn: "dc=company,dc=com"
+        openldap_create_sample_users: true
+
+# SSL Certificate Authority setup
+- name: Setup Step CA for SSL Certificates
+  hosts: certificate_authority
+  become: true
+  roles:
+    - role: step_ca
+      vars:
+        step_ca_name: "Airflow Enterprise CA"
+        step_ca_dns: "ca.company.com"
+        step_ca_address: ":9000"
+        step_ca_provisioner_password: "{{ vault_step_ca_password }}"
+
+# Core Airflow installation on all nodes
+- name: Install Apache Airflow Core
+  hosts: airflow_nodes
+  become: true
+  roles:
+    - role: apache_airflow
+      vars:
+        apache_airflow_systemd_units_enabled:
+          - webserver
+          - scheduler
+          - worker
+          - flower
+
+# Scheduler nodes (multiple instances for HA)
+- name: Configure Airflow Schedulers (High Availability)
+  hosts: scheduler_nodes
+  become: true
+  roles:
+    - role: airflow_scheduler
+      vars:
+        airflow_scheduler_instances: "{{ apache_airflow_scheduler_instances }}"
+        airflow_scheduler_max_threads: 4
+        airflow_scheduler_memory_limit: "4G"
+        airflow_scheduler_heartrate: "{{ apache_airflow_scheduler_heartbeat_sec }}"
+        airflow_scheduler_catchup_by_default: false
+
+# Webserver nodes (multiple for load balancing)
+- name: Configure Airflow Webservers
+  hosts: webserver_nodes
+  become: true
+  roles:
+    - role: airflow_webserver
+      vars:
+        airflow_webserver_port: 8080
+        airflow_webserver_host: "0.0.0.0"
+        airflow_webserver_workers: 6
+        airflow_webserver_memory_limit: "4G"
+        airflow_webserver_enable_proxy_fix: true
+        airflow_webserver_rbac: true
+        airflow_webserver_authenticate: true
+        airflow_webserver_auth_backend: "AUTH_LDAP"
+        airflow_webserver_secret_key: "{{ vault_airflow_secret_key }}"
+        airflow_webserver_ssl_enabled: "{{ apache_airflow_ssl_enabled }}"
+
+# Worker nodes for task execution (separate nodes)
+- name: Configure Airflow Workers
+  hosts: worker_nodes
+  become: true
+  vars:
+    apache_airflow_celery_worker_concurrency: "{{ apache_airflow_celery_worker_concurrency }}"
+    apache_airflow_worker_autoscale: "{{ apache_airflow_worker_autoscale }}"
+  tasks:
+    - name: Start and enable Airflow worker service
+      ansible.builtin.systemd:
+        name: airflow-worker
+        state: started
+        enabled: true
+        daemon_reload: true
+
+    - name: Configure worker autoscaling
+      ansible.builtin.template:
+        src: worker_autoscale.conf.j2
+        dest: "{{ apache_airflow_home }}/config/worker_autoscale.conf"
+        owner: "{{ apache_airflow_user }}"
+        group: "{{ apache_airflow_group }}"
+        mode: '0644'
+      notify: restart airflow worker
+
+# Monitoring nodes (Flower for Celery monitoring)
+- name: Configure Airflow Monitoring
+  hosts: monitoring_nodes
+  become: true
+  tasks:
+    - name: Start and enable Airflow Flower service
+      ansible.builtin.systemd:
+        name: airflow-flower
+        state: started
+        enabled: true
+        daemon_reload: true
+
+    - name: Configure Flower authentication
+      ansible.builtin.template:
+        src: flower_config.py.j2
+        dest: "{{ apache_airflow_home }}/flower_config.py"
+        owner: "{{ apache_airflow_user }}"
+        group: "{{ apache_airflow_group }}"
+        mode: '0644'
+      notify: restart airflow flower
+
+# Load balancer setup (optional)
+- name: Configure Load Balancer
+  hosts: load_balancer
+  become: true
+  roles:
+    - role: haproxy
+      vars:
+        haproxy_frontend:
+          - name: airflow_frontend
+            bind: "*:80"
+            mode: http
+            redirect: "scheme https code 301 if !{ ssl_fc }"
+          - name: airflow_frontend_ssl
+            bind: "*:443 ssl crt /etc/ssl/certs/airflow.pem"
+            mode: http
+            default_backend: airflow_webservers
+        haproxy_backend:
+          - name: airflow_webservers
+            mode: http
+            balance: roundrobin
+            option:
+              - "httpchk GET /health"
+              - "http-server-close"
+              - "forwardfor"
+            servers: "{{ groups['webserver_nodes'] | map('regex_replace', '^(.*)$', '\\1:8080 check') | list }}"
+
+# Post-deployment verification
+- name: Verify Airflow Deployment
+  hosts: scheduler_nodes[0]
+  become: true
+  become_user: "{{ apache_airflow_user }}"
+  tasks:
+    - name: Wait for database to be ready
+      ansible.builtin.wait_for:
+        host: "{{ apache_airflow_database_host }}"
+        port: "{{ apache_airflow_database_port }}"
+        timeout: 300
+
+    - name: Initialize Airflow database
+      ansible.builtin.command:
+        cmd: "{{ apache_airflow_home }}/venv/bin/airflow db init"
+      environment:
+        AIRFLOW_HOME: "{{ apache_airflow_home }}"
+      run_once: true
+
+    - name: Create admin user (only if LDAP is disabled)
+      ansible.builtin.command:
+        cmd: >
+          {{ apache_airflow_home }}/venv/bin/airflow users create
+          --username admin
+          --firstname Admin
+          --lastname User
+          --role Admin
+          --email admin@company.com
+          --password "{{ vault_airflow_admin_password }}"
+      environment:
+        AIRFLOW_HOME: "{{ apache_airflow_home }}"
+      run_once: true
+      when: not apache_airflow_ldap_enabled
+
+    - name: Check Airflow version
+      ansible.builtin.command:
+        cmd: "{{ apache_airflow_home }}/venv/bin/airflow version"
+      environment:
+        AIRFLOW_HOME: "{{ apache_airflow_home }}"
+      register: airflow_version_output
+
+    - name: Display deployment summary
+      ansible.builtin.debug:
+        msg: |
+          Enterprise Airflow Deployment Complete!
+          
+          Airflow Version: {{ airflow_version_output.stdout }}
+          Executor: {{ apache_airflow_executor }}
+          Scheduler Instances: {{ apache_airflow_scheduler_instances }}
+          SSL Enabled: {{ apache_airflow_ssl_enabled }}
+          LDAP Integration: {{ apache_airflow_ldap_enabled }}
+          RBAC Enabled: {{ apache_airflow_rbac_enabled }}
+          
+          Access URLs:
+          {% for host in groups['webserver_nodes'] %}
+          - https://{{ host }}:8080 (Webserver {{ loop.index }})
+          {% endfor %}
+          {% if groups['monitoring_nodes'] is defined %}
+          {% for host in groups['monitoring_nodes'] %}
+          - http://{{ host }}:{{ apache_airflow_celery_flower_port }} (Flower Monitoring)
+          {% endfor %}
+          {% endif %}
+          
+          {% if apache_airflow_ldap_enabled %}
+          LDAP Groups:
+          - Admins: {{ apache_airflow_ldap_admin_groups | join(', ') }}
+          - Operators: {{ apache_airflow_ldap_op_groups | join(', ') }}
+          - Users: {{ apache_airflow_ldap_user_groups | join(', ') }}
+          - Viewers: {{ apache_airflow_ldap_viewer_groups | join(', ') }}
+          {% endif %}

@@ -1,0 +1,49 @@
+---
+# DNS Configuration
+- name: Configure DNS Resolver (Unbound)
+  pfsensible.core.pfsense_unbound:
+    enable: "{{ pfsense_dns_resolver.enable | default(true) }}"
+    port: "{{ pfsense_dns_resolver.port | default(53) }}"
+    network_interfaces: "{{ pfsense_dns_resolver.network_interfaces | default(['all']) }}"
+    outgoing_interfaces: "{{ pfsense_dns_resolver.outgoing_interfaces | default(['all']) }}"
+    enable_ssl: "{{ pfsense_dns_resolver.enable_ssl | default(false) }}"
+    ssl_port: "{{ pfsense_dns_resolver.ssl_port | default(853) }}"
+    enable_forwarding: "{{ pfsense_dns_resolver.enable_forwarding | default(false) }}"
+    dhcp_registration: "{{ pfsense_dns_resolver.dhcp_registration | default(true) }}"
+    static_dhcp_registration: "{{ pfsense_dns_resolver.static_dhcp_registration | default(true) }}"
+    regdhcpstatic: "{{ pfsense_dns_resolver.static_dhcp_registration | default(true) }}"
+    custom_options: "{{ pfsense_dns_resolver.custom_options | default([]) }}"
+  when: 
+    - pfsense_dns_resolver is defined
+    - pfsense_dns_resolver.enable | default(true)
+  notify: restart unbound
+
+- name: Configure DNS host overrides
+  pfsensible.core.pfsense_unbound_host_override:
+    host: "{{ item.host }}"
+    domain: "{{ item.domain }}"
+    ip: "{{ item.ip }}"
+    descr: "{{ item.descr | default(omit) }}"
+    aliases: "{{ item.aliases | default([]) }}"
+    state: present
+  loop: "{{ pfsense_dns_host_overrides | default([]) }}"
+  when: pfsense_dns_host_overrides is defined
+  notify: restart unbound
+
+- name: Configure DNS domain overrides
+  pfsensible.core.pfsense_unbound_domain_override:
+    domain: "{{ item.domain }}"
+    ip: "{{ item.ip }}"
+    descr: "{{ item.descr | default(omit) }}"
+    state: present
+  loop: "{{ pfsense_dns_domain_overrides | default([]) }}"
+  when: pfsense_dns_domain_overrides is defined
+  notify: restart unbound
+
+- name: Disable DNS Forwarder if resolver is enabled
+  pfsensible.core.pfsense_dnsmasq:
+    enable: false
+  when: 
+    - pfsense_dns_resolver is defined
+    - pfsense_dns_resolver.enable | default(true)
+  notify: stop dnsmasq

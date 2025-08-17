@@ -1,0 +1,94 @@
+---
+- name: Ensure airflow webserver configuration directory exists
+  ansible.builtin.file:
+    path: "{{ airflow_webserver_home }}/config"
+    state: directory
+    owner: "{{ airflow_webserver_user }}"
+    group: "{{ airflow_webserver_group }}"
+    mode: '0755'
+
+- name: Configure airflow webserver
+  ansible.builtin.template:
+    src: webserver_config.py.j2
+    dest: "{{ airflow_webserver_home }}/webserver_config.py"
+    owner: "{{ airflow_webserver_user }}"
+    group: "{{ airflow_webserver_group }}"
+    mode: '0644'
+  notify: restart airflow webserver
+
+- name: Create airflow webserver systemd service
+  ansible.builtin.template:
+    src: airflow-webserver.service.j2
+    dest: /etc/systemd/system/airflow-webserver.service
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart airflow webserver
+
+- name: Create webserver log directory
+  ansible.builtin.file:
+    path: "{{ airflow_webserver_home }}/logs/webserver"
+    state: directory
+    owner: "{{ airflow_webserver_user }}"
+    group: "{{ airflow_webserver_group }}"
+    mode: '0755'
+
+- name: Create webserver PID directory
+  ansible.builtin.file:
+    path: /var/run/airflow
+    state: directory
+    owner: "{{ airflow_webserver_user }}"
+    group: "{{ airflow_webserver_group }}"
+    mode: '0755'
+
+- name: Create SSL certificate directory
+  ansible.builtin.file:
+    path: "{{ airflow_webserver_home }}/ssl"
+    state: directory
+    owner: "{{ airflow_webserver_user }}"
+    group: "{{ airflow_webserver_group }}"
+    mode: '0700'
+  when: airflow_webserver_ssl_enabled
+
+- name: Copy SSL certificate
+  ansible.builtin.copy:
+    src: "{{ airflow_webserver_ssl_cert }}"
+    dest: "{{ airflow_webserver_home }}/ssl/webserver.crt"
+    owner: "{{ airflow_webserver_user }}"
+    group: "{{ airflow_webserver_group }}"
+    mode: '0600'
+  when: airflow_webserver_ssl_enabled and airflow_webserver_ssl_cert != ""
+  notify: restart airflow webserver
+
+- name: Copy SSL private key
+  ansible.builtin.copy:
+    src: "{{ airflow_webserver_ssl_key }}"
+    dest: "{{ airflow_webserver_home }}/ssl/webserver.key"
+    owner: "{{ airflow_webserver_user }}"
+    group: "{{ airflow_webserver_group }}"
+    mode: '0600'
+  when: airflow_webserver_ssl_enabled and airflow_webserver_ssl_key != ""
+  notify: restart airflow webserver
+
+- name: Enable and start airflow webserver service
+  ansible.builtin.systemd:
+    name: airflow-webserver
+    enabled: "{{ airflow_webserver_service_enabled }}"
+    state: "{{ airflow_webserver_service_state }}"
+    daemon_reload: true
+  when: ansible_service_mgr == "systemd"
+
+- name: Create webserver health check script
+  ansible.builtin.template:
+    src: webserver_health_check.sh.j2
+    dest: "{{ airflow_webserver_home }}/bin/webserver_health_check.sh"
+    owner: "{{ airflow_webserver_user }}"
+    group: "{{ airflow_webserver_group }}"
+    mode: '0755'
+
+- name: Setup webserver monitoring cron job
+  ansible.builtin.cron:
+    name: "airflow webserver health check"
+    minute: "*/2"
+    job: "{{ airflow_webserver_home }}/bin/webserver_health_check.sh"
+    user: "{{ airflow_webserver_user }}"

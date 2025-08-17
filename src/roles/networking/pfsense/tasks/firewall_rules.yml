@@ -1,0 +1,59 @@
+---
+# Firewall Rules Configuration
+- name: Configure firewall rules
+  pfsensible.core.pfsense_rule:
+    interface: "{{ item.interface }}"
+    action: "{{ item.action | default('pass') }}"
+    direction: "{{ item.direction | default('in') }}"
+    ipprotocol: "{{ item.ipprotocol | default('inet') }}"
+    protocol: "{{ item.protocol | default('any') }}"
+    source: "{{ item.source | default('any') }}"
+    source_port: "{{ item.source_port | default(omit) }}"
+    destination: "{{ item.destination | default('any') }}"
+    destination_port: "{{ item.destination_port | default(omit) }}"
+    gateway: "{{ item.gateway | default(omit) }}"
+    log: "{{ item.log | default(false) }}"
+    descr: "{{ item.descr | default(omit) }}"
+    disabled: "{{ item.disabled | default(false) }}"
+    floating: "{{ item.floating | default(false) }}"
+    quick: "{{ item.quick | default(false) }}"
+    statetype: "{{ item.statetype | default('keep state') }}"
+    state: present
+  loop: "{{ pfsense_firewall_rules }}"
+  when: pfsense_firewall_rules is defined
+  notify: reload firewall filter
+
+- name: Configure floating firewall rules
+  pfsensible.core.pfsense_rule:
+    interface: "{{ item.interface }}"
+    action: "{{ item.action | default('pass') }}"
+    direction: "{{ item.direction | default('any') }}"
+    ipprotocol: "{{ item.ipprotocol | default('inet') }}"
+    protocol: "{{ item.protocol | default('any') }}"
+    source: "{{ item.source | default('any') }}"
+    source_port: "{{ item.source_port | default(omit) }}"
+    destination: "{{ item.destination | default('any') }}"
+    destination_port: "{{ item.destination_port | default(omit) }}"
+    gateway: "{{ item.gateway | default(omit) }}"
+    log: "{{ item.log | default(false) }}"
+    descr: "{{ item.descr | default(omit) }}"
+    disabled: "{{ item.disabled | default(false) }}"
+    floating: true
+    quick: "{{ item.quick | default(true) }}"
+    statetype: "{{ item.statetype | default('keep state') }}"
+    state: present
+  loop: "{{ pfsense_floating_rules | default([]) }}"
+  when: pfsense_floating_rules is defined
+  notify: reload firewall filter
+
+- name: Remove old firewall rules
+  pfsensible.core.pfsense_rule:
+    interface: "{{ item.interface }}"
+    action: "{{ item.action }}"
+    protocol: "{{ item.protocol }}"
+    source: "{{ item.source }}"
+    destination: "{{ item.destination }}"
+    state: absent
+  loop: "{{ pfsense_remove_rules | default([]) }}"
+  when: pfsense_remove_rules is defined
+  notify: reload firewall filter

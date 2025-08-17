@@ -1,0 +1,75 @@
+---
+# Multiple Scheduler Configuration for High Availability
+- name: Create scheduler instances configuration
+  ansible.builtin.template:
+    src: scheduler_instances.conf.j2
+    dest: "{{ apache_airflow_home }}/config/scheduler_instances.conf"
+    owner: "{{ apache_airflow_user }}"
+    group: "{{ apache_airflow_group }}"
+    mode: '0644'
+  when: apache_airflow_scheduler_ha_enabled
+
+- name: Create multiple scheduler systemd services
+  ansible.builtin.template:
+    src: airflow-scheduler@.service.j2
+    dest: "/etc/systemd/system/airflow-scheduler@.service"
+    mode: '0644'
+  when: apache_airflow_scheduler_ha_enabled
+  notify: reload systemd
+
+- name: Create scheduler instance-specific directories
+  ansible.builtin.file:
+    path: "{{ apache_airflow_home }}/scheduler_{{ item }}"
+    state: directory
+    owner: "{{ apache_airflow_user }}"
+    group: "{{ apache_airflow_group }}"
+    mode: '0755'
+  loop: "{{ range(1, apache_airflow_scheduler_instances + 1) | list }}"
+  when: apache_airflow_scheduler_ha_enabled
+
+- name: Enable and start multiple scheduler instances
+  ansible.builtin.systemd:
+    name: "airflow-scheduler@{{ item }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  loop: "{{ range(1, apache_airflow_scheduler_instances + 1) | list }}"
+  when: 
+    - apache_airflow_scheduler_ha_enabled
+    - ansible_service_mgr == "systemd"
+
+- name: Create scheduler health check for multiple instances
+  ansible.builtin.template:
+    src: multi_scheduler_health_check.sh.j2
+    dest: "{{ apache_airflow_home }}/scripts/multi_scheduler_health_check.sh"
+    owner: "{{ apache_airflow_user }}"
+    group: "{{ apache_airflow_group }}"
+    mode: '0755'
+  when: apache_airflow_scheduler_ha_enabled
+
+- name: Setup multiple scheduler monitoring cron job
+  ansible.builtin.cron:
+    name: "Multi-scheduler health check"
+    minute: "*/3"
+    job: "{{ apache_airflow_home }}/scripts/multi_scheduler_health_check.sh"
+    user: "{{ apache_airflow_user }}"
+  when: apache_airflow_scheduler_ha_enabled
+
+- name: Configure scheduler for single instance
+  ansible.builtin.systemd:
+    name: airflow-scheduler
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: 
+    - not apache_airflow_scheduler_ha_enabled
+    - ansible_service_mgr == "systemd"
+
+- name: Display scheduler configuration
+  ansible.builtin.debug:
+    msg: |
+      Scheduler Configuration:
+      - Multiple Schedulers: {{ apache_airflow_scheduler_ha_enabled }}
+      - Scheduler Instances: {{ apache_airflow_scheduler_instances }}
+      - Heartbeat Interval: {{ apache_airflow_scheduler_heartbeat_sec }}s
+      - Processor Poll Interval: {{ apache_airflow_scheduler_processor_poll_interval }}s

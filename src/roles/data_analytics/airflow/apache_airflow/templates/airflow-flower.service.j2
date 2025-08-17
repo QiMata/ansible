@@ -1,0 +1,36 @@
+[Unit]
+Description=Airflow Celery Flower (Monitoring)
+After=network.target redis.service
+Wants=redis.service
+
+[Service]
+Type=simple
+User={{ apache_airflow_user }}
+Group={{ apache_airflow_group }}
+WorkingDirectory={{ apache_airflow_home }}
+Environment=AIRFLOW_HOME={{ apache_airflow_home }}
+Environment=PYTHONPATH={{ apache_airflow_home }}
+ExecStart={{ apache_airflow_home }}/venv/bin/celery flower --broker={{ apache_airflow_broker_url }} --port={{ apache_airflow_celery_flower_port }} --address={{ apache_airflow_celery_flower_host }}
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=600
+StartLimitBurst=3
+MemoryLimit=1G
+LimitNOFILE=65536
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=airflow-flower
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths={{ apache_airflow_home }}
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,42 @@
+---
+# Certificate Management
+- name: Create Certificate Authorities
+  pfsensible.core.pfsense_ca:
+    name: "{{ item.name }}"
+    crt: "{{ item.crt | default(omit) }}"
+    prv: "{{ item.prv | default(omit) }}"
+    serial: "{{ item.serial | default(omit) }}"
+    trust: "{{ item.trust | default(true) }}"
+    randomserial: "{{ item.randomserial | default(false) }}"
+    state: present
+  loop: "{{ pfsense_certificate_authorities | default([]) }}"
+  when: pfsense_certificate_authorities is defined
+
+- name: Create certificates
+  pfsensible.core.pfsense_cert:
+    name: "{{ item.name }}"
+    crt: "{{ item.crt | default(omit) }}"
+    prv: "{{ item.prv | default(omit) }}"
+    caref: "{{ item.caref | default(omit) }}"
+    state: present
+  loop: "{{ pfsense_certificates | default([]) }}"
+  when: pfsense_certificates is defined
+
+- name: Generate self-signed certificates
+  pfsensible.core.pfsense_cert:
+    name: "{{ item.name }}"
+    method: "{{ item.method | default('internal') }}"
+    caref: "{{ item.caref | default(omit) }}"
+    keylen: "{{ item.keylen | default(2048) }}"
+    digest_alg: "{{ item.digest_alg | default('sha256') }}"
+    lifetime: "{{ item.lifetime | default(3650) }}"
+    dn_country: "{{ item.dn_country | default('US') }}"
+    dn_state: "{{ item.dn_state | default('State') }}"
+    dn_city: "{{ item.dn_city | default('City') }}"
+    dn_organization: "{{ item.dn_organization | default('Organization') }}"
+    dn_organizationalunit: "{{ item.dn_organizationalunit | default('IT Department') }}"
+    dn_commonname: "{{ item.dn_commonname }}"
+    dn_sans: "{{ item.dn_sans | default([]) }}"
+    state: present
+  loop: "{{ pfsense_generated_certificates | default([]) }}"
+  when: pfsense_generated_certificates is defined

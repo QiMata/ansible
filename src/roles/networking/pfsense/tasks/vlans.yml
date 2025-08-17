@@ -1,0 +1,26 @@
+---
+# VLAN Configuration
+- name: Create VLANs
+  pfsensible.core.pfsense_vlan:
+    interface: "{{ item.if }}"
+    vlan_id: "{{ item.tag }}"
+    descr: "{{ item.descr | default(omit) }}"
+    priority: "{{ item.priority | default(omit) }}"
+    state: present
+  loop: "{{ pfsense_vlans }}"
+  when: pfsense_vlans is defined
+  notify: reload pfsense interfaces
+
+- name: Configure VLAN interfaces
+  pfsensible.core.pfsense_interface:
+    interface: "{{ item.if }}.{{ item.tag }}"
+    enable: "{{ item.enable | default(true) }}"
+    descr: "{{ item.descr | default(omit) }}"
+    type: "{{ item.type | default('none') }}"
+    ipaddr: "{{ item.ipaddr | default(omit) }}"
+    subnet: "{{ item.subnet | default(omit) }}"
+  loop: "{{ pfsense_vlans }}"
+  when: 
+    - pfsense_vlans is defined
+    - item.configure_interface | default(false)
+  notify: reload pfsense interfaces

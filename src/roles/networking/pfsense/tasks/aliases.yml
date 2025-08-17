@@ -1,0 +1,21 @@
+---
+# Aliases Configuration
+- name: Configure firewall aliases
+  pfsensible.core.pfsense_alias:
+    name: "{{ item.name }}"
+    type: "{{ item.type }}"
+    address: "{{ item.address | default(omit) }}"
+    descr: "{{ item.descr | default(omit) }}"
+    detail: "{{ item.detail | default(omit) }}"
+    state: present
+  loop: "{{ pfsense_aliases }}"
+  when: pfsense_aliases is defined
+  notify: reload firewall filter
+
+- name: Remove old aliases
+  pfsensible.core.pfsense_alias:
+    name: "{{ item.name }}"
+    state: absent
+  loop: "{{ pfsense_remove_aliases | default([]) }}"
+  when: pfsense_remove_aliases is defined
+  notify: reload firewall filter

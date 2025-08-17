@@ -1,0 +1,34 @@
+---
+# System Settings Configuration
+- name: Configure hostname and domain
+  pfsensible.core.pfsense_setup:
+    hostname: "{{ pfsense_system_settings.hostname }}"
+    domain: "{{ pfsense_system_settings.domain }}"
+    timezone: "{{ pfsense_system_settings.timezone }}"
+    language: "{{ pfsense_system_settings.language }}"
+    theme: "{{ pfsense_system_settings.theme }}"
+  notify: reload pfsense config
+
+- name: Configure DNS servers
+  pfsensible.core.pfsense_setup:
+    dns_servers: "{{ pfsense_system_settings.dns_servers }}"
+    dns_search_domains: "{{ pfsense_system_settings.dns_search_domains }}"
+  notify: reload pfsense config
+  when: pfsense_system_settings.dns_servers is defined
+
+- name: Configure NTP servers
+  pfsensible.core.pfsense_setup:
+    ntp_servers: "{{ pfsense_system_settings.ntp_servers }}"
+  notify: reload pfsense config
+  when: pfsense_system_settings.ntp_servers is defined
+
+- name: Configure WebGUI settings
+  pfsensible.core.pfsense_setup:
+    webgui_protocol: "{{ pfsense_system_settings.webgui_settings.protocol }}"
+    webgui_port: "{{ pfsense_system_settings.webgui_settings.port }}"
+    webgui_max_procs: "{{ pfsense_system_settings.webgui_settings.max_processes }}"
+    webgui_ssl_redirect: "{{ pfsense_system_settings.webgui_settings.redirect_http }}"
+    webgui_login_autocomplete: "{{ pfsense_system_settings.webgui_settings.login_autocomplete }}"
+    webgui_anti_lockout: "{{ pfsense_system_settings.webgui_settings.anti_lockout }}"
+  notify: reload pfsense config
+  when: pfsense_system_settings.webgui_settings is defined

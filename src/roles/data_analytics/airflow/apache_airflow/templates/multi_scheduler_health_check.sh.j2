@@ -1,0 +1,68 @@
+#!/bin/bash
+# Multi-Scheduler Health Check Script
+
+AIRFLOW_HOME="{{ apache_airflow_home }}"
+SCHEDULER_INSTANCES={{ apache_airflow_scheduler_instances }}
+LOG_FILE="${AIRFLOW_HOME}/logs/multi_scheduler_health.log"
+
+# Function to log messages
+log_message() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${LOG_FILE}"
+}
+
+log_message "Starting multi-scheduler health check for ${SCHEDULER_INSTANCES} instances"
+
+# Check each scheduler instance
+for i in $(seq 1 ${SCHEDULER_INSTANCES}); do
+    SERVICE_NAME="airflow-scheduler@${i}"
+    
+    if systemctl is-active --quiet "${SERVICE_NAME}"; then
+        log_message "Scheduler instance ${i} is active"
+        
+        # Check if scheduler PID file exists and process is running
+        PID_FILE="/var/run/airflow/scheduler-${i}.pid"
+        if [ -f "${PID_FILE}" ]; then
+            PID=$(cat "${PID_FILE}")
+            if kill -0 "${PID}" 2>/dev/null; then
+                log_message "Scheduler instance ${i} PID ${PID} is running"
+            else
+                log_message "WARNING: Scheduler instance ${i} PID file exists but process not running. Restarting."
+                systemctl restart "${SERVICE_NAME}"
+            fi
+        else
+            log_message "WARNING: Scheduler instance ${i} PID file missing. Service may be starting up."
+        fi
+        
+        # Check recent heartbeat in database
+        if [ -f "${AIRFLOW_HOME}/airflow.db" ]; then
+            LAST_HEARTBEAT=$(sqlite3 "${AIRFLOW_HOME}/airflow.db" \
+                "SELECT MAX(latest_heartbeat) FROM job WHERE job_type='SchedulerJob' AND hostname='$(hostname)-${i}';" 2>/dev/null)
+            
+            if [ -n "$LAST_HEARTBEAT" ]; then
+                CURRENT_TIME=$(date +%s)
+                HEARTBEAT_TIME=$(date -d "$LAST_HEARTBEAT" +%s 2>/dev/null || echo 0)
+                TIME_DIFF=$((CURRENT_TIME - HEARTBEAT_TIME))
+                
+                if [ $TIME_DIFF -gt {{ apache_airflow_scheduler_zombie_task_threshold | default(300) }} ]; then
+                    log_message "WARNING: Scheduler instance ${i} heartbeat is stale (${TIME_DIFF}s old). Restarting."
+                    systemctl restart "${SERVICE_NAME}"
+                else
+                    log_message "Scheduler instance ${i} heartbeat is healthy (${TIME_DIFF}s old)"
+                fi
+            fi
+        fi
+    else
+        log_message "ERROR: Scheduler instance ${i} is not active. Starting scheduler."
+        systemctl start "${SERVICE_NAME}"
+    fi
+done
+
+# Check overall scheduler health
+ACTIVE_SCHEDULERS=$(systemctl list-units --state=active "airflow-scheduler@*" | grep -c "airflow-scheduler@")
+if [ "${ACTIVE_SCHEDULERS}" -lt "${SCHEDULER_INSTANCES}" ]; then
+    log_message "WARNING: Only ${ACTIVE_SCHEDULERS}/${SCHEDULER_INSTANCES} scheduler instances are active"
+else
+    log_message "All ${SCHEDULER_INSTANCES} scheduler instances are healthy"
+fi
+
+log_message "Multi-scheduler health check completed"

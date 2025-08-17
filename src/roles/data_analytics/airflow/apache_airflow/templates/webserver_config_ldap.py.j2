@@ -1,0 +1,146 @@
+# -*- coding: utf-8 -*-
+"""
+Airflow Webserver Configuration with LDAP Authentication
+"""
+import os
+from flask_appbuilder.security.manager import AUTH_LDAP
+from airflow.www.security import AirflowSecurityManager
+from airflow.configuration import conf
+
+# Base configuration
+basedir = os.path.abspath(os.path.dirname(__file__))
+
+# Flask-WTF configuration
+WTF_CSRF_ENABLED = {{ apache_airflow_webserver_csrf_enabled | default(true) | lower }}
+WTF_CSRF_TIME_LIMIT = None
+
+# Flask configuration
+SECRET_KEY = '{{ apache_airflow_webserver_secret_key }}'
+
+{% if apache_airflow_ldap_enabled %}
+# LDAP Authentication Configuration
+AUTH_TYPE = AUTH_LDAP
+AUTH_LDAP_SERVER = "{{ apache_airflow_ldap_server }}"
+AUTH_LDAP_USE_TLS = {{ apache_airflow_ldap_use_tls | lower }}
+AUTH_LDAP_ALLOW_SELF_SIGNED = True
+AUTH_LDAP_TLS_DEMAND = True
+AUTH_LDAP_TLS_CACERTFILE = "{{ apache_airflow_ldap_ca_cert }}"
+
+# LDAP Bind Configuration
+AUTH_LDAP_BIND_USER = "{{ apache_airflow_ldap_bind_user }}"
+AUTH_LDAP_BIND_PASSWORD = "{{ apache_airflow_ldap_bind_password }}"
+
+# LDAP Search Configuration
+AUTH_LDAP_SEARCH = "{{ apache_airflow_ldap_basedn }}"
+AUTH_LDAP_UID_FIELD = "{{ apache_airflow_ldap_user_name_attr }}"
+AUTH_LDAP_SEARCH_FILTER = "{{ apache_airflow_ldap_user_filter }}"
+
+# LDAP User Information Mapping
+AUTH_LDAP_FIRSTNAME_FIELD = "givenName"
+AUTH_LDAP_LASTNAME_FIELD = "sn"
+AUTH_LDAP_EMAIL_FIELD = "{{ apache_airflow_ldap_user_email_attr }}"
+
+# LDAP Group Configuration
+AUTH_LDAP_GROUP_FIELD = "{{ apache_airflow_ldap_group_name_attr }}"
+AUTH_LDAP_GROUP_SEARCH = "{{ apache_airflow_ldap_basedn }}"
+AUTH_LDAP_GROUP_SEARCH_FILTER = "{{ apache_airflow_ldap_group_filter }}"
+AUTH_LDAP_GROUP_MEMBER_FIELD = "{{ apache_airflow_ldap_group_member_attr }}"
+
+# Role Mapping from LDAP Groups to Airflow Roles
+AUTH_ROLES_MAPPING = {
+{% for group in apache_airflow_ldap_admin_groups %}
+    "{{ group }}": ["Admin"],
+{% endfor %}
+{% for group in apache_airflow_ldap_op_groups %}
+    "{{ group }}": ["Op"],
+{% endfor %}
+{% for group in apache_airflow_ldap_user_groups %}
+    "{{ group }}": ["User"],
+{% endfor %}
+{% for group in apache_airflow_ldap_viewer_groups %}
+    "{{ group }}": ["Viewer"],
+{% endfor %}
+}
+
+# Default role for users not in any mapped groups
+AUTH_USER_REGISTRATION = {{ apache_airflow_rbac_user_registration | lower }}
+AUTH_USER_REGISTRATION_ROLE = "{{ apache_airflow_rbac_user_registration_role }}"
+
+# LDAP user registration
+AUTH_LDAP_ALLOW_SELF_SIGNED = True
+AUTH_LDAP_TLS_DEMAND = False
+{% else %}
+# Database Authentication (Default)
+AUTH_TYPE = AUTH_DB
+AUTH_USER_REGISTRATION = {{ apache_airflow_rbac_user_registration | lower }}
+AUTH_USER_REGISTRATION_ROLE = "{{ apache_airflow_rbac_user_registration_role }}"
+{% endif %}
+
+# Security Manager Configuration
+class CustomSecurityManager(AirflowSecurityManager):
+    """Custom security manager for Airflow with enhanced RBAC"""
+    
+    def __init__(self, appbuilder):
+        super(CustomSecurityManager, self).__init__(appbuilder)
+    
+    {% if apache_airflow_ldap_enabled %}
+    def auth_user_ldap(self, username, password):
+        """Custom LDAP authentication method"""
+        try:
+            import ldap
+            
+            # Initialize LDAP connection
+            conn = ldap.initialize(AUTH_LDAP_SERVER)
+            if AUTH_LDAP_USE_TLS:
+                conn.start_tls_s()
+            
+            # Bind with service account
+            conn.simple_bind_s(AUTH_LDAP_BIND_USER, AUTH_LDAP_BIND_PASSWORD)
+            
+            # Search for user
+            search_filter = f"(&({AUTH_LDAP_UID_FIELD}={username})({AUTH_LDAP_SEARCH_FILTER}))"
+            result = conn.search_s(AUTH_LDAP_SEARCH, ldap.SCOPE_SUBTREE, search_filter)
+            
+            if not result:
+                return None
+            
+            user_dn = result[0][0]
+            
+            # Authenticate user
+            try:
+                conn.simple_bind_s(user_dn, password)
+                return self.load_user(username)
+            except ldap.INVALID_CREDENTIALS:
+                return None
+            finally:
+                conn.unbind()
+                
+        except Exception as e:
+            self.log.error(f"LDAP authentication error: {str(e)}")
+            return None
+    {% endif %}
+
+# Set the security manager
+SECURITY_MANAGER_CLASS = CustomSecurityManager
+
+# Rate limiting
+RATELIMIT_ENABLED = True
+RATELIMIT_STORAGE_URL = "redis://{{ apache_airflow_broker_host }}:{{ apache_airflow_broker_port }}/1"
+
+# Session configuration
+PERMANENT_SESSION_LIFETIME = {{ apache_airflow_webserver_session_timeout_minutes }} * 60
+
+# Additional security headers
+TALISMAN_ENABLED = True
+TALISMAN_CONFIG = {
+    'force_https': {{ apache_airflow_ssl_enabled | lower }},
+    'strict_transport_security': {{ apache_airflow_ssl_enabled | lower }},
+    'content_security_policy': {
+        'default-src': "'self'",
+        'script-src': "'self' 'unsafe-inline' 'unsafe-eval'",
+        'style-src': "'self' 'unsafe-inline'",
+        'img-src': "'self' data:",
+        'font-src': "'self'",
+        'connect-src': "'self'",
+    }
+}

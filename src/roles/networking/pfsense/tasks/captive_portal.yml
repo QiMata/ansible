@@ -1,0 +1,50 @@
+---
+# Captive Portal Configuration
+- name: Configure captive portal zones
+  pfsensible.core.pfsense_captiveportal:
+    zone: "{{ item.zone }}"
+    interface: "{{ item.interface }}"
+    enable: "{{ item.enable | default(true) }}"
+    auth_method: "{{ item.auth_method | default('local') }}"
+    auth_server: "{{ item.auth_server | default(omit) }}"
+    auth_server2: "{{ item.auth_server2 | default(omit) }}"
+    portal_listening: "{{ item.portal_listening | default('8000') }}"
+    portal_ssl_listening: "{{ item.portal_ssl_listening | default('8001') }}"
+    ssl_certref: "{{ item.ssl_certref | default(omit) }}"
+    timeout: "{{ item.idle_timeout | default(0) }}"
+    idletimeout: "{{ item.idle_timeout | default(0) }}"
+    hardtimeout: "{{ item.hard_timeout | default(0) }}"
+    concurrent_user_logins: "{{ item.concurrent_user_logins | default(false) }}"
+    enable_passthru_mac: "{{ item.enable_passthru_mac | default(false) }}"
+    passthru_mac_add_username: "{{ item.passthru_mac_add_username | default(false) }}"
+    passthru_mac_auto_add: "{{ item.passthru_mac_auto_add | default(false) }}"
+    enable_mac_filtering: "{{ item.enable_mac_filtering | default(false) }}"
+    redirurl: "{{ item.redirect_url | default(omit) }}"
+    page: "{{ item.page | default(omit) }}"
+    state: present
+  loop: "{{ pfsense_captive_portal.zones | default([]) }}"
+  when: pfsense_captive_portal.zones is defined
+  notify: restart captive portal
+
+- name: Configure captive portal allowed IPs
+  pfsensible.core.pfsense_captiveportal_allowed_ip:
+    zone: "{{ item.0.zone }}"
+    ip: "{{ item.1.ip }}"
+    subnet: "{{ item.1.subnet | default(32) }}"
+    direction: "{{ item.1.direction | default('both') }}"
+    descr: "{{ item.1.descr | default(omit) }}"
+    state: present
+  loop: "{{ pfsense_captive_portal.zones | subelements('allowed_ips', skip_missing=True) }}"
+  when: pfsense_captive_portal.zones is defined
+  notify: restart captive portal
+
+- name: Configure captive portal allowed hostnames
+  pfsensible.core.pfsense_captiveportal_allowed_hostname:
+    zone: "{{ item.0.zone }}"
+    hostname: "{{ item.1.hostname }}"
+    direction: "{{ item.1.direction | default('both') }}"
+    descr: "{{ item.1.descr | default(omit) }}"
+    state: present
+  loop: "{{ pfsense_captive_portal.zones | subelements('allowed_hostnames', skip_missing=True) }}"
+  when: pfsense_captive_portal.zones is defined
+  notify: restart captive portal

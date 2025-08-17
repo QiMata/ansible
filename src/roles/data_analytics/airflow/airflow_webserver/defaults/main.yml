@@ -1,0 +1,51 @@
+---
+# Airflow Webserver Configuration
+airflow_webserver_user: "{{ apache_airflow_user | default('airflow') }}"
+airflow_webserver_group: "{{ apache_airflow_group | default('airflow') }}"
+airflow_webserver_home: "{{ apache_airflow_home | default('/opt/airflow') }}"
+
+# Webserver specific settings
+airflow_webserver_port: 8080
+airflow_webserver_host: "0.0.0.0"
+airflow_webserver_workers: 4
+airflow_webserver_worker_timeout: 120
+airflow_webserver_worker_refresh_batch_size: 1
+airflow_webserver_worker_refresh_interval: 30
+airflow_webserver_reload_on_plugin_change: false
+
+# Authentication
+airflow_webserver_authenticate: false
+airflow_webserver_auth_backend: ""
+airflow_webserver_filter_by_owner: false
+airflow_webserver_rbac: true
+
+# Security
+airflow_webserver_secret_key: "CHANGE_ME_IN_PRODUCTION"
+airflow_webserver_csrf_enabled: true
+airflow_webserver_session_timeout_minutes: 43200  # 30 days
+
+# SSL/TLS
+airflow_webserver_ssl_cert: ""
+airflow_webserver_ssl_key: ""
+airflow_webserver_ssl_enabled: false
+
+# Service configuration
+airflow_webserver_service_enabled: true
+airflow_webserver_service_state: started
+airflow_webserver_restart_on_failure: true
+
+# Resource limits
+airflow_webserver_memory_limit: "2G"
+airflow_webserver_cpu_limit: "1000m"
+
+# Logging
+airflow_webserver_log_level: "INFO"
+airflow_webserver_access_logfile: "{{ airflow_webserver_home }}/logs/webserver/access.log"
+airflow_webserver_error_logfile: "{{ airflow_webserver_home }}/logs/webserver/error.log"
+
+# Load balancer settings
+airflow_webserver_enable_proxy_fix: false
+airflow_webserver_proxy_fix_x_for: 1
+airflow_webserver_proxy_fix_x_proto: 1
+airflow_webserver_proxy_fix_x_host: 1
+airflow_webserver_proxy_fix_x_port: 1

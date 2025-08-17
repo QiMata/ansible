@@ -1,0 +1,36 @@
+[Unit]
+Description=Airflow Webserver
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=notify
+User={{ airflow_webserver_user }}
+Group={{ airflow_webserver_group }}
+WorkingDirectory={{ airflow_webserver_home }}
+Environment=AIRFLOW_HOME={{ airflow_webserver_home }}
+Environment=PYTHONPATH={{ airflow_webserver_home }}
+ExecStart={{ airflow_webserver_home }}/venv/bin/airflow webserver --port {{ airflow_webserver_port }} --hostname {{ airflow_webserver_host }}
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=600
+StartLimitBurst=3
+MemoryLimit={{ airflow_webserver_memory_limit }}
+LimitNOFILE=65536
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=airflow-webserver
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths={{ airflow_webserver_home }}
+
+[Install]
+WantedBy=multi-user.target

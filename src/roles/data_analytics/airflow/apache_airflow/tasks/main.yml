@@ -1,0 +1,36 @@
+---
+- name: Create airflow users
+  ansible.builtin.import_tasks: users.yml
+
+- name: Install airflow
+  ansible.builtin.import_tasks: install.yml
+
+- name: Install Python packages
+  ansible.builtin.import_tasks: pip.yml
+
+- name: Configure database
+  ansible.builtin.import_tasks: database.yml
+
+- name: Configure executor
+  ansible.builtin.import_tasks: executor.yml
+
+- name: Configure SSL/TLS certificates
+  ansible.builtin.import_tasks: ssl.yml
+  when: apache_airflow_ssl_enabled
+
+- name: Configure LDAP integration
+  ansible.builtin.import_tasks: ldap.yml
+  when: apache_airflow_ldap_enabled
+
+- name: Configure RBAC
+  ansible.builtin.import_tasks: rbac.yml
+  when: apache_airflow_rbac_enabled
+
+- name: Configure multiple schedulers
+  ansible.builtin.import_tasks: scheduler_ha.yml
+
+- name: Configure airflow
+  ansible.builtin.import_tasks: config.yml
+
+- name: Manage service
+  ansible.builtin.import_tasks: service.yml

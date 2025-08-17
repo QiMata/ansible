@@ -1,0 +1,39 @@
+---
+- name: Verify Basic Configuration
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check basic system settings
+      assert:
+        that:
+          - pfsense_system_settings.hostname == "pfsense-basic"
+          - pfsense_system_settings.domain == "basic.local"
+        fail_msg: "Basic system settings verification failed"
+        success_msg: "Basic system settings verified successfully"
+
+    - name: Verify interface configuration is minimal
+      assert:
+        that:
+          - pfsense_interfaces | length == 2
+          - pfsense_interfaces[1].ipaddr == "192.168.100.1"
+        fail_msg: "Basic interface configuration failed"
+        success_msg: "Basic interface configuration verified"
+
+    - name: Check that advanced features are disabled
+      assert:
+        that:
+          - pfsense_configure_vlans == false
+          - pfsense_configure_traffic_shaping == false
+          - pfsense_configure_openvpn == false
+          - pfsense_configure_ipsec == false
+          - pfsense_configure_captive_portal == false
+        fail_msg: "Advanced features should be disabled in basic config"
+        success_msg: "Advanced features are properly disabled"
+
+    - name: Verify DHCP range is correct
+      assert:
+        that:
+          - pfsense_dhcp_servers[0].range_from == "192.168.100.10"
+          - pfsense_dhcp_servers[0].range_to == "192.168.100.50"
+        fail_msg: "DHCP range verification failed"
+        success_msg: "DHCP range verified successfully"

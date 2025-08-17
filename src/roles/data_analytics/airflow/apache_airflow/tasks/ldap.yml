@@ -1,0 +1,69 @@
+---
+# LDAP/Active Directory Integration for Airflow
+- name: Install LDAP client packages
+  ansible.builtin.package:
+    name:
+      - python3-ldap
+      - libldap2-dev
+      - libsasl2-dev
+      - libssl-dev
+    state: present
+  when: apache_airflow_ldap_enabled
+
+- name: Install Python LDAP packages
+  ansible.builtin.pip:
+    name:
+      - python-ldap
+      - flask-appbuilder[ldap]
+    virtualenv: "{{ apache_airflow_venv_path if apache_airflow_venv_path else omit }}"
+    virtualenv_python: "{{ apache_airflow_python if apache_airflow_venv_path else omit }}"
+  become: true
+  become_user: "{{ apache_airflow_user }}"
+  when: apache_airflow_ldap_enabled
+
+- name: Create webserver_config.py with LDAP authentication
+  ansible.builtin.template:
+    src: webserver_config_ldap.py.j2
+    dest: "{{ apache_airflow_home }}/webserver_config.py"
+    owner: "{{ apache_airflow_user }}"
+    group: "{{ apache_airflow_group }}"
+    mode: '0644'
+  when: apache_airflow_ldap_enabled
+  notify: restart airflow webserver
+
+- name: Test LDAP connection
+  ansible.builtin.command:
+    cmd: >
+      {{ apache_airflow_python_executable }} -c "
+      import ldap;
+      conn = ldap.initialize('{{ apache_airflow_ldap_server }}:{{ apache_airflow_ldap_port }}');
+      conn.simple_bind_s('{{ apache_airflow_ldap_bind_user }}', '{{ apache_airflow_ldap_bind_password }}');
+      print('LDAP connection successful')
+      "
+  register: ldap_test_result
+  changed_when: false
+  failed_when: false
+  when: apache_airflow_ldap_enabled
+
+- name: Display LDAP connection status
+  ansible.builtin.debug:
+    msg: "LDAP connection test: {{ 'SUCCESS' if ldap_test_result.rc == 0 else 'FAILED - ' + ldap_test_result.stderr }}"
+  when: apache_airflow_ldap_enabled
+
+- name: Create LDAP groups mapping script
+  ansible.builtin.template:
+    src: ldap_groups_sync.py.j2
+    dest: "{{ apache_airflow_home }}/scripts/ldap_groups_sync.py"
+    owner: "{{ apache_airflow_user }}"
+    group: "{{ apache_airflow_group }}"
+    mode: '0755'
+  when: apache_airflow_ldap_enabled
+
+- name: Setup LDAP groups synchronization cron job
+  ansible.builtin.cron:
+    name: "Sync LDAP groups to Airflow"
+    minute: "0"
+    hour: "*/6"
+    job: "{{ apache_airflow_python_executable }} {{ apache_airflow_home }}/scripts/ldap_groups_sync.py"
+    user: "{{ apache_airflow_user }}"
+  when: apache_airflow_ldap_enabled

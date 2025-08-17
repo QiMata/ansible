@@ -1,0 +1,57 @@
+---
+# Package Management
+- name: Install pfSense packages
+  pfsensible.core.pfsense_package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ pfsense_packages.install | default([]) }}"
+  when: pfsense_packages.install is defined
+
+- name: Remove pfSense packages
+  pfsensible.core.pfsense_package:
+    name: "{{ item }}"
+    state: absent
+  loop: "{{ pfsense_packages.remove | default([]) }}"
+  when: pfsense_packages.remove is defined
+
+- name: Configure pfBlockerNG (if installed)
+  block:
+    - name: Configure pfBlockerNG general settings
+      pfsensible.core.pfsense_pfblockerng:
+        enable: "{{ pfsense_pfblockerng.enable | default(true) }}"
+        cron: "{{ pfsense_pfblockerng.cron | default('01 00 * * *') }}"
+        max_lines: "{{ pfsense_pfblockerng.max_lines | default(4000000) }}"
+        delay_startup: "{{ pfsense_pfblockerng.delay_startup | default(60) }}"
+      when: pfsense_pfblockerng is defined
+
+    - name: Configure pfBlockerNG DNSBL settings
+      pfsensible.core.pfsense_pfblockerng_dnsbl:
+        enable: "{{ item.enable | default(true) }}"
+        name: "{{ item.name }}"
+        description: "{{ item.description | default(omit) }}"
+        feeds: "{{ item.feeds | default([]) }}"
+        custom_list: "{{ item.custom_list | default([]) }}"
+        action: "{{ item.action | default('unbound') }}"
+      loop: "{{ pfsense_pfblockerng.dnsbl_feeds | default([]) }}"
+      when: 
+        - pfsense_pfblockerng is defined
+        - pfsense_pfblockerng.dnsbl_feeds is defined
+  when: "'pfBlockerNG' in pfsense_packages.install | default([])"
+
+- name: Configure Suricata (if installed)
+  block:
+    - name: Configure Suricata interfaces
+      pfsensible.core.pfsense_suricata_interface:
+        interface: "{{ item.interface }}"
+        enable: "{{ item.enable | default(true) }}"
+        description: "{{ item.description | default(omit) }}"
+        detection_mode: "{{ item.detection_mode | default('ips') }}"
+        ips_mode: "{{ item.ips_mode | default('legacy') }}"
+        block_offenders: "{{ item.block_offenders | default(false) }}"
+        kill_states: "{{ item.kill_states | default(false) }}"
+        mtu: "{{ item.mtu | default(1500) }}"
+      loop: "{{ pfsense_suricata.interfaces | default([]) }}"
+      when: 
+        - pfsense_suricata is defined
+        - pfsense_suricata.interfaces is defined
+  when: "'Suricata' in pfsense_packages.install | default([])"

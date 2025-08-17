@@ -1,0 +1,104 @@
+---
+# RBAC (Role-Based Access Control) Configuration for Airflow
+- name: Create RBAC roles directory
+  ansible.builtin.file:
+    path: "{{ apache_airflow_home }}/rbac"
+    state: directory
+    owner: "{{ apache_airflow_user }}"
+    group: "{{ apache_airflow_group }}"
+    mode: '0755'
+
+- name: Create custom RBAC security manager
+  ansible.builtin.template:
+    src: custom_security_manager.py.j2
+    dest: "{{ apache_airflow_home }}/rbac/custom_security_manager.py"
+    owner: "{{ apache_airflow_user }}"
+    group: "{{ apache_airflow_group }}"
+    mode: '0644'
+  notify: restart airflow webserver
+
+- name: Create RBAC role definitions
+  ansible.builtin.template:
+    src: rbac_roles.py.j2
+    dest: "{{ apache_airflow_home }}/rbac/rbac_roles.py"
+    owner: "{{ apache_airflow_user }}"
+    group: "{{ apache_airflow_group }}"
+    mode: '0644'
+
+- name: Create user management script
+  ansible.builtin.template:
+    src: manage_users.py.j2
+    dest: "{{ apache_airflow_home }}/scripts/manage_users.py"
+    owner: "{{ apache_airflow_user }}"
+    group: "{{ apache_airflow_group }}"
+    mode: '0755'
+
+- name: Initialize RBAC database tables
+  ansible.builtin.command:
+    cmd: "{{ apache_airflow_python_executable }} -m airflow db init"
+  environment:
+    AIRFLOW_HOME: "{{ apache_airflow_home }}"
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "{{ apache_airflow_database_url }}"
+  become: true
+  become_user: "{{ apache_airflow_user }}"
+  register: rbac_db_init
+  changed_when: "'Created' in rbac_db_init.stdout"
+
+- name: Create default admin user (if not using LDAP)
+  ansible.builtin.command:
+    cmd: >
+      {{ apache_airflow_python_executable }} -m airflow users create
+      --username {{ apache_airflow_admin_username | default('admin') }}
+      --firstname {{ apache_airflow_admin_firstname | default('Admin') }}
+      --lastname {{ apache_airflow_admin_lastname | default('User') }}
+      --role Admin
+      --email {{ apache_airflow_admin_email | default('admin@example.com') }}
+      --password {{ apache_airflow_admin_password | default('admin') }}
+  environment:
+    AIRFLOW_HOME: "{{ apache_airflow_home }}"
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "{{ apache_airflow_database_url }}"
+  become: true
+  become_user: "{{ apache_airflow_user }}"
+  register: admin_user_create
+  changed_when: "'User admin created' in admin_user_create.stdout"
+  failed_when: 
+    - admin_user_create.rc != 0 
+    - "'already exists' not in admin_user_create.stderr"
+  when: not apache_airflow_ldap_enabled
+
+- name: Setup RBAC permissions sync script
+  ansible.builtin.template:
+    src: sync_rbac_permissions.py.j2
+    dest: "{{ apache_airflow_home }}/scripts/sync_rbac_permissions.py"
+    owner: "{{ apache_airflow_user }}"
+    group: "{{ apache_airflow_group }}"
+    mode: '0755'
+
+- name: Create RBAC audit script
+  ansible.builtin.template:
+    src: rbac_audit.py.j2
+    dest: "{{ apache_airflow_home }}/scripts/rbac_audit.py"
+    owner: "{{ apache_airflow_user }}"
+    group: "{{ apache_airflow_group }}"
+    mode: '0755'
+
+- name: Setup RBAC audit cron job
+  ansible.builtin.cron:
+    name: "Airflow RBAC audit"
+    minute: "0"
+    hour: "2"
+    job: "{{ apache_airflow_python_executable }} {{ apache_airflow_home }}/scripts/rbac_audit.py >> {{ apache_airflow_home }}/logs/rbac_audit.log 2>&1"
+    user: "{{ apache_airflow_user }}"
+
+- name: Display RBAC configuration status
+  ansible.builtin.debug:
+    msg: |
+      RBAC Configuration Complete:
+      - RBAC Enabled: {{ apache_airflow_rbac_enabled }}
+      - Authentication Type: {{ apache_airflow_rbac_auth_type }}
+      - User Registration: {{ apache_airflow_rbac_user_registration }}
+      - Default Role: {{ apache_airflow_rbac_user_registration_role }}
+      {% if apache_airflow_ldap_enabled %}
+      - LDAP Integration: Enabled
+      - LDAP Server: {{ apache_airflow_ldap_server }}
+      {% endif %}

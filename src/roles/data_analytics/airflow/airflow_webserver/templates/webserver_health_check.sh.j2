@@ -1,0 +1,38 @@
+#!/bin/bash
+# Airflow Webserver Health Check Script
+
+WEBSERVER_HOST="{{ airflow_webserver_host }}"
+WEBSERVER_PORT="{{ airflow_webserver_port }}"
+LOG_FILE="{{ airflow_webserver_home }}/logs/webserver/health_check.log"
+
+# Function to log messages
+log_message() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${LOG_FILE}"
+}
+
+# Check if webserver service is running
+if systemctl is-active --quiet airflow-webserver; then
+    log_message "Webserver service is active"
+    
+    # Check if webserver is responding to HTTP requests
+    if curl -f -s "http://${WEBSERVER_HOST}:${WEBSERVER_PORT}/health" > /dev/null 2>&1; then
+        log_message "Webserver is responding to health checks"
+    else
+        log_message "WARNING: Webserver is not responding to health checks. Restarting webserver."
+        systemctl restart airflow-webserver
+    fi
+else
+    log_message "ERROR: Webserver service is not active. Starting webserver."
+    systemctl start airflow-webserver
+fi
+
+# Check webserver process memory usage
+MEMORY_USAGE=$(ps -eo pid,comm,%mem --sort=-%mem | grep airflow | head -1 | awk '{print $3}')
+if [ -n "$MEMORY_USAGE" ]; then
+    MEMORY_THRESHOLD=80
+    if (( $(echo "$MEMORY_USAGE > $MEMORY_THRESHOLD" | bc -l) )); then
+        log_message "WARNING: Webserver memory usage is high (${MEMORY_USAGE}%)"
+    else
+        log_message "Webserver memory usage is normal (${MEMORY_USAGE}%)"
+    fi
+fi

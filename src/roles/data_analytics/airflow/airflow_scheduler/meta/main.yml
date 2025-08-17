@@ -1,0 +1,4 @@
+---
+dependencies:
+  - role: apache_airflow
+    when: airflow_scheduler_require_core | default(true)

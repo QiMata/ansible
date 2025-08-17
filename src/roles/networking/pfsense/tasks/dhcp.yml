@@ -1,0 +1,45 @@
+---
+# DHCP Server Configuration
+- name: Configure DHCP servers
+  pfsensible.core.pfsense_dhcp:
+    interface: "{{ item.interface }}"
+    enable: "{{ item.enable | default(true) }}"
+    range_from: "{{ item.range_from }}"
+    range_to: "{{ item.range_to }}"
+    dns_servers: "{{ item.dns_servers | default(omit) }}"
+    gateway: "{{ item.gateway | default(omit) }}"
+    domain: "{{ item.domain | default(omit) }}"
+    domainsearchlist: "{{ item.domain_search_list | default(omit) }}"
+    default_lease_time: "{{ item.default_lease_time | default(7200) }}"
+    max_lease_time: "{{ item.max_lease_time | default(86400) }}"
+    failover_peer_ip: "{{ item.failover_peer_ip | default(omit) }}"
+    static_arp: "{{ item.static_arp | default(false) }}"
+    dhcp_relay: "{{ item.dhcp_relay | default(false) }}"
+    state: present
+  loop: "{{ pfsense_dhcp_servers }}"
+  when: pfsense_dhcp_servers is defined
+  notify: restart dhcp
+
+- name: Configure DHCP static mappings
+  pfsensible.core.pfsense_dhcp_static:
+    interface: "{{ item.0.interface }}"
+    mac: "{{ item.1.mac }}"
+    ipaddr: "{{ item.1.ipaddr }}"
+    hostname: "{{ item.1.hostname | default(omit) }}"
+    descr: "{{ item.1.descr | default(omit) }}"
+    filename: "{{ item.1.filename | default(omit) }}"
+    rootpath: "{{ item.1.rootpath | default(omit) }}"
+    defaultleasetime: "{{ item.1.default_lease_time | default(omit) }}"
+    maxleasetime: "{{ item.1.max_lease_time | default(omit) }}"
+    gateway: "{{ item.1.gateway | default(omit) }}"
+    domain: "{{ item.1.domain | default(omit) }}"
+    domainsearchlist: "{{ item.1.domain_search_list | default(omit) }}"
+    ddnsdomainprimary: "{{ item.1.ddns_domain_primary | default(omit) }}"
+    ddnsdomainkeyname: "{{ item.1.ddns_domain_key_name | default(omit) }}"
+    ddnsdomainkey: "{{ item.1.ddns_domain_key | default(omit) }}"
+    tftp: "{{ item.1.tftp | default(omit) }}"
+    ldap: "{{ item.1.ldap | default(omit) }}"
+    state: present
+  loop: "{{ pfsense_dhcp_servers | subelements('static_mappings', skip_missing=True) }}"
+  when: pfsense_dhcp_servers is defined
+  notify: restart dhcp
