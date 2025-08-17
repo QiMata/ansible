@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+"""
+Health check script for Amundsen Search service
+"""
+import sys
+import time
+import requests
+import argparse
+from typing import Dict, Any
+
+def check_service_health() -> Dict[str, Any]:
+    """Check if the search service is healthy"""
+    try:
+        url = f"http://{{ amundsen_search_bind_host }}:{{ amundsen_search_port }}{{ amundsen_search_lb_health_check_path }}"
+        response = requests.get(url, timeout=10)
+        
+        return {
+            'status': 'healthy' if response.status_code == 200 else 'unhealthy',
+            'status_code': response.status_code,
+            'response_time': response.elapsed.total_seconds(),
+            'timestamp': time.time()
+        }
+    except Exception as e:
+        return {
+            'status': 'unhealthy',
+            'error': str(e),
+            'timestamp': time.time()
+        }
+
+def check_elasticsearch_health() -> Dict[str, Any]:
+    """Check if Elasticsearch is healthy"""
+    try:
+        url = f"{{ amundsen_search_es_scheme }}://{{ amundsen_search_es_host }}:{{ amundsen_search_es_port }}/_cluster/health"
+        
+        {% if amundsen_search_es_auth_enabled and amundsen_search_es_auth_type == "basic" %}
+        auth = ('{{ amundsen_search_es_username }}', '{{ amundsen_search_es_password }}')
+        response = requests.get(url, auth=auth, timeout=10, verify={{ amundsen_search_es_verify_certs | lower }})
+        {% else %}
+        response = requests.get(url, timeout=10, verify={{ amundsen_search_es_verify_certs | lower }})
+        {% endif %}
+        
+        data = response.json()
+        return {
+            'status': data.get('status', 'unknown'),
+            'cluster_name': data.get('cluster_name'),
+            'number_of_nodes': data.get('number_of_nodes'),
+            'timestamp': time.time()
+        }
+    except Exception as e:
+        return {
+            'status': 'unhealthy',
+            'error': str(e),
+            'timestamp': time.time()
+        }
+
+def main():
+    parser = argparse.ArgumentParser(description='Amundsen Search Health Check')
+    parser.add_argument('--startup-check', action='store_true', help='Perform startup health check')
+    parser.add_argument('--full-check', action='store_true', help='Perform full health check')
+    args = parser.parse_args()
+    
+    if args.startup_check:
+        # Wait for service to start
+        max_retries = 30
+        for i in range(max_retries):
+            health = check_service_health()
+            if health['status'] == 'healthy':
+                print("Service startup check: PASSED")
+                sys.exit(0)
+            time.sleep(1)
+        print("Service startup check: FAILED")
+        sys.exit(1)
+    
+    # Regular health check
+    service_health = check_service_health()
+    es_health = check_elasticsearch_health()
+    
+    overall_status = 'healthy' if (
+        service_health['status'] == 'healthy' and 
+        es_health['status'] in ['green', 'yellow']
+    ) else 'unhealthy'
+    
+    result = {
+        'overall_status': overall_status,
+        'service': service_health,
+        'elasticsearch': es_health
+    }
+    
+    if args.full_check:
+        print(f"Health Check Results: {result}")
+    
+    sys.exit(0 if overall_status == 'healthy' else 1)
+
+if __name__ == '__main__':
+    main()

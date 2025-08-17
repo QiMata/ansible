@@ -6,6 +6,26 @@
 
 - name: Restart Search Service
   ansible.builtin.service:
-    name: amundsen-search
+    name: "amundsen-search{{ '-' + amundsen_search_instance_id if amundsen_search_multi_instance else '' }}"
     state: restarted
+  become: true
+
+- name: Restart Health Check Service
+  ansible.builtin.service:
+    name: "amundsen-search-health{{ '-' + amundsen_search_instance_id if amundsen_search_multi_instance else '' }}"
+    state: restarted
+  become: true
+  when: amundsen_search_health_checks_enabled
+
+- name: Restart Metrics Service
+  ansible.builtin.service:
+    name: "amundsen-search-metrics{{ '-' + amundsen_search_instance_id if amundsen_search_multi_instance else '' }}"
+    state: restarted
+  become: true
+  when: amundsen_search_metrics_enabled
+
+- name: Reload Search Service
+  ansible.builtin.service:
+    name: "amundsen-search{{ '-' + amundsen_search_instance_id if amundsen_search_multi_instance else '' }}"
+    state: reloaded
   become: true

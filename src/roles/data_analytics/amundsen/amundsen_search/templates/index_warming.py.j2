@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+"""
+Index warming script for Amundsen Search
+Executes predefined queries to warm up the search index
+"""
+import requests
+import json
+import time
+from typing import List, Dict, Any
+
+# Predefined warming queries
+WARMING_QUERIES = {{ amundsen_search_index_warming_queries | to_json }}
+
+def execute_warming_query(query: Dict[str, Any]) -> bool:
+    """Execute a single warming query"""
+    try:
+        url = f"{{ amundsen_search_es_scheme }}://{{ amundsen_search_es_host }}:{{ amundsen_search_es_port }}/{{ amundsen_search_es_index }}/_search"
+        
+        headers = {"Content-Type": "application/json"}
+        
+        {% if amundsen_search_es_auth_enabled and amundsen_search_es_auth_type == "basic" %}
+        auth = ('{{ amundsen_search_es_username }}', '{{ amundsen_search_es_password }}')
+        response = requests.post(url, json=query, auth=auth, headers=headers, timeout=30)
+        {% elif amundsen_search_es_auth_enabled and amundsen_search_es_auth_type == "api_key" %}
+        headers["Authorization"] = f"ApiKey {{ amundsen_search_es_api_key }}"
+        response = requests.post(url, json=query, headers=headers, timeout=30)
+        {% else %}
+        response = requests.post(url, json=query, headers=headers, timeout=30)
+        {% endif %}
+        
+        return response.status_code == 200
+        
+    except Exception as e:
+        print(f"Error executing warming query: {e}")
+        return False
+
+def main():
+    """Main warming function"""
+    print("Starting index warming...")
+    
+    if not WARMING_QUERIES:
+        print("No warming queries configured")
+        return
+    
+    success_count = 0
+    total_queries = len(WARMING_QUERIES)
+    
+    for i, query in enumerate(WARMING_QUERIES, 1):
+        print(f"Executing warming query {i}/{total_queries}...")
+        if execute_warming_query(query):
+            success_count += 1
+        time.sleep(1)  # Brief pause between queries
+    
+    print(f"Index warming completed: {success_count}/{total_queries} queries successful")
+
+if __name__ == '__main__':
+    main()

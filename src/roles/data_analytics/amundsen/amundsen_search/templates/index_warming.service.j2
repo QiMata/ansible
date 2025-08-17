@@ -1,0 +1,13 @@
+[Unit]
+Description=Amundsen Search Index Warming{% if amundsen_search_multi_instance %} ({{ amundsen_search_instance_id }}){% endif %}
+After=network.target
+Requires=amundsen-search{% if amundsen_search_multi_instance %}-{{ amundsen_search_instance_id }}{% endif %}.service
+
+[Service]
+Type=oneshot
+User=amundsen
+Group=amundsen
+WorkingDirectory={{ amundsen_search_virtualenv }}
+ExecStart={{ amundsen_search_virtualenv }}/bin/python {{ amundsen_search_virtualenv }}/index_warming.py
+StandardOutput=journal
+StandardError=journal

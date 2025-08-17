@@ -1,0 +1,13 @@
+/var/log/amundsen/search{% if amundsen_search_multi_instance %}-{{ amundsen_search_instance_id }}{% endif %}.log {
+    daily
+    rotate {{ amundsen_search_log_backup_count }}
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 644 amundsen amundsen
+    maxsize {{ amundsen_search_log_max_size }}
+    postrotate
+        systemctl reload amundsen-search{% if amundsen_search_multi_instance %}-{{ amundsen_search_instance_id }}{% endif %} > /dev/null 2>&1 || true
+    endscript
+}

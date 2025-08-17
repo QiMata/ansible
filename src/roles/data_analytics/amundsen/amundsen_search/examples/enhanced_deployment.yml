@@ -1,0 +1,161 @@
+---
+# Example playbook demonstrating all enhanced Amundsen Search features
+- name: Deploy Enhanced Amundsen Search
+  hosts: amundsen_search_servers
+  become: true
+  vars:
+    # Basic configuration
+    amundsen_search_version: "4.0.0"
+    amundsen_search_port: 5001
+    amundsen_search_gunicorn_workers: 4
+    amundsen_search_environment: "production"
+
+    # Elasticsearch configuration with authentication
+    amundsen_search_es_host: "es-cluster.example.com"
+    amundsen_search_es_port: 9200
+    amundsen_search_es_scheme: "https"
+    amundsen_search_es_auth_enabled: true
+    amundsen_search_es_auth_type: "basic"
+    amundsen_search_es_username: "amundsen_user"
+    amundsen_search_es_password: "{{ vault_es_password }}"
+
+    # Elasticsearch TLS
+    amundsen_search_es_tls_enabled: true
+    amundsen_search_es_ca_cert: "files/certs/es-ca.crt"
+    amundsen_search_es_verify_certs: true
+
+    # Service TLS
+    amundsen_search_tls_enabled: true
+    amundsen_search_tls_cert_path: "files/certs/amundsen-search.crt"
+    amundsen_search_tls_key_path: "files/certs/amundsen-search.key"
+
+    # Service authentication
+    amundsen_search_auth_enabled: true
+    amundsen_search_auth_type: "api_key"
+    amundsen_search_api_keys:
+      - "{{ vault_api_key_1 }}"
+      - "{{ vault_api_key_2 }}"
+
+    # Load balancer configuration
+    amundsen_search_behind_lb: true
+    amundsen_search_proxy_headers: true
+
+    # Health checks and monitoring
+    amundsen_search_health_checks_enabled: true
+    amundsen_search_health_check_interval: 30
+    amundsen_search_metrics_enabled: true
+    amundsen_search_metrics_type: "prometheus"
+    amundsen_search_prometheus_port: 9090
+
+    # Logging configuration
+    amundsen_search_log_level: "INFO"
+    amundsen_search_log_format: "json"
+    amundsen_search_access_log_enabled: true
+
+    # Caching with Redis
+    amundsen_search_caching_enabled: true
+    amundsen_search_cache_type: "redis"
+    amundsen_search_redis_host: "redis.example.com"
+    amundsen_search_redis_port: 6379
+    amundsen_search_cache_ttl: 3600
+
+    # Search optimization
+    amundsen_search_result_size: 20
+    amundsen_search_max_result_size: 100
+    amundsen_search_enable_fuzzy_search: true
+
+    # Index management
+    amundsen_search_index_management_enabled: true
+    amundsen_search_index_warming_enabled: true
+    amundsen_search_index_optimization_enabled: true
+    amundsen_search_index_optimization_schedule: "0 2 * * *"
+
+    # Data retention
+    amundsen_search_data_retention_enabled: true
+    amundsen_search_data_retention_days: 365
+
+    # Backup configuration
+    amundsen_search_backup_enabled: true
+    amundsen_search_backup_repository: "amundsen_backups"
+    amundsen_search_backup_schedule: "0 3 * * *"
+    amundsen_search_backup_retention_days: 30
+
+    # Analytics
+    amundsen_search_analytics_enabled: true
+    amundsen_search_query_logging_enabled: true
+    amundsen_search_slow_query_threshold: 1000
+
+    # Performance tuning
+    amundsen_search_connection_pool_size: 20
+    amundsen_search_graceful_timeout: 30
+
+    # Custom configuration
+    amundsen_search_custom_config_vars:
+      CUSTOM_FEATURE_FLAG: true
+      MAX_CONCURRENT_SEARCHES: 50
+      SEARCH_TIMEOUT_MS: 5000
+
+  roles:
+    - role: data_analytics.amundsen.amundsen_search
+
+  post_tasks:
+    - name: Verify service is running
+      ansible.builtin.uri:
+        url: "https://{{ inventory_hostname }}:{{ amundsen_search_port }}/healthcheck"
+        method: GET
+        validate_certs: false
+        status_code: [200, 503]
+      delegate_to: localhost
+      retries: 5
+      delay: 10
+
+    - name: Verify Prometheus metrics endpoint
+      ansible.builtin.uri:
+        url: "http://{{ inventory_hostname }}:{{ amundsen_search_prometheus_port }}/metrics"
+        method: GET
+        status_code: 200
+      delegate_to: localhost
+      when: amundsen_search_metrics_enabled
+
+---
+# Multi-instance deployment example
+- name: Deploy Multiple Amundsen Search Instances
+  hosts: amundsen_search_cluster
+  become: true
+  strategy: free
+  vars:
+    amundsen_search_multi_instance: true
+    amundsen_search_cluster_nodes:
+      - "search-1.example.com:5001"
+      - "search-2.example.com:5001"
+      - "search-3.example.com:5001"
+    
+    # Instance-specific configuration
+    amundsen_search_instance_id: "{{ inventory_hostname.split('.')[0] }}"
+    amundsen_search_port: "{{ 5001 + groups['amundsen_search_cluster'].index(inventory_hostname) }}"
+
+  roles:
+    - role: data_analytics.amundsen.amundsen_search
+
+---
+# Development environment example
+- name: Deploy Amundsen Search for Development
+  hosts: amundsen_dev
+  become: true
+  vars:
+    amundsen_search_environment: "development"
+    amundsen_search_debug: true
+    amundsen_search_log_level: "DEBUG"
+    
+    # Relaxed security for development
+    amundsen_search_auth_enabled: false
+    amundsen_search_tls_enabled: false
+    amundsen_search_es_verify_certs: false
+    
+    # Development conveniences
+    amundsen_search_analytics_enabled: true
+    amundsen_search_query_logging_enabled: true
+    amundsen_search_health_checks_enabled: true
+
+  roles:
+    - role: data_analytics.amundsen.amundsen_search

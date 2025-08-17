@@ -1,5 +1,199 @@
+import os
+import logging
 from search_service.config_common import Config
 
 class ProdConfig(Config):
-    ELASTICSEARCH_ENDPOINT = "http://{{ amundsen_search_es_host }}:{{ amundsen_search_es_port }}"
+    # Basic Elasticsearch configuration
+    {% if amundsen_search_es_auth_enabled and amundsen_search_es_auth_type == "basic" %}
+    ELASTICSEARCH_ENDPOINT = "{{ amundsen_search_es_scheme }}://{{ amundsen_search_es_username }}:{{ amundsen_search_es_password }}@{{ amundsen_search_es_host }}:{{ amundsen_search_es_port }}"
+    {% else %}
+    ELASTICSEARCH_ENDPOINT = "{{ amundsen_search_es_scheme }}://{{ amundsen_search_es_host }}:{{ amundsen_search_es_port }}"
+    {% endif %}
+    
+    # Elasticsearch client configuration
+    ELASTICSEARCH_CLIENT_CONFIG = {
+        {% if amundsen_search_es_tls_enabled %}
+        'verify_certs': {{ amundsen_search_es_verify_certs | lower }},
+        'verify_hostname': {{ amundsen_search_es_verify_hostname | lower }},
+        {% if amundsen_search_es_ca_cert %}
+        'ca_certs': '/opt/amundsen/search/certs/ca/elasticsearch-ca.crt',
+        {% endif %}
+        {% if amundsen_search_es_client_cert and amundsen_search_es_client_key %}
+        'client_cert': '/opt/amundsen/search/certs/client/elasticsearch.crt',
+        'client_key': '/opt/amundsen/search/certs/client/elasticsearch.key',
+        {% endif %}
+        {% endif %}
+        {% if amundsen_search_es_auth_enabled and amundsen_search_es_auth_type == "api_key" %}
+        'api_key': ('{{ amundsen_search_es_api_key_id }}', '{{ amundsen_search_es_api_key }}'),
+        {% endif %}
+        'timeout': {{ amundsen_search_timeout }},
+        'max_retries': {{ amundsen_search_retry_attempts }},
+        'retry_on_timeout': True
+    }
+    
+    # Index configuration
+    ELASTICSEARCH_INDEX = "{{ amundsen_search_es_index }}"
+    ELASTICSEARCH_ALIAS = "{{ amundsen_search_es_alias }}"
+    
+    # Search configuration
+    SEARCH_RESULT_SIZE = {{ amundsen_search_result_size }}
+    MAX_RESULT_SIZE = {{ amundsen_search_max_result_size }}
+    SEARCH_QUERY_TIMEOUT = {{ amundsen_search_query_timeout }}
+    ENABLE_FUZZY_SEARCH = {{ amundsen_search_enable_fuzzy_search | lower }}
+    FUZZY_DISTANCE = {{ amundsen_search_fuzzy_distance }}
+    
+    # Logging configuration
+    LOG_LEVEL = "{{ amundsen_search_log_level }}"
+    LOG_FORMAT = "{{ amundsen_search_log_format }}"
+    LOG_FILE = "{{ amundsen_search_log_file }}"
+    
+    {% if amundsen_search_log_format == "json" %}
+    LOGGING_CONFIG = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'json': {
+                'format': '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "logger": "%(name)s", "message": "%(message)s"}',
+                'datefmt': '%Y-%m-%d %H:%M:%S'
+            }
+        },
+        'handlers': {
+            'file': {
+                'level': '{{ amundsen_search_log_level }}',
+                'class': 'logging.handlers.RotatingFileHandler',
+                'filename': '{{ amundsen_search_log_file }}',
+                'maxBytes': {{ amundsen_search_log_max_size | regex_replace('MB', '') | int * 1024 * 1024 }},
+                'backupCount': {{ amundsen_search_log_backup_count }},
+                'formatter': 'json'
+            }
+        },
+        'loggers': {
+            '': {
+                'handlers': ['file'],
+                'level': '{{ amundsen_search_log_level }}',
+                'propagate': False
+            }
+        }
+    }
+    {% endif %}
+    
+    # Authentication configuration
+    {% if amundsen_search_auth_enabled %}
+    AUTH_ENABLED = True
+    AUTH_TYPE = "{{ amundsen_search_auth_type }}"
+    {% if amundsen_search_auth_type == "api_key" %}
+    API_KEYS_FILE = "/etc/amundsen/search/api_keys.yml"
+    {% elif amundsen_search_auth_type == "jwt" %}
+    JWT_SECRET_FILE = "/etc/amundsen/search/jwt_secret.yml"
+    JWT_ALGORITHM = "{{ amundsen_search_jwt_algorithm }}"
+    {% endif %}
+    {% else %}
+    AUTH_ENABLED = False
+    {% endif %}
+    
+    # TLS configuration
+    {% if amundsen_search_tls_enabled %}
+    TLS_ENABLED = True
+    TLS_CERT_PATH = "/opt/amundsen/search/certs/server.crt"
+    TLS_KEY_PATH = "/opt/amundsen/search/certs/server.key"
+    {% if amundsen_search_tls_ca_path %}
+    TLS_CA_PATH = "/opt/amundsen/search/certs/ca/ca.crt"
+    {% endif %}
+    {% else %}
+    TLS_ENABLED = False
+    {% endif %}
+    
+    # Caching configuration
+    {% if amundsen_search_caching_enabled %}
+    CACHE_ENABLED = True
+    CACHE_TYPE = "{{ amundsen_search_cache_type }}"
+    {% if amundsen_search_cache_type == "redis" %}
+    REDIS_CONFIG = {
+        'host': '{{ amundsen_search_redis_host }}',
+        'port': {{ amundsen_search_redis_port }},
+        'db': {{ amundsen_search_redis_db }},
+        {% if amundsen_search_redis_password %}
+        'password': '{{ amundsen_search_redis_password }}',
+        {% endif %}
+        'decode_responses': True
+    }
+    {% endif %}
+    CACHE_TTL = {{ amundsen_search_cache_ttl }}
+    {% else %}
+    CACHE_ENABLED = False
+    {% endif %}
+    
+    # Monitoring configuration
+    {% if amundsen_search_metrics_enabled %}
+    METRICS_ENABLED = True
+    METRICS_TYPE = "{{ amundsen_search_metrics_type }}"
+    {% if amundsen_search_metrics_type == "prometheus" %}
+    PROMETHEUS_PORT = {{ amundsen_search_prometheus_port }}
+    {% elif amundsen_search_metrics_type == "statsd" %}
+    STATSD_HOST = "{{ amundsen_search_statsd_host }}"
+    STATSD_PORT = {{ amundsen_search_statsd_port }}
+    {% endif %}
+    {% else %}
+    METRICS_ENABLED = False
+    {% endif %}
+    
+    # Health check configuration
+    {% if amundsen_search_health_checks_enabled %}
+    HEALTH_CHECKS_ENABLED = True
+    HEALTH_CHECK_PATH = "{{ amundsen_search_lb_health_check_path }}"
+    {% else %}
+    HEALTH_CHECKS_ENABLED = False
+    {% endif %}
+    
+    # Load balancer configuration
+    {% if amundsen_search_behind_lb %}
+    BEHIND_LOAD_BALANCER = True
+    PROXY_HEADERS = {{ amundsen_search_proxy_headers | lower }}
+    {% else %}
+    BEHIND_LOAD_BALANCER = False
+    {% endif %}
+    
+    # Multi-instance configuration
+    {% if amundsen_search_multi_instance %}
+    MULTI_INSTANCE = True
+    INSTANCE_ID = "{{ amundsen_search_instance_id }}"
+    CLUSTER_NODES = {{ amundsen_search_cluster_nodes | to_json }}
+    {% else %}
+    MULTI_INSTANCE = False
+    {% endif %}
+    
+    # Analytics configuration
+    {% if amundsen_search_analytics_enabled %}
+    ANALYTICS_ENABLED = True
+    QUERY_LOGGING_ENABLED = {{ amundsen_search_query_logging_enabled | lower }}
+    SLOW_QUERY_THRESHOLD = {{ amundsen_search_slow_query_threshold }}
+    {% else %}
+    ANALYTICS_ENABLED = False
+    {% endif %}
+    
+    # Environment-specific configuration
+    ENVIRONMENT = "{{ amundsen_search_environment }}"
+    DEBUG = {{ amundsen_search_debug | lower }}
+    
+    # Performance configuration
+    CONNECTION_POOL_SIZE = {{ amundsen_search_connection_pool_size }}
+    MAX_CONNECTIONS = {{ amundsen_search_max_connections }}
+    GRACEFUL_TIMEOUT = {{ amundsen_search_graceful_timeout }}
+    
+    # Custom configuration variables
+    {% for key, value in amundsen_search_custom_config_vars.items() %}
+    {{ key }} = {{ value | to_json }}
+    {% endfor %}
+
+class DevelopmentConfig(ProdConfig):
+    DEBUG = True
+    LOG_LEVEL = "DEBUG"
+    ELASTICSEARCH_CLIENT_CONFIG = {
+        **ProdConfig.ELASTICSEARCH_CLIENT_CONFIG,
+        'verify_certs': False,
+        'verify_hostname': False
+    }
+
+class StagingConfig(ProdConfig):
+    DEBUG = False
     LOG_LEVEL = "INFO"

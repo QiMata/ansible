@@ -1,0 +1,36 @@
+from search_service.config_common import Config
+
+class DevelopmentConfig(Config):
+    # Basic Elasticsearch configuration
+    ELASTICSEARCH_ENDPOINT = "{{ amundsen_search_es_scheme }}://{{ amundsen_search_es_host }}:{{ amundsen_search_es_port }}"
+    
+    # Development-specific settings
+    DEBUG = True
+    LOG_LEVEL = "DEBUG"
+    
+    # Disable TLS verification for development
+    ELASTICSEARCH_CLIENT_CONFIG = {
+        'verify_certs': False,
+        'verify_hostname': False,
+        'timeout': {{ amundsen_search_timeout }},
+        'max_retries': {{ amundsen_search_retry_attempts }},
+        'retry_on_timeout': True
+    }
+    
+    # Relaxed security for development
+    AUTH_ENABLED = False
+    TLS_ENABLED = False
+    
+    # Enable more verbose logging
+    QUERY_LOGGING_ENABLED = True
+    ANALYTICS_ENABLED = True
+    
+    # Quick cache TTL for development
+    {% if amundsen_search_caching_enabled %}
+    CACHE_TTL = 300  # 5 minutes
+    {% endif %}
+    
+    # Development-specific custom variables
+    {% for key, value in amundsen_search_custom_config_vars.items() %}
+    {{ key }} = {{ value | to_json }}
+    {% endfor %}

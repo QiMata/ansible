@@ -1,0 +1,44 @@
+---
+actions:
+  1:
+    action: delete_indices
+    description: Delete indices older than {{ amundsen_search_data_retention_days }} days
+    options:
+      ignore_empty_list: True
+      timeout_override:
+      continue_if_exception: False
+      disable_action: {% if not amundsen_search_data_retention_enabled %}True{% else %}False{% endif %}
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: {{ amundsen_search_es_index }}
+      exclude:
+    - filtertype: age
+      source: name
+      direction: older
+      timestring: '%Y.%m.%d'
+      unit: days
+      unit_count: {{ amundsen_search_data_retention_days }}
+      exclude:
+  
+  2:
+    action: forcemerge
+    description: Optimize indices older than 2 days
+    options:
+      max_num_segments: 1
+      delay: 120
+      timeout_override: 21600
+      continue_if_exception: False
+      disable_action: {% if not amundsen_search_index_optimization_enabled %}True{% else %}False{% endif %}
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: {{ amundsen_search_es_index }}
+      exclude:
+    - filtertype: age
+      source: name
+      direction: older
+      timestring: '%Y.%m.%d'
+      unit: days
+      unit_count: 2
+      exclude:

@@ -1,16 +1,82 @@
 [Unit]
-Description=Amundsen Search Service
+Description=Amundsen Search Service{% if amundsen_search_multi_instance %} ({{ amundsen_search_instance_id }}){% endif %}
 After=network.target
+{% if amundsen_search_caching_enabled and amundsen_search_cache_type == "redis" %}
+Wants=redis.service
+After=redis.service
+{% endif %}
 
 [Service]
+Type=notify
 User=amundsen
 Group=amundsen
+WorkingDirectory={{ amundsen_search_virtualenv }}
+
+# Environment variables
 Environment=SEARCH_SVC_CONFIG_MODULE_CLASS={{ amundsen_search_config_class }}
 Environment=ELASTICSEARCH_HOST={{ amundsen_search_es_host }}
 Environment=ELASTICSEARCH_PORT={{ amundsen_search_es_port }}
-ExecStart={{ amundsen_search_virtualenv }}/bin/gunicorn --workers {{ amundsen_search_gunicorn_workers }} --bind {{ amundsen_search_bind_host }}:{{ amundsen_search_port }} search_service.search_wsgi:app
+Environment=PYTHONPATH={{ amundsen_search_virtualenv }}
+{% if amundsen_search_multi_instance %}
+Environment=INSTANCE_ID={{ amundsen_search_instance_id }}
+{% endif %}
+
+# Service execution
+{% if amundsen_search_tls_enabled %}
+ExecStart={{ amundsen_search_virtualenv }}/bin/gunicorn \
+    --workers {{ amundsen_search_gunicorn_workers }} \
+    --bind {{ amundsen_search_bind_host }}:{{ amundsen_search_port }} \
+    --certfile /opt/amundsen/search/certs/server.crt \
+    --keyfile /opt/amundsen/search/certs/server.key \
+    --timeout {{ amundsen_search_graceful_timeout }} \
+    --graceful-timeout {{ amundsen_search_graceful_timeout }} \
+    {% if amundsen_search_access_log_enabled %}
+    --access-logfile {{ amundsen_search_log_file | replace('.log', '_access.log') }} \
+    {% endif %}
+    --error-logfile {{ amundsen_search_log_file }} \
+    --log-level {{ amundsen_search_log_level | lower }} \
+    --preload \
+    search_service.search_wsgi:app
+{% else %}
+ExecStart={{ amundsen_search_virtualenv }}/bin/gunicorn \
+    --workers {{ amundsen_search_gunicorn_workers }} \
+    --bind {{ amundsen_search_bind_host }}:{{ amundsen_search_port }} \
+    --timeout {{ amundsen_search_graceful_timeout }} \
+    --graceful-timeout {{ amundsen_search_graceful_timeout }} \
+    {% if amundsen_search_access_log_enabled %}
+    --access-logfile {{ amundsen_search_log_file | replace('.log', '_access.log') }} \
+    {% endif %}
+    --error-logfile {{ amundsen_search_log_file }} \
+    --log-level {{ amundsen_search_log_level | lower }} \
+    --preload \
+    search_service.search_wsgi:app
+{% endif %}
+
+# Process management
 Restart=always
 RestartSec=5
+{% if amundsen_search_shutdown_signals %}
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec={{ amundsen_search_graceful_timeout }}
+{% endif %}
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ amundsen_search_virtualenv }} /var/log/amundsen /etc/amundsen/search
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Health check integration
+{% if amundsen_search_health_checks_enabled %}
+ExecStartPost=/bin/sleep 10
+ExecStartPost={{ amundsen_search_virtualenv }}/bin/python {{ amundsen_search_virtualenv }}/health_check.py --startup-check
+{% endif %}
 
 [Install]
 WantedBy=multi-user.target

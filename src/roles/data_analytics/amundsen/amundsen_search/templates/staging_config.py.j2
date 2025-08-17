@@ -1,0 +1,49 @@
+from search_service.config_common import Config
+
+class StagingConfig(Config):
+    # Basic Elasticsearch configuration
+    {% if amundsen_search_es_auth_enabled and amundsen_search_es_auth_type == "basic" %}
+    ELASTICSEARCH_ENDPOINT = "{{ amundsen_search_es_scheme }}://{{ amundsen_search_es_username }}:{{ amundsen_search_es_password }}@{{ amundsen_search_es_host }}:{{ amundsen_search_es_port }}"
+    {% else %}
+    ELASTICSEARCH_ENDPOINT = "{{ amundsen_search_es_scheme }}://{{ amundsen_search_es_host }}:{{ amundsen_search_es_port }}"
+    {% endif %}
+    
+    # Staging-specific settings
+    DEBUG = False
+    LOG_LEVEL = "INFO"
+    
+    # Similar to production but with some development conveniences
+    ELASTICSEARCH_CLIENT_CONFIG = {
+        {% if amundsen_search_es_tls_enabled %}
+        'verify_certs': {{ amundsen_search_es_verify_certs | lower }},
+        'verify_hostname': {{ amundsen_search_es_verify_hostname | lower }},
+        {% endif %}
+        'timeout': {{ amundsen_search_timeout }},
+        'max_retries': {{ amundsen_search_retry_attempts }},
+        'retry_on_timeout': True
+    }
+    
+    # Security settings (usually enabled in staging)
+    {% if amundsen_search_auth_enabled %}
+    AUTH_ENABLED = True
+    AUTH_TYPE = "{{ amundsen_search_auth_type }}"
+    {% endif %}
+    
+    {% if amundsen_search_tls_enabled %}
+    TLS_ENABLED = True
+    {% endif %}
+    
+    # Monitoring enabled in staging
+    {% if amundsen_search_metrics_enabled %}
+    METRICS_ENABLED = True
+    METRICS_TYPE = "{{ amundsen_search_metrics_type }}"
+    {% endif %}
+    
+    # Analytics for testing
+    ANALYTICS_ENABLED = True
+    QUERY_LOGGING_ENABLED = True
+    
+    # Staging-specific custom variables
+    {% for key, value in amundsen_search_custom_config_vars.items() %}
+    {{ key }} = {{ value | to_json }}
+    {% endfor %}

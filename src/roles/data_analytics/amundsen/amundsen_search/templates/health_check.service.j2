@@ -1,0 +1,10 @@
+[Unit]
+Description=Amundsen Search Health Check{% if amundsen_search_multi_instance %} ({{ amundsen_search_instance_id }}){% endif %}
+
+[Service]
+Type=oneshot
+User=amundsen
+Group=amundsen
+ExecStart={{ amundsen_search_virtualenv }}/bin/python {{ amundsen_search_virtualenv }}/health_check.py --full-check
+StandardOutput=journal
+StandardError=journal

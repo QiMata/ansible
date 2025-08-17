@@ -1,0 +1,10 @@
+[Unit]
+Description=Amundsen Search Health Check Timer{% if amundsen_search_multi_instance %} ({{ amundsen_search_instance_id }}){% endif %}
+Requires=amundsen-search{% if amundsen_search_multi_instance %}-{{ amundsen_search_instance_id }}{% endif %}.service
+
+[Timer]
+OnBootSec={{ amundsen_search_health_check_interval }}s
+OnUnitActiveSec={{ amundsen_search_health_check_interval }}s
+
+[Install]
+WantedBy=timers.target

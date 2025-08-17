@@ -1,0 +1,65 @@
+---
+# Backup and restore tasks
+
+- name: Create backup repository
+  ansible.builtin.uri:
+    url: "{{ amundsen_search_es_scheme }}://{{ amundsen_search_es_host }}:{{ amundsen_search_es_port }}/_snapshot/{{ amundsen_search_backup_repository }}"
+    method: PUT
+    body_format: json
+    body:
+      type: "fs"
+      settings:
+        location: "/opt/elasticsearch/backups/{{ amundsen_search_backup_repository }}"
+        compress: true
+    user: "{{ amundsen_search_es_username if amundsen_search_es_auth_enabled else omit }}"
+    password: "{{ amundsen_search_es_password if amundsen_search_es_auth_enabled else omit }}"
+    force_basic_auth: "{{ amundsen_search_es_auth_enabled and amundsen_search_es_auth_type == 'basic' }}"
+    validate_certs: "{{ amundsen_search_es_verify_certs }}"
+  when: amundsen_search_backup_repository != ""
+  delegate_to: localhost
+  become: false
+
+- name: Create backup script
+  ansible.builtin.template:
+    src: backup.py.j2
+    dest: "{{ amundsen_search_virtualenv }}/backup.py"
+    owner: amundsen
+    group: amundsen
+    mode: "0755"
+  become: true
+
+- name: Create restore script
+  ansible.builtin.template:
+    src: restore.py.j2
+    dest: "{{ amundsen_search_virtualenv }}/restore.py"
+    owner: amundsen
+    group: amundsen
+    mode: "0755"
+  become: true
+
+- name: Create backup cleanup script
+  ansible.builtin.template:
+    src: backup_cleanup.py.j2
+    dest: "{{ amundsen_search_virtualenv }}/backup_cleanup.py"
+    owner: amundsen
+    group: amundsen
+    mode: "0755"
+  become: true
+
+- name: Create backup cron job
+  ansible.builtin.cron:
+    name: "Amundsen Search Backup"
+    job: "{{ amundsen_search_virtualenv }}/bin/python {{ amundsen_search_virtualenv }}/backup.py"
+    minute: "{{ amundsen_search_backup_schedule.split()[0] }}"
+    hour: "{{ amundsen_search_backup_schedule.split()[1] }}"
+    user: amundsen
+  become: true
+
+- name: Create backup cleanup cron job
+  ansible.builtin.cron:
+    name: "Amundsen Search Backup Cleanup"
+    job: "{{ amundsen_search_virtualenv }}/bin/python {{ amundsen_search_virtualenv }}/backup_cleanup.py"
+    minute: "0"
+    hour: "4"
+    user: amundsen
+  become: true

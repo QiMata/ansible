@@ -1,0 +1,58 @@
+---
+# Authentication configuration tasks
+
+- name: Generate API keys file
+  ansible.builtin.template:
+    src: api_keys.yml.j2
+    dest: "/etc/amundsen/search/api_keys.yml"
+    owner: amundsen
+    group: amundsen
+    mode: "0600"
+  become: true
+  when: amundsen_search_auth_enabled and amundsen_search_auth_type == "api_key"
+  notify: Restart Search Service
+
+- name: Generate JWT secret file
+  ansible.builtin.template:
+    src: jwt_secret.yml.j2
+    dest: "/etc/amundsen/search/jwt_secret.yml"
+    owner: amundsen
+    group: amundsen
+    mode: "0600"
+  become: true
+  when: amundsen_search_auth_enabled and amundsen_search_auth_type == "jwt"
+  notify: Restart Search Service
+
+- name: Create Elasticsearch credentials file
+  ansible.builtin.template:
+    src: es_credentials.yml.j2
+    dest: "/etc/amundsen/search/es_credentials.yml"
+    owner: amundsen
+    group: amundsen
+    mode: "0600"
+  become: true
+  when: amundsen_search_es_auth_enabled
+  notify: Restart Search Service
+
+- name: Validate Elasticsearch connection with authentication
+  ansible.builtin.uri:
+    url: "{{ amundsen_search_es_scheme }}://{{ amundsen_search_es_host }}:{{ amundsen_search_es_port }}/_cluster/health"
+    method: GET
+    user: "{{ amundsen_search_es_username }}"
+    password: "{{ amundsen_search_es_password }}"
+    force_basic_auth: true
+    validate_certs: "{{ amundsen_search_es_verify_certs }}"
+  when: amundsen_search_es_auth_enabled and amundsen_search_es_auth_type == "basic"
+  delegate_to: localhost
+  become: false
+
+- name: Validate Elasticsearch connection with API key
+  ansible.builtin.uri:
+    url: "{{ amundsen_search_es_scheme }}://{{ amundsen_search_es_host }}:{{ amundsen_search_es_port }}/_cluster/health"
+    method: GET
+    headers:
+      Authorization: "ApiKey {{ amundsen_search_es_api_key }}"
+    validate_certs: "{{ amundsen_search_es_verify_certs }}"
+  when: amundsen_search_es_auth_enabled and amundsen_search_es_auth_type == "api_key"
+  delegate_to: localhost
+  become: false

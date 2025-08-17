@@ -1,0 +1,16 @@
+[Unit]
+Description=Amundsen Search Metrics Collection{% if amundsen_search_multi_instance %} ({{ amundsen_search_instance_id }}){% endif %}
+After=network.target
+Requires=amundsen-search{% if amundsen_search_multi_instance %}-{{ amundsen_search_instance_id }}{% endif %}.service
+
+[Service]
+Type=simple
+User=amundsen
+Group=amundsen
+WorkingDirectory={{ amundsen_search_virtualenv }}
+ExecStart={{ amundsen_search_virtualenv }}/bin/python {{ amundsen_search_virtualenv }}/prometheus_metrics.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

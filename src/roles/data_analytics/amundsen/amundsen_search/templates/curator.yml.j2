@@ -1,0 +1,24 @@
+---
+# Curator configuration for Elasticsearch
+client:
+  hosts:
+    - {{ amundsen_search_es_host }}
+  port: {{ amundsen_search_es_port }}
+  url_prefix:
+  use_ssl: {{ amundsen_search_es_tls_enabled | lower }}
+  certificate:
+  client_cert: {% if amundsen_search_es_client_cert %}/opt/amundsen/search/certs/client/elasticsearch.crt{% endif %}
+  client_key: {% if amundsen_search_es_client_key %}/opt/amundsen/search/certs/client/elasticsearch.key{% endif %}
+  ca_certs: {% if amundsen_search_es_ca_cert %}/opt/amundsen/search/certs/ca/elasticsearch-ca.crt{% endif %}
+  ssl_no_validate: {{ not amundsen_search_es_verify_certs | lower }}
+  {% if amundsen_search_es_auth_enabled and amundsen_search_es_auth_type == "basic" %}
+  http_auth: {{ amundsen_search_es_username }}:{{ amundsen_search_es_password }}
+  {% endif %}
+  timeout: 30
+  master_only: False
+
+logging:
+  loglevel: INFO
+  logfile: /var/log/amundsen/curator.log
+  logformat: default
+  blacklist: ['elasticsearch', 'urllib3']

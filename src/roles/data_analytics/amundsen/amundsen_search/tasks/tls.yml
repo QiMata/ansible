@@ -1,0 +1,106 @@
+---
+# TLS/SSL configuration tasks
+
+- name: Create TLS certificate directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: amundsen
+    group: amundsen
+    mode: "0700"
+  loop:
+    - "/opt/amundsen/search/certs"
+    - "/opt/amundsen/search/certs/ca"
+    - "/opt/amundsen/search/certs/client"
+  become: true
+
+- name: Copy service TLS certificate
+  ansible.builtin.copy:
+    src: "{{ amundsen_search_tls_cert_path }}"
+    dest: "/opt/amundsen/search/certs/server.crt"
+    owner: amundsen
+    group: amundsen
+    mode: "0644"
+  become: true
+  when: amundsen_search_tls_enabled and amundsen_search_tls_cert_path != ""
+  notify: Restart Search Service
+
+- name: Copy service TLS private key
+  ansible.builtin.copy:
+    src: "{{ amundsen_search_tls_key_path }}"
+    dest: "/opt/amundsen/search/certs/server.key"
+    owner: amundsen
+    group: amundsen
+    mode: "0600"
+  become: true
+  when: amundsen_search_tls_enabled and amundsen_search_tls_key_path != ""
+  notify: Restart Search Service
+
+- name: Copy service CA certificate
+  ansible.builtin.copy:
+    src: "{{ amundsen_search_tls_ca_path }}"
+    dest: "/opt/amundsen/search/certs/ca/ca.crt"
+    owner: amundsen
+    group: amundsen
+    mode: "0644"
+  become: true
+  when: amundsen_search_tls_enabled and amundsen_search_tls_ca_path != ""
+  notify: Restart Search Service
+
+- name: Copy Elasticsearch CA certificate
+  ansible.builtin.copy:
+    src: "{{ amundsen_search_es_ca_cert }}"
+    dest: "/opt/amundsen/search/certs/ca/elasticsearch-ca.crt"
+    owner: amundsen
+    group: amundsen
+    mode: "0644"
+  become: true
+  when: amundsen_search_es_tls_enabled and amundsen_search_es_ca_cert != ""
+  notify: Restart Search Service
+
+- name: Copy Elasticsearch client certificate
+  ansible.builtin.copy:
+    src: "{{ amundsen_search_es_client_cert }}"
+    dest: "/opt/amundsen/search/certs/client/elasticsearch.crt"
+    owner: amundsen
+    group: amundsen
+    mode: "0644"
+  become: true
+  when: amundsen_search_es_tls_enabled and amundsen_search_es_client_cert != ""
+  notify: Restart Search Service
+
+- name: Copy Elasticsearch client private key
+  ansible.builtin.copy:
+    src: "{{ amundsen_search_es_client_key }}"
+    dest: "/opt/amundsen/search/certs/client/elasticsearch.key"
+    owner: amundsen
+    group: amundsen
+    mode: "0600"
+  become: true
+  when: amundsen_search_es_tls_enabled and amundsen_search_es_client_key != ""
+  notify: Restart Search Service
+
+- name: Generate self-signed certificate for development
+  ansible.builtin.command: |
+    openssl req -x509 -newkey rsa:4096 -keyout /opt/amundsen/search/certs/server.key \
+    -out /opt/amundsen/search/certs/server.crt -days 365 -nodes \
+    -subj "/C=US/ST=State/L=City/O=Organization/CN={{ ansible_fqdn }}"
+  become: true
+  become_user: amundsen
+  when: 
+    - amundsen_search_tls_enabled
+    - amundsen_search_environment == "development"
+    - amundsen_search_tls_cert_path == ""
+  notify: Restart Search Service
+
+- name: Set certificate permissions
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    owner: amundsen
+    group: amundsen
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "/opt/amundsen/search/certs/server.crt", mode: "0644" }
+    - { path: "/opt/amundsen/search/certs/server.key", mode: "0600" }
+  become: true
+  when: amundsen_search_tls_enabled

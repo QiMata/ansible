@@ -2,5 +2,21 @@
 - name: Converge
   hosts: all
   become: true
+  vars:
+    # Test enhanced features
+    amundsen_search_health_checks_enabled: true
+    amundsen_search_metrics_enabled: true
+    amundsen_search_metrics_type: "prometheus"
+    amundsen_search_log_format: "json"
+    amundsen_search_environment: "development"
+    amundsen_search_debug: true
+    amundsen_search_caching_enabled: false  # Disabled for testing without Redis
+    amundsen_search_auth_enabled: false     # Disabled for basic testing
+    amundsen_search_tls_enabled: false      # Disabled for basic testing
+    amundsen_search_backup_enabled: false   # Disabled for basic testing
+    amundsen_search_index_management_enabled: false  # Disabled for basic testing
+    amundsen_search_custom_config_vars:
+      TEST_MODE: true
+      TEST_VALUE: "molecule-test"
   roles:
     - role: amundsen_search

@@ -1,8 +1,30 @@
 ---
+- name: Include authentication tasks
+  ansible.builtin.include_tasks: auth.yml
+  when: amundsen_search_auth_enabled or amundsen_search_es_auth_enabled
+
+- name: Include TLS/SSL tasks
+  ansible.builtin.include_tasks: tls.yml
+  when: amundsen_search_tls_enabled or amundsen_search_es_tls_enabled
+
+- name: Include monitoring tasks
+  ansible.builtin.include_tasks: monitoring.yml
+  when: amundsen_search_metrics_enabled
+
+- name: Include index management tasks
+  ansible.builtin.include_tasks: index_management.yml
+  when: amundsen_search_index_management_enabled
+
+- name: Include backup tasks
+  ansible.builtin.include_tasks: backup.yml
+  when: amundsen_search_backup_enabled
+
 - name: Ensure amundsen user exists
   ansible.builtin.user:
     name: amundsen
     shell: /usr/sbin/nologin
+    home: /opt/amundsen
+    create_home: true
   become: true
 
 - name: Create search directories
@@ -14,6 +36,9 @@
     mode: "0755"
   loop:
     - "{{ amundsen_search_virtualenv | dirname }}"
+    - "/etc/amundsen/search"
+    - "/var/log/amundsen"
+    - "/opt/amundsen/search/certs"
   become: true
 
 - name: Create virtualenv for search service
@@ -22,14 +47,30 @@
     creates: "{{ amundsen_search_virtualenv }}/bin/activate"
   become: true
 
-- name: Install search service
-  ansible.builtin.pip:
-    virtualenv: "{{ amundsen_search_virtualenv }}"
-    name: "amundsen-search=={{ amundsen_search_version }}"
-    state: present
+- name: Change virtualenv ownership
+  ansible.builtin.file:
+    path: "{{ amundsen_search_virtualenv }}"
+    owner: amundsen
+    group: amundsen
+    recurse: true
   become: true
 
-- name: Deploy search config
+- name: Install additional Python packages for enhanced features
+  ansible.builtin.pip:
+    virtualenv: "{{ amundsen_search_virtualenv }}"
+    name:
+      - "amundsen-search=={{ amundsen_search_version }}"
+      - "redis>=3.5.0"
+      - "prometheus-client>=0.8.0"
+      - "statsd>=3.3.0"
+      - "cryptography>=3.0.0"
+      - "pyjwt>=2.0.0"
+      - "elasticsearch-curator>=5.8.0"
+    state: present
+  become: true
+  become_user: amundsen
+
+- name: Deploy enhanced search config
   ansible.builtin.template:
     src: search_config.py.j2
     dest: "{{ amundsen_search_virtualenv }}/config.py"
@@ -39,17 +80,82 @@
   become: true
   notify: Restart Search Service
 
-- name: Deploy systemd unit
+- name: Deploy environment-specific config
+  ansible.builtin.template:
+    src: "{{ amundsen_search_environment }}_config.py.j2"
+    dest: "{{ amundsen_search_virtualenv }}/{{ amundsen_search_environment }}_config.py"
+    owner: amundsen
+    group: amundsen
+    mode: "0644"
+  become: true
+  when: amundsen_search_environment != "production"
+  notify: Restart Search Service
+
+- name: Deploy logging configuration
+  ansible.builtin.template:
+    src: logging.conf.j2
+    dest: "/etc/amundsen/search/logging.conf"
+    owner: amundsen
+    group: amundsen
+    mode: "0644"
+  become: true
+  notify: Restart Search Service
+
+- name: Deploy systemd unit with enhanced features
   ansible.builtin.template:
     src: search_gunicorn.service.j2
-    dest: /etc/systemd/system/amundsen-search.service
+    dest: "/etc/systemd/system/amundsen-search{{ '-' + amundsen_search_instance_id if amundsen_search_multi_instance else '' }}.service"
     mode: "0644"
   become: true
   notify: Reload Systemd
 
-- name: Enable and start service
+- name: Deploy health check script
+  ansible.builtin.template:
+    src: health_check.py.j2
+    dest: "{{ amundsen_search_virtualenv }}/health_check.py"
+    owner: amundsen
+    group: amundsen
+    mode: "0755"
+  become: true
+  when: amundsen_search_health_checks_enabled
+
+- name: Create health check systemd timer
+  ansible.builtin.template:
+    src: health_check.timer.j2
+    dest: "/etc/systemd/system/amundsen-search-health{{ '-' + amundsen_search_instance_id if amundsen_search_multi_instance else '' }}.timer"
+    mode: "0644"
+  become: true
+  when: amundsen_search_health_checks_enabled
+  notify: Reload Systemd
+
+- name: Create health check systemd service
+  ansible.builtin.template:
+    src: health_check.service.j2
+    dest: "/etc/systemd/system/amundsen-search-health{{ '-' + amundsen_search_instance_id if amundsen_search_multi_instance else '' }}.service"
+    mode: "0644"
+  become: true
+  when: amundsen_search_health_checks_enabled
+  notify: Reload Systemd
+
+- name: Enable and start health check timer
   ansible.builtin.systemd:
-    name: amundsen-search
+    name: "amundsen-search-health{{ '-' + amundsen_search_instance_id if amundsen_search_multi_instance else '' }}.timer"
     enabled: true
     state: started
+  become: true
+  when: amundsen_search_health_checks_enabled
+
+- name: Deploy logrotate configuration
+  ansible.builtin.template:
+    src: logrotate.j2
+    dest: "/etc/logrotate.d/amundsen-search{{ '-' + amundsen_search_instance_id if amundsen_search_multi_instance else '' }}"
+    mode: "0644"
+  become: true
+
+- name: Enable and start service
+  ansible.builtin.systemd:
+    name: "amundsen-search{{ '-' + amundsen_search_instance_id if amundsen_search_multi_instance else '' }}"
+    enabled: true
+    state: started
+    daemon_reload: true
   become: true

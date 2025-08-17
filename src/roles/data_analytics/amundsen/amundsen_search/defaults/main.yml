@@ -1,9 +1,126 @@
 ---
+# Basic configuration
 amundsen_search_version: "4.0.0"
 amundsen_search_bind_host: "0.0.0.0"
 amundsen_search_port: 5001
 amundsen_search_gunicorn_workers: 4
 amundsen_search_virtualenv: "/opt/amundsen/search/venv"
+amundsen_search_config_class: "search_service.config.ProdConfig"
+
+# Elasticsearch configuration
 amundsen_search_es_host: "localhost"
 amundsen_search_es_port: 9200
-amundsen_search_config_class: "search_service.config.ProdConfig"
+amundsen_search_es_scheme: "http"  # http or https
+amundsen_search_es_index: "amundsen"
+amundsen_search_es_alias: "table_search_index"
+
+# Elasticsearch Authentication
+amundsen_search_es_auth_enabled: false
+amundsen_search_es_auth_type: "basic"  # basic, api_key, or none
+amundsen_search_es_username: ""
+amundsen_search_es_password: ""
+amundsen_search_es_api_key_id: ""
+amundsen_search_es_api_key: ""
+
+# Elasticsearch TLS/SSL
+amundsen_search_es_tls_enabled: false
+amundsen_search_es_ca_cert: ""
+amundsen_search_es_client_cert: ""
+amundsen_search_es_client_key: ""
+amundsen_search_es_verify_certs: true
+amundsen_search_es_verify_hostname: true
+
+# Service TLS/SSL
+amundsen_search_tls_enabled: false
+amundsen_search_tls_cert_path: ""
+amundsen_search_tls_key_path: ""
+amundsen_search_tls_ca_path: ""
+
+# Service Authentication
+amundsen_search_auth_enabled: false
+amundsen_search_auth_type: "api_key"  # api_key, jwt, or none
+amundsen_search_api_keys: []  # List of valid API keys
+amundsen_search_jwt_secret: ""
+amundsen_search_jwt_algorithm: "HS256"
+
+# Load Balancer Configuration
+amundsen_search_behind_lb: false
+amundsen_search_lb_health_check_path: "/healthcheck"
+amundsen_search_proxy_headers: true
+
+# Multi-instance deployment
+amundsen_search_multi_instance: false
+amundsen_search_instance_id: "default"
+amundsen_search_cluster_nodes: []
+
+# Health checks and monitoring
+amundsen_search_health_checks_enabled: true
+amundsen_search_health_check_interval: 30
+amundsen_search_metrics_enabled: false
+amundsen_search_metrics_type: "prometheus"  # prometheus, statsd
+amundsen_search_prometheus_port: 9090
+amundsen_search_statsd_host: "localhost"
+amundsen_search_statsd_port: 8125
+
+# Graceful shutdown
+amundsen_search_graceful_timeout: 30
+amundsen_search_shutdown_signals: true
+
+# Logging configuration
+amundsen_search_log_level: "INFO"
+amundsen_search_log_format: "json"  # json, standard
+amundsen_search_log_file: "/var/log/amundsen/search.log"
+amundsen_search_log_max_size: "100MB"
+amundsen_search_log_backup_count: 5
+amundsen_search_access_log_enabled: true
+
+# Caching configuration
+amundsen_search_caching_enabled: false
+amundsen_search_cache_type: "redis"  # redis, memory
+amundsen_search_redis_host: "localhost"
+amundsen_search_redis_port: 6379
+amundsen_search_redis_db: 0
+amundsen_search_redis_password: ""
+amundsen_search_cache_ttl: 3600
+
+# Search configuration
+amundsen_search_result_size: 10
+amundsen_search_max_result_size: 100
+amundsen_search_query_timeout: 30
+amundsen_search_enable_fuzzy_search: true
+amundsen_search_fuzzy_distance: 2
+
+# Index management
+amundsen_search_index_management_enabled: false
+amundsen_search_index_lifecycle_policy: ""
+amundsen_search_index_template: ""
+amundsen_search_index_warming_enabled: false
+amundsen_search_index_warming_queries: []
+
+# Data retention and optimization
+amundsen_search_data_retention_enabled: false
+amundsen_search_data_retention_days: 365
+amundsen_search_index_optimization_enabled: false
+amundsen_search_index_optimization_schedule: "0 2 * * *"
+
+# Backup and restore
+amundsen_search_backup_enabled: false
+amundsen_search_backup_repository: ""
+amundsen_search_backup_schedule: "0 3 * * *"
+amundsen_search_backup_retention_days: 30
+
+# Analytics and monitoring
+amundsen_search_analytics_enabled: false
+amundsen_search_query_logging_enabled: false
+amundsen_search_slow_query_threshold: 1000  # milliseconds
+
+# Environment-specific configurations
+amundsen_search_environment: "production"  # development, staging, production
+amundsen_search_debug: false
+amundsen_search_custom_config_vars: {}
+
+# Performance tuning
+amundsen_search_connection_pool_size: 10
+amundsen_search_max_connections: 100
+amundsen_search_timeout: 60
+amundsen_search_retry_attempts: 3

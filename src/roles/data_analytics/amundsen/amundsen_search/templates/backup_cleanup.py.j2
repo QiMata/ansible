@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+"""
+Backup cleanup script for Amundsen Search
+Removes old backup snapshots based on retention policy
+"""
+import requests
+import json
+import datetime
+from typing import List, Dict, Any
+
+def list_snapshots() -> List[Dict[str, Any]]:
+    """List all snapshots in the repository"""
+    try:
+        url = f"{{ amundsen_search_es_scheme }}://{{ amundsen_search_es_host }}:{{ amundsen_search_es_port }}/_snapshot/{{ amundsen_search_backup_repository }}/_all"
+        
+        {% if amundsen_search_es_auth_enabled and amundsen_search_es_auth_type == "basic" %}
+        auth = ('{{ amundsen_search_es_username }}', '{{ amundsen_search_es_password }}')
+        response = requests.get(url, auth=auth, timeout=60)
+        {% else %}
+        response = requests.get(url, timeout=60)
+        {% endif %}
+        
+        if response.status_code == 200:
+            return response.json().get('snapshots', [])
+        else:
+            print(f"Failed to list snapshots: {response.status_code}")
+            return []
+            
+    except Exception as e:
+        print(f"Error listing snapshots: {e}")
+        return []
+
+def delete_snapshot(snapshot_name: str) -> bool:
+    """Delete a specific snapshot"""
+    try:
+        url = f"{{ amundsen_search_es_scheme }}://{{ amundsen_search_es_host }}:{{ amundsen_search_es_port }}/_snapshot/{{ amundsen_search_backup_repository }}/{snapshot_name}"
+        
+        {% if amundsen_search_es_auth_enabled and amundsen_search_es_auth_type == "basic" %}
+        auth = ('{{ amundsen_search_es_username }}', '{{ amundsen_search_es_password }}')
+        response = requests.delete(url, auth=auth, timeout=60)
+        {% else %}
+        response = requests.delete(url, timeout=60)
+        {% endif %}
+        
+        return response.status_code == 200
+        
+    except Exception as e:
+        print(f"Error deleting snapshot {snapshot_name}: {e}")
+        return False
+
+def main():
+    """Main cleanup function"""
+    retention_days = {{ amundsen_search_backup_retention_days }}
+    cutoff_date = datetime.datetime.now() - datetime.timedelta(days=retention_days)
+    
+    print(f"Cleaning up snapshots older than {retention_days} days (before {cutoff_date.date()})")
+    
+    snapshots = list_snapshots()
+    if not snapshots:
+        print("No snapshots found")
+        return
+    
+    deleted_count = 0
+    for snapshot in snapshots:
+        snapshot_name = snapshot.get('snapshot', '')
+        if snapshot_name.startswith('amundsen_search_backup_'):
+            # Extract date from snapshot name
+            try:
+                date_str = snapshot_name.split('_')[-2] + '_' + snapshot_name.split('_')[-1]
+                snapshot_date = datetime.datetime.strptime(date_str, '%Y%m%d_%H%M%S')
+                
+                if snapshot_date < cutoff_date:
+                    print(f"Deleting old snapshot: {snapshot_name}")
+                    if delete_snapshot(snapshot_name):
+                        deleted_count += 1
+                    else:
+                        print(f"Failed to delete snapshot: {snapshot_name}")
+                        
+            except (ValueError, IndexError):
+                print(f"Skipping snapshot with invalid name format: {snapshot_name}")
+    
+    print(f"Cleanup completed: {deleted_count} snapshots deleted")
+
+if __name__ == '__main__':
+    main()

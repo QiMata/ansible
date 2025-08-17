@@ -1,0 +1,6 @@
+---
+# API Keys configuration
+api_keys:
+{% for key in amundsen_search_api_keys %}
+  - "{{ key }}"
+{% endfor %}

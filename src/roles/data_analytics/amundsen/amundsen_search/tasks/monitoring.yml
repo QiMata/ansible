@@ -1,0 +1,73 @@
+---
+# Monitoring and metrics configuration tasks
+
+- name: Install Prometheus client dependencies
+  ansible.builtin.pip:
+    virtualenv: "{{ amundsen_search_virtualenv }}"
+    name:
+      - "prometheus-client>=0.8.0"
+      - "statsd>=3.3.0"
+    state: present
+  become: true
+  become_user: amundsen
+
+- name: Deploy Prometheus metrics configuration
+  ansible.builtin.template:
+    src: prometheus_metrics.py.j2
+    dest: "{{ amundsen_search_virtualenv }}/prometheus_metrics.py"
+    owner: amundsen
+    group: amundsen
+    mode: "0644"
+  become: true
+  when: amundsen_search_metrics_type == "prometheus"
+  notify: Restart Search Service
+
+- name: Deploy StatsD metrics configuration
+  ansible.builtin.template:
+    src: statsd_metrics.py.j2
+    dest: "{{ amundsen_search_virtualenv }}/statsd_metrics.py"
+    owner: amundsen
+    group: amundsen
+    mode: "0644"
+  become: true
+  when: amundsen_search_metrics_type == "statsd"
+  notify: Restart Search Service
+
+- name: Create metrics collection script
+  ansible.builtin.template:
+    src: collect_metrics.py.j2
+    dest: "{{ amundsen_search_virtualenv }}/collect_metrics.py"
+    owner: amundsen
+    group: amundsen
+    mode: "0755"
+  become: true
+  when: amundsen_search_metrics_enabled
+
+- name: Create metrics systemd service
+  ansible.builtin.template:
+    src: metrics.service.j2
+    dest: "/etc/systemd/system/amundsen-search-metrics{{ '-' + amundsen_search_instance_id if amundsen_search_multi_instance else '' }}.service"
+    mode: "0644"
+  become: true
+  when: amundsen_search_metrics_enabled
+  notify: Reload Systemd
+
+- name: Enable and start metrics service
+  ansible.builtin.systemd:
+    name: "amundsen-search-metrics{{ '-' + amundsen_search_instance_id if amundsen_search_multi_instance else '' }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  become: true
+  when: amundsen_search_metrics_enabled
+
+- name: Configure Grafana dashboard (if Grafana role is available)
+  ansible.builtin.include_role:
+    name: monitoring_observability.grafana
+    tasks_from: dashboard.yml
+  vars:
+    grafana_dashboard_file: "amundsen_search_dashboard.json"
+  when: 
+    - amundsen_search_metrics_enabled
+    - amundsen_search_metrics_type == "prometheus"
+    - "'monitoring_observability.grafana' in ansible_role_names | default([])"
