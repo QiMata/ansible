@@ -1,0 +1,38 @@
+---
+# Log Management Tasks
+- name: Install logrotate
+  ansible.builtin.apt:
+    name: logrotate
+    state: present
+    update_cache: true
+  when: spark_role_log_rotation_enabled
+
+- name: Configure logrotate for Spark logs
+  ansible.builtin.template:
+    src: spark_logrotate.j2
+    dest: "/etc/logrotate.d/spark"
+    owner: root
+    group: root
+    mode: '0644'
+  when: spark_role_log_rotation_enabled
+
+- name: Create log directories with proper permissions
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ spark_role_user }}"
+    group: "{{ spark_role_group }}"
+    mode: '0755'
+  loop:
+    - "{{ spark_role_log_dir }}"
+    - "{{ spark_role_eventlog_dir }}"
+    - "{{ spark_role_log_dir }}/archive"
+
+- name: Setup log cleanup cron job
+  ansible.builtin.cron:
+    name: "Spark log cleanup"
+    minute: "0"
+    hour: "2"
+    job: "find {{ spark_role_log_dir }} -type f -mtime +{{ spark_role_log_retention_days }} -delete"
+    user: "{{ spark_role_user }}"
+  when: spark_role_log_rotation_enabled

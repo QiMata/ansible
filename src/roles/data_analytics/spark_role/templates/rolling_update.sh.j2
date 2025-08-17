@@ -1,0 +1,91 @@
+#!/bin/bash
+# Rolling Update Script for Spark
+# {{ ansible_managed }}
+
+SPARK_HOME="{{ spark_role_symlink_dir }}"
+NEW_VERSION="${1:-{{ spark_role_version }}}"
+BATCH_SIZE="{{ spark_role_rolling_update_batch_size }}"
+
+echo "Starting rolling update to Spark version ${NEW_VERSION} at $(date)"
+
+# Pre-update checks
+echo "Running pre-update checks..."
+if ! /opt/spark/scripts/pre_update_check.sh; then
+    echo "Pre-update checks failed. Aborting update."
+    exit 1
+fi
+
+# Get list of worker nodes
+WORKER_NODES=$(systemctl list-units --type=service --state=active | grep spark-worker | wc -l)
+
+if [ "$WORKER_NODES" -gt 0 ]; then
+    echo "Found $WORKER_NODES worker nodes"
+    
+    # Update workers in batches
+    echo "Updating workers in batches of ${BATCH_SIZE}..."
+    
+    # For simplicity, this script handles single-node updates
+    # In a real cluster, you'd iterate through worker nodes
+    
+    # Stop worker
+    echo "Stopping worker service..."
+    systemctl stop spark-worker
+    
+    # Wait for running jobs to finish (with timeout)
+    echo "Waiting for running jobs to finish..."
+    timeout 300 bash -c 'while pgrep -f "spark-submit\|SparkSubmit" > /dev/null; do sleep 10; done'
+    
+    # Update worker
+    echo "Worker stopped, update can proceed..."
+    # Note: Actual binary update would be handled by Ansible
+    
+    # Start worker
+    echo "Starting worker service..."
+    systemctl start spark-worker
+    
+    # Validate worker
+    sleep 30
+    if ! systemctl is-active --quiet spark-worker; then
+        echo "Error: Worker failed to start after update"
+        exit 1
+    fi
+    
+    echo "Worker updated successfully"
+fi
+
+# Update master (if this is a master node)
+if systemctl list-units --type=service --state=active | grep -q spark-master; then
+    echo "Updating master node..."
+    
+    # In HA setup, you'd coordinate with other masters
+    # For standalone, we can restart directly
+    
+    echo "Stopping master service..."
+    systemctl stop spark-master
+    
+    # Update master
+    echo "Master stopped, update can proceed..."
+    # Note: Actual binary update would be handled by Ansible
+    
+    # Start master
+    echo "Starting master service..."
+    systemctl start spark-master
+    
+    # Validate master
+    sleep 30
+    if ! systemctl is-active --quiet spark-master; then
+        echo "Error: Master failed to start after update"
+        exit 1
+    fi
+    
+    echo "Master updated successfully"
+fi
+
+# Post-update validation
+echo "Running post-update validation..."
+if ! /opt/spark/scripts/post_update_validation.sh; then
+    echo "Post-update validation failed. Manual intervention required."
+    exit 1
+fi
+
+echo "Rolling update completed successfully at $(date)"

@@ -1,0 +1,208 @@
+---
+- name: Verify full Spark cluster functionality
+  hosts: all
+  gather_facts: true
+  tasks:
+    # Basic service verification
+    - name: Check Spark services status
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+      register: service_status
+      loop:
+        - spark-master
+        - spark-worker
+      when: 
+        - item == "spark-master" and inventory_hostname in groups['spark_masters']
+        - item == "spark-worker" and inventory_hostname in groups['spark_workers']
+
+    - name: Verify services are active
+      ansible.builtin.assert:
+        that:
+          - service_status.results | selectattr('item', 'equalto', 'spark-master') | selectattr('status.ActiveState', 'equalto', 'active') | list | length > 0
+        fail_msg: "Spark Master service is not active"
+      when: inventory_hostname in groups['spark_masters']
+
+    # Web UI accessibility tests
+    - name: Wait for Spark Master UI to be available
+      ansible.builtin.uri:
+        url: "http://localhost:8080"
+        method: GET
+        timeout: 10
+      register: master_ui
+      retries: 12
+      delay: 10
+      until: master_ui.status == 200
+      when: inventory_hostname in groups['spark_masters']
+
+    - name: Wait for Spark Worker UI to be available
+      ansible.builtin.uri:
+        url: "http://localhost:8081"
+        method: GET
+        timeout: 10
+      register: worker_ui
+      retries: 12
+      delay: 10
+      until: worker_ui.status == 200
+      when: inventory_hostname in groups['spark_workers']
+
+    # Configuration file verification
+    - name: Verify main configuration files exist
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      register: config_files
+      failed_when: not config_files.stat.exists
+      loop:
+        - /opt/spark/current/conf/spark-defaults.conf
+        - /opt/spark/current/conf/spark-env.sh
+
+    # Security features verification
+    - name: Check authentication configuration
+      ansible.builtin.lineinfile:
+        path: /opt/spark/current/conf/spark-defaults.conf
+        regexp: "^spark.authenticate\\s+true$"
+        state: present
+      check_mode: true
+      register: auth_check
+      failed_when: auth_check.changed
+
+    - name: Verify ACL configuration
+      ansible.builtin.lineinfile:
+        path: /opt/spark/current/conf/spark-defaults.conf
+        regexp: "^spark.acls.enable\\s+true$"
+        state: present
+      check_mode: true
+      register: acl_check
+      failed_when: acl_check.changed
+
+    # Health check verification
+    - name: Test health check script
+      ansible.builtin.command: /opt/spark/scripts/health_check.sh
+      register: health_result
+      changed_when: false
+      failed_when: health_result.rc != 0
+
+    # Monitoring features verification
+    - name: Check Prometheus JMX exporter configuration
+      ansible.builtin.stat:
+        path: /opt/spark/conf/jmx_prometheus_config.yml
+      register: prometheus_config
+      failed_when: not prometheus_config.stat.exists
+
+    - name: Verify JMX exporter JAR exists
+      ansible.builtin.stat:
+        path: /opt/spark/jars/jmx_prometheus_javaagent-0.19.0.jar
+      register: jmx_jar
+      failed_when: not jmx_jar.stat.exists
+
+    # Log management verification
+    - name: Check logrotate configuration
+      ansible.builtin.stat:
+        path: /etc/logrotate.d/spark
+      register: logrotate
+      failed_when: not logrotate.stat.exists
+
+    - name: Verify log directories exist with correct permissions
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      register: log_dirs
+      failed_when: 
+        - not log_dirs.stat.exists
+        - log_dirs.stat.pw_name != "spark"
+      loop:
+        - /var/log/spark
+        - /var/spark-events
+
+    # Database connectivity verification
+    - name: Check JDBC drivers directory
+      ansible.builtin.stat:
+        path: /opt/spark/jars/jdbc
+      register: jdbc_dir
+      failed_when: not jdbc_dir.stat.exists
+
+    - name: Verify database configuration file
+      ansible.builtin.stat:
+        path: /opt/spark/conf/database_config.conf
+      register: db_config
+      failed_when: not db_config.stat.exists
+
+    # Performance and resource management
+    - name: Check performance tuning configuration
+      ansible.builtin.stat:
+        path: /opt/spark/conf/performance_tuning.conf
+      register: perf_config
+      failed_when: not perf_config.stat.exists
+
+    - name: Verify environment-specific configuration
+      ansible.builtin.shell: |
+        grep -q "staging" /opt/spark/conf/performance_tuning.conf || 
+        grep -q "1g" /opt/spark/current/conf/spark-defaults.conf
+      register: env_config
+      changed_when: false
+      failed_when: env_config.rc != 0
+
+    # Backup and recovery verification
+    - name: Check backup script exists and is executable
+      ansible.builtin.stat:
+        path: /opt/spark/scripts/backup_spark.sh
+      register: backup_script
+      failed_when: 
+        - not backup_script.stat.exists
+        - not backup_script.stat.executable
+
+    - name: Verify restore script exists
+      ansible.builtin.stat:
+        path: /opt/spark/scripts/restore_spark.sh
+      register: restore_script
+      failed_when: 
+        - not restore_script.stat.exists
+        - not restore_script.stat.executable
+
+    # Rolling update features
+    - name: Check rolling update scripts
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      register: update_scripts
+      failed_when: 
+        - not update_scripts.stat.exists
+        - not update_scripts.stat.executable
+      loop:
+        - /opt/spark/scripts/rolling_update.sh
+        - /opt/spark/scripts/pre_update_check.sh
+        - /opt/spark/scripts/post_update_validation.sh
+
+    # Cluster connectivity test (only on master)
+    - name: Test cluster connectivity
+      block:
+        - name: Submit a simple test job
+          ansible.builtin.shell: |
+            echo 'sc.parallelize(1 to 100).sum()' | 
+            timeout 120 /opt/spark/current/bin/spark-shell \
+              --master spark://{{ groups['spark_masters'][0] }}:7077 \
+              --conf spark.app.name="IntegrationTest" \
+              --conf spark.executor.memory=512m \
+              --conf spark.executor.cores=1
+          register: test_job
+          changed_when: false
+          failed_when: 
+            - test_job.rc != 0
+            - "'5050' not in test_job.stdout"
+          timeout: 180
+
+        - name: Verify job completed successfully
+          ansible.builtin.assert:
+            that:
+              - test_job.rc == 0
+              - "'5050' in test_job.stdout or 'res' in test_job.stdout"
+            fail_msg: "Test job failed to execute or return expected result"
+      when: inventory_hostname in groups['spark_masters']
+
+    # Final health verification
+    - name: Final comprehensive health check
+      ansible.builtin.command: /opt/spark/scripts/health_check.sh
+      register: final_health
+      changed_when: false
+      failed_when: final_health.rc != 0
+
+    - name: Display health check results
+      ansible.builtin.debug:
+        var: final_health.stdout_lines

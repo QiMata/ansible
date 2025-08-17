@@ -1,0 +1,58 @@
+#!/bin/bash
+# Spark Configuration Backup Script
+# {{ ansible_managed }}
+
+SPARK_HOME="{{ spark_role_symlink_dir }}"
+BACKUP_DIR="{{ spark_role_backup_dir }}"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+BACKUP_NAME="spark_backup_${TIMESTAMP}"
+
+echo "Starting Spark backup at $(date)"
+
+# Create timestamped backup directory
+mkdir -p "${BACKUP_DIR}/${BACKUP_NAME}"
+
+# Backup configuration files
+echo "Backing up configuration files..."
+cp -r "${SPARK_HOME}/conf" "${BACKUP_DIR}/${BACKUP_NAME}/"
+
+# Backup systemd service files
+echo "Backing up systemd service files..."
+mkdir -p "${BACKUP_DIR}/${BACKUP_NAME}/systemd"
+for service in spark-master spark-worker spark-history-server; do
+    if [ -f "/etc/systemd/system/${service}.service" ]; then
+        cp "/etc/systemd/system/${service}.service" "${BACKUP_DIR}/${BACKUP_NAME}/systemd/"
+    fi
+done
+
+# Backup custom scripts
+echo "Backing up custom scripts..."
+if [ -d "/opt/spark/scripts" ]; then
+    cp -r "/opt/spark/scripts" "${BACKUP_DIR}/${BACKUP_NAME}/"
+fi
+
+# Backup environment variables and settings
+echo "Backing up environment settings..."
+env | grep SPARK > "${BACKUP_DIR}/${BACKUP_NAME}/spark_env_vars.txt"
+
+# Create metadata file
+echo "Creating backup metadata..."
+cat > "${BACKUP_DIR}/${BACKUP_NAME}/backup_metadata.txt" << EOF
+Backup Created: $(date)
+Hostname: $(hostname -f)
+Spark Version: {{ spark_role_version }}
+Spark Home: ${SPARK_HOME}
+Backup Directory: ${BACKUP_DIR}/${BACKUP_NAME}
+EOF
+
+# Create compressed archive
+echo "Creating compressed archive..."
+cd "${BACKUP_DIR}"
+tar -czf "${BACKUP_NAME}.tar.gz" "${BACKUP_NAME}"
+rm -rf "${BACKUP_NAME}"
+
+# Set ownership
+chown {{ spark_role_user }}:{{ spark_role_group }} "${BACKUP_DIR}/${BACKUP_NAME}.tar.gz"
+
+echo "Backup completed: ${BACKUP_DIR}/${BACKUP_NAME}.tar.gz"
+echo "Backup finished at $(date)"

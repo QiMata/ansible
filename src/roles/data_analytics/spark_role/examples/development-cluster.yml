@@ -1,0 +1,40 @@
+---
+# Simple development cluster setup
+# Minimal configuration for development/testing environments
+
+- name: Deploy Development Spark Cluster
+  hosts: all
+  become: true
+  vars:
+    # Basic Configuration
+    spark_role_version: "3.4.1"
+    spark_role_worker_memory: "2g"
+    spark_role_worker_cores: 2
+    spark_role_history_enabled: true
+    
+    # Enable basic monitoring
+    spark_role_health_checks_enabled: true
+    spark_role_log_rotation_enabled: true
+    
+    # Development environment settings
+    spark_role_environment: "development"
+    spark_role_performance_tuning_enabled: true
+    
+    # Basic JDBC support
+    spark_role_jdbc_drivers:
+      - name: "postgresql"
+        url: "https://jdbc.postgresql.org/download/postgresql-42.6.0.jar"
+    
+  roles:
+    - role: data_analytics/spark_role
+  
+  post_tasks:
+    - name: Display connection information
+      ansible.builtin.debug:
+        msg: |
+          Development Spark Cluster Ready!
+          
+          Master UI: http://{{ ansible_default_ipv4.address }}:8080
+          Submit Job: spark-submit --master spark://{{ ansible_default_ipv4.address }}:7077 your-app.py
+          
+          Health Check: sudo /opt/spark/scripts/health_check.sh

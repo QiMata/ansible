@@ -1,0 +1,13 @@
+---
+- name: Install autoscaling dependencies
+  ansible.builtin.import_tasks: install.yml
+
+- name: Configure autoscaling scripts
+  ansible.builtin.import_tasks: configure.yml
+
+- name: Setup monitoring
+  ansible.builtin.import_tasks: monitoring.yml
+  when: spark_autoscaling_metrics_enabled
+
+- name: Start autoscaling service
+  ansible.builtin.import_tasks: service.yml

@@ -1,0 +1,31 @@
+# Resource Quotas Configuration for Spark
+# {{ ansible_managed }}
+
+# User-based resource quotas
+{% if spark_role_resource_quotas_enabled %}
+# Default quotas
+spark.quota.user.default.maxCores=4
+spark.quota.user.default.maxMemory=8g
+spark.quota.user.default.maxApplications=5
+
+# Per-user quotas (can be overridden)
+{% for user, quota in (spark_role_user_quotas | default({})).items() %}
+spark.quota.user.{{ user }}.maxCores={{ quota.max_cores | default('4') }}
+spark.quota.user.{{ user }}.maxMemory={{ quota.max_memory | default('8g') }}
+spark.quota.user.{{ user }}.maxApplications={{ quota.max_applications | default('5') }}
+{% endfor %}
+
+# Queue-based resource allocation
+{% for queue, config in (spark_role_queue_configs | default({})).items() %}
+spark.queue.{{ queue }}.maxCores={{ config.max_cores | default('8') }}
+spark.queue.{{ queue }}.maxMemory={{ config.max_memory | default('16g') }}
+spark.queue.{{ queue }}.maxApplications={{ config.max_applications | default('10') }}
+spark.queue.{{ queue }}.weight={{ config.weight | default('1.0') }}
+{% endfor %}
+
+# Global cluster limits
+spark.cluster.maxCores={{ spark_role_cluster_max_cores | default('100') }}
+spark.cluster.maxMemory={{ spark_role_cluster_max_memory | default('200g') }}
+spark.cluster.maxApplications={{ spark_role_cluster_max_applications | default('50') }}
+
+{% endif %}

@@ -1,0 +1,23 @@
+# Database Configuration for Spark
+# {{ ansible_managed }}
+
+{% for driver in spark_role_jdbc_drivers %}
+# {{ driver.name | upper }} Database Configuration
+spark.sql.{{ driver.name }}.driver={{ driver.driver_class | default('org.postgresql.Driver' if driver.name == 'postgresql' else 'com.mysql.cj.jdbc.Driver' if driver.name == 'mysql' else '') }}
+spark.sql.{{ driver.name }}.url={{ driver.url | default('') }}
+spark.sql.{{ driver.name }}.user={{ driver.user | default('') }}
+spark.sql.{{ driver.name }}.password={{ driver.password | default('') }}
+
+# Connection pooling for {{ driver.name }}
+spark.sql.{{ driver.name }}.hikari.maximumPoolSize={{ driver.max_pool_size | default(10) }}
+spark.sql.{{ driver.name }}.hikari.minimumIdle={{ driver.min_idle | default(2) }}
+spark.sql.{{ driver.name }}.hikari.connectionTimeout={{ driver.connection_timeout | default(30000) }}
+spark.sql.{{ driver.name }}.hikari.idleTimeout={{ driver.idle_timeout | default(600000) }}
+spark.sql.{{ driver.name }}.hikari.maxLifetime={{ driver.max_lifetime | default(1800000) }}
+
+{% endfor %}
+
+# General database connection settings
+spark.sql.adaptive.enabled=true
+spark.sql.adaptive.coalescePartitions.enabled=true
+spark.sql.adaptive.skewJoin.enabled=true

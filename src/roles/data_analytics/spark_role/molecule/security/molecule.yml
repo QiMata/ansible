@@ -1,0 +1,64 @@
+---
+dependency:
+  name: galaxy
+
+driver:
+  name: podman
+
+platforms:
+  - name: spark-master-secure
+    image: quay.io/ansible/molecule-ubuntu:20.04
+    pre_build_image: true
+    groups:
+      - spark_masters
+    networks:
+      - name: spark-network
+    published_ports:
+      - "8080:8080/tcp"
+      - "7077:7077/tcp"
+      - "18080:18080/tcp"
+
+  - name: spark-worker-secure-1
+    image: quay.io/ansible/molecule-ubuntu:20.04
+    pre_build_image: true
+    groups:
+      - spark_workers
+    networks:
+      - name: spark-network
+    published_ports:
+      - "8081:8081/tcp"
+
+  - name: spark-worker-secure-2
+    image: quay.io/ansible/molecule-ubuntu:20.04
+    pre_build_image: true
+    groups:
+      - spark_workers
+    networks:
+      - name: spark-network
+    published_ports:
+      - "8082:8081/tcp"
+
+provisioner:
+  name: ansible
+  inventory:
+    group_vars:
+      all:
+        spark_role_security_enabled: true
+        spark_role_ssl_enabled: true
+        spark_role_acls_enabled: true
+        spark_role_health_checks_enabled: true
+        spark_role_metrics_enabled: true
+        spark_role_prometheus_enabled: true
+        spark_role_log_rotation_enabled: true
+        spark_role_backup_enabled: true
+        spark_role_performance_tuning_enabled: true
+        spark_role_environment: "staging"
+        spark_role_admin_acls: "admin,spark"
+        spark_role_view_acls: "*"
+        spark_role_jdbc_drivers:
+          - name: "postgresql"
+            url: "https://jdbc.postgresql.org/download/postgresql-42.6.0.jar"
+            driver_class: "org.postgresql.Driver"
+
+verifier:
+  name: ansible

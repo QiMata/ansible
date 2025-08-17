@@ -1,0 +1,48 @@
+---
+dependency:
+  name: galaxy
+
+driver:
+  name: podman
+
+platforms:
+  - name: spark-master-perf
+    image: quay.io/ansible/molecule-ubuntu:20.04
+    pre_build_image: true
+    groups:
+      - spark_masters
+    networks:
+      - name: spark-network
+
+  - name: spark-worker-perf-1
+    image: quay.io/ansible/molecule-ubuntu:20.04
+    pre_build_image: true
+    groups:
+      - spark_workers
+    networks:
+      - name: spark-network
+
+provisioner:
+  name: ansible
+  inventory:
+    group_vars:
+      all:
+        spark_role_performance_tuning_enabled: true
+        spark_role_resource_isolation_enabled: true
+        spark_role_network_optimization_enabled: true
+        spark_role_resource_quotas_enabled: true
+        spark_role_environment: "production"
+        spark_role_user_quotas:
+          testuser:
+            max_cores: 8
+            max_memory: "16g"
+            max_applications: 3
+        spark_role_queue_configs:
+          default:
+            max_cores: 16
+            max_memory: "32g"
+            max_applications: 10
+            weight: 1.0
+
+verifier:
+  name: ansible

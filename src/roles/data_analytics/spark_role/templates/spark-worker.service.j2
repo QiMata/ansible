@@ -10,8 +10,18 @@ Group={{ spark_role_group }}
 WorkingDirectory={{ spark_role_symlink_dir }}/sbin
 ExecStart={{ spark_role_symlink_dir }}/sbin/start-worker.sh {{ spark_role_master_url }}
 ExecStop={{ spark_role_symlink_dir }}/sbin/stop-worker.sh
+{% if spark_role_health_checks_enabled %}
+ExecStartPost=/bin/sleep 30
+ExecStartPost=/opt/spark/scripts/health_check.sh
+{% endif %}
 SuccessExitStatus=143
 Restart=on-failure
+RestartSec=30
+{% if spark_role_health_checks_enabled %}
+# Health check configuration
+TimeoutStartSec=300
+TimeoutStopSec=120
+{% endif %}
 
 [Install]
 WantedBy=multi-user.target

@@ -1,7 +1,37 @@
 ---
 - name: Include install tasks
   ansible.builtin.import_tasks: install.yml
+
+- name: Include security tasks
+  ansible.builtin.import_tasks: security.yml
+  when: spark_role_security_enabled or spark_role_ssl_enabled or spark_role_kerberos_enabled
+
+- name: Include monitoring tasks
+  ansible.builtin.import_tasks: monitoring.yml
+  when: spark_role_health_checks_enabled or spark_role_metrics_enabled or spark_role_prometheus_enabled
+
+- name: Include logging tasks
+  ansible.builtin.import_tasks: logging.yml
+  when: spark_role_log_rotation_enabled
+
+- name: Include database tasks
+  ansible.builtin.import_tasks: database.yml
+  when: spark_role_jdbc_drivers | length > 0
+
+- name: Include performance tasks
+  ansible.builtin.import_tasks: performance.yml
+  when: spark_role_performance_tuning_enabled or spark_role_resource_isolation_enabled or spark_role_network_optimization_enabled
+
+- name: Include backup tasks
+  ansible.builtin.import_tasks: backup.yml
+  when: spark_role_backup_enabled
+
+- name: Include rolling update tasks
+  ansible.builtin.import_tasks: rolling_update.yml
+  when: spark_role_rolling_update_enabled
+
 - name: Include config tasks
   ansible.builtin.import_tasks: config.yml
+
 - name: Include service tasks
   ansible.builtin.import_tasks: service.yml

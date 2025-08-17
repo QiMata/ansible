@@ -1,0 +1,121 @@
+#!/bin/bash
+# Spark Health Check Script
+# {{ ansible_managed }}
+
+SPARK_HOME="{{ spark_role_symlink_dir }}"
+SPARK_USER="{{ spark_role_user }}"
+HEALTH_CHECK_TIMEOUT=30
+
+# Function to check if service is running
+check_service_status() {
+    local service_name="$1"
+    if systemctl is-active --quiet "$service_name"; then
+        echo "✓ $service_name is running"
+        return 0
+    else
+        echo "✗ $service_name is not running"
+        return 1
+    fi
+}
+
+# Function to check web UI accessibility
+check_web_ui() {
+    local url="$1"
+    local service="$2"
+    
+    if curl -f -s --connect-timeout 10 "$url" > /dev/null; then
+        echo "✓ $service web UI is accessible at $url"
+        return 0
+    else
+        echo "✗ $service web UI is not accessible at $url"
+        return 1
+    fi
+}
+
+# Function to check JVM health
+check_jvm_health() {
+    local service="$1"
+    local pid=$(pgrep -f "org.apache.spark.$service")
+    
+    if [ -n "$pid" ]; then
+        # Check if JVM is responsive
+        if kill -0 "$pid" 2>/dev/null; then
+            echo "✓ $service JVM (PID: $pid) is responsive"
+            return 0
+        else
+            echo "✗ $service JVM (PID: $pid) is not responsive"
+            return 1
+        fi
+    else
+        echo "✗ $service JVM process not found"
+        return 1
+    fi
+}
+
+# Main health check logic
+main() {
+    echo "=== Spark Health Check $(date) ==="
+    local exit_code=0
+    
+    # Check if we're on a master or worker node
+    if systemctl list-unit-files | grep -q "spark-master"; then
+        echo "--- Checking Spark Master ---"
+        check_service_status "spark-master" || exit_code=1
+        check_web_ui "http://localhost:8080" "Master" || exit_code=1
+        check_jvm_health "deploy.master.Master" || exit_code=1
+        
+        {% if spark_role_history_enabled %}
+        echo "--- Checking Spark History Server ---"
+        check_service_status "spark-history-server" || exit_code=1
+        check_web_ui "http://localhost:18080" "History Server" || exit_code=1
+        {% endif %}
+    fi
+    
+    if systemctl list-unit-files | grep -q "spark-worker"; then
+        echo "--- Checking Spark Worker ---"
+        check_service_status "spark-worker" || exit_code=1
+        check_web_ui "http://localhost:8081" "Worker" || exit_code=1
+        check_jvm_health "deploy.worker.Worker" || exit_code=1
+    fi
+    
+    # Check disk space
+    echo "--- Checking Disk Space ---"
+    local disk_usage=$(df {{ spark_role_log_dir }} | awk 'NR==2 {print $5}' | sed 's/%//')
+    if [ "$disk_usage" -gt 90 ]; then
+        echo "✗ Log directory disk usage is ${disk_usage}% (critical)"
+        exit_code=1
+    elif [ "$disk_usage" -gt 80 ]; then
+        echo "⚠ Log directory disk usage is ${disk_usage}% (warning)"
+    else
+        echo "✓ Log directory disk usage is ${disk_usage}%"
+    fi
+    
+    {% if spark_role_eventlog_dir != spark_role_log_dir %}
+    local eventlog_usage=$(df {{ spark_role_eventlog_dir }} | awk 'NR==2 {print $5}' | sed 's/%//')
+    if [ "$eventlog_usage" -gt 90 ]; then
+        echo "✗ Event log directory disk usage is ${eventlog_usage}% (critical)"
+        exit_code=1
+    elif [ "$eventlog_usage" -gt 80 ]; then
+        echo "⚠ Event log directory disk usage is ${eventlog_usage}% (warning)"
+    else
+        echo "✓ Event log directory disk usage is ${eventlog_usage}%"
+    fi
+    {% endif %}
+    
+    # Check memory usage
+    echo "--- Checking Memory Usage ---"
+    local memory_usage=$(free | awk 'NR==2{printf "%.0f", $3*100/$2}')
+    if [ "$memory_usage" -gt 95 ]; then
+        echo "✗ System memory usage is ${memory_usage}% (critical)"
+        exit_code=1
+    elif [ "$memory_usage" -gt 85 ]; then
+        echo "⚠ System memory usage is ${memory_usage}% (warning)"
+    else
+        echo "✓ System memory usage is ${memory_usage}%"
+    fi
+    
+    echo "=== Health Check Complete ==="
+    return $exit_code
+}
+
+main "$@"

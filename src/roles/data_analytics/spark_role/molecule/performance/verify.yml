@@ -1,0 +1,71 @@
+---
+- name: Verify performance features
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: Check if cgroup tools are installed
+      ansible.builtin.package:
+        name: cgroup-tools
+        state: present
+      check_mode: true
+      register: cgroup_installed
+      failed_when: cgroup_installed.changed
+
+    - name: Verify network optimization settings
+      ansible.builtin.sysctl:
+        name: net.core.rmem_max
+        value: "134217728"
+      check_mode: true
+      register: network_tuning
+      failed_when: network_tuning.changed
+
+    - name: Check performance tuning configuration exists
+      ansible.builtin.stat:
+        path: /opt/spark/conf/performance_tuning.conf
+      register: perf_config
+      failed_when: not perf_config.stat.exists
+
+    - name: Verify resource quotas configuration
+      ansible.builtin.stat:
+        path: /opt/spark/conf/resource_quotas.conf
+      register: quota_config
+      failed_when: not quota_config.stat.exists
+
+    - name: Check production environment configuration
+      ansible.builtin.lineinfile:
+        path: /opt/spark/current/conf/spark-defaults.conf
+        regexp: "^spark.executor.memory.*4g$"
+        state: present
+      check_mode: true
+      register: prod_memory
+      failed_when: prod_memory.changed
+
+    - name: Verify production cores configuration
+      ansible.builtin.lineinfile:
+        path: /opt/spark/current/conf/spark-defaults.conf
+        regexp: "^spark.executor.cores.*4$"
+        state: present
+      check_mode: true
+      register: prod_cores
+      failed_when: prod_cores.changed
+
+    - name: Check G1GC configuration
+      ansible.builtin.shell: |
+        grep -q "UseG1GC" /opt/spark/conf/performance_tuning.conf
+      register: g1gc_config
+      changed_when: false
+      failed_when: g1gc_config.rc != 0
+
+    - name: Verify adaptive query execution is enabled
+      ansible.builtin.shell: |
+        grep -q "spark.sql.adaptive.enabled=true" /opt/spark/conf/performance_tuning.conf
+      register: adaptive_config
+      changed_when: false
+      failed_when: adaptive_config.rc != 0
+
+    - name: Check Kryo serialization configuration
+      ansible.builtin.shell: |
+        grep -q "KryoSerializer" /opt/spark/conf/performance_tuning.conf
+      register: kryo_config
+      changed_when: false
+      failed_when: kryo_config.rc != 0

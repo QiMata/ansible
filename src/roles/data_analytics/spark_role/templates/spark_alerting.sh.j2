@@ -1,0 +1,38 @@
+#!/bin/bash
+# Spark Alerting Script
+# {{ ansible_managed }}
+
+HEALTH_CHECK_SCRIPT="/opt/spark/scripts/health_check.sh"
+ALERT_EMAIL="${SPARK_ALERT_EMAIL:-admin@localhost}"
+HOSTNAME="$(hostname -f)"
+
+# Run health check and capture output
+if ! health_output=$($HEALTH_CHECK_SCRIPT 2>&1); then
+    # Health check failed, send alert
+    subject="ALERT: Spark Health Check Failed on $HOSTNAME"
+    
+    # Create email body
+    email_body="Spark health check failed on $HOSTNAME at $(date)
+
+Health Check Output:
+$health_output
+
+Please investigate the Spark cluster immediately.
+
+Server: $HOSTNAME
+Check Time: $(date)
+"
+    
+    # Send email alert (requires mail command to be configured)
+    if command -v mail >/dev/null 2>&1; then
+        echo "$email_body" | mail -s "$subject" "$ALERT_EMAIL"
+    fi
+    
+    # Log to syslog
+    logger -t "spark-alert" "Spark health check failed on $HOSTNAME"
+    
+    # Write to alert log
+    echo "$(date): ALERT - Spark health check failed" >> "{{ spark_role_log_dir }}/alerts.log"
+    echo "$health_output" >> "{{ spark_role_log_dir }}/alerts.log"
+    echo "---" >> "{{ spark_role_log_dir }}/alerts.log"
+fi

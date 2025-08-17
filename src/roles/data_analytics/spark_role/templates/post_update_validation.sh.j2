@@ -1,0 +1,98 @@
+#!/bin/bash
+# Post-Update Validation Script
+# {{ ansible_managed }}
+
+echo "=== Post-Update Validation $(date) ==="
+
+# Wait for services to fully start
+echo "Waiting for services to stabilize..."
+sleep 60
+
+# Run comprehensive health check
+if ! /opt/spark/scripts/health_check.sh; then
+    echo "✗ Post-update health check failed"
+    exit 1
+fi
+
+# Test cluster functionality
+echo "--- Testing Cluster Functionality ---"
+
+# Test Spark Shell connectivity (if master is running)
+if systemctl is-active --quiet spark-master; then
+    echo "Testing Spark Master connectivity..."
+    
+    # Create a simple test job
+    SPARK_TEST_OUTPUT=$(timeout 60 {{ spark_role_symlink_dir }}/bin/spark-shell --master {{ spark_role_master_url }} --conf spark.app.name="PostUpdateTest" <<< 'sc.parallelize(1 to 10).sum()' 2>&1)
+    
+    if echo "$SPARK_TEST_OUTPUT" | grep -q "res.*: Double = 55"; then
+        echo "✓ Spark connectivity test passed"
+    else
+        echo "✗ Spark connectivity test failed"
+        echo "Output: $SPARK_TEST_OUTPUT"
+        exit 1
+    fi
+fi
+
+# Check version consistency
+echo "--- Checking Version Consistency ---"
+ACTUAL_VERSION=$({{ spark_role_symlink_dir }}/bin/spark-shell --version 2>&1 | grep "version" | head -1 | awk '{print $5}')
+EXPECTED_VERSION="{{ spark_role_version }}"
+
+if [ "$ACTUAL_VERSION" = "$EXPECTED_VERSION" ]; then
+    echo "✓ Version consistency check passed (${ACTUAL_VERSION})"
+else
+    echo "✗ Version mismatch. Expected: ${EXPECTED_VERSION}, Actual: ${ACTUAL_VERSION}"
+    exit 1
+fi
+
+# Check configuration files
+echo "--- Validating Configuration ---"
+CONFIG_ERRORS=0
+
+# Check if required config files exist
+for config_file in spark-defaults.conf spark-env.sh; do
+    if [ ! -f "{{ spark_role_symlink_dir }}/conf/${config_file}" ]; then
+        echo "✗ Missing configuration file: ${config_file}"
+        CONFIG_ERRORS=$((CONFIG_ERRORS + 1))
+    fi
+done
+
+if [ "$CONFIG_ERRORS" -gt 0 ]; then
+    echo "✗ Configuration validation failed"
+    exit 1
+else
+    echo "✓ Configuration validation passed"
+fi
+
+# Check log files for errors
+echo "--- Checking for Recent Errors ---"
+ERROR_COUNT=$(find {{ spark_role_log_dir }} -name "*.log" -mmin -10 -exec grep -l "ERROR\|FATAL" {} \; | wc -l)
+
+if [ "$ERROR_COUNT" -gt 0 ]; then
+    echo "⚠ Warning: Found $ERROR_COUNT log files with recent errors"
+    echo "Recent errors:"
+    find {{ spark_role_log_dir }} -name "*.log" -mmin -10 -exec grep -H "ERROR\|FATAL" {} \; | tail -5
+else
+    echo "✓ No recent errors found in logs"
+fi
+
+# Performance baseline test
+echo "--- Running Performance Baseline ---"
+# This would run a standard benchmark to ensure performance hasn't degraded
+# For now, we'll just check resource utilization
+
+CPU_USAGE=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | sed 's/%us,//')
+MEMORY_USAGE=$(free | awk 'NR==2{printf "%.0f", $3*100/$2}')
+
+echo "Current resource utilization:"
+echo "  CPU: ${CPU_USAGE}%"
+echo "  Memory: ${MEMORY_USAGE}%"
+
+if [ "${CPU_USAGE%.*}" -lt 90 ] && [ "$MEMORY_USAGE" -lt 90 ]; then
+    echo "✓ Resource utilization within acceptable limits"
+else
+    echo "⚠ Warning: High resource utilization detected"
+fi
+
+echo "✓ Post-update validation completed successfully"
+exit 0

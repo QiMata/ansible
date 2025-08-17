@@ -1,0 +1,51 @@
+---
+# Backup and Recovery Tasks
+- name: Create backup directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ spark_role_user }}"
+    group: "{{ spark_role_group }}"
+    mode: '0755'
+  loop:
+    - "{{ spark_role_backup_dir }}"
+    - "{{ spark_role_backup_dir }}/config"
+    - "{{ spark_role_backup_dir }}/logs"
+    - "{{ spark_role_backup_dir }}/metadata"
+  when: spark_role_backup_enabled
+
+- name: Deploy backup script
+  ansible.builtin.template:
+    src: backup_spark.sh.j2
+    dest: "/opt/spark/scripts/backup_spark.sh"
+    owner: "{{ spark_role_user }}"
+    group: "{{ spark_role_group }}"
+    mode: '0755'
+  when: spark_role_backup_enabled
+
+- name: Deploy restore script
+  ansible.builtin.template:
+    src: restore_spark.sh.j2
+    dest: "/opt/spark/scripts/restore_spark.sh"
+    owner: "{{ spark_role_user }}"
+    group: "{{ spark_role_group }}"
+    mode: '0755'
+  when: spark_role_backup_enabled
+
+- name: Create backup cron job
+  ansible.builtin.cron:
+    name: "Spark configuration backup"
+    minute: "0"
+    hour: "1"
+    job: "/opt/spark/scripts/backup_spark.sh"
+    user: "{{ spark_role_user }}"
+  when: spark_role_backup_enabled
+
+- name: Create backup cleanup cron job
+  ansible.builtin.cron:
+    name: "Spark backup cleanup"
+    minute: "30"
+    hour: "1"
+    job: "find {{ spark_role_backup_dir }} -type f -mtime +{{ spark_role_backup_retention_days }} -delete"
+    user: "{{ spark_role_user }}"
+  when: spark_role_backup_enabled

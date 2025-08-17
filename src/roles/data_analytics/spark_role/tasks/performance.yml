@@ -1,0 +1,54 @@
+---
+# Performance and Resource Management Tasks
+- name: Install cgroup tools for resource isolation
+  ansible.builtin.apt:
+    name:
+      - cgroup-tools
+      - cgroupfs-mount
+    state: present
+    update_cache: true
+  when: spark_role_resource_isolation_enabled
+
+- name: Create Spark cgroup
+  ansible.builtin.file:
+    path: "/sys/fs/cgroup/memory/spark"
+    state: directory
+    mode: '0755'
+  when: spark_role_resource_isolation_enabled
+
+- name: Configure network optimization
+  ansible.builtin.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: true
+  loop:
+    - name: "net.core.rmem_max"
+      value: "134217728"
+    - name: "net.core.wmem_max"
+      value: "134217728"
+    - name: "net.ipv4.tcp_rmem"
+      value: "4096 87380 134217728"
+    - name: "net.ipv4.tcp_wmem"
+      value: "4096 65536 134217728"
+    - name: "net.core.netdev_max_backlog"
+      value: "5000"
+  when: spark_role_network_optimization_enabled
+
+- name: Deploy performance tuning configuration
+  ansible.builtin.template:
+    src: performance_tuning.conf.j2
+    dest: "/opt/spark/conf/performance_tuning.conf"
+    owner: "{{ spark_role_user }}"
+    group: "{{ spark_role_group }}"
+    mode: '0644'
+  when: spark_role_performance_tuning_enabled
+
+- name: Create resource quota configuration
+  ansible.builtin.template:
+    src: resource_quotas.conf.j2
+    dest: "/opt/spark/conf/resource_quotas.conf"
+    owner: "{{ spark_role_user }}"
+    group: "{{ spark_role_group }}"
+    mode: '0644'
+  when: spark_role_resource_quotas_enabled

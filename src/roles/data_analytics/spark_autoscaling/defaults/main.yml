@@ -1,0 +1,46 @@
+---
+# Spark Auto-scaling Configuration
+spark_autoscaling_enabled: true
+spark_autoscaling_provider: "manual"  # Options: manual, aws, gcp, azure, proxmox
+
+# Scaling thresholds
+spark_autoscaling_cpu_threshold_up: 80
+spark_autoscaling_cpu_threshold_down: 30
+spark_autoscaling_memory_threshold_up: 85
+spark_autoscaling_memory_threshold_down: 40
+spark_autoscaling_pending_apps_threshold: 5
+
+# Scaling limits
+spark_autoscaling_min_workers: 1
+spark_autoscaling_max_workers: 10
+spark_autoscaling_scale_up_increment: 2
+spark_autoscaling_scale_down_increment: 1
+
+# Timing configuration
+spark_autoscaling_check_interval: 60  # seconds
+spark_autoscaling_cooldown_period: 300  # seconds
+spark_autoscaling_scale_up_delay: 120  # seconds
+spark_autoscaling_scale_down_delay: 600  # seconds
+
+# Worker configuration template
+spark_autoscaling_worker_memory: "2g"
+spark_autoscaling_worker_cores: 2
+spark_autoscaling_worker_disk: "20GB"
+
+# Cloud provider specific settings
+spark_autoscaling_aws_instance_type: "m5.large"
+spark_autoscaling_aws_region: "us-west-2"
+spark_autoscaling_aws_security_group: ""
+spark_autoscaling_aws_subnet_id: ""
+spark_autoscaling_aws_key_name: ""
+
+# Proxmox specific settings
+spark_autoscaling_proxmox_template: "spark-worker-template"
+spark_autoscaling_proxmox_node: "proxmox1"
+spark_autoscaling_proxmox_cores: 2
+spark_autoscaling_proxmox_memory: 2048
+
+# Monitoring and alerting
+spark_autoscaling_metrics_enabled: true
+spark_autoscaling_alerts_enabled: true
+spark_autoscaling_webhook_url: ""

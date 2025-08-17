@@ -28,3 +28,76 @@ spark_role_history_enabled: false
 
 spark_role_worker_memory: "1g"
 spark_role_worker_cores: 1
+
+# Security Configuration
+spark_role_security_enabled: false
+spark_role_auth_secret: ""
+spark_role_ssl_enabled: false
+spark_role_ssl_keystore_path: ""
+spark_role_ssl_keystore_password: ""
+spark_role_ssl_truststore_path: ""
+spark_role_ssl_truststore_password: ""
+spark_role_kerberos_enabled: false
+spark_role_kerberos_principal: ""
+spark_role_kerberos_keytab: ""
+spark_role_acls_enabled: false
+spark_role_admin_acls: ""
+spark_role_view_acls: ""
+
+# Health Checks and Monitoring
+spark_role_health_checks_enabled: true
+spark_role_metrics_enabled: false
+spark_role_jmx_enabled: false
+spark_role_jmx_port: 7070
+spark_role_prometheus_enabled: false
+spark_role_prometheus_jmx_exporter_version: "0.19.0"
+spark_role_prometheus_jmx_exporter_port: 7071
+
+# Log Management
+spark_role_log_rotation_enabled: true
+spark_role_log_max_size: "100M"
+spark_role_log_retention_days: 30
+
+# Database Connectivity
+spark_role_jdbc_drivers: []
+# Example:
+# spark_role_jdbc_drivers:
+#   - name: "postgresql"
+#     url: "https://jdbc.postgresql.org/download/postgresql-42.6.0.jar"
+#     path: "/opt/spark/jars/postgresql-42.6.0.jar"
+
+# Performance and Resource Management
+spark_role_performance_tuning_enabled: false
+spark_role_resource_isolation_enabled: false
+spark_role_network_optimization_enabled: false
+spark_role_resource_quotas_enabled: false
+
+# Multi-Environment Support
+spark_role_environment: "production"
+spark_role_environment_configs:
+  development:
+    worker_memory: "512m"
+    worker_cores: 1
+    log_level: "DEBUG"
+  staging:
+    worker_memory: "1g"
+    worker_cores: 2
+    log_level: "INFO"
+  production:
+    worker_memory: "4g"
+    worker_cores: 4
+    log_level: "WARN"
+
+# Auto-scaling (requires external orchestration)
+spark_role_autoscaling_enabled: false
+spark_role_min_workers: 1
+spark_role_max_workers: 10
+
+# Backup and Recovery
+spark_role_backup_enabled: false
+spark_role_backup_dir: "/opt/spark/backups"
+spark_role_backup_retention_days: 30
+
+# Rolling Updates
+spark_role_rolling_update_enabled: false
+spark_role_rolling_update_batch_size: 1

@@ -4,3 +4,59 @@ spark.history.fs.logDirectory          {{ spark_role_eventlog_dir }}
 {% if spark_role_history_enabled | bool %}
 spark.history.ui.port                  18080
 {% endif %}
+
+{% if spark_role_security_enabled %}
+# Authentication Configuration
+spark.authenticate                     true
+spark.authenticate.secret              {{ spark_role_auth_secret }}
+{% endif %}
+
+{% if spark_role_ssl_enabled %}
+# SSL Configuration
+spark.ssl.enabled                      true
+spark.ssl.keyStore                     {{ spark_role_ssl_keystore_path }}
+spark.ssl.keyStorePassword             {{ spark_role_ssl_keystore_password }}
+spark.ssl.trustStore                   {{ spark_role_ssl_truststore_path | default(spark_role_ssl_keystore_path) }}
+spark.ssl.trustStorePassword           {{ spark_role_ssl_truststore_password | default(spark_role_ssl_keystore_password) }}
+spark.ssl.protocol                     TLSv1.2
+{% endif %}
+
+{% if spark_role_kerberos_enabled %}
+# Kerberos Configuration
+spark.security.credentials.hadoopTokens.enabled  true
+spark.kerberos.principal               {{ spark_role_kerberos_principal }}
+spark.kerberos.keytab                  /etc/spark/kerberos/spark.keytab
+{% endif %}
+
+{% if spark_role_acls_enabled %}
+# Access Control Lists
+spark.acls.enable                      true
+{% if spark_role_admin_acls %}
+spark.admin.acls                       {{ spark_role_admin_acls }}
+{% endif %}
+{% if spark_role_view_acls %}
+spark.ui.view.acls                     {{ spark_role_view_acls }}
+{% endif %}
+{% endif %}
+
+{% if spark_role_jmx_enabled %}
+# JMX Configuration
+spark.metrics.conf.*.sink.jmx.class   org.apache.spark.metrics.sink.JmxSink
+{% endif %}
+
+{% if spark_role_prometheus_enabled %}
+# Prometheus JMX Exporter Configuration
+spark.driver.extraJavaOptions          -javaagent:/opt/spark/jars/jmx_prometheus_javaagent-{{ spark_role_prometheus_jmx_exporter_version }}.jar={{ spark_role_prometheus_jmx_exporter_port }}:/opt/spark/conf/jmx_prometheus_config.yml
+spark.executor.extraJavaOptions        -javaagent:/opt/spark/jars/jmx_prometheus_javaagent-{{ spark_role_prometheus_jmx_exporter_version }}.jar={{ spark_role_prometheus_jmx_exporter_port }}:/opt/spark/conf/jmx_prometheus_config.yml
+{% endif %}
+
+# Environment-specific configurations
+{% set env_config = spark_role_environment_configs[spark_role_environment] | default({}) %}
+{% if env_config %}
+# Configuration for {{ spark_role_environment }} environment
+spark.executor.memory                  {{ env_config.worker_memory | default(spark_role_worker_memory) }}
+spark.executor.cores                   {{ env_config.worker_cores | default(spark_role_worker_cores) }}
+{% if env_config.log_level is defined %}
+spark.sql.adaptive.logLevel            {{ env_config.log_level }}
+{% endif %}
+{% endif %}

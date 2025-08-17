@@ -1,0 +1,65 @@
+# JMX Prometheus Exporter Configuration for Spark
+# {{ ansible_managed }}
+
+startDelaySeconds: 0
+hostPort: 127.0.0.1:{{ spark_role_prometheus_jmx_exporter_port }}
+jmxUrl: service:jmx:rmi:///jndi/rmi://127.0.0.1:{{ spark_role_jmx_port }}/jmxrmi
+ssl: false
+lowercaseOutputName: false
+lowercaseOutputLabelNames: false
+
+rules:
+  # Spark application metrics
+  - pattern: "metrics<type=(.+), name=(.+)><>Value"
+    name: spark_$1_$2
+    type: GAUGE
+
+  # JVM metrics
+  - pattern: "java.lang<type=Memory><HeapMemoryUsage>(.+)"
+    name: jvm_heap_memory_$1
+    type: GAUGE
+
+  - pattern: "java.lang<type=Memory><NonHeapMemoryUsage>(.+)"
+    name: jvm_non_heap_memory_$1
+    type: GAUGE
+
+  - pattern: "java.lang<type=GarbageCollector, name=(.+)><>CollectionCount"
+    name: jvm_gc_collection_count
+    labels:
+      gc: $1
+    type: COUNTER
+
+  - pattern: "java.lang<type=GarbageCollector, name=(.+)><>CollectionTime"
+    name: jvm_gc_collection_time_ms
+    labels:
+      gc: $1
+    type: COUNTER
+
+  # Spark Streaming metrics (if applicable)
+  - pattern: "(.+)\\.StreamingMetrics\\.streaming\\.(.+)\\.(.+)"
+    name: spark_streaming_$2_$3
+    labels:
+      app: $1
+    type: GAUGE
+
+  # Spark SQL metrics
+  - pattern: "(.+)\\.driver\\.CodeGenerator\\.(.+)"
+    name: spark_sql_codegen_$2
+    labels:
+      app: $1
+    type: GAUGE
+
+  # Executor metrics
+  - pattern: "(.+)\\.executor\\.(.+)\\.(.+)"
+    name: spark_executor_$3
+    labels:
+      app: $1
+      executor: $2
+    type: GAUGE
+
+  # Driver metrics
+  - pattern: "(.+)\\.driver\\.(.+)"
+    name: spark_driver_$2
+    labels:
+      app: $1
+    type: GAUGE

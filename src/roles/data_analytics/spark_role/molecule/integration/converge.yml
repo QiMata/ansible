@@ -1,0 +1,12 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  pre_tasks:
+    - name: Update package cache
+      ansible.builtin.apt:
+        update_cache: true
+      changed_when: false
+
+  roles:
+    - role: spark_role

@@ -1,0 +1,72 @@
+---
+# Security Configuration Tasks
+- name: Generate random auth secret if not provided
+  ansible.builtin.set_fact:
+    spark_role_auth_secret: "{{ ansible_date_time.epoch | hash('sha256') | truncate(32, True, '') }}"
+  when: 
+    - spark_role_security_enabled
+    - spark_role_auth_secret == ""
+
+- name: Create SSL certificate directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ spark_role_user }}"
+    group: "{{ spark_role_group }}"
+    mode: '0750'
+  loop:
+    - "/etc/spark/ssl"
+    - "/etc/spark/ssl/certs"
+    - "/etc/spark/ssl/private"
+  when: spark_role_ssl_enabled
+
+- name: Generate SSL keystore if not provided
+  ansible.builtin.command:
+    cmd: >
+      keytool -genkeypair -alias spark -keyalg RSA -keysize 2048
+      -storetype PKCS12 -keystore /etc/spark/ssl/spark-keystore.p12
+      -validity 3650 -storepass {{ spark_role_ssl_keystore_password | default('changeit') }}
+      -keypass {{ spark_role_ssl_keystore_password | default('changeit') }}
+      -dname "CN={{ ansible_fqdn }},OU=Spark,O=Organization,C=US"
+    creates: /etc/spark/ssl/spark-keystore.p12
+  become: true
+  become_user: "{{ spark_role_user }}"
+  when: 
+    - spark_role_ssl_enabled
+    - spark_role_ssl_keystore_path == ""
+
+- name: Set keystore path if generated
+  ansible.builtin.set_fact:
+    spark_role_ssl_keystore_path: "/etc/spark/ssl/spark-keystore.p12"
+  when: 
+    - spark_role_ssl_enabled
+    - spark_role_ssl_keystore_path == ""
+
+- name: Create Kerberos configuration directory
+  ansible.builtin.file:
+    path: "/etc/spark/kerberos"
+    state: directory
+    owner: "{{ spark_role_user }}"
+    group: "{{ spark_role_group }}"
+    mode: '0750'
+  when: spark_role_kerberos_enabled
+
+- name: Copy Kerberos keytab
+  ansible.builtin.copy:
+    src: "{{ spark_role_kerberos_keytab }}"
+    dest: "/etc/spark/kerberos/spark.keytab"
+    owner: "{{ spark_role_user }}"
+    group: "{{ spark_role_group }}"
+    mode: '0600'
+  when: 
+    - spark_role_kerberos_enabled
+    - spark_role_kerberos_keytab != ""
+
+- name: Install SASL libraries for authentication
+  ansible.builtin.apt:
+    name:
+      - libsasl2-dev
+      - libsasl2-modules
+    state: present
+    update_cache: true
+  when: spark_role_security_enabled

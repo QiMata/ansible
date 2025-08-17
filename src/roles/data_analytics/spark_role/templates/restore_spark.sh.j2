@@ -1,0 +1,105 @@
+#!/bin/bash
+# Spark Restore Script
+# {{ ansible_managed }}
+
+SPARK_HOME="{{ spark_role_symlink_dir }}"
+BACKUP_DIR="{{ spark_role_backup_dir }}"
+
+# Function to display usage
+usage() {
+    echo "Usage: $0 <backup_file>"
+    echo "Example: $0 spark_backup_20240817_120000.tar.gz"
+    echo ""
+    echo "Available backups:"
+    ls -la "${BACKUP_DIR}"/*.tar.gz 2>/dev/null | awk '{print $9}' | xargs -I {} basename {}
+}
+
+# Check if backup file is provided
+if [ $# -ne 1 ]; then
+    usage
+    exit 1
+fi
+
+BACKUP_FILE="$1"
+BACKUP_PATH="${BACKUP_DIR}/${BACKUP_FILE}"
+
+# Check if backup file exists
+if [ ! -f "${BACKUP_PATH}" ]; then
+    echo "Error: Backup file ${BACKUP_PATH} not found"
+    usage
+    exit 1
+fi
+
+echo "Starting Spark restore from ${BACKUP_FILE} at $(date)"
+
+# Stop Spark services
+echo "Stopping Spark services..."
+for service in spark-master spark-worker spark-history-server; do
+    if systemctl is-active --quiet "$service"; then
+        systemctl stop "$service"
+        echo "Stopped $service"
+    fi
+done
+
+# Create temporary extraction directory
+TEMP_DIR=$(mktemp -d)
+echo "Extracting backup to temporary directory: ${TEMP_DIR}"
+
+# Extract backup
+cd "${TEMP_DIR}"
+tar -xzf "${BACKUP_PATH}"
+
+# Find the extracted directory
+EXTRACTED_DIR=$(find . -maxdepth 1 -type d -name "spark_backup_*" | head -1)
+
+if [ -z "$EXTRACTED_DIR" ]; then
+    echo "Error: Could not find extracted backup directory"
+    rm -rf "${TEMP_DIR}"
+    exit 1
+fi
+
+# Backup current configuration (in case restore fails)
+CURRENT_BACKUP="${BACKUP_DIR}/pre_restore_backup_$(date +%Y%m%d_%H%M%S)"
+mkdir -p "${CURRENT_BACKUP}"
+cp -r "${SPARK_HOME}/conf" "${CURRENT_BACKUP}/" 2>/dev/null || true
+
+# Restore configuration files
+echo "Restoring configuration files..."
+if [ -d "${EXTRACTED_DIR}/conf" ]; then
+    cp -r "${EXTRACTED_DIR}/conf"/* "${SPARK_HOME}/conf/"
+    chown -R {{ spark_role_user }}:{{ spark_role_group }} "${SPARK_HOME}/conf"
+fi
+
+# Restore systemd service files
+echo "Restoring systemd service files..."
+if [ -d "${EXTRACTED_DIR}/systemd" ]; then
+    cp "${EXTRACTED_DIR}/systemd"/* /etc/systemd/system/ 2>/dev/null || true
+    systemctl daemon-reload
+fi
+
+# Restore custom scripts
+echo "Restoring custom scripts..."
+if [ -d "${EXTRACTED_DIR}/scripts" ]; then
+    cp -r "${EXTRACTED_DIR}/scripts"/* /opt/spark/scripts/ 2>/dev/null || true
+    chown -R {{ spark_role_user }}:{{ spark_role_group }} /opt/spark/scripts
+    chmod +x /opt/spark/scripts/*.sh 2>/dev/null || true
+fi
+
+# Clean up temporary directory
+rm -rf "${TEMP_DIR}"
+
+# Start Spark services
+echo "Starting Spark services..."
+for service in spark-master spark-worker spark-history-server; do
+    if [ -f "/etc/systemd/system/${service}.service" ]; then
+        systemctl start "$service"
+        if systemctl is-active --quiet "$service"; then
+            echo "Started $service"
+        else
+            echo "Warning: Failed to start $service"
+        fi
+    fi
+done
+
+echo "Restore completed at $(date)"
+echo "Current backup of previous configuration saved to: ${CURRENT_BACKUP}"

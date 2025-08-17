@@ -1,0 +1,106 @@
+---
+- name: Verify security features
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check if Spark services are running
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: started
+      check_mode: true
+      register: service_status
+      failed_when: service_status.changed
+      loop:
+        - spark-master
+        - spark-worker
+      when: item in ansible_facts.services
+
+    - name: Verify SSL keystore exists
+      ansible.builtin.stat:
+        path: /etc/spark/ssl/spark-keystore.p12
+      register: keystore_stat
+      failed_when: not keystore_stat.stat.exists
+
+    - name: Verify security configuration in spark-defaults.conf
+      ansible.builtin.lineinfile:
+        path: /opt/spark/current/conf/spark-defaults.conf
+        line: "spark.authenticate                     true"
+        state: present
+      check_mode: true
+      register: auth_config
+      failed_when: auth_config.changed
+
+    - name: Check SSL configuration
+      ansible.builtin.lineinfile:
+        path: /opt/spark/current/conf/spark-defaults.conf
+        line: "spark.ssl.enabled                      true"
+        state: present
+      check_mode: true
+      register: ssl_config
+      failed_when: ssl_config.changed
+
+    - name: Verify ACL configuration
+      ansible.builtin.lineinfile:
+        path: /opt/spark/current/conf/spark-defaults.conf
+        line: "spark.acls.enable                      true"
+        state: present
+      check_mode: true
+      register: acl_config
+      failed_when: acl_config.changed
+
+    - name: Check health check script exists
+      ansible.builtin.stat:
+        path: /opt/spark/scripts/health_check.sh
+      register: health_script
+      failed_when: not health_script.stat.exists
+
+    - name: Verify health check script is executable
+      ansible.builtin.stat:
+        path: /opt/spark/scripts/health_check.sh
+      register: health_script_exec
+      failed_when: not health_script_exec.stat.executable
+
+    - name: Check Prometheus JMX exporter jar exists
+      ansible.builtin.stat:
+        path: /opt/spark/jars/jmx_prometheus_javaagent-0.19.0.jar
+      register: prometheus_jar
+      failed_when: not prometheus_jar.stat.exists
+
+    - name: Verify logrotate configuration
+      ansible.builtin.stat:
+        path: /etc/logrotate.d/spark
+      register: logrotate_config
+      failed_when: not logrotate_config.stat.exists
+
+    - name: Check backup script exists
+      ansible.builtin.stat:
+        path: /opt/spark/scripts/backup_spark.sh
+      register: backup_script
+      failed_when: not backup_script.stat.exists
+
+    - name: Verify JDBC driver directory exists
+      ansible.builtin.stat:
+        path: /opt/spark/jars/jdbc
+      register: jdbc_dir
+      failed_when: not jdbc_dir.stat.exists
+
+    - name: Run health check script
+      ansible.builtin.command: /opt/spark/scripts/health_check.sh
+      register: health_check_result
+      changed_when: false
+      failed_when: health_check_result.rc != 0
+
+    - name: Test backup script (dry run)
+      ansible.builtin.command: /bin/bash -n /opt/spark/scripts/backup_spark.sh
+      register: backup_test
+      changed_when: false
+      failed_when: backup_test.rc != 0
+
+    - name: Verify environment-specific configuration
+      ansible.builtin.lineinfile:
+        path: /opt/spark/current/conf/spark-defaults.conf
+        regexp: "^spark.executor.memory.*1g$"
+        state: present
+      check_mode: true
+      register: env_config
+      failed_when: env_config.changed

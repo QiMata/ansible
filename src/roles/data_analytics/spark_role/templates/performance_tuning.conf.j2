@@ -1,0 +1,54 @@
+# Performance Tuning Configuration for Spark
+# {{ ansible_managed }}
+
+{% set env_config = spark_role_environment_configs[spark_role_environment] | default({}) %}
+
+# Memory Management
+spark.executor.memory={{ env_config.worker_memory | default(spark_role_worker_memory) }}
+spark.driver.memory={{ env_config.driver_memory | default('1g') }}
+spark.executor.memoryFraction={{ env_config.memory_fraction | default('0.8') }}
+spark.storage.memoryFraction={{ env_config.storage_memory_fraction | default('0.6') }}
+
+# CPU Configuration
+spark.executor.cores={{ env_config.worker_cores | default(spark_role_worker_cores) }}
+spark.driver.cores={{ env_config.driver_cores | default('2') }}
+
+# Shuffle Configuration
+spark.sql.shuffle.partitions={{ env_config.shuffle_partitions | default('200') }}
+spark.shuffle.compress=true
+spark.shuffle.spill.compress=true
+spark.io.compression.codec=snappy
+
+# Serialization
+spark.serializer=org.apache.spark.serializer.KryoSerializer
+spark.kryo.registrationRequired=false
+spark.kryo.unsafe=true
+
+# Network Configuration
+spark.network.timeout={{ env_config.network_timeout | default('120s') }}
+spark.rpc.askTimeout={{ env_config.rpc_timeout | default('120s') }}
+spark.rpc.lookupTimeout={{ env_config.rpc_lookup_timeout | default('120s') }}
+
+# Dynamic Allocation (if enabled)
+{% if env_config.dynamic_allocation | default(false) %}
+spark.dynamicAllocation.enabled=true
+spark.dynamicAllocation.minExecutors={{ env_config.min_executors | default('1') }}
+spark.dynamicAllocation.maxExecutors={{ env_config.max_executors | default('10') }}
+spark.dynamicAllocation.initialExecutors={{ env_config.initial_executors | default('2') }}
+spark.shuffle.service.enabled=true
+{% else %}
+spark.dynamicAllocation.enabled=false
+{% endif %}
+
+# Garbage Collection Tuning
+spark.executor.extraJavaOptions=-XX:+UseG1GC -XX:+UseStringDeduplication -XX:MaxGCPauseMillis=200
+spark.driver.extraJavaOptions=-XX:+UseG1GC -XX:+UseStringDeduplication -XX:MaxGCPauseMillis=200
+
+# SQL Optimizations
+spark.sql.adaptive.enabled=true
+spark.sql.adaptive.coalescePartitions.enabled=true
+spark.sql.adaptive.skewJoin.enabled=true
+spark.sql.cbo.enabled=true
+
+# Logging Level
+spark.sql.adaptive.logLevel={{ env_config.log_level | default('WARN') }}

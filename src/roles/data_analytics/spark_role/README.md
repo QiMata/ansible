@@ -98,6 +98,234 @@ Below is a list of variables available for this role, along with their default v
 
 **Note:** The above defaults assume a basic cluster. In practice, you will likely adjust at least the memory and core settings for workers, and possibly enable the history server or HA depending on your use case. If you modify `spark_version` (and `spark_hadoop_version`), the `spark_download_url` and `spark_package_name` will automatically change accordingly (unless you override them explicitly). Always ensure that the combination of Spark version and Hadoop version you choose is available for download, or provide a custom `spark_download_url`. Also, if you use custom download URLs or local files, ensure the target hosts have access to those resources (e.g., place the file in an accessible location or use an internal web server).
 
+### Extended Security Configuration Variables
+
+| Variable                        | Default Value | Description                                                                                                                                                                                                  |
+| ------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `spark_role_security_enabled`   | false         | Enable Spark authentication using shared secrets. When true, configures `spark.authenticate=true` and generates/uses `spark_role_auth_secret`.                                                             |
+| `spark_role_auth_secret`        | ""            | Shared secret for Spark authentication. If empty and security is enabled, a random secret is generated.                                                                                                     |
+| `spark_role_ssl_enabled`        | false         | Enable SSL/TLS encryption for Spark communications and web UIs. Requires keystore configuration.                                                                                                            |
+| `spark_role_ssl_keystore_path`  | ""            | Path to SSL keystore file. If empty and SSL is enabled, a self-signed certificate is generated.                                                                                                             |
+| `spark_role_ssl_keystore_password` | ""         | Password for SSL keystore. Defaults to 'changeit' if not specified.                                                                                                                                         |
+| `spark_role_kerberos_enabled`   | false         | Enable Kerberos authentication for Spark cluster.                                                                                                                                                           |
+| `spark_role_kerberos_principal` | ""            | Kerberos principal for Spark services.                                                                                                                                                                      |
+| `spark_role_kerberos_keytab`    | ""            | Path to Kerberos keytab file for Spark authentication.                                                                                                                                                      |
+| `spark_role_acls_enabled`       | false         | Enable Access Control Lists for job submission and UI access.                                                                                                                                               |
+| `spark_role_admin_acls`         | ""            | Comma-separated list of users/groups with admin access to Spark cluster.                                                                                                                                    |
+| `spark_role_view_acls`          | ""            | Comma-separated list of users/groups with view access to Spark UI.                                                                                                                                          |
+
+### Monitoring and Health Check Variables
+
+| Variable                                   | Default Value | Description                                                                                                                                      |
+| ------------------------------------------ | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `spark_role_health_checks_enabled`        | true          | Enable systemd health checks and monitoring scripts for Spark services.                                                                         |
+| `spark_role_metrics_enabled`              | false         | Enable metrics collection for Spark cluster monitoring.                                                                                         |
+| `spark_role_jmx_enabled`                  | false         | Enable JMX metrics endpoint for Spark services.                                                                                                 |
+| `spark_role_jmx_port`                     | 7070          | Port for JMX metrics endpoint.                                                                                                                  |
+| `spark_role_prometheus_enabled`           | false         | Enable Prometheus JMX exporter for metrics collection.                                                                                          |
+| `spark_role_prometheus_jmx_exporter_version` | "0.19.0"   | Version of Prometheus JMX exporter to download and configure.                                                                                   |
+| `spark_role_prometheus_jmx_exporter_port`  | 7071         | Port for Prometheus JMX exporter to listen on.                                                                                                  |
+
+### Log Management Variables
+
+| Variable                           | Default Value | Description                                                                                                              |
+| ---------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `spark_role_log_rotation_enabled`  | true          | Enable automatic log rotation using logrotate for Spark log files.                                                      |
+| `spark_role_log_max_size`          | "100M"        | Maximum size for log files before rotation.                                                                             |
+| `spark_role_log_retention_days`    | 30            | Number of days to retain rotated log files.                                                                             |
+
+### Database Connectivity Variables
+
+| Variable                    | Default Value | Description                                                                                                                     |
+| --------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `spark_role_jdbc_drivers`   | []            | List of JDBC drivers to download and configure. Each item should have 'name', 'url', and optional 'driver_class' fields.     |
+
+### Performance and Resource Management Variables
+
+| Variable                                      | Default Value | Description                                                                                                      |
+| --------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `spark_role_performance_tuning_enabled`      | false         | Enable performance optimization configurations for Spark cluster.                                               |
+| `spark_role_resource_isolation_enabled`      | false         | Enable cgroup-based resource isolation for Spark processes.                                                     |
+| `spark_role_network_optimization_enabled`    | false         | Enable network performance tuning at the OS level.                                                              |
+| `spark_role_resource_quotas_enabled`         | false         | Enable per-user and per-queue resource quota management.                                                        |
+
+### Multi-Environment Configuration Variables
+
+| Variable                              | Default Value | Description                                                                                                                |
+| ------------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `spark_role_environment`             | "production"  | Environment name (development, staging, production) that determines which configuration set to use.                       |
+| `spark_role_environment_configs`     | {...}         | Dictionary of environment-specific configurations for memory, cores, and other settings.                                  |
+
+### Auto-scaling Variables
+
+| Variable                          | Default Value | Description                                                                                                            |
+| --------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `spark_role_autoscaling_enabled`  | false         | Enable auto-scaling capabilities (requires separate spark_autoscaling role).                                          |
+| `spark_role_min_workers`          | 1             | Minimum number of workers for auto-scaling.                                                                           |
+| `spark_role_max_workers`          | 10            | Maximum number of workers for auto-scaling.                                                                           |
+
+### Backup and Recovery Variables
+
+| Variable                              | Default Value      | Description                                                                                                       |
+| ------------------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `spark_role_backup_enabled`          | false              | Enable automated backup of Spark configuration and metadata.                                                     |
+| `spark_role_backup_dir`              | "/opt/spark/backups" | Directory to store Spark configuration backups.                                                                |
+| `spark_role_backup_retention_days`   | 30                 | Number of days to retain backup files.                                                                           |
+
+### Rolling Update Variables
+
+| Variable                              | Default Value | Description                                                                                                       |
+| ------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `spark_role_rolling_update_enabled`  | false         | Enable rolling update capabilities with zero-downtime deployments.                                               |
+| `spark_role_rolling_update_batch_size` | 1           | Number of workers to update simultaneously during rolling updates.                                                |
+
+</details>
+<!-- markdownlint-enable MD033 -->
+
+## Enhanced Security Features
+
+This role now includes comprehensive security features for enterprise deployments:
+
+### Authentication and Authorization
+- **Shared Secret Authentication**: Enable cluster-wide authentication with `spark_role_security_enabled: true`
+- **SSL/TLS Encryption**: Secure all communications with `spark_role_ssl_enabled: true`
+- **Kerberos Integration**: Enterprise authentication with `spark_role_kerberos_enabled: true`
+- **Access Control Lists**: Fine-grained permissions with `spark_role_acls_enabled: true`
+
+### SSL Configuration Example
+```yaml
+spark_role_ssl_enabled: true
+spark_role_ssl_keystore_path: "/etc/spark/ssl/spark-keystore.p12"
+spark_role_ssl_keystore_password: "your-secure-password"
+```
+
+### Kerberos Configuration Example
+```yaml
+spark_role_kerberos_enabled: true
+spark_role_kerberos_principal: "spark/hostname@REALM.COM"
+spark_role_kerberos_keytab: "/path/to/spark.keytab"
+```
+
+## Monitoring and Observability
+
+### Health Checks
+- Automated health monitoring with systemd integration
+- Comprehensive cluster health verification
+- Disk space, memory, and CPU monitoring
+- Alerting via email and system logs
+
+### Metrics Integration
+- Prometheus JMX exporter integration
+- Custom metrics collection for Spark applications
+- JVM and system metrics monitoring
+- Grafana-compatible metric formats
+
+### Log Management
+- Automatic log rotation with configurable retention
+- Centralized logging configuration
+- Error alerting and notification
+- Archive management
+
+## Performance and Resource Management
+
+### Performance Tuning
+- Environment-specific performance configurations
+- Automatic JVM tuning (G1GC, memory settings)
+- Network optimization (TCP settings)
+- Adaptive query execution optimization
+
+### Resource Isolation
+- Cgroup-based resource isolation
+- Per-user resource quotas
+- Queue-based resource allocation
+- Dynamic resource management
+
+### Multi-Environment Support
+```yaml
+spark_role_environment: "production"
+spark_role_environment_configs:
+  production:
+    worker_memory: "8g"
+    worker_cores: 4
+    log_level: "WARN"
+  staging:
+    worker_memory: "4g"
+    worker_cores: 2
+    log_level: "INFO"
+```
+
+## Database Connectivity
+
+### JDBC Driver Management
+```yaml
+spark_role_jdbc_drivers:
+  - name: "postgresql"
+    url: "https://jdbc.postgresql.org/download/postgresql-42.6.0.jar"
+    driver_class: "org.postgresql.Driver"
+  - name: "mysql"
+    url: "https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-8.0.33.jar"
+    driver_class: "com.mysql.cj.jdbc.Driver"
+```
+
+## Operational Features
+
+### Backup and Recovery
+- Automated configuration backups
+- Point-in-time recovery capabilities
+- Disaster recovery procedures
+- Backup retention management
+
+### Rolling Updates
+- Zero-downtime cluster updates
+- Pre and post-update validation
+- Batch-based worker updates
+- Automatic rollback on failure
+
+### Auto-scaling
+- Dynamic worker scaling based on load
+- Cloud provider integration (AWS, GCP, Azure, Proxmox)
+- Threshold-based scaling decisions
+- Cost optimization through intelligent scaling
+
+## Testing Instructions
+
+This role includes comprehensive test suites for different scenarios:
+
+### Security Testing
+```bash
+cd molecule/security
+molecule test
+```
+
+### Performance Testing
+```bash
+cd molecule/performance
+molecule test
+```
+
+### Integration Testing
+```bash
+cd molecule/integration
+molecule test
+```
+
+### Manual Testing
+After deployment, verify the enhanced features:
+
+```bash
+# Check health status
+sudo /opt/spark/scripts/health_check.sh
+
+# Test backup functionality
+sudo /opt/spark/scripts/backup_spark.sh
+
+# Verify metrics endpoint (if Prometheus enabled)
+curl http://localhost:7071/metrics
+
+# Check SSL certificate (if SSL enabled)
+openssl s_client -connect localhost:8080 -showcerts
+```
+
 ## Tags
 
 This role does **not define any specific Ansible tags** in its tasks. All tasks will run whenever the role is invoked (there are no task-level tags set by default). You can still apply tags externally when including the role in a play if you want to control execution with `--tags` or `--skip-tags`. For example, in a playbook you could tag the entire role invocation:

@@ -1,0 +1,41 @@
+#!/bin/bash
+# Pre-update Health Check Script
+# {{ ansible_managed }}
+
+echo "=== Pre-Update Health Check $(date) ==="
+
+# Check if cluster is healthy
+if ! /opt/spark/scripts/health_check.sh; then
+    echo "✗ Cluster is not healthy. Update should not proceed."
+    exit 1
+fi
+
+# Check for running applications
+RUNNING_APPS=$(curl -s http://localhost:8080/api/v1/applications?status=running 2>/dev/null | jq length 2>/dev/null || echo "0")
+if [ "$RUNNING_APPS" -gt 0 ]; then
+    echo "⚠ Warning: $RUNNING_APPS applications are currently running"
+    echo "Consider waiting for applications to complete or gracefully stop them"
+fi
+
+# Check disk space for update
+AVAILABLE_SPACE=$(df /opt | awk 'NR==2 {print $4}')
+REQUIRED_SPACE=1048576  # 1GB in KB
+if [ "$AVAILABLE_SPACE" -lt "$REQUIRED_SPACE" ]; then
+    echo "✗ Insufficient disk space for update. Available: ${AVAILABLE_SPACE}KB, Required: ${REQUIRED_SPACE}KB"
+    exit 1
+fi
+
+# Check if backup exists
+LATEST_BACKUP=$(ls -t {{ spark_role_backup_dir }}/*.tar.gz 2>/dev/null | head -1)
+if [ -z "$LATEST_BACKUP" ]; then
+    echo "⚠ Warning: No recent backup found. Consider creating a backup before update."
+fi
+
+# Check memory usage
+MEMORY_USAGE=$(free | awk 'NR==2{printf "%.0f", $3*100/$2}')
+if [ "$MEMORY_USAGE" -gt 90 ]; then
+    echo "⚠ Warning: High memory usage (${MEMORY_USAGE}%). Consider restarting services before update."
+fi
+
+echo "✓ Pre-update checks completed successfully"
+exit 0

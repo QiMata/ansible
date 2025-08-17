@@ -1,0 +1,39 @@
+# Logrotate configuration for Spark
+# {{ ansible_managed }}
+
+{{ spark_role_log_dir }}/*.log {
+    daily
+    missingok
+    rotate 30
+    compress
+    delaycompress
+    notifempty
+    copytruncate
+    size {{ spark_role_log_max_size }}
+    maxage {{ spark_role_log_retention_days }}
+    create 0644 {{ spark_role_user }} {{ spark_role_group }}
+}
+
+{{ spark_role_log_dir }}/*.out {
+    daily
+    missingok
+    rotate 30
+    compress
+    delaycompress
+    notifempty
+    copytruncate
+    size {{ spark_role_log_max_size }}
+    maxage {{ spark_role_log_retention_days }}
+    create 0644 {{ spark_role_user }} {{ spark_role_group }}
+}
+
+{{ spark_role_eventlog_dir }}/* {
+    weekly
+    missingok
+    rotate 12
+    compress
+    delaycompress
+    notifempty
+    maxage 90
+    create 0644 {{ spark_role_user }} {{ spark_role_group }}
+}
