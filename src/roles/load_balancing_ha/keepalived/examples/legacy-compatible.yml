@@ -1,0 +1,19 @@
+---
+# Legacy backward-compatible configuration
+# This shows how existing configurations continue to work
+
+- name: Deploy Legacy Keepalived Configuration
+  hosts: loadbalancers
+  become: true
+  vars:
+    # Legacy variables (still supported)
+    keepalived_state: "{{ 'MASTER' if inventory_hostname == groups['loadbalancers'][0] else 'BACKUP' }}"
+    keepalived_priority: "{{ 150 if inventory_hostname == groups['loadbalancers'][0] else 100 }}"
+    keepalived_interface: eth0
+    keepalived_router_id: 51
+    keepalived_virtual_ip: 192.168.50.100
+    keepalived_virtual_cidr: 32
+    keepalived_auth_pass: vrrp_secret
+
+  roles:
+    - role: keepalived

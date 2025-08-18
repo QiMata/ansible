@@ -1,0 +1,6 @@
+---
+- name: Converge Unicast Mode
+  hosts: unicast_cluster
+  become: true
+  roles:
+    - role: keepalived

@@ -1,0 +1,32 @@
+---
+- name: Verify Unicast Configuration
+  hosts: unicast_cluster
+  gather_facts: true
+  tasks:
+    - name: Read keepalived configuration
+      ansible.builtin.slurp:
+        path: /etc/keepalived/keepalived.conf
+      register: unicast_conf
+
+    - name: Assert unicast configuration
+      ansible.builtin.assert:
+        that:
+          - "'unicast_src_ip' in (unicast_conf.content | b64decode)"
+          - "'unicast_peer' in (unicast_conf.content | b64decode)"
+          - "'172.21.0.100' in (unicast_conf.content | b64decode)"
+          - "'VI_UNICAST' in (unicast_conf.content | b64decode)"
+
+    - name: Verify unicast peers configuration
+      ansible.builtin.assert:
+        that:
+          - "'172.21.0.10' in (unicast_conf.content | b64decode)"
+          - "'172.21.0.11' in (unicast_conf.content | b64decode)"
+
+    - name: Check service status
+      ansible.builtin.service_facts:
+
+    - name: Assert keepalived is running
+      ansible.builtin.assert:
+        that:
+          - "'keepalived.service' in ansible_facts.services"
+          - ansible_facts.services['keepalived.service'].state == 'running'

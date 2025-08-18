@@ -1,0 +1,15 @@
+---
+# RedHat/CentOS specific variables
+keepalived_package_dependencies:
+  - iproute
+  - iputils
+  - net-tools
+
+keepalived_service_manager: systemd
+
+# Network configuration paths
+keepalived_network_scripts_path: /etc/sysconfig/network-scripts
+
+# Log paths
+keepalived_default_log_path: /var/log/keepalived.log
+keepalived_syslog_facility: daemon

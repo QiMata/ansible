@@ -1,7 +1,7 @@
 ---
-- name: Verify
-  hosts: all
-  gather_facts: false
+- name: Verify Basic Installation
+  hosts: keepalived_cluster
+  gather_facts: true
   tasks:
     - name: Ensure keepalived package installed
       ansible.builtin.package:
@@ -27,5 +27,137 @@
     - name: Assert VIP configured
       ansible.builtin.assert:
         that:
-          - "'10.10.10.10' in (keepalived_conf.content | b64decode)"
-          - "'state MASTER' in (keepalived_conf.content | b64decode)"
+          - "'172.20.0.100' in (keepalived_conf.content | b64decode)"
+          - "'virtual_router_id 51' in (keepalived_conf.content | b64decode)"
+
+    - name: Verify backup configuration
+      ansible.builtin.stat:
+        path: /etc/keepalived/backup
+      register: backup_dir
+
+    - name: Assert backup directory exists
+      ansible.builtin.assert:
+        that:
+          - backup_dir.stat.exists
+          - backup_dir.stat.isdir
+
+    - name: Verify syslog configuration
+      ansible.builtin.stat:
+        path: /etc/rsyslog.d/49-keepalived.conf
+      register: syslog_conf
+
+    - name: Assert syslog configuration exists
+      ansible.builtin.assert:
+        that:
+          - syslog_conf.stat.exists
+
+- name: Verify Advanced Features
+  hosts: ubuntu_test
+  gather_facts: true
+  tasks:
+    - name: Read advanced configuration
+      ansible.builtin.slurp:
+        path: /etc/keepalived/keepalived.conf
+      register: advanced_conf
+
+    - name: Assert advanced features configured
+      ansible.builtin.assert:
+        that:
+          - "'VI_ADVANCED' in (advanced_conf.content | b64decode)"
+          - "'unicast_src_ip' in (advanced_conf.content | b64decode)"
+          - "'172.20.0.200' in (advanced_conf.content | b64decode)"
+          - "'2001:db8::100' in (advanced_conf.content | b64decode)"
+          - "'vrrp_script check_web_service' in (advanced_conf.content | b64decode)"
+          - "'nopreempt' in (advanced_conf.content | b64decode)"
+
+    - name: Verify custom scripts exist
+      ansible.builtin.stat:
+        path: "/etc/keepalived/scripts/{{ item }}"
+      register: custom_scripts
+      loop:
+        - check_web.sh
+        - notify_master.sh
+        - notify_backup.sh
+
+    - name: Assert custom scripts are present and executable
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.executable
+      loop: "{{ custom_scripts.results }}"
+
+    - name: Verify scripts directory
+      ansible.builtin.stat:
+        path: /etc/keepalived/scripts
+      register: scripts_dir
+
+    - name: Assert scripts directory exists
+      ansible.builtin.assert:
+        that:
+          - scripts_dir.stat.exists
+          - scripts_dir.stat.isdir
+
+    - name: Test configuration validation
+      ansible.builtin.shell: |
+        keepalived -t -f /etc/keepalived/keepalived.conf
+      register: config_validation
+      failed_when: config_validation.rc != 0
+
+    - name: Assert configuration is valid
+      ansible.builtin.assert:
+        that:
+          - config_validation.rc == 0
+
+- name: Verify State Differences
+  hosts: keepalived_cluster
+  gather_facts: false
+  tasks:
+    - name: Read master configuration
+      ansible.builtin.slurp:
+        path: /etc/keepalived/keepalived.conf
+      register: config_content
+      when: inventory_hostname in groups['masters']
+
+    - name: Assert master state
+      ansible.builtin.assert:
+        that:
+          - "'state MASTER' in (config_content.content | b64decode)"
+          - "'priority 150' in (config_content.content | b64decode)"
+      when: inventory_hostname in groups['masters']
+
+    - name: Read backup configuration
+      ansible.builtin.slurp:
+        path: /etc/keepalived/keepalived.conf
+      register: backup_config_content
+      when: inventory_hostname in groups['backups']
+
+    - name: Assert backup state
+      ansible.builtin.assert:
+        that:
+          - "'state BACKUP' in (backup_config_content.content | b64decode)"
+          - "'priority 100' in (backup_config_content.content | b64decode)"
+      when: inventory_hostname in groups['backups']
+
+- name: Verify IPv6 Support
+  hosts: ubuntu_test
+  gather_facts: true
+  tasks:
+    - name: Check IPv6 forwarding
+      ansible.builtin.shell: |
+        sysctl net.ipv6.conf.all.forwarding
+      register: ipv6_forwarding
+
+    - name: Assert IPv6 forwarding is enabled
+      ansible.builtin.assert:
+        that:
+          - "'net.ipv6.conf.all.forwarding = 1' in ipv6_forwarding.stdout"
+
+    - name: Check IPv4 forwarding
+      ansible.builtin.shell: |
+        sysctl net.ipv4.ip_forward
+      register: ipv4_forwarding
+
+    - name: Assert IPv4 forwarding is enabled
+      ansible.builtin.assert:
+        that:
+          - "'net.ipv4.ip_forward = 1' in ipv4_forwarding.stdout"

@@ -1,7 +1,35 @@
 ---
+# Package and service configuration
 keepalived_package_name: keepalived
 keepalived_service_name: keepalived
 
+# Global keepalived configuration
+keepalived_global_defs:
+  notification_email: []
+  notification_email_from: "keepalived@{{ ansible_fqdn }}"
+  smtp_server: 127.0.0.1
+  smtp_connect_timeout: 30
+  router_id: "{{ ansible_hostname }}"
+  enable_traps: false
+
+# Logging configuration
+keepalived_enable_syslog: true
+keepalived_log_level: "INFO"  # DEBUG, INFO, NOTICE, WARNING, ERR, CRIT, ALERT, EMERG
+keepalived_log_facility: "daemon"
+keepalived_log_file: ""  # Empty means use syslog, otherwise specify file path
+
+# Configuration backup and validation
+keepalived_backup_config: true
+keepalived_backup_dir: "/etc/keepalived/backup"
+keepalived_validate_config: true
+
+# Multi-distribution support
+keepalived_packages:
+  RedHat: keepalived
+  Debian: keepalived
+  Suse: keepalived
+
+# Legacy single instance variables (for backward compatibility)
 keepalived_state: BACKUP
 keepalived_priority: 100
 keepalived_interface: eth0
@@ -9,3 +37,103 @@ keepalived_router_id: 51
 keepalived_virtual_ip: 192.168.50.100
 keepalived_virtual_cidr: 32
 keepalived_auth_pass: vrrp_secret
+
+# New comprehensive VRRP instances configuration
+keepalived_vrrp_instances: []
+  # Example structure:
+  # - name: "VI_1"
+  #   state: "MASTER"
+  #   interface: "eth0"
+  #   virtual_router_id: 51
+  #   priority: 150
+  #   advert_int: 1
+  #   master_down_interval: null
+  #   preempt: true
+  #   preempt_delay: 0
+  #   debug: false
+  #   # Network mode configuration
+  #   use_vmac: false
+  #   vmac_xmit_base: false
+  #   unicast_src_ip: ""
+  #   unicast_peers: []
+  #   # Authentication
+  #   authentication:
+  #     auth_type: "PASS"  # PASS, AH, or null for no auth
+  #     auth_pass: "secret"
+  #     ah_key: ""  # For AH authentication
+  #   # Virtual IPs (supports both IPv4 and IPv6)
+  #   virtual_ipaddresses:
+  #     - ip: "192.168.1.100"
+  #       cidr: 32
+  #       dev: ""  # Optional device override
+  #       scope: ""  # Optional scope
+  #       label: ""  # Optional label
+  #   virtual_ipaddresses_excluded: []
+  #   # Virtual routes
+  #   virtual_routes: []
+  #   # Health checking
+  #   track_interfaces: []
+  #   track_scripts: []
+  #   # Notification scripts
+  #   notify_master: ""
+  #   notify_backup: ""
+  #   notify_fault: ""
+  #   notify_stop: ""
+  #   notify: ""
+  #   smtp_alert: false
+
+# VRRP Scripts for health checking
+keepalived_vrrp_scripts: []
+  # Example structure:
+  # - name: "check_service"
+  #   script: "/usr/local/bin/check_service.sh"
+  #   interval: 2
+  #   timeout: 3
+  #   weight: -10  # Negative weight reduces priority on failure
+  #   fall: 3
+  #   rise: 2
+  #   user: "root"
+  #   init_fail: false
+
+# VRRP Sync Groups
+keepalived_vrrp_sync_groups: []
+  # Example structure:
+  # - name: "VG_1"
+  #   instances:
+  #     - "VI_1"
+  #     - "VI_2"
+  #   notify_master: ""
+  #   notify_backup: ""
+  #   notify_fault: ""
+  #   notify: ""
+  #   smtp_alert: false
+
+# Health check scripts directory
+keepalived_scripts_dir: "/etc/keepalived/scripts"
+keepalived_custom_scripts: []
+  # Example structure:
+  # - name: "check_nginx.sh"
+  #   content: |
+  #     #!/bin/bash
+  #     curl -f http://localhost/ >/dev/null 2>&1
+  #   mode: "0755"
+  #   owner: "root"
+  #   group: "root"
+
+# Monitoring and metrics
+keepalived_enable_snmp: false
+keepalived_snmp_socket: "unix:/tmp/keepalived.sock"
+keepalived_enable_data_dump: false
+keepalived_data_dump_file: "/tmp/keepalived.data"
+
+# IPv6 support
+keepalived_enable_ipv6: false
+
+# VLAN interface support
+keepalived_create_vlan_interfaces: false
+keepalived_vlan_interfaces: []
+  # Example structure:
+  # - name: "eth0.100"
+  #   device: "eth0"
+  #   vlan_id: 100
+  #   ip: "192.168.100.10/24"

@@ -1,0 +1,234 @@
+---
+# Example playbook demonstrating all keepalived role features
+# This playbook shows how to configure a comprehensive keepalived setup
+# with multiple VRRP instances, health checks, and advanced features
+
+- name: Deploy Keepalived with Advanced Features
+  hosts: loadbalancers
+  become: true
+  vars:
+    # Global configuration
+    keepalived_global_defs:
+      notification_email: 
+        - admin@example.com
+        - ops@example.com
+      notification_email_from: "keepalived@{{ ansible_fqdn }}"
+      smtp_server: "mail.example.com"
+      smtp_connect_timeout: 30
+      router_id: "{{ ansible_hostname }}"
+      enable_traps: true
+
+    # Enable advanced features
+    keepalived_validate_config: true
+    keepalived_backup_config: true
+    keepalived_enable_syslog: true
+    keepalived_log_level: "INFO"
+    keepalived_enable_ipv6: true
+    keepalived_enable_snmp: true
+
+    # Multiple VRRP instances for different services
+    keepalived_vrrp_instances:
+      # Web service cluster
+      - name: "VI_WEB"
+        state: "{{ 'MASTER' if inventory_hostname == groups['loadbalancers'][0] else 'BACKUP' }}"
+        interface: "{{ ansible_default_ipv4.interface }}"
+        virtual_router_id: 51
+        priority: "{{ 150 if inventory_hostname == groups['loadbalancers'][0] else 100 }}"
+        advert_int: 1
+        preempt: true
+        preempt_delay: 5
+        # Unicast mode for cloud environments
+        unicast_src_ip: "{{ ansible_default_ipv4.address }}"
+        unicast_peers: "{{ groups['loadbalancers'] | map('extract', hostvars, 'ansible_default_ipv4') | map(attribute='address') | list }}"
+        authentication:
+          auth_type: "PASS"
+          auth_pass: "web_cluster_secret"
+        virtual_ipaddresses:
+          - ip: "192.168.1.100"
+            cidr: 32
+        track_scripts:
+          - "check_nginx"
+          - "check_haproxy"
+        notify_master: "/etc/keepalived/scripts/web_master.sh"
+        notify_backup: "/etc/keepalived/scripts/web_backup.sh"
+        notify_fault: "/etc/keepalived/scripts/web_fault.sh"
+
+      # Database service cluster  
+      - name: "VI_DB"
+        state: "{{ 'MASTER' if inventory_hostname == groups['loadbalancers'][1] else 'BACKUP' }}"
+        interface: "{{ ansible_default_ipv4.interface }}"
+        virtual_router_id: 52
+        priority: "{{ 150 if inventory_hostname == groups['loadbalancers'][1] else 100 }}"
+        advert_int: 2
+        preempt: false  # Non-preemptive mode
+        unicast_src_ip: "{{ ansible_default_ipv4.address }}"
+        unicast_peers: "{{ groups['loadbalancers'] | map('extract', hostvars, 'ansible_default_ipv4') | map(attribute='address') | list }}"
+        authentication:
+          auth_type: "PASS"
+          auth_pass: "db_cluster_secret"
+        virtual_ipaddresses:
+          - ip: "192.168.1.101"
+            cidr: 32
+          - ip: "2001:db8::101"  # IPv6 support
+            cidr: 128
+        track_scripts:
+          - "check_postgresql"
+        track_interfaces:
+          - name: "{{ ansible_default_ipv4.interface }}"
+            weight: -10
+
+      # Management interface (no authentication)
+      - name: "VI_MGMT"
+        state: "BACKUP"
+        interface: "{{ ansible_default_ipv4.interface }}"
+        virtual_router_id: 53
+        priority: 90
+        advert_int: 3
+        authentication:
+          auth_type: null  # No authentication
+        virtual_ipaddresses:
+          - ip: "192.168.1.102"
+            cidr: 32
+
+    # Health check scripts
+    keepalived_vrrp_scripts:
+      - name: "check_nginx"
+        script: "/etc/keepalived/scripts/check_nginx.sh"
+        interval: 2
+        timeout: 3
+        weight: -10
+        fall: 3
+        rise: 2
+        user: "root"
+
+      - name: "check_haproxy"
+        script: "/etc/keepalived/scripts/check_haproxy.sh"
+        interval: 3
+        timeout: 5
+        weight: -15
+        fall: 2
+        rise: 1
+
+      - name: "check_postgresql"
+        script: "/etc/keepalived/scripts/check_postgresql.sh"
+        interval: 5
+        timeout: 10
+        weight: -20
+        fall: 3
+        rise: 2
+
+    # Sync groups for coordinated failover
+    keepalived_vrrp_sync_groups:
+      - name: "MAIN_SERVICES"
+        instances:
+          - "VI_WEB"
+          - "VI_DB"
+        notify_master: "/etc/keepalived/scripts/services_master.sh"
+        notify_backup: "/etc/keepalived/scripts/services_backup.sh"
+        smtp_alert: true
+
+    # Custom health check and notification scripts
+    keepalived_custom_scripts:
+      - name: "check_nginx.sh"
+        content: |
+          #!/bin/bash
+          # Check if nginx is running and responding
+          if ! pgrep nginx > /dev/null; then
+              exit 1
+          fi
+          curl -f http://localhost:80/health > /dev/null 2>&1
+        mode: "0755"
+
+      - name: "check_haproxy.sh"
+        content: |
+          #!/bin/bash
+          # Check HAProxy stats page
+          curl -f http://localhost:8080/stats > /dev/null 2>&1
+        mode: "0755"
+
+      - name: "check_postgresql.sh"
+        content: |
+          #!/bin/bash
+          # Check PostgreSQL connectivity
+          pg_isready -h localhost -p 5432 > /dev/null 2>&1
+        mode: "0755"
+
+      - name: "web_master.sh"
+        content: |
+          #!/bin/bash
+          # Actions when web VIP becomes master
+          echo "$(date): Web service became MASTER on $(hostname)" >> /var/log/keepalived_web.log
+          # Start additional services, update DNS, etc.
+          systemctl start nginx
+          # Send notification
+          curl -X POST "{{ slack_webhook_url | default('') }}" \
+               -H 'Content-type: application/json' \
+               --data '{"text":"Web VIP active on $(hostname)"}'
+        mode: "0755"
+
+      - name: "web_backup.sh"
+        content: |
+          #!/bin/bash
+          # Actions when web VIP becomes backup
+          echo "$(date): Web service became BACKUP on $(hostname)" >> /var/log/keepalived_web.log
+        mode: "0755"
+
+      - name: "web_fault.sh"
+        content: |
+          #!/bin/bash
+          # Actions when web VIP has a fault
+          echo "$(date): Web service FAULT on $(hostname)" >> /var/log/keepalived_web.log
+          # Send alert
+          curl -X POST "{{ slack_webhook_url | default('') }}" \
+               -H 'Content-type: application/json' \
+               --data '{"text":"ALERT: Web VIP fault on $(hostname)"}'
+        mode: "0755"
+
+      - name: "services_master.sh"
+        content: |
+          #!/bin/bash
+          # Actions when service group becomes master
+          echo "$(date): Service group became MASTER on $(hostname)" >> /var/log/keepalived_services.log
+          # Enable all services
+          systemctl start nginx haproxy postgresql
+        mode: "0755"
+
+      - name: "services_backup.sh"
+        content: |
+          #!/bin/bash
+          # Actions when service group becomes backup
+          echo "$(date): Service group became BACKUP on $(hostname)" >> /var/log/keepalived_services.log
+          # Optionally stop services or switch to read-only mode
+        mode: "0755"
+
+  roles:
+    - role: keepalived
+
+  post_tasks:
+    - name: Create keepalived log files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: touch
+        owner: root
+        group: root
+        mode: "0644"
+      loop:
+        - /var/log/keepalived_web.log
+        - /var/log/keepalived_services.log
+
+    - name: Setup logrotate for keepalived logs
+      ansible.builtin.copy:
+        content: |
+          /var/log/keepalived*.log {
+              daily
+              missingok
+              rotate 30
+              compress
+              delaycompress
+              notifempty
+              create 644 root root
+          }
+        dest: /etc/logrotate.d/keepalived-custom
+        owner: root
+        group: root
+        mode: "0644"

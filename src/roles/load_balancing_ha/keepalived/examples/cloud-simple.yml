@@ -1,0 +1,59 @@
+---
+# Simple cloud-ready keepalived setup for AWS/Azure/GCP
+# This example uses unicast mode which works in cloud environments
+
+- name: Deploy Cloud-Ready Keepalived
+  hosts: loadbalancers
+  become: true
+  vars:
+    # Cloud-specific configuration
+    keepalived_vrrp_instances:
+      - name: "VI_CLOUD"
+        state: "{{ 'MASTER' if inventory_hostname == groups['loadbalancers'][0] else 'BACKUP' }}"
+        interface: "{{ ansible_default_ipv4.interface }}"
+        virtual_router_id: 51
+        priority: "{{ 150 if inventory_hostname == groups['loadbalancers'][0] else 100 }}"
+        advert_int: 1
+        preempt: true
+        # Critical: Use unicast for cloud environments
+        unicast_src_ip: "{{ ansible_default_ipv4.address }}"
+        unicast_peers: "{{ groups['loadbalancers'] | map('extract', hostvars, 'ansible_default_ipv4') | map(attribute='address') | list }}"
+        # Simplified authentication
+        authentication:
+          auth_type: "PASS"
+          auth_pass: "{{ keepalived_password }}"
+        # Cloud provider virtual IP (configure in cloud console)
+        virtual_ipaddresses:
+          - ip: "{{ cloud_vip }}"
+            cidr: 32
+        # Health check for cloud load balancer
+        track_scripts:
+          - "check_app_health"
+
+    keepalived_vrrp_scripts:
+      - name: "check_app_health"
+        script: "/etc/keepalived/scripts/health_check.sh"
+        interval: 5
+        timeout: 3
+        weight: -50
+        fall: 2
+        rise: 1
+
+    keepalived_custom_scripts:
+      - name: "health_check.sh"
+        content: |
+          #!/bin/bash
+          # Simple health check for cloud environments
+          # Check if application port is responding
+          nc -z localhost {{ app_port | default('80') }} || exit 1
+          # Additional checks can be added here
+          exit 0
+        mode: "0755"
+
+    # Enable validation and logging
+    keepalived_validate_config: true
+    keepalived_enable_syslog: true
+    keepalived_log_level: "INFO"
+
+  roles:
+    - role: keepalived

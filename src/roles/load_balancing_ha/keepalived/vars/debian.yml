@@ -1,0 +1,16 @@
+---
+# Debian/Ubuntu specific variables
+keepalived_package_dependencies:
+  - iproute2
+  - iputils-ping
+  - net-tools
+
+keepalived_service_manager: systemd
+
+# Network configuration paths
+keepalived_netplan_path: /etc/netplan
+keepalived_network_scripts_path: /etc/network/interfaces.d
+
+# Log paths
+keepalived_default_log_path: /var/log/keepalived.log
+keepalived_syslog_facility: daemon

@@ -1,11 +1,119 @@
 ---
-- name: Install keepalived
+# Include OS-specific variables
+- name: Include OS-specific variables
+  ansible.builtin.include_vars: "{{ ansible_facts.os_family | lower }}.yml"
+  failed_when: false
+  tags:
+    - keepalived
+    - install
+
+# Package installation tasks
+- name: Install keepalived on Debian/Ubuntu
   ansible.builtin.apt:
-    name: "{{ keepalived_package_name }}"
+    name: "{{ keepalived_packages.Debian | default(keepalived_package_name) }}"
     state: present
+    update_cache: true
   become: true
   when: ansible_facts.os_family == 'Debian'
+  tags:
+    - keepalived
+    - install
 
+- name: Install keepalived on RedHat/CentOS
+  ansible.builtin.yum:
+    name: "{{ keepalived_packages.RedHat | default(keepalived_package_name) }}"
+    state: present
+  become: true
+  when: ansible_facts.os_family == 'RedHat'
+  tags:
+    - keepalived
+    - install
+
+- name: Install keepalived on SUSE
+  ansible.builtin.zypper:
+    name: "{{ keepalived_packages.Suse | default(keepalived_package_name) }}"
+    state: present
+  become: true
+  when: ansible_facts.os_family == 'Suse'
+  tags:
+    - keepalived
+    - install
+
+# Directory creation
+- name: Create keepalived configuration directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /etc/keepalived
+    - "{{ keepalived_scripts_dir }}"
+    - "{{ keepalived_backup_dir }}"
+  when: keepalived_backup_config or keepalived_custom_scripts | length > 0
+  tags:
+    - keepalived
+    - config
+
+# VLAN interface configuration
+- name: Configure VLAN interfaces
+  ansible.builtin.template:
+    src: vlan-interface.j2
+    dest: "/etc/netplan/99-keepalived-vlans.yaml"
+    owner: root
+    group: root
+    mode: "0644"
+  when: 
+    - keepalived_create_vlan_interfaces
+    - keepalived_vlan_interfaces | length > 0
+    - ansible_facts.os_family == 'Debian'
+  notify: apply netplan
+  tags:
+    - keepalived
+    - network
+    - vlan
+
+# Backup existing configuration
+- name: Backup existing keepalived configuration
+  ansible.builtin.copy:
+    src: /etc/keepalived/keepalived.conf
+    dest: "{{ keepalived_backup_dir }}/keepalived.conf.{{ ansible_date_time.epoch }}"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0644"
+  when: 
+    - keepalived_backup_config
+    - ansible_stat.stat.exists is defined and ansible_stat.stat.exists
+  failed_when: false
+  tags:
+    - keepalived
+    - backup
+
+- name: Check if keepalived config exists
+  ansible.builtin.stat:
+    path: /etc/keepalived/keepalived.conf
+  register: ansible_stat
+  tags:
+    - keepalived
+    - backup
+
+# Deploy custom health check scripts
+- name: Deploy custom health check scripts
+  ansible.builtin.copy:
+    content: "{{ item.content }}"
+    dest: "{{ keepalived_scripts_dir }}/{{ item.name }}"
+    owner: "{{ item.owner | default('root') }}"
+    group: "{{ item.group | default('root') }}"
+    mode: "{{ item.mode | default('0755') }}"
+  loop: "{{ keepalived_custom_scripts }}"
+  when: keepalived_custom_scripts | length > 0
+  tags:
+    - keepalived
+    - scripts
+
+# Deploy main keepalived configuration
 - name: Deploy keepalived configuration
   ansible.builtin.template:
     src: keepalived.conf.j2
@@ -13,10 +121,115 @@
     owner: root
     group: root
     mode: "0644"
+    backup: "{{ keepalived_backup_config }}"
   notify: restart keepalived
+  register: keepalived_config_result
+  tags:
+    - keepalived
+    - config
 
+# Configuration validation
+- name: Validate keepalived configuration
+  ansible.builtin.shell: |
+    keepalived -t -f /etc/keepalived/keepalived.conf
+  register: keepalived_validation
+  failed_when: keepalived_validation.rc != 0
+  when: keepalived_validate_config
+  changed_when: false
+  tags:
+    - keepalived
+    - validate
+
+- name: Display validation results
+  ansible.builtin.debug:
+    msg: "Keepalived configuration validation: {{ keepalived_validation.stdout | default('OK') }}"
+  when: 
+    - keepalived_validate_config
+    - keepalived_validation is defined
+  tags:
+    - keepalived
+    - validate
+
+# Logging configuration
+- name: Configure rsyslog for keepalived
+  ansible.builtin.template:
+    src: rsyslog-keepalived.conf.j2
+    dest: /etc/rsyslog.d/49-keepalived.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: keepalived_enable_syslog
+  notify: restart rsyslog
+  tags:
+    - keepalived
+    - logging
+
+# SNMP configuration
+- name: Enable SNMP support
+  ansible.builtin.template:
+    src: keepalived-snmp.conf.j2
+    dest: /etc/snmp/keepalived.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: keepalived_enable_snmp
+  notify: restart snmpd
+  tags:
+    - keepalived
+    - snmp
+
+# Service management
 - name: Enable and start keepalived
   ansible.builtin.service:
     name: "{{ keepalived_service_name }}"
     state: started
     enabled: true
+  tags:
+    - keepalived
+    - service
+
+# IPv6 support
+- name: Enable IPv6 forwarding
+  ansible.posix.sysctl:
+    name: net.ipv6.conf.all.forwarding
+    value: "1"
+    state: present
+    reload: true
+  when: keepalived_enable_ipv6
+  tags:
+    - keepalived
+    - ipv6
+
+- name: Enable IPv4 forwarding
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: "1"
+    state: present
+    reload: true
+  tags:
+    - keepalived
+    - network
+
+# Monitoring setup
+- name: Create monitoring script for keepalived
+  ansible.builtin.template:
+    src: monitor-keepalived.sh.j2
+    dest: /usr/local/bin/monitor-keepalived.sh
+    owner: root
+    group: root
+    mode: "0755"
+  when: keepalived_enable_data_dump
+  tags:
+    - keepalived
+    - monitoring
+
+- name: Setup keepalived monitoring cron job
+  ansible.builtin.cron:
+    name: "Monitor keepalived status"
+    minute: "*/5"
+    job: "/usr/local/bin/monitor-keepalived.sh >> {{ keepalived_data_dump_file }} 2>&1"
+    user: root
+  when: keepalived_enable_data_dump
+  tags:
+    - keepalived
+    - monitoring

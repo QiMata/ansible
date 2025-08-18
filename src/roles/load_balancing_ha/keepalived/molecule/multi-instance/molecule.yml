@@ -1,0 +1,108 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: multi-instance-node
+    image: geerlingguy/docker-debian12-ansible:latest
+    command: /lib/systemd/systemd
+    privileged: true
+    pre_build_image: true
+    capabilities:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - name: multi-test
+        ipv4_address: 172.22.0.10
+    groups:
+      - multi_instance
+provisioner:
+  name: ansible
+  inventory:
+    group_vars:
+      multi_instance:
+        keepalived_vrrp_instances:
+          - name: "VI_WEB"
+            state: "MASTER"
+            interface: "eth0"
+            virtual_router_id: 60
+            priority: 150
+            advert_int: 1
+            authentication:
+              auth_type: "PASS"
+              auth_pass: "web_cluster"
+            virtual_ipaddresses:
+              - ip: "172.22.0.200"
+                cidr: 32
+            track_scripts:
+              - "check_web"
+          - name: "VI_DB"
+            state: "MASTER"
+            interface: "eth0"
+            virtual_router_id: 61
+            priority: 140
+            advert_int: 2
+            authentication:
+              auth_type: "PASS"
+              auth_pass: "db_cluster"
+            virtual_ipaddresses:
+              - ip: "172.22.0.201"
+                cidr: 32
+            track_scripts:
+              - "check_db"
+          - name: "VI_NO_AUTH"
+            state: "MASTER"
+            interface: "eth0"
+            virtual_router_id: 62
+            priority: 130
+            authentication:
+              auth_type: null
+            virtual_ipaddresses:
+              - ip: "172.22.0.202"
+                cidr: 32
+        keepalived_vrrp_scripts:
+          - name: "check_web"
+            script: "/etc/keepalived/scripts/check_web.sh"
+            interval: 2
+            timeout: 1
+            weight: -20
+            fall: 2
+            rise: 1
+          - name: "check_db"
+            script: "/etc/keepalived/scripts/check_db.sh"
+            interval: 5
+            timeout: 3
+            weight: -30
+            fall: 3
+            rise: 2
+        keepalived_vrrp_sync_groups:
+          - name: "SERVICES_GROUP"
+            instances:
+              - "VI_WEB"
+              - "VI_DB"
+            notify_master: "/etc/keepalived/scripts/services_master.sh"
+            notify_backup: "/etc/keepalived/scripts/services_backup.sh"
+        keepalived_custom_scripts:
+          - name: "check_web.sh"
+            content: |
+              #!/bin/bash
+              curl -f http://localhost:80/ >/dev/null 2>&1
+            mode: "0755"
+          - name: "check_db.sh"
+            content: |
+              #!/bin/bash
+              nc -z localhost 5432
+            mode: "0755"
+          - name: "services_master.sh"
+            content: |
+              #!/bin/bash
+              echo "$(date): Services group became MASTER" >> /var/log/keepalived_services.log
+            mode: "0755"
+          - name: "services_backup.sh"
+            content: |
+              #!/bin/bash
+              echo "$(date): Services group became BACKUP" >> /var/log/keepalived_services.log
+            mode: "0755"
+verifier:
+  name: ansible

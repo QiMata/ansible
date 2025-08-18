@@ -1,0 +1,57 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: unicast-master
+    image: geerlingguy/docker-debian12-ansible:latest
+    command: /lib/systemd/systemd
+    privileged: true
+    pre_build_image: true
+    capabilities:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - name: unicast-test
+        ipv4_address: 172.21.0.10
+    groups:
+      - unicast_cluster
+  - name: unicast-backup
+    image: geerlingguy/docker-debian12-ansible:latest
+    command: /lib/systemd/systemd
+    privileged: true
+    pre_build_image: true
+    capabilities:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - name: unicast-test
+        ipv4_address: 172.21.0.11
+    groups:
+      - unicast_cluster
+provisioner:
+  name: ansible
+  inventory:
+    group_vars:
+      unicast_cluster:
+        keepalived_vrrp_instances:
+          - name: "VI_UNICAST"
+            state: "{{ 'MASTER' if inventory_hostname == 'unicast-master' else 'BACKUP' }}"
+            interface: "eth0"
+            virtual_router_id: 55
+            priority: "{{ 150 if inventory_hostname == 'unicast-master' else 100 }}"
+            advert_int: 1
+            preempt: true
+            unicast_src_ip: "{{ ansible_default_ipv4.address }}"
+            unicast_peers:
+              - "172.21.0.10"
+              - "172.21.0.11"
+            authentication:
+              auth_type: "PASS"
+              auth_pass: "unicast_test"
+            virtual_ipaddresses:
+              - ip: "172.21.0.100"
+                cidr: 32
+verifier:
+  name: ansible

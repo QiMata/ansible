@@ -1,0 +1,6 @@
+---
+- name: Converge Multi-Instance
+  hosts: multi_instance
+  become: true
+  roles:
+    - role: keepalived

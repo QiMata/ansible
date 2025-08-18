@@ -1,5 +1,29 @@
 ---
-- name: Restart keepalived
+- name: restart keepalived
   ansible.builtin.service:
     name: "{{ keepalived_service_name }}"
     state: restarted
+  listen: "restart keepalived"
+
+- name: reload keepalived
+  ansible.builtin.service:
+    name: "{{ keepalived_service_name }}"
+    state: reloaded
+  listen: "reload keepalived"
+
+- name: restart rsyslog
+  ansible.builtin.service:
+    name: rsyslog
+    state: restarted
+  listen: "restart rsyslog"
+
+- name: restart snmpd
+  ansible.builtin.service:
+    name: snmpd
+    state: restarted
+  listen: "restart snmpd"
+
+- name: apply netplan
+  ansible.builtin.command: netplan apply
+  listen: "apply netplan"
+  when: ansible_facts.os_family == 'Debian'

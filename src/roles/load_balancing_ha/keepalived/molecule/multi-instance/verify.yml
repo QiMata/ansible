@@ -1,0 +1,69 @@
+---
+- name: Verify Multi-Instance Configuration
+  hosts: multi_instance
+  gather_facts: true
+  tasks:
+    - name: Read keepalived configuration
+      ansible.builtin.slurp:
+        path: /etc/keepalived/keepalived.conf
+      register: multi_conf
+
+    - name: Assert multiple VRRP instances
+      ansible.builtin.assert:
+        that:
+          - "'VI_WEB' in (multi_conf.content | b64decode)"
+          - "'VI_DB' in (multi_conf.content | b64decode)"
+          - "'VI_NO_AUTH' in (multi_conf.content | b64decode)"
+          - "'virtual_router_id 60' in (multi_conf.content | b64decode)"
+          - "'virtual_router_id 61' in (multi_conf.content | b64decode)"
+          - "'virtual_router_id 62' in (multi_conf.content | b64decode)"
+
+    - name: Assert multiple virtual IPs
+      ansible.builtin.assert:
+        that:
+          - "'172.22.0.200' in (multi_conf.content | b64decode)"
+          - "'172.22.0.201' in (multi_conf.content | b64decode)"
+          - "'172.22.0.202' in (multi_conf.content | b64decode)"
+
+    - name: Assert VRRP scripts configured
+      ansible.builtin.assert:
+        that:
+          - "'vrrp_script check_web' in (multi_conf.content | b64decode)"
+          - "'vrrp_script check_db' in (multi_conf.content | b64decode)"
+          - "'weight -20' in (multi_conf.content | b64decode)"
+          - "'weight -30' in (multi_conf.content | b64decode)"
+
+    - name: Assert sync group configured
+      ansible.builtin.assert:
+        that:
+          - "'vrrp_sync_group SERVICES_GROUP' in (multi_conf.content | b64decode)"
+          - "'VI_WEB' in (multi_conf.content | b64decode)"
+          - "'VI_DB' in (multi_conf.content | b64decode)"
+
+    - name: Assert no authentication for VI_NO_AUTH
+      ansible.builtin.shell: |
+        grep -A 20 "vrrp_instance VI_NO_AUTH" /etc/keepalived/keepalived.conf | grep -c "authentication"
+      register: no_auth_check
+      failed_when: false
+
+    - name: Verify no authentication block exists for VI_NO_AUTH
+      ansible.builtin.assert:
+        that:
+          - no_auth_check.stdout == "0"
+
+    - name: Verify all custom scripts exist
+      ansible.builtin.stat:
+        path: "/etc/keepalived/scripts/{{ item }}"
+      register: script_files
+      loop:
+        - check_web.sh
+        - check_db.sh
+        - services_master.sh
+        - services_backup.sh
+
+    - name: Assert all scripts are executable
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.executable
+      loop: "{{ script_files.results }}"

@@ -4,12 +4,67 @@ dependency:
 driver:
   name: docker
 platforms:
-  - name: instance
+  - name: keepalived-master
     image: geerlingguy/docker-debian12-ansible:latest
     command: /lib/systemd/systemd
     privileged: true
     pre_build_image: true
+    capabilities:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - name: keepalived-test
+        ipv4_address: 172.20.0.10
+    groups:
+      - keepalived_cluster
+      - masters
+  - name: keepalived-backup
+    image: geerlingguy/docker-debian12-ansible:latest
+    command: /lib/systemd/systemd
+    privileged: true
+    pre_build_image: true
+    capabilities:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - name: keepalived-test
+        ipv4_address: 172.20.0.11
+    groups:
+      - keepalived_cluster
+      - backups
+  - name: keepalived-ubuntu
+    image: geerlingguy/docker-ubuntu2204-ansible:latest
+    command: /lib/systemd/systemd
+    privileged: true
+    pre_build_image: true
+    capabilities:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - name: keepalived-test
+        ipv4_address: 172.20.0.12
+    groups:
+      - ubuntu_test
 provisioner:
   name: ansible
+  inventory:
+    group_vars:
+      keepalived_cluster:
+        keepalived_virtual_ip: "172.20.0.100"
+        keepalived_router_id: 51
+        keepalived_interface: "eth0"
+        keepalived_auth_pass: "test_password"
+        keepalived_validate_config: true
+        keepalived_backup_config: true
+        keepalived_enable_syslog: true
+        keepalived_log_level: "DEBUG"
+      masters:
+        keepalived_state: "MASTER"
+        keepalived_priority: 150
+      backups:
+        keepalived_state: "BACKUP"
+        keepalived_priority: 100
+      ubuntu_test:
+        keepalived_enable_ipv6: true
 verifier:
   name: ansible
