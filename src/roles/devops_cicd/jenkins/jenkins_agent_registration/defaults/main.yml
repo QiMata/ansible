@@ -1,0 +1,43 @@
+---
+# Jenkins agent registration configuration
+jenkins_agent_registration_enabled: true
+jenkins_controller_host: "{{ groups['jenkins_controllers'][0] | default('localhost') }}"
+jenkins_controller_port: "{{ jenkins_http_port | default(8080) }}"
+
+# Agent configuration
+jenkins_agent_name: "{{ inventory_hostname }}"
+jenkins_agent_description: "Auto-provisioned Jenkins agent"
+jenkins_agent_executors: "{{ jenkins_agent_executors | default(2) }}"
+jenkins_agent_remote_fs: "{{ jenkins_agent_home | default('/home/jenkins') }}"
+jenkins_agent_labels: "{{ jenkins_agent_labels | default('linux auto-provisioned') }}"
+jenkins_agent_usage_mode: "NORMAL"  # NORMAL or EXCLUSIVE
+
+# SSH launcher configuration
+jenkins_agent_ssh_host: "{{ ansible_default_ipv4.address }}"
+jenkins_agent_ssh_port: 22
+jenkins_agent_ssh_credential_id: "{{ jenkins_credentials_ssh_key_id | default('jenkins-ssh-key') }}"
+jenkins_agent_ssh_java_path: ""  # Auto-detect if empty
+jenkins_agent_ssh_jvm_options: ""
+jenkins_agent_ssh_prefix_start_slave_cmd: ""
+jenkins_agent_ssh_suffix_start_slave_cmd: ""
+
+# Connection settings
+jenkins_agent_retry_wait_time: 15
+jenkins_agent_max_num_retries: 10
+jenkins_agent_keep_alive_strategy: "DEFAULT"
+
+# Node properties
+jenkins_agent_env_vars: {}
+# Example:
+# jenkins_agent_env_vars:
+#   JAVA_HOME: "/usr/lib/jvm/java-11-openjdk-amd64"
+#   PATH: "/usr/local/bin:/usr/bin:/bin"
+
+# Tool locations
+jenkins_agent_tool_locations: []
+# Example:
+# jenkins_agent_tool_locations:
+#   - name: "Git"
+#     home: "/usr/bin/git"
+#   - name: "Maven"
+#     home: "/usr/share/maven"

@@ -1,0 +1,35 @@
+---
+# Jenkins monitoring configuration
+jenkins_monitoring_enabled: true
+jenkins_monitoring_healthcheck_interval: "*/5 * * * *"  # Every 5 minutes
+jenkins_monitoring_log_retention_days: 30
+jenkins_monitoring_alert_email: "{{ jenkins_admin_email | default('admin@localhost') }}"
+
+# Health check settings
+jenkins_monitoring_healthcheck_timeout: 30
+jenkins_monitoring_healthcheck_retries: 3
+jenkins_monitoring_healthcheck_endpoints:
+  - "/api/json"
+  - "/login"
+
+# Log monitoring
+jenkins_monitoring_log_paths:
+  - "{{ jenkins_controller_home | default('/var/lib/jenkins') }}/logs"
+  - "/var/log/jenkins"
+
+# Metrics collection
+jenkins_monitoring_metrics_enabled: true
+jenkins_monitoring_prometheus_enabled: false
+jenkins_monitoring_prometheus_port: 8081
+
+# Disk space monitoring
+jenkins_monitoring_disk_warning_threshold: 80  # percentage
+jenkins_monitoring_disk_critical_threshold: 90  # percentage
+
+# Memory monitoring
+jenkins_monitoring_memory_warning_threshold: 80  # percentage
+jenkins_monitoring_memory_critical_threshold: 90  # percentage
+
+# Build queue monitoring
+jenkins_monitoring_queue_warning_threshold: 10
+jenkins_monitoring_queue_critical_threshold: 20

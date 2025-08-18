@@ -1,0 +1,44 @@
+---
+# Jenkins Configuration as Code settings
+jenkins_casc_enabled: true
+jenkins_casc_config_path: "{{ jenkins_controller_home | default('/var/lib/jenkins') }}/casc_configs"
+jenkins_casc_config_file: "{{ jenkins_casc_config_path }}/jenkins.yaml"
+jenkins_casc_reload_token: "{{ vault_jenkins_casc_reload_token | default('reload-config-token') }}"
+
+# Default CasC configuration
+jenkins_casc_config:
+  jenkins:
+    systemMessage: "Jenkins configured automatically by Ansible"
+    numExecutors: 2
+    mode: NORMAL
+    labelString: "controller master"
+    quietPeriod: 5
+    scmCheckoutRetryCount: 0
+    
+  security:
+    globalJobDslSecurityConfiguration:
+      useScriptSecurity: true
+    
+  unclassified:
+    location:
+      url: "{{ jenkins_root_url | default('http://localhost:8080/') }}"
+      adminAddress: "{{ jenkins_admin_email | default('admin@localhost') }}"
+    
+    gitSCM:
+      createAccountBasedOnEmail: false
+      showEntireCommitSummaryInChanges: false
+      useExistingAccountWithSameEmail: false
+
+# Additional CasC configuration files
+jenkins_casc_additional_configs: []
+# Example:
+# - name: "security-config"
+#   content: |
+#     security:
+#       remotingCLI:
+#         enabled: false
+
+# Environment variables for CasC
+jenkins_casc_environment_vars:
+  CASC_JENKINS_CONFIG: "{{ jenkins_casc_config_path }}"
+  CASC_RELOAD_TOKEN: "{{ jenkins_casc_reload_token }}"

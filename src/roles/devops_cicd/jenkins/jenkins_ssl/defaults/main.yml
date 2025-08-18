@@ -1,0 +1,22 @@
+---
+# SSL/TLS Configuration for Jenkins
+jenkins_ssl_enabled: false
+jenkins_ssl_port: 8443
+jenkins_ssl_keystore_path: "{{ jenkins_controller_home | default('/var/lib/jenkins') }}/jenkins.jks"
+jenkins_ssl_keystore_password: "{{ vault_jenkins_ssl_keystore_password | default('changeit') }}"
+jenkins_ssl_certificate_path: "/etc/ssl/certs/jenkins.crt"
+jenkins_ssl_private_key_path: "/etc/ssl/private/jenkins.key"
+jenkins_ssl_redirect_http: true
+jenkins_ssl_disable_http: false
+
+# Certificate generation options
+jenkins_ssl_generate_self_signed: true
+jenkins_ssl_cert_subject: "/C=US/ST=State/L=City/O=Organization/CN={{ ansible_fqdn }}"
+jenkins_ssl_cert_days: 365
+
+# Security headers
+jenkins_ssl_security_headers:
+  - "Strict-Transport-Security: max-age=31536000; includeSubDomains"
+  - "X-Content-Type-Options: nosniff"
+  - "X-Frame-Options: DENY"
+  - "X-XSS-Protection: 1; mode=block"

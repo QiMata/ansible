@@ -1,0 +1,29 @@
+---
+# Jenkins restore configuration
+jenkins_restore_enabled: false
+jenkins_restore_backup_file: ""  # Must be specified when running restore
+jenkins_restore_backup_url: ""   # Alternative: download from URL
+jenkins_restore_home: "{{ jenkins_controller_home | default('/var/lib/jenkins') }}"
+jenkins_restore_backup_current: true
+jenkins_restore_verify_integrity: true
+jenkins_restore_force: false  # Set to true to restore without confirmation
+
+# Restore options
+jenkins_restore_preserve_configs: []
+# Example: Preserve specific configurations during restore
+# jenkins_restore_preserve_configs:
+#   - "config.xml"
+#   - "credentials.xml"
+#   - "users/"
+
+jenkins_restore_exclude_patterns: []
+# Example: Exclude certain files/directories from restore
+# jenkins_restore_exclude_patterns:
+#   - "workspace/*"
+#   - "logs/*"
+#   - "*.log"
+
+# Validation settings
+jenkins_restore_validate_plugins: true
+jenkins_restore_validate_config: true
+jenkins_restore_timeout_minutes: 10

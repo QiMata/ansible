@@ -1,0 +1,38 @@
+---
+# Jenkins credential management configuration
+jenkins_credentials_enabled: true
+
+# Default SSH key for agents
+jenkins_credentials_ssh_key_id: "jenkins-ssh-key"
+jenkins_credentials_ssh_user: "{{ jenkins_agent_user | default('jenkins') }}"
+jenkins_credentials_ssh_private_key: "{{ vault_jenkins_ssh_private_key | default('') }}"
+jenkins_credentials_ssh_passphrase: "{{ vault_jenkins_ssh_passphrase | default('') }}"
+
+# Credentials to create
+jenkins_credentials_list: []
+# Example credentials structure:
+# jenkins_credentials_list:
+#   - id: "github-token"
+#     type: "secret_text"
+#     description: "GitHub Personal Access Token"
+#     secret: "{{ vault_github_token }}"
+#     scope: "GLOBAL"
+#   
+#   - id: "docker-registry"
+#     type: "username_password"
+#     description: "Docker Registry Credentials"
+#     username: "docker-user"
+#     password: "{{ vault_docker_password }}"
+#     scope: "GLOBAL"
+#   
+#   - id: "ssh-deploy-key"
+#     type: "ssh_private_key"
+#     description: "SSH Deploy Key"
+#     username: "deploy"
+#     private_key: "{{ vault_deploy_private_key }}"
+#     passphrase: "{{ vault_deploy_passphrase }}"
+#     scope: "GLOBAL"
+
+# API settings
+jenkins_credentials_api_timeout: 30
+jenkins_credentials_api_retries: 3

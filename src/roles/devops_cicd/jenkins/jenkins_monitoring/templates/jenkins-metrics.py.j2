@@ -1,0 +1,128 @@
+#!/usr/bin/env python3
+
+import json
+import requests
+import psutil
+import time
+import sys
+from datetime import datetime
+
+# Jenkins configuration
+JENKINS_URL = "http://{{ ansible_default_ipv4.address }}:{{ jenkins_http_port | default(8080) }}"
+JENKINS_USER = "{{ jenkins_admin_user | default('admin') }}"
+JENKINS_PASSWORD = "{{ jenkins_admin_password }}"
+
+def get_timestamp():
+    return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+def log_metric(metric_name, value, labels=None):
+    """Log metric in a structured format"""
+    labels_str = ""
+    if labels:
+        labels_str = ",".join([f'{k}="{v}"' for k, v in labels.items()])
+        labels_str = f"{{{labels_str}}}"
+    
+    print(f"[{get_timestamp()}] {metric_name}{labels_str} {value}")
+
+def collect_jenkins_metrics():
+    """Collect Jenkins-specific metrics"""
+    try:
+        # Get basic Jenkins info
+        response = requests.get(
+            f"{JENKINS_URL}/api/json",
+            auth=(JENKINS_USER, JENKINS_PASSWORD),
+            timeout=30
+        )
+        jenkins_data = response.json()
+        
+        # Log basic metrics
+        log_metric("jenkins_up", 1)
+        log_metric("jenkins_num_executors", jenkins_data.get('numExecutors', 0))
+        log_metric("jenkins_busy_executors", jenkins_data.get('assignedLabels', [{}])[0].get('busyExecutors', 0))
+        
+        # Get queue info
+        queue_response = requests.get(
+            f"{JENKINS_URL}/queue/api/json",
+            auth=(JENKINS_USER, JENKINS_PASSWORD),
+            timeout=30
+        )
+        queue_data = queue_response.json()
+        queue_length = len(queue_data.get('items', []))
+        log_metric("jenkins_queue_length", queue_length)
+        
+        # Alert on queue length
+        if queue_length >= {{ jenkins_monitoring_queue_critical_threshold }}:
+            log_metric("jenkins_queue_alert", 2, {"level": "critical", "threshold": "{{ jenkins_monitoring_queue_critical_threshold }}"})
+        elif queue_length >= {{ jenkins_monitoring_queue_warning_threshold }}:
+            log_metric("jenkins_queue_alert", 1, {"level": "warning", "threshold": "{{ jenkins_monitoring_queue_warning_threshold }}"})
+        
+        # Get job metrics
+        jobs_response = requests.get(
+            f"{JENKINS_URL}/api/json?tree=jobs[name,color,lastBuild[number,timestamp,duration,result]]",
+            auth=(JENKINS_USER, JENKINS_PASSWORD),
+            timeout=30
+        )
+        jobs_data = jobs_response.json()
+        
+        total_jobs = len(jobs_data.get('jobs', []))
+        successful_jobs = 0
+        failed_jobs = 0
+        
+        for job in jobs_data.get('jobs', []):
+            last_build = job.get('lastBuild')
+            if last_build and last_build.get('result'):
+                if last_build['result'] == 'SUCCESS':
+                    successful_jobs += 1
+                elif last_build['result'] in ['FAILURE', 'ABORTED']:
+                    failed_jobs += 1
+        
+        log_metric("jenkins_total_jobs", total_jobs)
+        log_metric("jenkins_successful_jobs", successful_jobs)
+        log_metric("jenkins_failed_jobs", failed_jobs)
+        
+    except Exception as e:
+        log_metric("jenkins_up", 0)
+        print(f"[{get_timestamp()}] ERROR: Failed to collect Jenkins metrics: {e}", file=sys.stderr)
+
+def collect_system_metrics():
+    """Collect system metrics"""
+    try:
+        # CPU usage
+        cpu_percent = psutil.cpu_percent(interval=1)
+        log_metric("system_cpu_usage_percent", cpu_percent)
+        
+        # Memory usage
+        memory = psutil.virtual_memory()
+        log_metric("system_memory_usage_percent", memory.percent)
+        log_metric("system_memory_available_bytes", memory.available)
+        log_metric("system_memory_total_bytes", memory.total)
+        
+        # Disk usage for Jenkins home
+        jenkins_home = "{{ jenkins_controller_home | default('/var/lib/jenkins') }}"
+        disk_usage = psutil.disk_usage(jenkins_home)
+        disk_percent = (disk_usage.used / disk_usage.total) * 100
+        
+        log_metric("system_disk_usage_percent", disk_percent, {"mount": jenkins_home})
+        log_metric("system_disk_free_bytes", disk_usage.free, {"mount": jenkins_home})
+        log_metric("system_disk_total_bytes", disk_usage.total, {"mount": jenkins_home})
+        
+        # Load average
+        load_avg = psutil.getloadavg()
+        log_metric("system_load_1m", load_avg[0])
+        log_metric("system_load_5m", load_avg[1])
+        log_metric("system_load_15m", load_avg[2])
+        
+    except Exception as e:
+        print(f"[{get_timestamp()}] ERROR: Failed to collect system metrics: {e}", file=sys.stderr)
+
+def main():
+    """Main metrics collection function"""
+    print(f"[{get_timestamp()}] INFO: Starting Jenkins metrics collection")
+    
+    collect_system_metrics()
+    collect_jenkins_metrics()
+    
+    print(f"[{get_timestamp()}] INFO: Metrics collection completed")
+
+if __name__ == "__main__":
+    main()

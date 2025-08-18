@@ -1,0 +1,219 @@
+---
+- name: Validate restore parameters
+  ansible.builtin.assert:
+    that:
+      - jenkins_restore_backup_file != "" or jenkins_restore_backup_url != ""
+      - jenkins_restore_enabled
+    fail_msg: "jenkins_restore_backup_file or jenkins_restore_backup_url must be specified and jenkins_restore_enabled must be true"
+  when: jenkins_restore_enabled
+
+- name: Confirm restore operation
+  ansible.builtin.pause:
+    prompt: |
+      WARNING: This will restore Jenkins from backup and overwrite current data.
+      
+      Backup source: {{ jenkins_restore_backup_file or jenkins_restore_backup_url }}
+      Target directory: {{ jenkins_restore_home }}
+      
+      Are you sure you want to continue? (yes/no)
+  register: restore_confirmation
+  when: 
+    - jenkins_restore_enabled
+    - not jenkins_restore_force
+
+- name: Abort if not confirmed
+  ansible.builtin.fail:
+    msg: "Restore operation cancelled by user"
+  when: 
+    - jenkins_restore_enabled
+    - not jenkins_restore_force
+    - restore_confirmation.user_input | lower != "yes"
+
+- name: Stop Jenkins service
+  ansible.builtin.service:
+    name: jenkins
+    state: stopped
+  when: jenkins_restore_enabled
+
+- name: Download backup file from URL
+  ansible.builtin.get_url:
+    url: "{{ jenkins_restore_backup_url }}"
+    dest: "/tmp/jenkins-restore-backup.tar.gz"
+    mode: '0644'
+    timeout: 300
+  when: 
+    - jenkins_restore_enabled
+    - jenkins_restore_backup_url != ""
+    - jenkins_restore_backup_file == ""
+
+- name: Set backup file path for URL download
+  ansible.builtin.set_fact:
+    jenkins_restore_backup_file: "/tmp/jenkins-restore-backup.tar.gz"
+  when: 
+    - jenkins_restore_enabled
+    - jenkins_restore_backup_url != ""
+
+- name: Verify backup file exists
+  ansible.builtin.stat:
+    path: "{{ jenkins_restore_backup_file }}"
+  register: backup_file_stat
+  when: jenkins_restore_enabled
+
+- name: Fail if backup file doesn't exist
+  ansible.builtin.fail:
+    msg: "Backup file {{ jenkins_restore_backup_file }} does not exist"
+  when: 
+    - jenkins_restore_enabled
+    - not backup_file_stat.stat.exists
+
+- name: Verify backup file integrity
+  ansible.builtin.command: tar -tzf "{{ jenkins_restore_backup_file }}"
+  register: backup_integrity_check
+  changed_when: false
+  when: 
+    - jenkins_restore_enabled
+    - jenkins_restore_verify_integrity
+
+- name: Create current backup before restore
+  community.general.archive:
+    path: "{{ jenkins_restore_home }}/"
+    dest: "{{ jenkins_restore_home }}-backup-{{ ansible_date_time.epoch }}.tar.gz"
+    format: gz
+    owner: root
+    group: root
+    mode: "0644"
+  when: 
+    - jenkins_restore_enabled
+    - jenkins_restore_backup_current
+
+- name: Preserve specified configurations
+  ansible.builtin.copy:
+    src: "{{ jenkins_restore_home }}/{{ item }}"
+    dest: "/tmp/jenkins-preserve-{{ item | basename }}"
+    remote_src: true
+    mode: preserve
+  loop: "{{ jenkins_restore_preserve_configs }}"
+  when: 
+    - jenkins_restore_enabled
+    - jenkins_restore_preserve_configs | length > 0
+
+- name: Clear Jenkins home directory
+  ansible.builtin.file:
+    path: "{{ jenkins_restore_home }}"
+    state: absent
+  when: jenkins_restore_enabled
+
+- name: Recreate Jenkins home directory
+  ansible.builtin.file:
+    path: "{{ jenkins_restore_home }}"
+    state: directory
+    owner: jenkins
+    group: jenkins
+    mode: '0755'
+  when: jenkins_restore_enabled
+
+- name: Extract backup archive
+  ansible.builtin.unarchive:
+    src: "{{ jenkins_restore_backup_file }}"
+    dest: "/"
+    owner: jenkins
+    group: jenkins
+    remote_src: true
+    exclude: "{{ jenkins_restore_exclude_patterns }}"
+  notify: restart jenkins
+  when: jenkins_restore_enabled
+
+- name: Restore preserved configurations
+  ansible.builtin.copy:
+    src: "/tmp/jenkins-preserve-{{ item | basename }}"
+    dest: "{{ jenkins_restore_home }}/{{ item }}"
+    remote_src: true
+    owner: jenkins
+    group: jenkins
+    mode: preserve
+  loop: "{{ jenkins_restore_preserve_configs }}"
+  when: 
+    - jenkins_restore_enabled
+    - jenkins_restore_preserve_configs | length > 0
+
+- name: Clean up preserved files
+  ansible.builtin.file:
+    path: "/tmp/jenkins-preserve-{{ item | basename }}"
+    state: absent
+  loop: "{{ jenkins_restore_preserve_configs }}"
+  when: 
+    - jenkins_restore_enabled
+    - jenkins_restore_preserve_configs | length > 0
+
+- name: Set correct ownership on restored files
+  ansible.builtin.file:
+    path: "{{ jenkins_restore_home }}"
+    owner: jenkins
+    group: jenkins
+    recurse: true
+  when: jenkins_restore_enabled
+
+- name: Start Jenkins service
+  ansible.builtin.service:
+    name: jenkins
+    state: started
+    enabled: true
+  when: jenkins_restore_enabled
+
+- name: Wait for Jenkins to start
+  ansible.builtin.uri:
+    url: "http://{{ ansible_default_ipv4.address }}:{{ jenkins_http_port | default(8080) }}/api/json"
+    method: GET
+    status_code: [200, 403]  # 403 is OK if security is enabled
+  register: jenkins_start_check
+  until: jenkins_start_check.status in [200, 403]
+  retries: "{{ (jenkins_restore_timeout_minutes * 60 / 10) | int }}"
+  delay: 10
+  when: jenkins_restore_enabled
+
+- name: Validate restored Jenkins configuration
+  ansible.builtin.uri:
+    url: "http://{{ ansible_default_ipv4.address }}:{{ jenkins_http_port | default(8080) }}/api/json"
+    method: GET
+    user: "{{ jenkins_admin_user | default('admin') }}"
+    password: "{{ jenkins_admin_password }}"
+    return_content: true
+  register: jenkins_config_validation
+  when: 
+    - jenkins_restore_enabled
+    - jenkins_restore_validate_config
+
+- name: Validate plugins after restore
+  ansible.builtin.uri:
+    url: "http://{{ ansible_default_ipv4.address }}:{{ jenkins_http_port | default(8080) }}/pluginManager/api/json?depth=1"
+    method: GET
+    user: "{{ jenkins_admin_user | default('admin') }}"
+    password: "{{ jenkins_admin_password }}"
+    return_content: true
+  register: jenkins_plugins_validation
+  when: 
+    - jenkins_restore_enabled
+    - jenkins_restore_validate_plugins
+
+- name: Display restore summary
+  ansible.builtin.debug:
+    msg: |
+      Jenkins restore completed successfully:
+      - Backup source: {{ jenkins_restore_backup_file }}
+      - Restore target: {{ jenkins_restore_home }}
+      - Jenkins status: {{ 'Running' if jenkins_start_check.status in [200, 403] else 'Failed to start' }}
+      {% if jenkins_config_validation is defined %}
+      - Jobs restored: {{ jenkins_config_validation.json.jobs | length }}
+      {% endif %}
+      {% if jenkins_plugins_validation is defined %}
+      - Plugins restored: {{ jenkins_plugins_validation.json.plugins | length }}
+      {% endif %}
+  when: jenkins_restore_enabled
+
+- name: Clean up downloaded backup file
+  ansible.builtin.file:
+    path: "/tmp/jenkins-restore-backup.tar.gz"
+    state: absent
+  when: 
+    - jenkins_restore_enabled
+    - jenkins_restore_backup_url != ""

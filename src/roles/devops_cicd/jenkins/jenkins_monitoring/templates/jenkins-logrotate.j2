@@ -1,0 +1,41 @@
+# Jenkins monitoring log rotation configuration
+{{ jenkins_controller_home | default('/var/lib/jenkins') }}/logs/*.log {
+    daily
+    rotate {{ jenkins_monitoring_log_retention_days }}
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+    su jenkins jenkins
+}
+
+/var/log/jenkins-monitoring/*.log {
+    daily
+    rotate {{ jenkins_monitoring_log_retention_days }}
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+}
+
+/var/log/jenkins-healthcheck.log {
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+}
+
+/var/log/jenkins-metrics.log {
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+}

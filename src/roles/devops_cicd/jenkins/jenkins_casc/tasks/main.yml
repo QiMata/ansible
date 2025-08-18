@@ -1,0 +1,69 @@
+---
+- name: Create CasC configuration directory
+  ansible.builtin.file:
+    path: "{{ jenkins_casc_config_path }}"
+    state: directory
+    owner: jenkins
+    group: jenkins
+    mode: '0755'
+
+- name: Deploy main CasC configuration
+  ansible.builtin.template:
+    src: jenkins-casc.yaml.j2
+    dest: "{{ jenkins_casc_config_file }}"
+    owner: jenkins
+    group: jenkins
+    mode: '0600'
+    backup: true
+  notify: reload jenkins config
+  when: jenkins_casc_enabled
+
+- name: Deploy additional CasC configurations
+  ansible.builtin.copy:
+    content: "{{ item.content }}"
+    dest: "{{ jenkins_casc_config_path }}/{{ item.name }}.yaml"
+    owner: jenkins
+    group: jenkins
+    mode: '0600'
+  loop: "{{ jenkins_casc_additional_configs }}"
+  notify: reload jenkins config
+  when: 
+    - jenkins_casc_enabled
+    - jenkins_casc_additional_configs | length > 0
+
+- name: Configure CasC environment variables
+  ansible.builtin.lineinfile:
+    path: /etc/default/jenkins
+    regexp: '^{{ item.key }}='
+    line: '{{ item.key }}="{{ item.value }}"'
+    insertafter: '^#?\s*JENKINS_ARGS='
+  loop: "{{ jenkins_casc_environment_vars | dict2items }}"
+  notify: restart jenkins
+  when: jenkins_casc_enabled
+
+- name: Create CasC reload endpoint protection
+  ansible.builtin.template:
+    src: casc-reload-security.groovy.j2
+    dest: "{{ jenkins_controller_home | default('/var/lib/jenkins') }}/init.groovy.d/casc-reload-security.groovy"
+    owner: jenkins
+    group: jenkins
+    mode: '0644'
+  notify: restart jenkins
+  when: jenkins_casc_enabled
+
+- name: Validate CasC configuration
+  ansible.builtin.uri:
+    url: "http://{{ ansible_default_ipv4.address }}:{{ jenkins_http_port | default(8080) }}/configuration-as-code/checkNewSource"
+    method: POST
+    user: "{{ jenkins_admin_user | default('admin') }}"
+    password: "{{ jenkins_admin_password }}"
+    body_format: form-urlencoded
+    body:
+      newSource: "{{ jenkins_casc_config_path }}"
+    status_code: [200, 204]
+  register: casc_validation
+  retries: 3
+  delay: 10
+  when: 
+    - jenkins_casc_enabled
+    - jenkins_casc_validate | default(true)

@@ -1,0 +1,104 @@
+---
+- name: Wait for Jenkins to be available
+  ansible.builtin.uri:
+    url: "http://{{ ansible_default_ipv4.address }}:{{ jenkins_http_port | default(8080) }}/api/json"
+    method: GET
+    user: "{{ jenkins_admin_user | default('admin') }}"
+    password: "{{ jenkins_admin_password }}"
+    status_code: 200
+  register: jenkins_available
+  retries: "{{ jenkins_credentials_api_retries }}"
+  delay: 10
+  when: jenkins_credentials_enabled
+
+- name: Get Jenkins CSRF crumb
+  ansible.builtin.uri:
+    url: "http://{{ ansible_default_ipv4.address }}:{{ jenkins_http_port | default(8080) }}/crumbIssuer/api/json"
+    method: GET
+    user: "{{ jenkins_admin_user | default('admin') }}"
+    password: "{{ jenkins_admin_password }}"
+    return_content: true
+  register: jenkins_crumb
+  when: jenkins_credentials_enabled
+
+- name: Create default SSH credential for agents
+  ansible.builtin.uri:
+    url: "http://{{ ansible_default_ipv4.address }}:{{ jenkins_http_port | default(8080) }}/credentials/store/system/domain/_/createCredentials"
+    method: POST
+    user: "{{ jenkins_admin_user | default('admin') }}"
+    password: "{{ jenkins_admin_password }}"
+    headers:
+      Jenkins-Crumb: "{{ jenkins_crumb.json.crumb }}"
+      Content-Type: "application/x-www-form-urlencoded"
+    body_format: form-urlencoded
+    body:
+      json: |
+        {
+          "": "0",
+          "credentials": {
+            "scope": "GLOBAL",
+            "id": "{{ jenkins_credentials_ssh_key_id }}",
+            "username": "{{ jenkins_credentials_ssh_user }}",
+            "passphrase": "{{ jenkins_credentials_ssh_passphrase }}",
+            "description": "SSH key for Jenkins agents",
+            "privateKeySource": {
+              "stapler-class": "com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey$DirectEntryPrivateKeySource",
+              "privateKey": "{{ jenkins_credentials_ssh_private_key }}"
+            },
+            "stapler-class": "com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey"
+          }
+        }
+    status_code: [200, 302]
+  register: ssh_credential_result
+  failed_when: false
+  when: 
+    - jenkins_credentials_enabled
+    - jenkins_credentials_ssh_private_key | length > 0
+
+- name: Create custom credentials
+  ansible.builtin.uri:
+    url: "http://{{ ansible_default_ipv4.address }}:{{ jenkins_http_port | default(8080) }}/credentials/store/system/domain/_/createCredentials"
+    method: POST
+    user: "{{ jenkins_admin_user | default('admin') }}"
+    password: "{{ jenkins_admin_password }}"
+    headers:
+      Jenkins-Crumb: "{{ jenkins_crumb.json.crumb }}"
+      Content-Type: "application/x-www-form-urlencoded"
+    body_format: form-urlencoded
+    body: "{{ lookup('template', 'credential-' + item.type + '.json.j2') | from_json | to_query }}"
+    status_code: [200, 302]
+  register: credential_results
+  failed_when: false
+  loop: "{{ jenkins_credentials_list }}"
+  when: 
+    - jenkins_credentials_enabled
+    - jenkins_credentials_list | length > 0
+
+- name: Deploy credential management Groovy script
+  ansible.builtin.template:
+    src: manage-credentials.groovy.j2
+    dest: "{{ jenkins_controller_home | default('/var/lib/jenkins') }}/init.groovy.d/manage-credentials.groovy"
+    owner: jenkins
+    group: jenkins
+    mode: '0644'
+  when: jenkins_credentials_enabled
+
+- name: List current credentials (for verification)
+  ansible.builtin.uri:
+    url: "http://{{ ansible_default_ipv4.address }}:{{ jenkins_http_port | default(8080) }}/credentials/store/system/domain/_/api/json"
+    method: GET
+    user: "{{ jenkins_admin_user | default('admin') }}"
+    password: "{{ jenkins_admin_password }}"
+    return_content: true
+  register: current_credentials
+  when: 
+    - jenkins_credentials_enabled
+    - jenkins_credentials_verify | default(true)
+
+- name: Display created credentials
+  ansible.builtin.debug:
+    msg: "Created credentials: {{ current_credentials.json.credentials | map(attribute='id') | list }}"
+  when: 
+    - jenkins_credentials_enabled
+    - jenkins_credentials_verify | default(true)
+    - current_credentials.json is defined

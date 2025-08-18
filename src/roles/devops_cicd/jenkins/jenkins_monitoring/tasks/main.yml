@@ -1,0 +1,92 @@
+---
+- name: Install monitoring dependencies
+  ansible.builtin.apt:
+    name:
+      - curl
+      - jq
+      - python3-psutil
+      - mailutils
+    state: present
+    update_cache: true
+
+- name: Create monitoring script directory
+  ansible.builtin.file:
+    path: /usr/local/bin/jenkins-monitoring
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Deploy Jenkins health check script
+  ansible.builtin.template:
+    src: jenkins-healthcheck.sh.j2
+    dest: /usr/local/bin/jenkins-monitoring/healthcheck.sh
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Deploy Jenkins metrics collection script
+  ansible.builtin.template:
+    src: jenkins-metrics.py.j2
+    dest: /usr/local/bin/jenkins-monitoring/metrics.py
+    owner: root
+    group: root
+    mode: '0755'
+  when: jenkins_monitoring_metrics_enabled
+
+- name: Setup Jenkins log rotation
+  ansible.builtin.template:
+    src: jenkins-logrotate.j2
+    dest: /etc/logrotate.d/jenkins-monitoring
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Configure Jenkins logging properties
+  ansible.builtin.template:
+    src: logging.properties.j2
+    dest: "{{ jenkins_controller_home | default('/var/lib/jenkins') }}/logging.properties"
+    owner: jenkins
+    group: jenkins
+    mode: '0644'
+  notify: restart jenkins
+
+- name: Setup health check cron job
+  ansible.builtin.cron:
+    name: "Jenkins health check"
+    minute: "{{ jenkins_monitoring_healthcheck_interval.split()[0] }}"
+    hour: "{{ jenkins_monitoring_healthcheck_interval.split()[1] }}"
+    day: "{{ jenkins_monitoring_healthcheck_interval.split()[2] }}"
+    month: "{{ jenkins_monitoring_healthcheck_interval.split()[3] }}"
+    weekday: "{{ jenkins_monitoring_healthcheck_interval.split()[4] }}"
+    job: "/usr/local/bin/jenkins-monitoring/healthcheck.sh >> /var/log/jenkins-healthcheck.log 2>&1"
+    user: root
+  when: jenkins_monitoring_enabled
+
+- name: Setup metrics collection cron job
+  ansible.builtin.cron:
+    name: "Jenkins metrics collection"
+    minute: "*/10"
+    job: "/usr/local/bin/jenkins-monitoring/metrics.py >> /var/log/jenkins-metrics.log 2>&1"
+    user: root
+  when: 
+    - jenkins_monitoring_enabled
+    - jenkins_monitoring_metrics_enabled
+
+- name: Create Jenkins monitoring log directory
+  ansible.builtin.file:
+    path: /var/log/jenkins-monitoring
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Deploy Prometheus metrics endpoint (if enabled)
+  ansible.builtin.template:
+    src: prometheus-config.groovy.j2
+    dest: "{{ jenkins_controller_home | default('/var/lib/jenkins') }}/init.groovy.d/prometheus-config.groovy"
+    owner: jenkins
+    group: jenkins
+    mode: '0644'
+  notify: restart jenkins
+  when: jenkins_monitoring_prometheus_enabled

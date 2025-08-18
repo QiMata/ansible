@@ -1,0 +1,12 @@
+import jenkins.model.*
+import hudson.security.*
+
+def instance = Jenkins.getInstance()
+
+// Secure the CasC reload endpoint
+def strategy = instance.getAuthorizationStrategy()
+if (strategy instanceof GlobalMatrixAuthorizationStrategy) {
+    strategy.add(Jenkins.ADMINISTER, "{{ jenkins_admin_user | default('admin') }}")
+}
+
+instance.save()

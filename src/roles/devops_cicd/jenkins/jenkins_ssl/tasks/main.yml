@@ -1,0 +1,121 @@
+---
+- name: Install SSL certificate packages
+  ansible.builtin.apt:
+    name:
+      - openssl
+      - ca-certificates
+    state: present
+    update_cache: true
+
+- name: Create SSL certificate directory
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - /etc/ssl/certs
+    - /etc/ssl/private
+
+- name: Generate self-signed certificate
+  block:
+    - name: Generate private key
+      ansible.builtin.openssl_privatekey:
+        path: "{{ jenkins_ssl_private_key_path }}"
+        size: 2048
+        mode: '0600'
+        owner: root
+        group: root
+
+    - name: Generate certificate signing request
+      ansible.builtin.openssl_csr:
+        path: /tmp/jenkins.csr
+        privatekey_path: "{{ jenkins_ssl_private_key_path }}"
+        subject_str: "{{ jenkins_ssl_cert_subject }}"
+        san:
+          - "DNS:{{ ansible_fqdn }}"
+          - "DNS:{{ ansible_hostname }}"
+          - "IP:{{ ansible_default_ipv4.address }}"
+
+    - name: Generate self-signed certificate
+      ansible.builtin.openssl_certificate:
+        path: "{{ jenkins_ssl_certificate_path }}"
+        privatekey_path: "{{ jenkins_ssl_private_key_path }}"
+        csr_path: /tmp/jenkins.csr
+        provider: selfsigned
+        selfsigned_not_after: "+{{ jenkins_ssl_cert_days }}d"
+        mode: '0644'
+        owner: root
+        group: root
+
+    - name: Remove CSR file
+      ansible.builtin.file:
+        path: /tmp/jenkins.csr
+        state: absent
+  when: jenkins_ssl_generate_self_signed
+
+- name: Create Java keystore from certificate
+  ansible.builtin.shell: |
+    openssl pkcs12 -export -in {{ jenkins_ssl_certificate_path }} \
+      -inkey {{ jenkins_ssl_private_key_path }} \
+      -out /tmp/jenkins.p12 \
+      -passout pass:{{ jenkins_ssl_keystore_password }}
+    keytool -importkeystore -srckeystore /tmp/jenkins.p12 \
+      -srcstoretype PKCS12 \
+      -destkeystore {{ jenkins_ssl_keystore_path }} \
+      -deststoretype JKS \
+      -srcstorepass {{ jenkins_ssl_keystore_password }} \
+      -deststorepass {{ jenkins_ssl_keystore_password }} \
+      -noprompt
+    rm -f /tmp/jenkins.p12
+  args:
+    creates: "{{ jenkins_ssl_keystore_path }}"
+  notify: restart jenkins
+
+- name: Set keystore ownership
+  ansible.builtin.file:
+    path: "{{ jenkins_ssl_keystore_path }}"
+    owner: jenkins
+    group: jenkins
+    mode: '0600'
+
+- name: Configure Jenkins SSL settings
+  ansible.builtin.lineinfile:
+    path: /etc/default/jenkins
+    regexp: '^JENKINS_ARGS='
+    line: >
+      JENKINS_ARGS="--webroot=/var/cache/$NAME/war
+      {% if jenkins_ssl_enabled %}
+      --httpsPort={{ jenkins_ssl_port }}
+      --httpsKeyStore={{ jenkins_ssl_keystore_path }}
+      --httpsKeyStorePassword={{ jenkins_ssl_keystore_password }}
+      {% if jenkins_ssl_disable_http %}--httpPort=-1{% else %}--httpPort={{ jenkins_http_port | default(8080) }}{% endif %}
+      {% else %}
+      --httpPort={{ jenkins_http_port | default(8080) }}
+      {% endif %}
+      -Djenkins.install.runSetupWizard=false
+      {{ jenkins_java_opts | default('') }}"
+  notify: restart jenkins
+  when: jenkins_ssl_enabled
+
+- name: Configure firewall for HTTPS
+  ansible.builtin.ufw:
+    rule: allow
+    port: "{{ jenkins_ssl_port }}"
+    comment: "Jenkins HTTPS"
+  when: 
+    - jenkins_ssl_enabled
+    - jenkins_configure_firewall | default(false)
+
+- name: Configure reverse proxy headers (if behind proxy)
+  ansible.builtin.template:
+    src: jenkins-ssl-proxy.groovy.j2
+    dest: "{{ jenkins_controller_home | default('/var/lib/jenkins') }}/init.groovy.d/ssl-proxy-config.groovy"
+    owner: jenkins
+    group: jenkins
+    mode: '0644'
+  notify: restart jenkins
+  when: 
+    - jenkins_ssl_enabled
+    - jenkins_behind_proxy | default(false)

@@ -1,0 +1,122 @@
+---
+# Jenkins infrastructure group variables
+# These variables apply to all Jenkins infrastructure components
+
+# Jenkins Version and Repository
+jenkins_version: "2.426.3"
+jenkins_controller_repo_url: "https://pkg.jenkins.io/debian-stable"
+jenkins_controller_repo_key_url: "https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key"
+
+# Basic Jenkins Configuration
+jenkins_http_port: 8080
+jenkins_ssl_port: 8443
+jenkins_controller_home: "/var/lib/jenkins"
+
+# Admin User Configuration
+jenkins_admin_user: admin
+jenkins_admin_password: "{{ vault_jenkins_admin_password }}"
+jenkins_admin_email: "jenkins-admin@{{ ansible_domain | default('example.com') }}"
+
+# Java Configuration
+jenkins_java_opts: "-Xmx2g -Xms1g -Djava.awt.headless=true -Djenkins.install.runSetupWizard=false"
+
+# Essential Plugins List
+jenkins_plugins:
+  - "ant"
+  - "build-timeout"
+  - "credentials-binding"
+  - "email-ext"
+  - "git"
+  - "github-branch-source"
+  - "gradle"
+  - "ldap"
+  - "mailer"
+  - "matrix-auth"
+  - "pam-auth"
+  - "pipeline-stage-view"
+  - "ssh-slaves"
+  - "timestamper"
+  - "workflow-aggregator"
+  - "ws-cleanup"
+  - "configuration-as-code"
+  - "blueocean"
+  - "docker-workflow"
+  - "prometheus"
+
+# SSL/TLS Configuration
+jenkins_ssl_enabled: true
+jenkins_ssl_generate_self_signed: true
+jenkins_ssl_cert_days: 365
+jenkins_ssl_disable_http: false
+
+# Security Configuration
+jenkins_configure_firewall: true
+jenkins_behind_proxy: false
+
+# Monitoring Configuration
+jenkins_monitoring_enabled: true
+jenkins_monitoring_healthcheck_interval: "*/5 * * * *"
+jenkins_monitoring_log_retention_days: 30
+jenkins_monitoring_disk_warning_threshold: 80
+jenkins_monitoring_disk_critical_threshold: 90
+jenkins_monitoring_memory_warning_threshold: 80
+jenkins_monitoring_memory_critical_threshold: 90
+
+# Backup Configuration
+jenkins_backup_dir: "/var/backups/jenkins"
+jenkins_backup_keep_days: 14
+
+# Configuration as Code
+jenkins_casc_enabled: true
+jenkins_casc_config:
+  jenkins:
+    systemMessage: "Jenkins managed by Ansible - {{ ansible_hostname }}"
+    numExecutors: 2
+    mode: NORMAL
+    labelString: "controller master"
+    quietPeriod: 5
+    scmCheckoutRetryCount: 0
+    
+    clouds:
+      - docker:
+          name: "docker-cloud"
+          dockerApi:
+            dockerHost:
+              uri: "unix:///var/run/docker.sock"
+          
+  security:
+    globalJobDslSecurityConfiguration:
+      useScriptSecurity: true
+    
+    remotingCLI:
+      enabled: false
+      
+  unclassified:
+    location:
+      url: "{{ 'https' if jenkins_ssl_enabled else 'http' }}://{{ ansible_fqdn }}:{{ jenkins_ssl_port if jenkins_ssl_enabled else jenkins_http_port }}/"
+      adminAddress: "{{ jenkins_admin_email }}"
+    
+    gitSCM:
+      createAccountBasedOnEmail: false
+      showEntireCommitSummaryInChanges: false
+      useExistingAccountWithSameEmail: false
+
+# Credential Management
+jenkins_credentials_enabled: true
+jenkins_credentials_list:
+  - id: "jenkins-ssh-key"
+    type: "ssh_private_key"
+    description: "SSH key for Jenkins agents"
+    username: "jenkins"
+    private_key: "{{ vault_jenkins_ssh_private_key }}"
+    scope: "GLOBAL"
+
+# Agent Configuration (for controllers)
+jenkins_agent_registration_enabled: true
+
+# Environment-specific settings
+jenkins_environment: "{{ env | default('development') }}"
+
+# Log levels and debugging
+jenkins_log_level: "INFO"
+jenkins_debug_enabled: false

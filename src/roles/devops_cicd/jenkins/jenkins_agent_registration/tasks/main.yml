@@ -1,0 +1,134 @@
+---
+- name: Check if Jenkins controller is accessible
+  ansible.builtin.uri:
+    url: "http://{{ jenkins_controller_host }}:{{ jenkins_controller_port }}/api/json"
+    method: GET
+    user: "{{ jenkins_admin_user | default('admin') }}"
+    password: "{{ jenkins_admin_password }}"
+    status_code: 200
+  register: jenkins_controller_check
+  retries: 5
+  delay: 10
+  delegate_to: localhost
+  when: jenkins_agent_registration_enabled
+
+- name: Get Jenkins CSRF crumb
+  ansible.builtin.uri:
+    url: "http://{{ jenkins_controller_host }}:{{ jenkins_controller_port }}/crumbIssuer/api/json"
+    method: GET
+    user: "{{ jenkins_admin_user | default('admin') }}"
+    password: "{{ jenkins_admin_password }}"
+    return_content: true
+  register: jenkins_crumb
+  delegate_to: localhost
+  when: jenkins_agent_registration_enabled
+
+- name: Check if agent already exists
+  ansible.builtin.uri:
+    url: "http://{{ jenkins_controller_host }}:{{ jenkins_controller_port }}/computer/{{ jenkins_agent_name }}/api/json"
+    method: GET
+    user: "{{ jenkins_admin_user | default('admin') }}"
+    password: "{{ jenkins_admin_password }}"
+    status_code: [200, 404]
+  register: agent_exists_check
+  delegate_to: localhost
+  when: jenkins_agent_registration_enabled
+
+- name: Delete existing agent if present
+  ansible.builtin.uri:
+    url: "http://{{ jenkins_controller_host }}:{{ jenkins_controller_port }}/computer/{{ jenkins_agent_name }}/doDelete"
+    method: POST
+    user: "{{ jenkins_admin_user | default('admin') }}"
+    password: "{{ jenkins_admin_password }}"
+    headers:
+      Jenkins-Crumb: "{{ jenkins_crumb.json.crumb }}"
+    status_code: [200, 302]
+  delegate_to: localhost
+  when: 
+    - jenkins_agent_registration_enabled
+    - agent_exists_check.status == 200
+    - jenkins_agent_replace_existing | default(false)
+
+- name: Create Jenkins agent configuration
+  ansible.builtin.set_fact:
+    agent_config:
+      name: "{{ jenkins_agent_name }}"
+      nodeDescription: "{{ jenkins_agent_description }}"
+      numExecutors: "{{ jenkins_agent_executors }}"
+      remoteFS: "{{ jenkins_agent_remote_fs }}"
+      labelString: "{{ jenkins_agent_labels }}"
+      mode: "{{ jenkins_agent_usage_mode }}"
+      launcher:
+        stapler-class: "hudson.plugins.sshslaves.SSHLauncher"
+        host: "{{ jenkins_agent_ssh_host }}"
+        port: "{{ jenkins_agent_ssh_port }}"
+        credentialsId: "{{ jenkins_agent_ssh_credential_id }}"
+        launchTimeoutSeconds: 60
+        maxNumRetries: "{{ jenkins_agent_max_num_retries }}"
+        retryWaitTime: "{{ jenkins_agent_retry_wait_time }}"
+        sshHostKeyVerificationStrategy:
+          stapler-class: "hudson.plugins.sshslaves.verifiers.NonVerifyingKeyVerificationStrategy"
+        javaPath: "{{ jenkins_agent_ssh_java_path }}"
+        jvmOptions: "{{ jenkins_agent_ssh_jvm_options }}"
+        prefixStartSlaveCmd: "{{ jenkins_agent_ssh_prefix_start_slave_cmd }}"
+        suffixStartSlaveCmd: "{{ jenkins_agent_ssh_suffix_start_slave_cmd }}"
+      retentionStrategy:
+        stapler-class: "hudson.slaves.RetentionStrategy$Always"
+  when: jenkins_agent_registration_enabled
+
+- name: Add environment variables to agent config
+  ansible.builtin.set_fact:
+    agent_config: "{{ agent_config | combine({'nodeProperties': [{'stapler-class': 'hudson.slaves.EnvironmentVariablesNodeProperty', 'envVars': jenkins_agent_env_vars}]}, recursive=true) }}"
+  when: 
+    - jenkins_agent_registration_enabled
+    - jenkins_agent_env_vars | length > 0
+
+- name: Register Jenkins agent
+  ansible.builtin.uri:
+    url: "http://{{ jenkins_controller_host }}:{{ jenkins_controller_port }}/computer/doCreateItem"
+    method: POST
+    user: "{{ jenkins_admin_user | default('admin') }}"
+    password: "{{ jenkins_admin_password }}"
+    headers:
+      Jenkins-Crumb: "{{ jenkins_crumb.json.crumb }}"
+      Content-Type: "application/x-www-form-urlencoded"
+    body_format: form-urlencoded
+    body:
+      name: "{{ jenkins_agent_name }}"
+      type: "hudson.slaves.DumbSlave"
+      json: "{{ agent_config | to_json }}"
+    status_code: [200, 302]
+  register: agent_creation_result
+  delegate_to: localhost
+  when: 
+    - jenkins_agent_registration_enabled
+    - agent_exists_check.status == 404 or jenkins_agent_replace_existing | default(false)
+
+- name: Wait for agent to come online
+  ansible.builtin.uri:
+    url: "http://{{ jenkins_controller_host }}:{{ jenkins_controller_port }}/computer/{{ jenkins_agent_name }}/api/json"
+    method: GET
+    user: "{{ jenkins_admin_user | default('admin') }}"
+    password: "{{ jenkins_admin_password }}"
+    return_content: true
+  register: agent_status
+  until: agent_status.json.offline == false
+  retries: 12
+  delay: 10
+  delegate_to: localhost
+  when: 
+    - jenkins_agent_registration_enabled
+    - agent_creation_result is succeeded
+
+- name: Display agent registration result
+  ansible.builtin.debug:
+    msg: |
+      Jenkins agent registration completed:
+      - Agent Name: {{ jenkins_agent_name }}
+      - Status: {{ 'Online' if (agent_status.json.offline == false) else 'Offline' }}
+      - Executors: {{ jenkins_agent_executors }}
+      - Labels: {{ jenkins_agent_labels }}
+      - Remote FS: {{ jenkins_agent_remote_fs }}
+  when: 
+    - jenkins_agent_registration_enabled
+    - agent_status is defined

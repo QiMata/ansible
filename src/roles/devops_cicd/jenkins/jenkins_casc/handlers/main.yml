@@ -1,0 +1,22 @@
+---
+- name: restart jenkins
+  ansible.builtin.service:
+    name: jenkins
+    state: restarted
+  when: not ansible_check_mode
+
+- name: reload jenkins config
+  ansible.builtin.uri:
+    url: "http://{{ ansible_default_ipv4.address }}:{{ jenkins_http_port | default(8080) }}/configuration-as-code/reload"
+    method: POST
+    user: "{{ jenkins_admin_user | default('admin') }}"
+    password: "{{ jenkins_admin_password }}"
+    headers:
+      Jenkins-Crumb: "{{ jenkins_crumb.content.split(':')[1] if jenkins_crumb is defined else '' }}"
+    body_format: form-urlencoded
+    body:
+      casc-reload-token: "{{ jenkins_casc_reload_token }}"
+    status_code: [200, 204]
+  retries: 3
+  delay: 5
+  when: not ansible_check_mode

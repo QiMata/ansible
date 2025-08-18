@@ -1,0 +1,15 @@
+import jenkins.model.*
+import hudson.security.*
+
+def instance = Jenkins.getInstance()
+
+// Configure Jenkins to work behind SSL proxy
+instance.setRootUrl("{{ jenkins_ssl_root_url | default('https://' + ansible_fqdn + ':' + jenkins_ssl_port) }}")
+
+// Set reverse proxy settings if behind proxy
+{% if jenkins_behind_proxy | default(false) %}
+System.setProperty("hudson.TcpSlaveAgentListener.hostName", "{{ jenkins_ssl_proxy_host | default(ansible_fqdn) }}")
+System.setProperty("hudson.TcpSlaveAgentListener.port", "{{ jenkins_ssl_proxy_port | default('50000') }}")
+{% endif %}
+
+instance.save()
