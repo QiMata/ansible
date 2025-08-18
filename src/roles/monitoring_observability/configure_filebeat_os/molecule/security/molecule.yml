@@ -1,0 +1,39 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: instance
+    image: quay.io/ansible/molecule-ubuntu:latest
+    pre_build_image: true
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    tmpfs:
+      - /run
+      - /tmp
+    capabilities:
+      - SYS_ADMIN
+    command: "/lib/systemd/systemd"
+provisioner:
+  name: ansible
+  playbooks:
+    prepare: prepare.yml
+    converge: converge.yml
+    verify: verify.yml
+  inventory:
+    host_vars:
+      instance:
+        filebeat_ssl_enabled: true
+        filebeat_use_keystore: true
+        filebeat_keystore_keys:
+          ES_USERNAME: "elastic"
+          ES_PASSWORD: "changeme"
+        filebeat_ssl_verification_mode: "certificate"
+        filebeat_config_file_mode: "0600"
+        filebeat_monitoring_enabled: true
+        filebeat_http_enabled: true
+        filebeat_logging_level: "debug"
+verifier:
+  name: ansible

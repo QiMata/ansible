@@ -1,17 +1,133 @@
 ---
 # tasks file for configure_filebeat
-- name: Ensure filebeat is installed
+
+- name: Include OS-specific variables
+  ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
+  failed_when: false
+
+- name: Ensure required directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - "{{ filebeat_config_dir }}"
+    - "{{ filebeat_data_dir }}"
+    - "{{ filebeat_log_dir }}"
+
+- name: Install filebeat package
   ansible.builtin.apt:
-    name: filebeat
+    name: "filebeat{% if filebeat_version %}={{ filebeat_version }}{% endif %}"
     state: present
     update_cache: true
+  when: ansible_os_family == "Debian"
+
+- name: Install filebeat package (RedHat)
+  ansible.builtin.yum:
+    name: "filebeat{% if filebeat_version %}-{{ filebeat_version }}{% endif %}"
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Create filebeat keystore
+  ansible.builtin.command: filebeat keystore create --force
+  args:
+    creates: "{{ filebeat_config_dir }}/filebeat.keystore"
+  when: filebeat_use_keystore
+  become: true
+  notify:
+    - restart filebeat
+
+- name: Add keys to filebeat keystore
+  ansible.builtin.shell: |
+    echo "{{ item.value }}" | filebeat keystore add {{ item.key }} --stdin --force
+  loop: "{{ filebeat_keystore_keys | dict2items }}"
+  when: 
+    - filebeat_use_keystore
+    - filebeat_keystore_keys | length > 0
+  no_log: true
+  notify:
+    - restart filebeat
+
+- name: Copy SSL certificates
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: '0400'
+  loop:
+    - { src: "{{ filebeat_ssl_certificate }}", dest: "{{ filebeat_config_dir }}/{{ filebeat_ssl_certificate | basename }}" }
+    - { src: "{{ filebeat_ssl_key }}", dest: "{{ filebeat_config_dir }}/{{ filebeat_ssl_key | basename }}" }
+  when: 
+    - filebeat_ssl_enabled
+    - item.src != ""
+  notify:
+    - restart filebeat
+
+- name: Copy SSL CA certificates
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ filebeat_config_dir }}/{{ item | basename }}"
+    owner: root
+    group: root
+    mode: '0444'
+  loop: "{{ filebeat_ssl_certificate_authorities }}"
+  when: 
+    - filebeat_ssl_enabled
+    - filebeat_ssl_certificate_authorities | length > 0
+  notify:
+    - restart filebeat
+
+- name: Enable filebeat modules
+  ansible.builtin.command: filebeat modules enable {{ item }}
+  loop: "{{ filebeat_modules_enabled }}"
+  when: filebeat_modules_enabled | length > 0
+  register: module_enable_result
+  changed_when: "'Enabled' in module_enable_result.stdout"
+  notify:
+    - restart filebeat
 
 - name: Configure filebeat
   ansible.builtin.template:
     src: filebeat.yml.j2
-    dest: /etc/filebeat/filebeat.yml
-    owner: root
-    group: root
-    mode: '0644'
+    dest: "{{ filebeat_config_dir }}/filebeat.yml"
+    owner: "{{ filebeat_config_file_owner }}"
+    group: "{{ filebeat_config_file_group }}"
+    mode: "{{ filebeat_config_file_mode }}"
+    backup: true
   notify:
     - restart filebeat
+
+- name: Set filebeat keystore permissions
+  ansible.builtin.file:
+    path: "{{ filebeat_config_dir }}/filebeat.keystore"
+    owner: root
+    group: root
+    mode: '0600'
+  when: filebeat_use_keystore
+
+- name: Ensure filebeat service is configured
+  ansible.builtin.service:
+    name: filebeat
+    enabled: "{{ filebeat_service_enabled }}"
+    state: "{{ filebeat_service_state }}"
+
+- name: Check filebeat configuration
+  ansible.builtin.command: filebeat test config -c {{ filebeat_config_dir }}/filebeat.yml
+  register: config_test
+  changed_when: false
+  failed_when: config_test.rc != 0
+
+- name: Verify filebeat can connect to output
+  ansible.builtin.command: filebeat test output -c {{ filebeat_config_dir }}/filebeat.yml
+  register: output_test
+  changed_when: false
+  failed_when: false
+  when: filebeat_output_type in ['elasticsearch', 'logstash']
+
+- name: Display output connection test results
+  ansible.builtin.debug:
+    msg: "Output test result: {{ output_test.stdout_lines | default(['Test skipped']) }}"
+  when: output_test is defined

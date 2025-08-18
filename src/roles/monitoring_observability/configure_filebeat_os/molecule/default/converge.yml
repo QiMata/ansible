@@ -4,5 +4,11 @@
   become: true
   vars:
     filebeat_output_elasticsearch_hosts: ['http://localhost:9200']
+    filebeat_service_enabled: true
+    filebeat_service_state: started
+    filebeat_logging_level: "info"
+    filebeat_paths:
+      - "/var/log/*.log"
+      - "/var/log/test-*.log"
   roles:
     - role: configure_filebeat_os

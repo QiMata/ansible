@@ -1,6 +1,144 @@
 ---
 # defaults file for configure_filebeat
+
+# Basic Configuration
+filebeat_version: ""  # If empty, installs latest available
+filebeat_config_dir: "/etc/filebeat"
+filebeat_data_dir: "/var/lib/filebeat"
+filebeat_log_dir: "/var/log/filebeat"
+
+# Service Management
+filebeat_service_enabled: true
+filebeat_service_state: started
+
+# Output Configuration
+filebeat_output_type: "elasticsearch"  # elasticsearch, logstash, kafka, redis, file
 filebeat_output_elasticsearch_hosts: ["localhost:9200"]
-filebeat_input_type: log
+filebeat_output_logstash_hosts: []
+filebeat_output_kafka_hosts: []
+filebeat_output_redis_hosts: []
+
+# Security & Authentication
+filebeat_ssl_enabled: false
+filebeat_ssl_certificate_authorities: []
+filebeat_ssl_certificate: ""
+filebeat_ssl_key: ""
+filebeat_ssl_verification_mode: "full"  # full, strict, certificate, none
+filebeat_ssl_supported_protocols: ["TLSv1.2", "TLSv1.3"]
+
+# Authentication
+filebeat_username: ""
+filebeat_password: ""
+filebeat_api_key: ""
+filebeat_use_keystore: false
+filebeat_keystore_keys: {}
+
+# Load Balancing
+filebeat_load_balance: false
+filebeat_load_balance_randomize_hosts: true
+
+# Output Buffering & Performance
+filebeat_queue_type: "mem"  # mem, spool
+filebeat_queue_events: 4096
+filebeat_queue_flush_min_events: 512
+filebeat_queue_flush_timeout: "1s"
+filebeat_bulk_max_size: 50
+filebeat_worker: 1
+filebeat_compression_level: 0
+
+# Input Configuration
+filebeat_input_type: "log"
 filebeat_paths:
-  - /var/log/*.log
+  - "/var/log/*.log"
+
+# Additional Input Types
+filebeat_journald_enabled: false
+filebeat_journald_id: "systemd-journal"
+filebeat_journald_paths: []
+
+filebeat_docker_enabled: false
+filebeat_docker_containers_ids: ["*"]
+filebeat_docker_containers_names: []
+filebeat_docker_containers_path: "/var/lib/docker/containers"
+filebeat_docker_containers_stream: "all"  # all, stdout, stderr
+
+# Multiline Configuration
+filebeat_multiline_enabled: false
+filebeat_multiline_type: "pattern"  # pattern, count
+filebeat_multiline_pattern: "^[[:space:]]"
+filebeat_multiline_negate: false
+filebeat_multiline_match: "after"  # after, before
+filebeat_multiline_max_lines: 500
+filebeat_multiline_timeout: "5s"
+
+# Filebeat Modules
+filebeat_modules_enabled: []
+filebeat_system_module_enabled: false
+filebeat_system_module_syslog_enabled: true
+filebeat_system_module_auth_enabled: true
+
+# Processors
+filebeat_processors_enabled: false
+filebeat_add_host_metadata: false
+filebeat_add_docker_metadata: false
+filebeat_add_kubernetes_metadata: false
+filebeat_add_observer_metadata: false
+filebeat_processors_custom: []
+
+# Field Enrichment
+filebeat_fields: {}
+filebeat_fields_under_root: false
+filebeat_tags: []
+filebeat_name: ""  # If empty, uses hostname
+
+# Index Lifecycle Management (ILM)
+filebeat_ilm_enabled: false
+filebeat_ilm_rollover_alias: "filebeat"
+filebeat_ilm_pattern: "000001"
+filebeat_ilm_policy: ""
+filebeat_ilm_check_exists: true
+
+# Index Template
+filebeat_template_enabled: true
+filebeat_template_name: "filebeat"
+filebeat_template_pattern: "filebeat-*"
+filebeat_template_settings: {}
+
+# Monitoring & Health
+filebeat_monitoring_enabled: false
+filebeat_monitoring_elasticsearch_hosts: []
+filebeat_http_enabled: false
+filebeat_http_host: "localhost"
+filebeat_http_port: 5066
+
+# Logging Configuration
+filebeat_logging_level: "info"  # critical, error, warning, info, debug
+filebeat_logging_to_files: true
+filebeat_logging_to_syslog: false
+filebeat_logging_files_path: "/var/log/filebeat"
+filebeat_logging_files_name: "filebeat"
+filebeat_logging_files_rotateeverybytes: 10485760  # 10MB
+filebeat_logging_files_keepfiles: 7
+
+# Performance Tuning
+filebeat_harvester_buffer_size: 16384
+filebeat_harvester_max_bytes: 10485760  # 10MB
+filebeat_harvester_scan_frequency: "10s"
+filebeat_harvester_ignore_older: "24h"
+filebeat_harvester_close_inactive: "5m"
+filebeat_harvester_close_renamed: false
+filebeat_harvester_close_removed: true
+filebeat_harvester_close_eof: false
+filebeat_harvester_clean_inactive: "0"  # disabled
+filebeat_harvester_clean_removed: true
+
+# File Configuration Permissions
+filebeat_config_file_mode: "0600"  # Restrictive for security
+filebeat_config_file_owner: "root"
+filebeat_config_file_group: "root"
+
+# Conditional Configuration
+filebeat_conditions: []
+
+# Custom Configuration Extensions
+filebeat_custom_config: {}

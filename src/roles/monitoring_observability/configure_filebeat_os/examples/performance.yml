@@ -1,0 +1,66 @@
+---
+# Example playbook demonstrating high-performance configuration
+- name: High-Performance Filebeat Configuration
+  hosts: all
+  become: true
+  vars:
+    # Output to Kafka for high throughput
+    filebeat_output_type: "kafka"
+    filebeat_output_kafka_hosts:
+      - "kafka1.example.com:9092"
+      - "kafka2.example.com:9092"
+      - "kafka3.example.com:9092"
+
+    # High-performance queue settings
+    filebeat_queue_type: "mem"
+    filebeat_queue_events: 16384
+    filebeat_queue_flush_min_events: 2048
+    filebeat_queue_flush_timeout: "1s"
+
+    # Bulk processing optimization
+    filebeat_bulk_max_size: 500
+    filebeat_worker: 4
+    filebeat_compression_level: 6
+
+    # Aggressive harvester settings
+    filebeat_harvester_buffer_size: 65536  # 64KB
+    filebeat_harvester_max_bytes: 52428800  # 50MB
+    filebeat_harvester_scan_frequency: "1s"
+    filebeat_harvester_close_inactive: "30s"
+    filebeat_harvester_clean_inactive: "1h"
+
+    # Multiple high-volume log paths
+    filebeat_paths:
+      - "/var/log/*.log"
+      - "/var/log/applications/*/*.log"
+      - "/var/log/nginx/*.log"
+      - "/var/log/apache2/*.log"
+      - "/opt/*/logs/*.log"
+
+    # Performance monitoring
+    filebeat_monitoring_enabled: true
+    filebeat_http_enabled: true
+    filebeat_http_port: 5066
+
+    # Optimized logging
+    filebeat_logging_level: "warning"  # Reduce log verbosity
+    filebeat_logging_files_rotateeverybytes: 52428800  # 50MB
+    filebeat_logging_files_keepfiles: 2
+
+    # Minimal processors for performance
+    filebeat_processors_enabled: true
+    filebeat_add_host_metadata: true
+    filebeat_processors_custom:
+      - drop_fields:
+          fields: ["agent.ephemeral_id", "agent.id", "ecs.version"]
+
+    # Performance tags
+    filebeat_fields:
+      performance_tier: "high"
+      node_class: "log-shipper"
+    filebeat_tags:
+      - "high-performance"
+      - "kafka-output"
+
+  roles:
+    - configure_filebeat_os

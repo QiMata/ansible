@@ -1,6 +1,25 @@
 ---
 # handlers file for configure_filebeat
-- name: Restart filebeat
+
+- name: restart filebeat
   ansible.builtin.service:
     name: filebeat
     state: restarted
+  listen: "restart filebeat"
+
+- name: reload filebeat
+  ansible.builtin.service:
+    name: filebeat
+    state: reloaded
+  listen: "reload filebeat"
+
+- name: enable filebeat
+  ansible.builtin.service:
+    name: filebeat
+    enabled: true
+  listen: "enable filebeat"
+
+- name: validate filebeat config
+  ansible.builtin.command: filebeat test config
+  listen: "validate filebeat config"
+  changed_when: false

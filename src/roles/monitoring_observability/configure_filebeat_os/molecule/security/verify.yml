@@ -1,0 +1,83 @@
+---
+- name: Verify Security Configuration
+  hosts: all
+  gather_facts: false
+  vars:
+    filebeat_config_dir: "/etc/filebeat"
+  tasks:
+    - name: Check keystore exists
+      ansible.builtin.stat:
+        path: "{{ filebeat_config_dir }}/filebeat.keystore"
+      register: keystore_check
+
+    - name: Assert keystore exists and has correct permissions
+      ansible.builtin.assert:
+        that:
+          - keystore_check.stat.exists
+          - keystore_check.stat.mode == "0600"
+          - keystore_check.stat.pw_name == "root"
+
+    - name: Verify SSL certificates are copied
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      register: ssl_check
+      loop:
+        - "{{ filebeat_config_dir }}/filebeat.crt"
+        - "{{ filebeat_config_dir }}/filebeat.key"
+
+    - name: Assert SSL files exist with correct permissions
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.mode == "0400"
+      loop: "{{ ssl_check.results }}"
+
+    - name: Read filebeat configuration
+      ansible.builtin.slurp:
+        src: "{{ filebeat_config_dir }}/filebeat.yml"
+      register: config_content
+
+    - name: Parse configuration
+      ansible.builtin.set_fact:
+        config_yaml: "{{ config_content.content | b64decode | from_yaml }}"
+
+    - name: Verify SSL configuration in filebeat.yml
+      ansible.builtin.assert:
+        that:
+          - config_yaml.output.elasticsearch.ssl.enabled == true
+          - config_yaml.output.elasticsearch.ssl.verification_mode == "certificate"
+          - "'${ES_USERNAME}' in config_yaml.output.elasticsearch.username"
+          - "'${ES_PASSWORD}' in config_yaml.output.elasticsearch.password"
+
+    - name: Verify security fields and tags
+      ansible.builtin.assert:
+        that:
+          - config_yaml.fields.environment == "testing"
+          - config_yaml.fields.datacenter == "molecule"
+          - "'security-test' in config_yaml.tags"
+          - "'molecule' in config_yaml.tags"
+
+    - name: Verify monitoring and HTTP endpoint are enabled
+      ansible.builtin.assert:
+        that:
+          - config_yaml.monitoring.enabled == true
+          - config_yaml.http.enabled == true
+          - config_yaml.http.port == 5066
+
+    - name: Test HTTP endpoint accessibility
+      ansible.builtin.uri:
+        url: "http://localhost:5066/stats"
+        method: GET
+      register: http_test
+      failed_when: false
+
+    - name: Check keystore contains expected keys
+      ansible.builtin.command: filebeat keystore list
+      register: keystore_list
+      changed_when: false
+
+    - name: Verify keystore keys
+      ansible.builtin.assert:
+        that:
+          - "'ES_USERNAME' in keystore_list.stdout"
+          - "'ES_PASSWORD' in keystore_list.stdout"

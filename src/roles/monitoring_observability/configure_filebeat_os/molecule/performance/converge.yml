@@ -1,0 +1,25 @@
+---
+- name: Converge Performance Testing
+  hosts: all
+  become: true
+  vars:
+    filebeat_paths:
+      - "/var/log/*.log"
+      - "/var/log/large-app-*.log"
+      - "/var/log/rotation-test-*.log"
+      - "/var/log/continuous.log"
+    filebeat_fields:
+      performance_test: true
+      node_type: "high-throughput"
+    filebeat_tags:
+      - "performance"
+      - "load-test"
+    filebeat_processors_enabled: true
+    filebeat_add_host_metadata: true
+    filebeat_processors_custom:
+      - add_tags:
+          tags: ["processed"]
+      - drop_fields:
+          fields: ["agent.ephemeral_id", "agent.id"]
+  roles:
+    - configure_filebeat_os

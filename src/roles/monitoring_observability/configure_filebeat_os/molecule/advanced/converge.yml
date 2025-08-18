@@ -1,0 +1,25 @@
+---
+- name: Converge Advanced Features
+  hosts: all
+  become: true
+  vars:
+    filebeat_paths:
+      - "/var/log/*.log"
+      - "/var/log/multiline-test.log"
+      - "/var/log/app-*.log"
+    filebeat_processors_custom:
+      - drop_event:
+          when:
+            regexp:
+              message: "^DEBUG"
+      - add_tags:
+          tags: ["advanced-test"]
+          when:
+            contains:
+              message: "ERROR"
+    filebeat_harvester_scan_frequency: "5s"
+    filebeat_harvester_close_inactive: "1m"
+    filebeat_queue_events: 8192
+    filebeat_bulk_max_size: 100
+  roles:
+    - configure_filebeat_os

@@ -1,0 +1,88 @@
+---
+- name: Verify Advanced Configuration
+  hosts: all
+  gather_facts: false
+  vars:
+    filebeat_config_dir: "/etc/filebeat"
+  tasks:
+    - name: Read filebeat configuration
+      ansible.builtin.slurp:
+        src: "{{ filebeat_config_dir }}/filebeat.yml"
+      register: config_content
+
+    - name: Parse configuration
+      ansible.builtin.set_fact:
+        config_yaml: "{{ config_content.content | b64decode | from_yaml }}"
+
+    - name: Verify multiline configuration
+      ansible.builtin.assert:
+        that:
+          - config_yaml.filebeat.inputs[0].multiline.type == "pattern"
+          - config_yaml.filebeat.inputs[0].multiline.pattern is defined
+          - config_yaml.filebeat.inputs[0].multiline.match == "after"
+          - config_yaml.filebeat.inputs[0].multiline.max_lines == 500
+
+    - name: Verify output configuration is Logstash
+      ansible.builtin.assert:
+        that:
+          - config_yaml.output.logstash is defined
+          - config_yaml.output.logstash.hosts[0] == "localhost:5044"
+          - config_yaml.output.elasticsearch is not defined
+
+    - name: Verify processors configuration
+      ansible.builtin.assert:
+        that:
+          - config_yaml.processors is defined
+          - config_yaml.processors | length >= 1
+
+    - name: Check for add_host_metadata processor
+      ansible.builtin.assert:
+        that:
+          - config_yaml.processors | selectattr('add_host_metadata', 'defined') | list | length > 0
+
+    - name: Verify ILM configuration
+      ansible.builtin.assert:
+        that:
+          - config_yaml.output.logstash.ilm is not defined  # ILM not supported with Logstash
+
+    - name: Verify custom configuration
+      ansible.builtin.assert:
+        that:
+          - config_yaml.max_procs == 2
+
+    - name: Verify harvester performance settings
+      ansible.builtin.assert:
+        that:
+          - config_yaml.filebeat.inputs[0].scan_frequency == "5s"
+          - config_yaml.filebeat.inputs[0].close_inactive == "1m"
+
+    - name: Verify queue configuration
+      ansible.builtin.assert:
+        that:
+          - config_yaml.queue.mem.events == 8192
+          - config_yaml.queue.mem.flush.min_events == 512
+
+    - name: Check system module is enabled
+      ansible.builtin.command: filebeat modules list
+      register: modules_list
+      changed_when: false
+
+    - name: Verify system module is enabled
+      ansible.builtin.assert:
+        that:
+          - "'system' in modules_list.stdout"
+
+    - name: Test configuration with multiline sample
+      ansible.builtin.command: filebeat test inputs -c {{ filebeat_config_dir }}/filebeat.yml
+      register: inputs_test
+      changed_when: false
+      failed_when: false
+
+    - name: Check modules configuration directory
+      ansible.builtin.stat:
+        path: "{{ filebeat_config_dir }}/modules.d"
+      register: modules_dir
+
+    - name: Verify modules directory exists
+      ansible.builtin.assert:
+        that: modules_dir.stat.exists and modules_dir.stat.isdir

@@ -1,0 +1,46 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: instance
+    image: quay.io/ansible/molecule-ubuntu:latest
+    pre_build_image: true
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    tmpfs:
+      - /run
+      - /tmp
+    capabilities:
+      - SYS_ADMIN
+    command: "/lib/systemd/systemd"
+provisioner:
+  name: ansible
+  playbooks:
+    prepare: prepare.yml
+    converge: converge.yml
+    verify: verify.yml
+  inventory:
+    host_vars:
+      instance:
+        filebeat_multiline_enabled: true
+        filebeat_multiline_pattern: "^[[:space:]]|(^Caused by:)"
+        filebeat_multiline_negate: false
+        filebeat_multiline_match: "after"
+        filebeat_multiline_max_lines: 500
+        filebeat_modules_enabled:
+          - system
+        filebeat_system_module_enabled: true
+        filebeat_processors_enabled: true
+        filebeat_add_host_metadata: true
+        filebeat_add_docker_metadata: true
+        filebeat_output_type: "logstash"
+        filebeat_output_logstash_hosts: ["localhost:5044"]
+        filebeat_ilm_enabled: true
+        filebeat_template_enabled: true
+        filebeat_custom_config:
+          max_procs: 2
+verifier:
+  name: ansible

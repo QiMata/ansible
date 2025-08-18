@@ -1,0 +1,96 @@
+---
+# Example playbook demonstrating advanced features
+- name: Advanced Filebeat Configuration with Multiline and Modules
+  hosts: all
+  become: true
+  vars:
+    # Advanced input configuration
+    filebeat_multiline_enabled: true
+    filebeat_multiline_pattern: "^[[:space:]]|(^Caused by:)"
+    filebeat_multiline_negate: false
+    filebeat_multiline_match: "after"
+    filebeat_multiline_max_lines: 500
+    filebeat_multiline_timeout: "5s"
+
+    # Multiple output types example - using Logstash
+    filebeat_output_type: "logstash"
+    filebeat_output_logstash_hosts: 
+      - "logstash1.example.com:5044"
+      - "logstash2.example.com:5044"
+    filebeat_load_balance: true
+
+    # Performance tuning
+    filebeat_queue_type: "mem"
+    filebeat_queue_events: 8192
+    filebeat_queue_flush_min_events: 1024
+    filebeat_bulk_max_size: 100
+    filebeat_worker: 2
+    filebeat_compression_level: 3
+
+    # Harvester optimization
+    filebeat_harvester_buffer_size: 32768
+    filebeat_harvester_max_bytes: 20971520  # 20MB
+    filebeat_harvester_scan_frequency: "5s"
+    filebeat_harvester_close_inactive: "2m"
+
+    # Enable system modules
+    filebeat_modules_enabled:
+      - system
+      - auditd
+    filebeat_system_module_enabled: true
+
+    # Multiple input types
+    filebeat_paths:
+      - "/var/log/*.log"
+      - "/var/log/applications/*.log"
+    
+    filebeat_journald_enabled: true
+    filebeat_journald_id: "systemd-journal"
+
+    # Docker container logs (if Docker is present)
+    filebeat_docker_enabled: true
+    filebeat_docker_containers_ids: ["*"]
+    filebeat_docker_containers_stream: "all"
+
+    # Advanced processors
+    filebeat_processors_enabled: true
+    filebeat_add_host_metadata: true
+    filebeat_add_docker_metadata: true
+    filebeat_processors_custom:
+      - drop_event:
+          when:
+            regexp:
+              message: "^DEBUG"
+      - add_tags:
+          tags: ["java-app"]
+          when:
+            contains:
+              message: "java"
+      - add_fields:
+          target: ""
+          fields:
+            log_type: "application"
+            processed_by: "filebeat"
+
+    # Field enrichment
+    filebeat_fields:
+      datacenter: "dc1"
+      environment: "production"
+      application_tier: "backend"
+    filebeat_tags:
+      - "advanced"
+      - "multiline"
+      - "high-volume"
+
+    # Monitoring and health checks
+    filebeat_monitoring_enabled: true
+    filebeat_http_enabled: true
+    filebeat_http_port: 5066
+
+    # Enhanced logging
+    filebeat_logging_level: "info"
+    filebeat_logging_files_rotateeverybytes: 10485760  # 10MB
+    filebeat_logging_files_keepfiles: 5
+
+  roles:
+    - configure_filebeat_os

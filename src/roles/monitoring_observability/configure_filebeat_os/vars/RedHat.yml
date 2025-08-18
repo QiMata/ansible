@@ -1,0 +1,6 @@
+---
+# RedHat/CentOS specific variables
+filebeat_package_manager: "yum"
+filebeat_service_name: "filebeat"
+filebeat_user: "root"
+filebeat_group: "root"

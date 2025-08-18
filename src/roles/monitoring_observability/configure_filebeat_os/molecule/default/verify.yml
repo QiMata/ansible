@@ -2,17 +2,83 @@
 - name: Verify
   hosts: all
   gather_facts: false
+  vars:
+    filebeat_config_dir: "/etc/filebeat"
+    filebeat_data_dir: "/var/lib/filebeat"
+    filebeat_log_dir: "/var/log/filebeat"
   tasks:
-    - name: Check filebeat installed
+    - name: Check filebeat package is installed
       ansible.builtin.package:
         name: filebeat
         state: present
       check_mode: true
+      register: package_check
 
-    - name: Verify configuration file
+    - name: Assert filebeat package is installed
+      ansible.builtin.assert:
+        that: not package_check.changed
+
+    - name: Verify filebeat configuration file exists
       ansible.builtin.stat:
-        path: /etc/filebeat/filebeat.yml
+        path: "{{ filebeat_config_dir }}/filebeat.yml"
       register: fb_cfg
 
-    - ansible.builtin.assert:
+    - name: Assert configuration file exists
+      ansible.builtin.assert:
         that: fb_cfg.stat.exists
+
+    - name: Verify filebeat configuration file permissions
+      ansible.builtin.stat:
+        path: "{{ filebeat_config_dir }}/filebeat.yml"
+      register: fb_cfg_perms
+
+    - name: Assert configuration file has correct permissions
+      ansible.builtin.assert:
+        that: 
+          - fb_cfg_perms.stat.mode == "0600"
+          - fb_cfg_perms.stat.pw_name == "root"
+          - fb_cfg_perms.stat.gr_name == "root"
+
+    - name: Verify required directories exist
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      register: dir_check
+      loop:
+        - "{{ filebeat_config_dir }}"
+        - "{{ filebeat_data_dir }}"
+        - "{{ filebeat_log_dir }}"
+
+    - name: Assert directories exist
+      ansible.builtin.assert:
+        that: item.stat.exists and item.stat.isdir
+      loop: "{{ dir_check.results }}"
+
+    - name: Check filebeat service status
+      ansible.builtin.service:
+        name: filebeat
+      register: service_status
+
+    - name: Verify filebeat service is enabled and running
+      ansible.builtin.assert:
+        that:
+          - service_status.status.ActiveState == "active"
+          - service_status.status.UnitFileState == "enabled"
+
+    - name: Test filebeat configuration syntax
+      ansible.builtin.command: filebeat test config -c {{ filebeat_config_dir }}/filebeat.yml
+      register: config_test
+      changed_when: false
+
+    - name: Assert configuration is valid
+      ansible.builtin.assert:
+        that: config_test.rc == 0
+
+    - name: Check filebeat can read log files
+      ansible.builtin.command: filebeat test inputs -c {{ filebeat_config_dir }}/filebeat.yml
+      register: inputs_test
+      changed_when: false
+      failed_when: false
+
+    - name: Display inputs test results
+      ansible.builtin.debug:
+        msg: "Inputs test result: {{ inputs_test.stdout_lines | default(['No output']) }}"

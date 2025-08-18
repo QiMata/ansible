@@ -1,0 +1,64 @@
+---
+- name: Prepare Advanced Testing
+  hosts: all
+  become: true
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - curl
+          - gnupg
+          - apt-transport-https
+          - docker.io
+        state: present
+
+    - name: Add Elastic GPG key
+      ansible.builtin.apt_key:
+        url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+        state: present
+
+    - name: Add Elastic repository
+      ansible.builtin.apt_repository:
+        repo: "deb https://artifacts.elastic.co/packages/8.x/apt stable main"
+        state: present
+
+    - name: Create multiline test log
+      ansible.builtin.copy:
+        content: |
+          2023-08-18 10:00:01 INFO Starting application
+          2023-08-18 10:00:02 ERROR Something went wrong
+            at com.example.Main.main(Main.java:25)
+            at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+            at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+          Caused by: java.lang.RuntimeException: Test exception
+            at com.example.Service.process(Service.java:45)
+            at com.example.Main.run(Main.java:20)
+          2023-08-18 10:00:03 INFO Application recovered
+        dest: /var/log/multiline-test.log
+        mode: '0644'
+
+    - name: Create additional test logs
+      ansible.builtin.file:
+        path: "/var/log/{{ item }}"
+        state: touch
+        mode: '0644'
+      loop:
+        - app-system.log
+        - performance.log
+        - security.log
+
+    - name: Start Docker service
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Pull test container
+      ansible.builtin.command: docker pull hello-world
+      changed_when: false
+      failed_when: false

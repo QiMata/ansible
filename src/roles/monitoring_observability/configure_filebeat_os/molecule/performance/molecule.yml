@@ -1,0 +1,44 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: instance
+    image: quay.io/ansible/molecule-ubuntu:latest
+    pre_build_image: true
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    tmpfs:
+      - /run
+      - /tmp
+    capabilities:
+      - SYS_ADMIN
+    command: "/lib/systemd/systemd"
+provisioner:
+  name: ansible
+  playbooks:
+    prepare: prepare.yml
+    converge: converge.yml
+    verify: verify.yml
+  inventory:
+    host_vars:
+      instance:
+        filebeat_queue_type: "mem"
+        filebeat_queue_events: 16384
+        filebeat_queue_flush_min_events: 1024
+        filebeat_bulk_max_size: 200
+        filebeat_worker: 2
+        filebeat_compression_level: 3
+        filebeat_harvester_buffer_size: 32768
+        filebeat_harvester_max_bytes: 20971520  # 20MB
+        filebeat_harvester_scan_frequency: "1s"
+        filebeat_harvester_close_inactive: "30s"
+        filebeat_monitoring_enabled: true
+        filebeat_http_enabled: true
+        filebeat_logging_level: "info"
+        filebeat_logging_files_rotateeverybytes: 20971520  # 20MB
+        filebeat_logging_files_keepfiles: 3
+verifier:
+  name: ansible

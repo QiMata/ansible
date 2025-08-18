@@ -1,0 +1,20 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    filebeat_ssl_certificate: "/tmp/ssl/filebeat.crt"
+    filebeat_ssl_key: "/tmp/ssl/filebeat.key"
+    filebeat_paths:
+      - "/var/log/*.log"
+      - "/var/log/test-*.log"
+    filebeat_fields:
+      environment: "testing"
+      datacenter: "molecule"
+    filebeat_tags:
+      - "security-test"
+      - "molecule"
+    filebeat_processors_enabled: true
+    filebeat_add_host_metadata: true
+  roles:
+    - configure_filebeat_os

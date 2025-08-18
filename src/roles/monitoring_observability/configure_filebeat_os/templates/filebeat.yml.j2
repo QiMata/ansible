@@ -1,12 +1,305 @@
 # {{ ansible_managed }}
+# Filebeat Configuration
 
+# ================================== Global ===================================
+{% if filebeat_name %}
+name: {{ filebeat_name }}
+{% else %}
+name: {{ ansible_hostname }}
+{% endif %}
+
+{% if filebeat_tags | length > 0 %}
+tags: {{ filebeat_tags | to_json }}
+{% endif %}
+
+{% if filebeat_fields | length > 0 %}
+fields:
+{{ filebeat_fields | to_nice_yaml(indent=2) | indent(2, first=False) }}
+fields_under_root: {{ filebeat_fields_under_root | lower }}
+{% endif %}
+
+# ================================== Inputs ===================================
 filebeat.inputs:
-- type: {{ filebeat_input_type }}
+
+# Log input
+{% if filebeat_input_type == "log" %}
+- type: log
   enabled: true
   paths:
 {% for path in filebeat_paths %}
     - {{ path }}
 {% endfor %}
 
+{% if filebeat_multiline_enabled %}
+  multiline.type: {{ filebeat_multiline_type }}
+{% if filebeat_multiline_type == "pattern" %}
+  multiline.pattern: '{{ filebeat_multiline_pattern }}'
+  multiline.negate: {{ filebeat_multiline_negate | lower }}
+  multiline.match: {{ filebeat_multiline_match }}
+{% endif %}
+  multiline.max_lines: {{ filebeat_multiline_max_lines }}
+  multiline.timeout: {{ filebeat_multiline_timeout }}
+{% endif %}
+
+  harvester_buffer_size: {{ filebeat_harvester_buffer_size }}
+  max_bytes: {{ filebeat_harvester_max_bytes }}
+  scan_frequency: {{ filebeat_harvester_scan_frequency }}
+  ignore_older: {{ filebeat_harvester_ignore_older }}
+  close_inactive: {{ filebeat_harvester_close_inactive }}
+  close_renamed: {{ filebeat_harvester_close_renamed | lower }}
+  close_removed: {{ filebeat_harvester_close_removed | lower }}
+  close_eof: {{ filebeat_harvester_close_eof | lower }}
+{% if filebeat_harvester_clean_inactive != "0" %}
+  clean_inactive: {{ filebeat_harvester_clean_inactive }}
+{% endif %}
+  clean_removed: {{ filebeat_harvester_clean_removed | lower }}
+
+{% if filebeat_conditions | length > 0 %}
+  processors:
+{% for condition in filebeat_conditions %}
+    {{ condition | to_nice_yaml | indent(4, first=False) }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+# Journald input
+{% if filebeat_journald_enabled %}
+- type: journald
+  enabled: true
+  id: {{ filebeat_journald_id }}
+{% if filebeat_journald_paths | length > 0 %}
+  paths:
+{% for path in filebeat_journald_paths %}
+    - {{ path }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+# Docker input
+{% if filebeat_docker_enabled %}
+- type: container
+  enabled: true
+  paths:
+    - {{ filebeat_docker_containers_path }}/*/*.log
+  containers.ids:
+{% for container_id in filebeat_docker_containers_ids %}
+    - {{ container_id }}
+{% endfor %}
+{% if filebeat_docker_containers_names | length > 0 %}
+  containers.names:
+{% for container_name in filebeat_docker_containers_names %}
+    - {{ container_name }}
+{% endfor %}
+{% endif %}
+  containers.stream: {{ filebeat_docker_containers_stream }}
+{% endif %}
+
+# ================================ Processors ==================================
+{% if filebeat_processors_enabled %}
+processors:
+{% if filebeat_add_host_metadata %}
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+{% endif %}
+
+{% if filebeat_add_docker_metadata %}
+  - add_docker_metadata: ~
+{% endif %}
+
+{% if filebeat_add_kubernetes_metadata %}
+  - add_kubernetes_metadata: ~
+{% endif %}
+
+{% if filebeat_add_observer_metadata %}
+  - add_observer_metadata: ~
+{% endif %}
+
+{% for processor in filebeat_processors_custom %}
+  - {{ processor | to_nice_yaml | indent(4, first=False) }}
+{% endfor %}
+{% endif %}
+
+# ================================== Modules ===================================
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: true
+  reload.period: 10s
+
+# ================================== Outputs ===================================
+
+# --------------------------- Elasticsearch Output ---------------------------
+{% if filebeat_output_type == "elasticsearch" %}
 output.elasticsearch:
-  hosts: {{ filebeat_output_elasticsearch_hosts }}
+  hosts: {{ filebeat_output_elasticsearch_hosts | to_json }}
+  
+{% if filebeat_load_balance %}
+  loadbalance: true
+{% endif %}
+
+{% if filebeat_username and not filebeat_use_keystore %}
+  username: {{ filebeat_username }}
+  password: {{ filebeat_password }}
+{% elif filebeat_api_key and not filebeat_use_keystore %}
+  api_key: {{ filebeat_api_key }}
+{% elif filebeat_use_keystore %}
+  username: "${ES_USERNAME}"
+  password: "${ES_PASSWORD}"
+{% endif %}
+
+  compression_level: {{ filebeat_compression_level }}
+  worker: {{ filebeat_worker }}
+  bulk_max_size: {{ filebeat_bulk_max_size }}
+
+{% if filebeat_ssl_enabled %}
+  ssl.enabled: true
+  ssl.verification_mode: {{ filebeat_ssl_verification_mode }}
+{% if filebeat_ssl_certificate_authorities | length > 0 %}
+  ssl.certificate_authorities:
+{% for ca in filebeat_ssl_certificate_authorities %}
+    - {{ filebeat_config_dir }}/{{ ca | basename }}
+{% endfor %}
+{% endif %}
+{% if filebeat_ssl_certificate %}
+  ssl.certificate: {{ filebeat_config_dir }}/{{ filebeat_ssl_certificate | basename }}
+  ssl.key: {{ filebeat_config_dir }}/{{ filebeat_ssl_key | basename }}
+{% endif %}
+  ssl.supported_protocols: {{ filebeat_ssl_supported_protocols | to_json }}
+{% endif %}
+
+{% if filebeat_ilm_enabled %}
+  ilm.enabled: true
+  ilm.rollover_alias: {{ filebeat_ilm_rollover_alias }}
+  ilm.pattern: {{ filebeat_ilm_pattern }}
+{% if filebeat_ilm_policy %}
+  ilm.policy: {{ filebeat_ilm_policy }}
+{% endif %}
+  ilm.check_exists: {{ filebeat_ilm_check_exists | lower }}
+{% endif %}
+
+{% if filebeat_template_enabled %}
+  template.enabled: {{ filebeat_template_enabled | lower }}
+  template.name: {{ filebeat_template_name }}
+  template.pattern: {{ filebeat_template_pattern }}
+{% if filebeat_template_settings | length > 0 %}
+  template.settings:
+{{ filebeat_template_settings | to_nice_yaml(indent=2) | indent(4, first=False) }}
+{% endif %}
+{% endif %}
+{% endif %}
+
+# ------------------------------- Logstash Output -------------------------------
+{% if filebeat_output_type == "logstash" %}
+output.logstash:
+  hosts: {{ filebeat_output_logstash_hosts | to_json }}
+  
+{% if filebeat_load_balance %}
+  loadbalance: {{ filebeat_load_balance | lower }}
+{% endif %}
+
+  compression_level: {{ filebeat_compression_level }}
+  worker: {{ filebeat_worker }}
+  bulk_max_size: {{ filebeat_bulk_max_size }}
+
+{% if filebeat_ssl_enabled %}
+  ssl.enabled: true
+  ssl.verification_mode: {{ filebeat_ssl_verification_mode }}
+{% if filebeat_ssl_certificate_authorities | length > 0 %}
+  ssl.certificate_authorities:
+{% for ca in filebeat_ssl_certificate_authorities %}
+    - {{ filebeat_config_dir }}/{{ ca | basename }}
+{% endfor %}
+{% endif %}
+{% if filebeat_ssl_certificate %}
+  ssl.certificate: {{ filebeat_config_dir }}/{{ filebeat_ssl_certificate | basename }}
+  ssl.key: {{ filebeat_config_dir }}/{{ filebeat_ssl_key | basename }}
+{% endif %}
+{% endif %}
+{% endif %}
+
+# -------------------------------- Kafka Output --------------------------------
+{% if filebeat_output_type == "kafka" %}
+output.kafka:
+  hosts: {{ filebeat_output_kafka_hosts | to_json }}
+  topic: "filebeat"
+  compression: gzip
+  max_message_bytes: 1000000
+  worker: {{ filebeat_worker }}
+
+{% if filebeat_ssl_enabled %}
+  ssl.enabled: true
+  ssl.verification_mode: {{ filebeat_ssl_verification_mode }}
+{% if filebeat_ssl_certificate_authorities | length > 0 %}
+  ssl.certificate_authorities:
+{% for ca in filebeat_ssl_certificate_authorities %}
+    - {{ filebeat_config_dir }}/{{ ca | basename }}
+{% endfor %}
+{% endif %}
+{% endif %}
+{% endif %}
+
+# -------------------------------- Redis Output --------------------------------
+{% if filebeat_output_type == "redis" %}
+output.redis:
+  hosts: {{ filebeat_output_redis_hosts | to_json }}
+  key: "filebeat"
+  worker: {{ filebeat_worker }}
+
+{% if filebeat_ssl_enabled %}
+  ssl.enabled: true
+  ssl.verification_mode: {{ filebeat_ssl_verification_mode }}
+{% if filebeat_ssl_certificate_authorities | length > 0 %}
+  ssl.certificate_authorities:
+{% for ca in filebeat_ssl_certificate_authorities %}
+    - {{ filebeat_config_dir }}/{{ ca | basename }}
+{% endfor %}
+{% endif %}
+{% endif %}
+{% endif %}
+
+# ================================= Queues ====================================
+queue.{{ filebeat_queue_type }}:
+  events: {{ filebeat_queue_events }}
+  flush.min_events: {{ filebeat_queue_flush_min_events }}
+  flush.timeout: {{ filebeat_queue_flush_timeout }}
+
+# ================================= Monitoring ================================
+{% if filebeat_monitoring_enabled %}
+monitoring.enabled: true
+{% if filebeat_monitoring_elasticsearch_hosts | length > 0 %}
+monitoring.elasticsearch:
+  hosts: {{ filebeat_monitoring_elasticsearch_hosts | to_json }}
+{% endif %}
+{% endif %}
+
+# ================================= HTTP Endpoint =============================
+{% if filebeat_http_enabled %}
+http.enabled: true
+http.host: {{ filebeat_http_host }}
+http.port: {{ filebeat_http_port }}
+{% endif %}
+
+# ================================== Logging ==================================
+logging.level: {{ filebeat_logging_level }}
+
+{% if filebeat_logging_to_files %}
+logging.to_files: true
+logging.files:
+  path: {{ filebeat_logging_files_path }}
+  name: {{ filebeat_logging_files_name }}
+  rotateeverybytes: {{ filebeat_logging_files_rotateeverybytes }}
+  keepfiles: {{ filebeat_logging_files_keepfiles }}
+{% endif %}
+
+{% if filebeat_logging_to_syslog %}
+logging.to_syslog: true
+{% endif %}
+
+# ================================= Paths =====================================
+path.config: {{ filebeat_config_dir }}
+path.data: {{ filebeat_data_dir }}
+path.logs: {{ filebeat_log_dir }}
+
+# ================================ Custom Config ==============================
+{% if filebeat_custom_config | length > 0 %}
+{{ filebeat_custom_config | to_nice_yaml }}
+{% endif %}

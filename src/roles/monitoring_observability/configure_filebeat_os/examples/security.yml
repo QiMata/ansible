@@ -1,0 +1,61 @@
+---
+# Example playbook demonstrating security features
+- name: Secure Filebeat Configuration with TLS and Authentication
+  hosts: all
+  become: true
+  vars:
+    # SSL/TLS Configuration
+    filebeat_ssl_enabled: true
+    filebeat_ssl_certificate: "/path/to/filebeat.crt"
+    filebeat_ssl_key: "/path/to/filebeat.key"
+    filebeat_ssl_certificate_authorities:
+      - "/path/to/ca.crt"
+    filebeat_ssl_verification_mode: "full"
+
+    # Authentication using keystore
+    filebeat_use_keystore: true
+    filebeat_keystore_keys:
+      ES_USERNAME: "filebeat_user"
+      ES_PASSWORD: "secure_password"
+
+    # Output configuration
+    filebeat_output_elasticsearch_hosts: ["https://elk.example.com:9200"]
+    
+    # Enhanced security
+    filebeat_config_file_mode: "0600"
+    filebeat_monitoring_enabled: true
+    
+    # Log paths
+    filebeat_paths:
+      - "/var/log/*.log"
+      - "/var/log/audit/*.log"
+      - "/var/log/security/*.log"
+
+    # Field enrichment for security tracking
+    filebeat_fields:
+      environment: "production"
+      security_zone: "dmz"
+      compliance: "pci-dss"
+    filebeat_fields_under_root: false
+    filebeat_tags:
+      - "security"
+      - "audit"
+      - "compliance"
+
+    # Processors for security enhancement
+    filebeat_processors_enabled: true
+    filebeat_add_host_metadata: true
+    filebeat_processors_custom:
+      - add_tags:
+          tags: ["security-critical"]
+          when:
+            or:
+              - contains:
+                  message: "FAILED LOGIN"
+              - contains:
+                  message: "SECURITY VIOLATION"
+              - contains:
+                  message: "UNAUTHORIZED"
+
+  roles:
+    - configure_filebeat_os

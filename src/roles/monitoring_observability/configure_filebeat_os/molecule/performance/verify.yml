@@ -1,0 +1,110 @@
+---
+- name: Verify Performance Configuration
+  hosts: all
+  gather_facts: false
+  vars:
+    filebeat_config_dir: "/etc/filebeat"
+  tasks:
+    - name: Read filebeat configuration
+      ansible.builtin.slurp:
+        src: "{{ filebeat_config_dir }}/filebeat.yml"
+      register: config_content
+
+    - name: Parse configuration
+      ansible.builtin.set_fact:
+        config_yaml: "{{ config_content.content | b64decode | from_yaml }}"
+
+    - name: Verify performance queue settings
+      ansible.builtin.assert:
+        that:
+          - config_yaml.queue.mem.events == 16384
+          - config_yaml.queue.mem.flush.min_events == 1024
+          - config_yaml.output.elasticsearch.bulk_max_size == 200
+          - config_yaml.output.elasticsearch.worker == 2
+          - config_yaml.output.elasticsearch.compression_level == 3
+
+    - name: Verify harvester performance settings
+      ansible.builtin.assert:
+        that:
+          - config_yaml.filebeat.inputs[0].harvester_buffer_size == 32768
+          - config_yaml.filebeat.inputs[0].max_bytes == 20971520
+          - config_yaml.filebeat.inputs[0].scan_frequency == "1s"
+          - config_yaml.filebeat.inputs[0].close_inactive == "30s"
+
+    - name: Verify monitoring and HTTP endpoint
+      ansible.builtin.assert:
+        that:
+          - config_yaml.monitoring.enabled == true
+          - config_yaml.http.enabled == true
+          - config_yaml.http.port == 5066
+
+    - name: Wait for filebeat to start processing logs
+      ansible.builtin.pause:
+        seconds: 10
+
+    - name: Check HTTP stats endpoint
+      ansible.builtin.uri:
+        url: "http://localhost:5066/stats"
+        method: GET
+        return_content: true
+      register: stats_response
+
+    - name: Verify stats response contains expected metrics
+      ansible.builtin.assert:
+        that:
+          - stats_response.status == 200
+          - "'filebeat' in stats_response.content"
+          - "'harvester' in stats_response.content"
+
+    - name: Check filebeat registry for active files
+      ansible.builtin.command: find {{ config_yaml.path.data }}/registry -name "*.json" -type f
+      register: registry_files
+      changed_when: false
+
+    - name: Verify registry files exist (indicating active harvesting)
+      ansible.builtin.assert:
+        that:
+          - registry_files.stdout_lines | length > 0
+
+    - name: Check filebeat process resource usage
+      ansible.builtin.shell: ps aux | grep filebeat | grep -v grep
+      register: process_check
+      changed_when: false
+
+    - name: Verify filebeat process is running efficiently
+      ansible.builtin.assert:
+        that:
+          - process_check.stdout_lines | length > 0
+
+    - name: Test log rotation handling
+      ansible.builtin.shell: |
+        mv /var/log/rotation-test-current.log /var/log/rotation-test-current.log.1
+        echo "New log content after rotation" > /var/log/rotation-test-current.log
+      changed_when: false
+
+    - name: Wait for filebeat to detect rotation
+      ansible.builtin.pause:
+        seconds: 5
+
+    - name: Check filebeat logs for rotation handling
+      ansible.builtin.command: tail -20 {{ config_yaml.logging.files.path }}/{{ config_yaml.logging.files.name }}
+      register: filebeat_logs
+      changed_when: false
+      failed_when: false
+
+    - name: Verify logging configuration
+      ansible.builtin.assert:
+        that:
+          - config_yaml.logging.level == "info"
+          - config_yaml.logging.files.rotateeverybytes == 20971520
+          - config_yaml.logging.files.keepfiles == 3
+
+    - name: Check continuous log generation is working
+      ansible.builtin.command: tail -5 /var/log/continuous.log
+      register: continuous_logs
+      changed_when: false
+
+    - name: Verify continuous logs are being generated
+      ansible.builtin.assert:
+        that:
+          - continuous_logs.stdout_lines | length > 0

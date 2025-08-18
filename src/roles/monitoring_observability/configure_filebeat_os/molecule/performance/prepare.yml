@@ -1,0 +1,85 @@
+---
+- name: Prepare Performance Testing
+  hosts: all
+  become: true
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - curl
+          - gnupg
+          - apt-transport-https
+          - htop
+          - iotop
+        state: present
+
+    - name: Add Elastic GPG key
+      ansible.builtin.apt_key:
+        url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+        state: present
+
+    - name: Add Elastic repository
+      ansible.builtin.apt_repository:
+        repo: "deb https://artifacts.elastic.co/packages/8.x/apt stable main"
+        state: present
+
+    - name: Create large test log files
+      ansible.builtin.shell: |
+        for i in {1..10}; do
+          for j in {1..1000}; do
+            echo "$(date -Iseconds) INFO [Thread-$i] Processing request $j from 192.168.1.$((RANDOM % 254 + 1))" >> /var/log/large-app-$i.log
+          done
+        done
+      args:
+        creates: /var/log/large-app-1.log
+
+    - name: Create rotating log files
+      ansible.builtin.file:
+        path: "/var/log/rotation-test-{{ item }}.log"
+        state: touch
+        mode: '0644'
+      loop:
+        - current
+        - old-1
+        - old-2
+
+    - name: Generate continuous log activity script
+      ansible.builtin.copy:
+        content: |
+          #!/bin/bash
+          while true; do
+            echo "$(date -Iseconds) [$$] Continuous log entry $(shuf -i 1-10000 -n 1)" >> /var/log/continuous.log
+            sleep 0.1
+          done
+        dest: /usr/local/bin/log-generator.sh
+        mode: '0755'
+
+    - name: Create systemd service for log generation
+      ansible.builtin.copy:
+        content: |
+          [Unit]
+          Description=Log Generator for Testing
+          After=network.target
+
+          [Service]
+          Type=simple
+          User=root
+          ExecStart=/usr/local/bin/log-generator.sh
+          Restart=always
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/log-generator.service
+
+    - name: Reload systemd and start log generator
+      ansible.builtin.systemd:
+        daemon_reload: true
+        name: log-generator
+        state: started
+        enabled: true

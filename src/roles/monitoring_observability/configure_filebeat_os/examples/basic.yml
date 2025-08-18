@@ -1,0 +1,14 @@
+---
+# Example playbook demonstrating basic configuration
+- name: Basic Filebeat Configuration
+  hosts: all
+  become: true
+  vars:
+    filebeat_output_elasticsearch_hosts: ["elk.example.com:9200"]
+    filebeat_paths:
+      - "/var/log/*.log"
+      - "/var/log/myapp/*.log"
+    filebeat_service_enabled: true
+    filebeat_logging_level: "info"
+  roles:
+    - configure_filebeat_os
