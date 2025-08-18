@@ -1,0 +1,74 @@
+---
+# Plugin Management
+
+- name: Create plugins directory
+  ansible.builtin.file:
+    path: "{{ neo4j_plugin_dir }}"
+    state: directory
+    owner: neo4j
+    group: neo4j
+    mode: '0755'
+
+- name: Download and install plugins
+  ansible.builtin.get_url:
+    url: "{{ item.url | default(neo4j_plugin_urls[item.name][item.version | default('latest')]) }}"
+    dest: "{{ neo4j_plugin_dir }}/{{ item.name }}-{{ item.version | default('latest') }}.jar"
+    owner: neo4j
+    group: neo4j
+    mode: '0644'
+  loop: "{{ neo4j_plugins }}"
+  when: item.enabled | default(true)
+  notify: restart neo4j
+  vars:
+    neo4j_plugin_urls:
+      apoc:
+        latest: "https://github.com/neo4j-contrib/neo4j-apoc-procedures/releases/latest/download/apoc-{{ neo4j_version | default('5.15.0') }}-core.jar"
+        "5.15.0": "https://github.com/neo4j-contrib/neo4j-apoc-procedures/releases/download/5.15.0/apoc-5.15.0-core.jar"
+      graph-data-science:
+        latest: "https://github.com/neo4j/graph-data-science/releases/latest/download/neo4j-graph-data-science-{{ neo4j_version | default('2.5.0') }}.jar"
+        "2.5.0": "https://github.com/neo4j/graph-data-science/releases/download/2.5.0/neo4j-graph-data-science-2.5.0.jar"
+
+- name: Remove disabled plugins
+  ansible.builtin.file:
+    path: "{{ neo4j_plugin_dir }}/{{ item.name }}-{{ item.version | default('latest') }}.jar"
+    state: absent
+  loop: "{{ neo4j_plugins }}"
+  when: not (item.enabled | default(true))
+  notify: restart neo4j
+
+- name: Configure APOC settings
+  ansible.builtin.lineinfile:
+    path: /etc/neo4j/neo4j.conf
+    regexp: "^#?{{ item.key }}="
+    line: "{{ item.key }}={{ item.value }}"
+  loop:
+    - { key: "dbms.security.procedures.unrestricted", value: "apoc.*,gds.*" }
+    - { key: "apoc.export.file.enabled", value: "{{ neo4j_apoc_export_file_enabled | lower }}" }
+    - { key: "apoc.import.file.enabled", value: "{{ neo4j_apoc_import_file_enabled | lower }}" }
+    - { key: "apoc.import.file.use_neo4j_config", value: "{{ neo4j_apoc_import_file_use_neo4j_config | lower }}" }
+  when: neo4j_plugins | selectattr('name', 'equalto', 'apoc') | selectattr('enabled', 'equalto', true) | list | length > 0
+  notify: restart neo4j
+
+- name: Configure security procedures whitelist
+  ansible.builtin.lineinfile:
+    path: /etc/neo4j/neo4j.conf
+    regexp: "^#?dbms.security.procedures.whitelist="
+    line: "dbms.security.procedures.whitelist={{ neo4j_procedures_whitelist | join(',') }}"
+  when: neo4j_procedures_whitelist | length > 0
+  notify: restart neo4j
+
+- name: Configure security functions whitelist
+  ansible.builtin.lineinfile:
+    path: /etc/neo4j/neo4j.conf
+    regexp: "^#?dbms.security.functions.whitelist="
+    line: "dbms.security.functions.whitelist={{ neo4j_functions_whitelist | join(',') }}"
+  when: neo4j_functions_whitelist | length > 0
+  notify: restart neo4j
+
+- name: Configure unrestricted procedures
+  ansible.builtin.lineinfile:
+    path: /etc/neo4j/neo4j.conf
+    regexp: "^#?dbms.security.procedures.unrestricted="
+    line: "dbms.security.procedures.unrestricted={{ neo4j_security_procedures_unrestricted | join(',') }}"
+  when: neo4j_security_procedures_unrestricted | length > 0
+  notify: restart neo4j

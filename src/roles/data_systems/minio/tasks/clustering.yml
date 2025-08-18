@@ -1,0 +1,75 @@
+---
+# MinIO Clustering Configuration Tasks
+
+- name: Validate cluster configuration
+  ansible.builtin.assert:
+    that:
+      - minio_cluster_nodes | length >= minio_cluster_node_count
+      - minio_cluster_drive_count >= 4
+      - (minio_cluster_drive_count % 2) == 0
+    fail_msg: "MinIO cluster requires at least {{ minio_cluster_node_count }} nodes and {{ minio_cluster_drive_count }} drives (even number)"
+  when: minio_enable_clustering
+
+- name: Set cluster volumes for distributed mode
+  ansible.builtin.set_fact:
+    minio_volumes: "{{ minio_cluster_nodes | map('regex_replace', '$', minio_data_dir) | join(' ') }}"
+  when: minio_enable_clustering
+
+- name: Configure multiple drives for single node
+  ansible.builtin.set_fact:
+    minio_volumes: "{{ [minio_data_dir] + minio_multiple_drives | join(' ') }}"
+  when: 
+    - not minio_enable_clustering
+    - minio_multiple_drives | length > 0
+
+- name: Create additional drive directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: '0755'
+  loop: "{{ minio_multiple_drives }}"
+  when: minio_multiple_drives | length > 0
+
+- name: Configure erasure coding options
+  ansible.builtin.set_fact:
+    minio_opts_extra: "{{ minio_opts_extra }} --parity {{ minio_cluster_parity_drives }}"
+  when: minio_enable_clustering
+
+- name: Add cluster-specific environment variables
+  ansible.builtin.lineinfile:
+    path: /etc/default/minio
+    line: "{{ item.key }}={{ item.value }}"
+    regexp: "^{{ item.key }}="
+    state: present
+  loop:
+    - { key: "MINIO_DISTRIBUTED_MODE_ENABLED", value: "{{ minio_enable_clustering | lower }}" }
+    - { key: "MINIO_DISTRIBUTED_NODES", value: "{{ minio_cluster_nodes | join(',') }}" }
+  when: minio_enable_clustering
+  notify: restart minio
+
+- name: Configure storage class
+  ansible.builtin.lineinfile:
+    path: /etc/default/minio
+    line: "MINIO_STORAGE_CLASS_STANDARD={{ minio_storage_class }}"
+    regexp: "^MINIO_STORAGE_CLASS_STANDARD="
+    state: present
+  notify: restart minio
+
+- name: Setup cluster health check script
+  ansible.builtin.template:
+    src: cluster_health_check.sh.j2
+    dest: "{{ minio_base_dir }}/cluster_health_check.sh"
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: '0755'
+  when: minio_enable_clustering
+
+- name: Create cluster health check cron job
+  ansible.builtin.cron:
+    name: "MinIO cluster health check"
+    minute: "*/5"
+    job: "{{ minio_base_dir }}/cluster_health_check.sh"
+    user: "{{ minio_user }}"
+  when: minio_enable_clustering

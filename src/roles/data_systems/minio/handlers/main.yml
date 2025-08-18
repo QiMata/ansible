@@ -1,9 +1,19 @@
 ---
-- name: Daemon reload
+- name: daemon reload
   ansible.builtin.systemd:
     daemon_reload: true
 
-- name: Restart Minio
+- name: restart minio
   ansible.builtin.service:
     name: minio
     state: restarted
+
+- name: reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: restart fail2ban
+  ansible.builtin.service:
+    name: fail2ban
+    state: restarted
+  when: ansible_facts['os_family'] == "Debian"

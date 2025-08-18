@@ -1,0 +1,155 @@
+---
+# Example playbook demonstrating MinIO with all advanced features
+# This playbook shows how to deploy a production-ready MinIO cluster
+
+- name: Deploy MinIO Cluster with Enterprise Features
+  hosts: minio_cluster
+  become: true
+  vars:
+    # Cluster Configuration
+    minio_enable_clustering: true
+    minio_cluster_nodes:
+      - "{{ hostvars['minio-node1']['ansible_default_ipv4']['address'] }}:9000"
+      - "{{ hostvars['minio-node2']['ansible_default_ipv4']['address'] }}:9000"
+      - "{{ hostvars['minio-node3']['ansible_default_ipv4']['address'] }}:9000"
+      - "{{ hostvars['minio-node4']['ansible_default_ipv4']['address'] }}:9000"
+    minio_cluster_drive_count: 4
+    minio_cluster_parity_drives: 2
+    
+    # Security Configuration
+    minio_root_user: "admin"
+    minio_root_password: "{{ vault_minio_admin_password }}"
+    minio_enable_tls: true
+    minio_enable_letsencrypt: true
+    minio_letsencrypt_email: "admin@example.com"
+    minio_letsencrypt_domains:
+      - "minio.example.com"
+      - "s3.example.com"
+    
+    # Network Security
+    minio_enable_firewall: true
+    minio_allowed_ips:
+      - "10.0.0.0/8"
+      - "192.168.1.0/24"
+    minio_rate_limit_enabled: true
+    minio_rate_limit_requests: 1000
+    
+    # Monitoring and Observability
+    minio_enable_prometheus: true
+    minio_enable_health_checks: true
+    minio_enable_audit_logging: true
+    minio_log_level: "INFO"
+    
+    # Backup and Recovery
+    minio_enable_backup: true
+    minio_backup_schedule: "0 2 * * *"  # Daily at 2 AM
+    minio_backup_retention_days: 30
+    minio_backup_destination: "s3://backup-bucket/minio-backups"
+    minio_enable_replication: true
+    minio_replication_targets:
+      - source_bucket: "data"
+        target_url: "https://backup-minio.example.com"
+        region: "us-west-2"
+    
+    # User and Access Management
+    minio_create_buckets:
+      - name: "data"
+        versioning: true
+      - name: "logs"
+        versioning: false
+      - name: "backups"
+        versioning: true
+    
+    minio_create_users:
+      - username: "app-user"
+        password: "{{ vault_app_user_password }}"
+      - username: "backup-user"
+        password: "{{ vault_backup_user_password }}"
+    
+    minio_bucket_policies:
+      - name: "data-read-policy"
+        policy:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Principal: "*"
+              Action: "s3:GetObject"
+              Resource: "arn:aws:s3:::data/*"
+    
+    minio_service_accounts:
+      - parent_user: "app-user"
+        access_key: "{{ vault_app_access_key }}"
+        secret_key: "{{ vault_app_secret_key }}"
+    
+    # Storage Configuration
+    minio_multiple_drives:
+      - "/mnt/disk1"
+      - "/mnt/disk2"
+    minio_disk_usage_threshold: 85
+    minio_storage_class: "STANDARD"
+    
+  roles:
+    - data_systems.minio
+
+- name: Deploy Single Node MinIO for Development
+  hosts: minio_dev
+  become: true
+  vars:
+    # Basic Configuration
+    minio_root_user: "minioadmin"
+    minio_root_password: "minioadmin"
+    minio_enable_tls: false
+    
+    # Development Features
+    minio_enable_health_checks: true
+    minio_enable_prometheus: true
+    minio_log_level: "DEBUG"
+    
+    # Simple bucket setup
+    minio_create_buckets:
+      - name: "dev-data"
+        versioning: true
+      - name: "test-uploads"
+        versioning: false
+    
+    minio_create_users:
+      - username: "dev-user"
+        password: "devpass123"
+    
+  roles:
+    - data_systems.minio
+
+# Example playbook for adding monitoring to existing MinIO
+- name: Add Monitoring to Existing MinIO
+  hosts: existing_minio
+  become: true
+  vars:
+    # Enable only monitoring features
+    minio_enable_prometheus: true
+    minio_enable_health_checks: true
+    minio_enable_audit_logging: true
+    minio_disk_usage_threshold: 80
+    
+  tasks:
+    - name: Include monitoring tasks only
+      ansible.builtin.include_role:
+        name: data_systems.minio
+        tasks_from: monitoring.yml
+      when: minio_enable_prometheus or minio_enable_health_checks or minio_enable_audit_logging
+
+# Example playbook for backup configuration only
+- name: Configure Backup for Existing MinIO
+  hosts: minio_servers
+  become: true
+  vars:
+    minio_enable_backup: true
+    minio_backup_schedule: "0 3 * * 0"  # Weekly on Sunday at 3 AM
+    minio_backup_retention_days: 90
+    minio_backup_destination: "/backup/minio"
+    
+  tasks:
+    - name: Include backup tasks only
+      ansible.builtin.include_role:
+        name: data_systems.minio
+        tasks_from: backup_recovery.yml
+      when: minio_enable_backup

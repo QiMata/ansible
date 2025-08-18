@@ -1,0 +1,79 @@
+---
+# Multi-Version Support & Upgrades
+
+- name: Check current Neo4j version
+  ansible.builtin.command: neo4j version
+  register: current_version
+  changed_when: false
+  failed_when: false
+
+- name: Pre-upgrade validation checks
+  ansible.builtin.include_tasks: upgrade_checks.yml
+  when: 
+    - neo4j_upgrade_enabled
+    - neo4j_pre_upgrade_checks
+
+- name: Create backup before upgrade
+  ansible.builtin.include_tasks: backup.yml
+  vars:
+    backup_name: "pre-upgrade-{{ ansible_date_time.epoch }}"
+  when: 
+    - neo4j_upgrade_enabled
+    - neo4j_backup_before_upgrade
+
+- name: Stop Neo4j service for upgrade
+  ansible.builtin.service:
+    name: neo4j
+    state: stopped
+  when: 
+    - neo4j_upgrade_enabled
+    - neo4j_upgrade_strategy in ['stop_start', 'blue_green']
+
+- name: Upgrade Neo4j package
+  ansible.builtin.apt:
+    name: "{{ neo4j_package_name }}{% if neo4j_version %}={{ neo4j_version }}{% endif %}"
+    state: latest
+    update_cache: true
+  when: neo4j_upgrade_enabled
+  notify: restart neo4j
+
+- name: Pin Neo4j version
+  ansible.builtin.dpkg_selections:
+    name: "{{ neo4j_package_name }}"
+    selection: hold
+  when: 
+    - neo4j_upgrade_enabled
+    - neo4j_version_pin
+
+- name: Start Neo4j service after upgrade
+  ansible.builtin.service:
+    name: neo4j
+    state: started
+  when: 
+    - neo4j_upgrade_enabled
+    - neo4j_upgrade_strategy in ['stop_start', 'blue_green']
+
+- name: Wait for Neo4j to be ready
+  ansible.builtin.uri:
+    url: "http://{{ neo4j_listen_address }}:{{ neo4j_http_port }}/db/neo4j/tx/commit"
+    method: POST
+    user: neo4j
+    password: "{{ neo4j_initial_password }}"
+    force_basic_auth: true
+    status_code: 200
+  register: neo4j_ready
+  until: neo4j_ready.status == 200
+  retries: "{{ (neo4j_upgrade_timeout | int) // 10 }}"
+  delay: 10
+  when: neo4j_upgrade_enabled
+
+- name: Post-upgrade validation
+  ansible.builtin.include_tasks: upgrade_validation.yml
+  when: 
+    - neo4j_upgrade_enabled
+    - neo4j_post_upgrade_validation
+
+- name: Log successful upgrade
+  ansible.builtin.debug:
+    msg: "Neo4j successfully upgraded from {{ current_version.stdout | default('unknown') }} to {{ neo4j_version | default('latest') }}"
+  when: neo4j_upgrade_enabled

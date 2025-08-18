@@ -1,0 +1,22 @@
+{{ minio_audit_log_path }} {
+    daily
+    rotate 30
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 {{ minio_user }} {{ minio_group }}
+    postrotate
+        systemctl reload minio 2>/dev/null || true
+    endscript
+}
+
+{{ minio_base_dir }}/logs/*.log {
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 {{ minio_user }} {{ minio_group }}
+}

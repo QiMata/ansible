@@ -1,16 +1,52 @@
 ---
+- name: Include service dependencies tasks
+  ansible.builtin.import_tasks: service_dependencies.yml
+
 - name: Include install tasks
   ansible.builtin.import_tasks: install.yml
+
+- name: Include upgrade tasks
+  ansible.builtin.import_tasks: upgrade.yml
+  when: neo4j_upgrade_enabled
+
 - name: Include configure tasks
   ansible.builtin.import_tasks: configure.yml
+
+- name: Include plugins tasks
+  ansible.builtin.import_tasks: plugins.yml
+
+- name: Include clustering tasks
+  ansible.builtin.import_tasks: clustering.yml
+  when: neo4j_cluster_enabled
+
+- name: Include database management tasks
+  ansible.builtin.import_tasks: database_management.yml
+
 - name: Include security tasks
   ansible.builtin.import_tasks: security.yml
+
+- name: Include advanced security tasks
+  ansible.builtin.import_tasks: advanced_security.yml
+
+- name: Include import/export tasks
+  ansible.builtin.import_tasks: import_export.yml
+
 - name: Include backup tasks
   ansible.builtin.import_tasks: backup.yml
+
+- name: Include performance monitoring tasks
+  ansible.builtin.import_tasks: performance_monitoring.yml
+
+- name: Include high availability tasks
+  ansible.builtin.import_tasks: high_availability.yml
+  when: neo4j_ha_proxy_enabled or neo4j_cluster_enabled
+
 - name: Include monitoring tasks
   ansible.builtin.import_tasks: monitoring.yml
+
 - name: Include user tasks
   ansible.builtin.import_tasks: users.yml
+
 - name: Ensure Neo4j service enabled and started
   ansible.builtin.service:
     name: neo4j

@@ -1,0 +1,97 @@
+---
+# Advanced TLS Configuration Tasks
+
+- name: Include Let's Encrypt setup when enabled
+  ansible.builtin.include_role:
+    name: security_identity.letsencrypt.letsencrypt_setup
+  vars:
+    letsencrypt_email: "{{ minio_letsencrypt_email }}"
+    letsencrypt_domains: "{{ minio_letsencrypt_domains }}"
+    letsencrypt_webroot_path: "{{ minio_base_dir }}/webroot"
+  when: 
+    - minio_enable_letsencrypt
+    - minio_letsencrypt_email != ""
+    - minio_letsencrypt_domains | length > 0
+
+- name: Create webroot directory for Let's Encrypt
+  ansible.builtin.file:
+    path: "{{ minio_base_dir }}/webroot"
+    state: directory
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: '0755'
+  when: minio_enable_letsencrypt
+
+- name: Copy Let's Encrypt certificates for MinIO
+  ansible.builtin.copy:
+    src: "/etc/letsencrypt/live/{{ minio_letsencrypt_domains[0] }}/{{ item.src }}"
+    dest: "{{ minio_certs_dir }}/{{ item.dest }}"
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: "{{ item.mode }}"
+    remote_src: true
+  loop:
+    - { src: "fullchain.pem", dest: "public.crt", mode: "0644" }
+    - { src: "privkey.pem", dest: "private.key", mode: "0600" }
+  when: 
+    - minio_enable_letsencrypt
+    - minio_letsencrypt_domains | length > 0
+  notify: restart minio
+
+- name: Setup certificate renewal hook
+  ansible.builtin.template:
+    src: letsencrypt_renewal_hook.sh.j2
+    dest: "/etc/letsencrypt/renewal-hooks/deploy/minio-renewal.sh"
+    mode: '0755'
+  when: minio_enable_letsencrypt
+
+- name: Configure custom CA bundle
+  ansible.builtin.copy:
+    src: "{{ minio_ca_bundle_path }}"
+    dest: "{{ minio_certs_dir }}/CAs/"
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: '0644'
+  when: 
+    - minio_ca_bundle_path != ""
+    - minio_ca_bundle_path is file
+  notify: restart minio
+
+- name: Create CAs directory for custom CA bundles
+  ansible.builtin.file:
+    path: "{{ minio_certs_dir }}/CAs"
+    state: directory
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: '0755'
+  when: minio_ca_bundle_path != ""
+
+- name: Configure client certificate authentication
+  ansible.builtin.lineinfile:
+    path: /etc/default/minio
+    line: "MINIO_TLS_CLIENT_AUTH={{ 'on' if minio_enable_client_certs else 'off' }}"
+    regexp: "^MINIO_TLS_CLIENT_AUTH="
+    state: present
+  notify: restart minio
+
+- name: Configure TLS cipher suites
+  ansible.builtin.lineinfile:
+    path: /etc/default/minio
+    line: "MINIO_TLS_CIPHER_SUITES={{ minio_tls_ciphers }}"
+    regexp: "^MINIO_TLS_CIPHER_SUITES="
+    state: present
+  notify: restart minio
+
+- name: Validate TLS configuration
+  ansible.builtin.shell: |
+    openssl x509 -in {{ minio_certs_dir }}/public.crt -text -noout | grep -E "(Subject|Issuer|Not After)"
+  register: cert_info
+  when: minio_enable_tls
+  changed_when: false
+
+- name: Display certificate information
+  ansible.builtin.debug:
+    var: cert_info.stdout_lines
+  when: 
+    - minio_enable_tls
+    - cert_info is defined

@@ -1,0 +1,101 @@
+---
+# MinIO Backup and Recovery Tasks
+
+- name: Create backup directory
+  ansible.builtin.file:
+    path: "{{ minio_base_dir }}/backups"
+    state: directory
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: '0755'
+  when: minio_enable_backup
+
+- name: Create backup script
+  ansible.builtin.template:
+    src: backup_minio.sh.j2
+    dest: "{{ minio_base_dir }}/backup_minio.sh"
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: '0755'
+  when: minio_enable_backup
+
+- name: Create backup cleanup script
+  ansible.builtin.template:
+    src: backup_cleanup.sh.j2
+    dest: "{{ minio_base_dir }}/backup_cleanup.sh"
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: '0755'
+  when: minio_enable_backup
+
+- name: Create backup cron job
+  ansible.builtin.cron:
+    name: "MinIO backup"
+    minute: "{{ minio_backup_schedule.split()[0] }}"
+    hour: "{{ minio_backup_schedule.split()[1] }}"
+    day: "{{ minio_backup_schedule.split()[2] }}"
+    month: "{{ minio_backup_schedule.split()[3] }}"
+    weekday: "{{ minio_backup_schedule.split()[4] }}"
+    job: "{{ minio_base_dir }}/backup_minio.sh"
+    user: "{{ minio_user }}"
+  when: minio_enable_backup
+
+- name: Create backup cleanup cron job
+  ansible.builtin.cron:
+    name: "MinIO backup cleanup"
+    minute: "30"
+    hour: "3"
+    job: "{{ minio_base_dir }}/backup_cleanup.sh"
+    user: "{{ minio_user }}"
+  when: minio_enable_backup
+
+- name: Create restore script
+  ansible.builtin.template:
+    src: restore_minio.sh.j2
+    dest: "{{ minio_base_dir }}/restore_minio.sh"
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: '0755'
+  when: minio_enable_backup
+
+- name: Configure replication for disaster recovery
+  ansible.builtin.shell: |
+    mc admin bucket remote add local/{{ item.source_bucket }} {{ item.target_url }} \
+      --service replication --region {{ item.region | default('us-east-1') }}
+  become_user: "{{ minio_user }}"
+  environment:
+    MC_CONFIG_DIR: "/home/{{ minio_user }}/.mc"
+  loop: "{{ minio_replication_targets }}"
+  when: 
+    - minio_enable_replication
+    - minio_replication_targets | length > 0
+
+- name: Enable bucket replication
+  ansible.builtin.shell: |
+    mc replicate add local/{{ item.source_bucket }} --remote-bucket {{ item.target_bucket | default(item.source_bucket) }} \
+      --replicate "delete,delete-marker,replica-metadata-sync"
+  become_user: "{{ minio_user }}"
+  environment:
+    MC_CONFIG_DIR: "/home/{{ minio_user }}/.mc"
+  loop: "{{ minio_replication_targets }}"
+  when: 
+    - minio_enable_replication
+    - minio_replication_targets | length > 0
+
+- name: Create point-in-time recovery script
+  ansible.builtin.template:
+    src: point_in_time_recovery.sh.j2
+    dest: "{{ minio_base_dir }}/point_in_time_recovery.sh"
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: '0755'
+  when: minio_enable_backup
+
+- name: Create disaster recovery documentation
+  ansible.builtin.template:
+    src: disaster_recovery_procedures.md.j2
+    dest: "{{ minio_base_dir }}/disaster_recovery_procedures.md"
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: '0644'
+  when: minio_enable_backup

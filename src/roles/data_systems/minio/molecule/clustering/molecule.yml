@@ -1,0 +1,104 @@
+---
+dependency:
+  name: galaxy
+
+driver:
+  name: podman
+
+platforms:
+  - name: minio-cluster-node1
+    image: quay.io/ansible/molecule-debian:12
+    pre_build_image: true
+    privileged: true
+    systemd: true
+    networks:
+      - name: minio-cluster
+    published_ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+
+  - name: minio-cluster-node2
+    image: quay.io/ansible/molecule-debian:12
+    pre_build_image: true
+    privileged: true
+    systemd: true
+    networks:
+      - name: minio-cluster
+    published_ports:
+      - "9002:9000"
+      - "9003:9001"
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+
+  - name: minio-cluster-node3
+    image: quay.io/ansible/molecule-debian:12
+    pre_build_image: true
+    privileged: true
+    systemd: true
+    networks:
+      - name: minio-cluster
+    published_ports:
+      - "9004:9000"
+      - "9005:9001"
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+
+  - name: minio-cluster-node4
+    image: quay.io/ansible/molecule-debian:12
+    pre_build_image: true
+    privileged: true
+    systemd: true
+    networks:
+      - name: minio-cluster
+    published_ports:
+      - "9006:9000"
+      - "9007:9001"
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+
+provisioner:
+  name: ansible
+  inventory:
+    host_vars:
+      minio-cluster-node1:
+        minio_enable_clustering: true
+        minio_cluster_nodes:
+          - "minio-cluster-node1:9000"
+          - "minio-cluster-node2:9000"
+          - "minio-cluster-node3:9000"
+          - "minio-cluster-node4:9000"
+        minio_enable_prometheus: true
+        minio_enable_health_checks: true
+        minio_enable_backup: true
+        minio_create_buckets:
+          - name: "test-bucket"
+            versioning: true
+        minio_create_users:
+          - username: "testuser"
+            password: "testpass123"
+      minio-cluster-node2:
+        minio_enable_clustering: true
+        minio_cluster_nodes:
+          - "minio-cluster-node1:9000"
+          - "minio-cluster-node2:9000"
+          - "minio-cluster-node3:9000"
+          - "minio-cluster-node4:9000"
+      minio-cluster-node3:
+        minio_enable_clustering: true
+        minio_cluster_nodes:
+          - "minio-cluster-node1:9000"
+          - "minio-cluster-node2:9000"
+          - "minio-cluster-node3:9000"
+          - "minio-cluster-node4:9000"
+      minio-cluster-node4:
+        minio_enable_clustering: true
+        minio_cluster_nodes:
+          - "minio-cluster-node1:9000"
+          - "minio-cluster-node2:9000"
+          - "minio-cluster-node3:9000"
+          - "minio-cluster-node4:9000"
+
+verifier:
+  name: ansible

@@ -1,0 +1,88 @@
+---
+# Advanced Security Features
+
+- name: Configure LDAP authentication
+  ansible.builtin.blockinfile:
+    path: /etc/neo4j/neo4j.conf
+    marker: "# {mark} LDAP Authentication"
+    block: |
+      dbms.security.authentication_providers=ldap
+      dbms.security.ldap.authentication.hostname={{ neo4j_ldap_server }}
+      dbms.security.ldap.authentication.port={{ neo4j_ldap_port }}
+      dbms.security.ldap.authentication.use_starttls={{ neo4j_ldap_use_starttls | lower }}
+      dbms.security.ldap.authentication.user_dn_template={{ neo4j_ldap_user_dn_template }}
+  when: neo4j_ldap_enabled
+  notify: restart neo4j
+
+- name: Configure LDAP authorization
+  ansible.builtin.blockinfile:
+    path: /etc/neo4j/neo4j.conf
+    marker: "# {mark} LDAP Authorization"
+    block: |
+      dbms.security.authorization_providers=ldap
+      dbms.security.ldap.authorization.hostname={{ neo4j_ldap_server }}
+      dbms.security.ldap.authorization.port={{ neo4j_ldap_port }}
+      dbms.security.ldap.authorization.use_starttls={{ neo4j_ldap_use_starttls | lower }}
+  when: 
+    - neo4j_ldap_enabled
+    - neo4j_ldap_authorization_enabled
+  notify: restart neo4j
+
+- name: Configure OAuth authentication
+  ansible.builtin.blockinfile:
+    path: /etc/neo4j/neo4j.conf
+    marker: "# {mark} OAuth Authentication"
+    block: |
+      dbms.security.authentication_providers=oidc-{{ neo4j_oauth_provider }}
+      dbms.security.oidc.{{ neo4j_oauth_provider }}.display_name={{ neo4j_oauth_provider | title }}
+      dbms.security.oidc.{{ neo4j_oauth_provider }}.auth_flow=pkce
+  when: neo4j_oauth_enabled
+  notify: restart neo4j
+
+- name: Configure password policy
+  ansible.builtin.blockinfile:
+    path: /etc/neo4j/neo4j.conf
+    marker: "# {mark} Password Policy"
+    block: |
+      dbms.security.auth_minimum_password_length={{ neo4j_password_policy_min_length }}
+  when: neo4j_password_policy_enabled
+  notify: restart neo4j
+
+- name: Enable audit logging
+  ansible.builtin.lineinfile:
+    path: /etc/neo4j/neo4j.conf
+    regexp: "^#?dbms.logs.security.level="
+    line: "dbms.logs.security.level=INFO"
+  when: neo4j_audit_enabled
+  notify: restart neo4j
+
+- name: Configure audit log rotation
+  ansible.builtin.blockinfile:
+    path: /etc/neo4j/neo4j.conf
+    marker: "# {mark} Audit Log Rotation"
+    block: |
+      dbms.logs.security.rotation.size={{ neo4j_audit_log_rotation_size }}
+      dbms.logs.security.rotation.keep_number={{ neo4j_audit_log_rotation_keep_number }}
+  when: neo4j_audit_enabled
+  notify: restart neo4j
+
+- name: Create security audit log directory
+  ansible.builtin.file:
+    path: /var/log/neo4j/security
+    state: directory
+    owner: neo4j
+    group: neo4j
+    mode: '0750'
+  when: neo4j_audit_enabled
+
+- name: Configure SSL/TLS for LDAP
+  ansible.builtin.blockinfile:
+    path: /etc/neo4j/neo4j.conf
+    marker: "# {mark} LDAP SSL/TLS"
+    block: |
+      dbms.security.ldap.authentication.use_starttls={{ neo4j_ldap_use_starttls | lower }}
+      dbms.security.ldap.authorization.use_starttls={{ neo4j_ldap_use_starttls | lower }}
+  when: 
+    - neo4j_ldap_enabled
+    - neo4j_ldap_use_starttls
+  notify: restart neo4j

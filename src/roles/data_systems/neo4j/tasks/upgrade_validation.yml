@@ -1,0 +1,69 @@
+---
+# Post-upgrade validation
+
+- name: Wait for Neo4j to be responsive
+  ansible.builtin.uri:
+    url: "http://{{ neo4j_listen_address }}:{{ neo4j_http_port }}/db/neo4j/tx/commit"
+    method: POST
+    user: neo4j
+    password: "{{ neo4j_initial_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      statements:
+        - statement: "RETURN 1 as post_upgrade_test"
+    status_code: 200
+  register: post_upgrade_test
+  until: post_upgrade_test.status == 200
+  retries: 12
+  delay: 10
+  when: neo4j_initial_password | length > 0
+
+- name: Verify database integrity
+  ansible.builtin.uri:
+    url: "http://{{ neo4j_listen_address }}:{{ neo4j_http_port }}/db/neo4j/tx/commit"
+    method: POST
+    user: neo4j
+    password: "{{ neo4j_initial_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      statements:
+        - statement: "CALL db.labels() YIELD label RETURN count(label) as label_count"
+    status_code: 200
+  register: integrity_check
+  when: neo4j_initial_password | length > 0
+
+- name: Check cluster health after upgrade
+  ansible.builtin.uri:
+    url: "http://{{ neo4j_listen_address }}:{{ neo4j_http_port }}/db/cluster/overview"
+    method: GET
+    user: neo4j
+    password: "{{ neo4j_initial_password }}"
+    force_basic_auth: true
+    status_code: 200
+  register: cluster_health_check
+  when: 
+    - neo4j_cluster_enabled
+    - neo4j_initial_password | length > 0
+
+- name: Verify plugins are loaded
+  ansible.builtin.uri:
+    url: "http://{{ neo4j_listen_address }}:{{ neo4j_http_port }}/db/neo4j/tx/commit"
+    method: POST
+    user: neo4j
+    password: "{{ neo4j_initial_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      statements:
+        - statement: "CALL dbms.procedures() YIELD name WHERE name STARTS WITH 'apoc' RETURN count(name) as apoc_procedures"
+    status_code: 200
+  register: plugin_check
+  when: 
+    - neo4j_initial_password | length > 0
+    - neo4j_plugins | selectattr('name', 'equalto', 'apoc') | selectattr('enabled', 'equalto', true) | list | length > 0
+
+- name: Log upgrade validation results
+  ansible.builtin.debug:
+    msg: "Post-upgrade validation completed successfully"

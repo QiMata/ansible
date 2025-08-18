@@ -1,0 +1,46 @@
+---
+# Pre-upgrade validation checks
+
+- name: Check disk space
+  ansible.builtin.shell: df -h /var/lib/neo4j | tail -1 | awk '{print $5}' | sed 's/%//'
+  register: disk_usage
+  changed_when: false
+
+- name: Ensure sufficient disk space
+  ansible.builtin.fail:
+    msg: "Insufficient disk space for upgrade. Current usage: {{ disk_usage.stdout }}%"
+  when: disk_usage.stdout | int > 80
+
+- name: Check Neo4j service status
+  ansible.builtin.service_facts:
+
+- name: Ensure Neo4j is running before upgrade
+  ansible.builtin.fail:
+    msg: "Neo4j service is not running"
+  when: ansible_facts.services['neo4j.service'].state != 'running'
+
+- name: Test database connectivity
+  ansible.builtin.uri:
+    url: "http://{{ neo4j_listen_address }}:{{ neo4j_http_port }}/db/neo4j/tx/commit"
+    method: POST
+    user: neo4j
+    password: "{{ neo4j_initial_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      statements:
+        - statement: "RETURN 1 as connectivity_test"
+    status_code: 200
+  when: neo4j_initial_password | length > 0
+
+- name: Check cluster status (if clustered)
+  ansible.builtin.uri:
+    url: "http://{{ neo4j_listen_address }}:{{ neo4j_http_port }}/db/cluster/overview"
+    method: GET
+    user: neo4j
+    password: "{{ neo4j_initial_password }}"
+    force_basic_auth: true
+    status_code: 200
+  when: 
+    - neo4j_cluster_enabled
+    - neo4j_initial_password | length > 0

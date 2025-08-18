@@ -1,0 +1,91 @@
+---
+# High Availability & Disaster Recovery
+
+- name: Install HAProxy for Neo4j load balancing
+  ansible.builtin.apt:
+    name: haproxy
+    state: present
+  when: neo4j_ha_proxy_enabled
+
+- name: Configure HAProxy for Neo4j
+  ansible.builtin.template:
+    src: haproxy_neo4j.cfg.j2
+    dest: /etc/haproxy/conf.d/neo4j.cfg
+    backup: true
+  when: neo4j_ha_proxy_enabled
+  notify: restart haproxy
+
+- name: Enable HAProxy config directory inclusion
+  ansible.builtin.lineinfile:
+    path: /etc/haproxy/haproxy.cfg
+    line: "# Include Neo4j configuration"
+    insertafter: EOF
+  when: neo4j_ha_proxy_enabled
+
+- name: Include Neo4j HAProxy config
+  ansible.builtin.lineinfile:
+    path: /etc/haproxy/haproxy.cfg
+    line: "include /etc/haproxy/conf.d/neo4j.cfg"
+    insertafter: EOF
+  when: neo4j_ha_proxy_enabled
+  notify: restart haproxy
+
+- name: Configure health check intervals
+  ansible.builtin.lineinfile:
+    path: /etc/neo4j/neo4j.conf
+    regexp: "^#?dbms.cluster.raft.leader_election_timeout="
+    line: "dbms.cluster.raft.leader_election_timeout={{ neo4j_ha_health_check_interval }}"
+  when: neo4j_cluster_enabled
+  notify: restart neo4j
+
+- name: Configure failover timeout
+  ansible.builtin.lineinfile:
+    path: /etc/neo4j/neo4j.conf
+    regexp: "^#?dbms.cluster.raft.membership.leader_timeout="
+    line: "dbms.cluster.raft.membership.leader_timeout={{ neo4j_ha_failover_timeout }}"
+  when: neo4j_cluster_enabled
+  notify: restart neo4j
+
+- name: Create disaster recovery backup script
+  ansible.builtin.template:
+    src: disaster_recovery_backup.sh.j2
+    dest: /usr/local/bin/neo4j-dr-backup.sh
+    mode: '0755'
+    owner: root
+    group: root
+  when: neo4j_disaster_recovery_plan
+
+- name: Schedule disaster recovery backups
+  ansible.builtin.cron:
+    name: "Neo4j disaster recovery backup"
+    hour: "1"
+    minute: "0"
+    job: "/usr/local/bin/neo4j-dr-backup.sh"
+    user: root
+  when: neo4j_disaster_recovery_plan
+
+- name: Create cross-region backup sync
+  ansible.builtin.template:
+    src: cross_region_sync.sh.j2
+    dest: /usr/local/bin/neo4j-cross-region-sync.sh
+    mode: '0755'
+    owner: root
+    group: root
+  when: neo4j_cross_region_backup
+
+- name: Configure cluster monitoring
+  ansible.builtin.template:
+    src: cluster_monitor.sh.j2
+    dest: /usr/local/bin/neo4j-cluster-monitor.sh
+    mode: '0755'
+    owner: root
+    group: root
+  when: neo4j_cluster_enabled
+
+- name: Schedule cluster health monitoring
+  ansible.builtin.cron:
+    name: "Neo4j cluster health monitoring"
+    minute: "*/2"
+    job: "/usr/local/bin/neo4j-cluster-monitor.sh"
+    user: root
+  when: neo4j_cluster_enabled

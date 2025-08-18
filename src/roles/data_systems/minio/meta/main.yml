@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   role_name: minio_systemd
-  description: Install and configure MinIO object storage as a systemd service on Debian
+  description: Install and configure MinIO object storage with clustering, security, monitoring, and backup features
   author: Example Inc.
   license: MIT
   min_ansible_version: "2.12"
@@ -10,9 +10,22 @@ galaxy_info:
       versions:
         - bullseye
         - bookworm
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
   galaxy_tags:
     - storage
     - objectstorage
     - minio
     - systemd
-dependencies: []
+    - clustering
+    - monitoring
+    - backup
+    - security
+
+dependencies:
+  - role: security_identity.letsencrypt.letsencrypt_setup
+    when: minio_enable_letsencrypt | default(false)
+  - role: monitoring_observability.prometheus
+    when: minio_enable_prometheus | default(false)

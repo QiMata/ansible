@@ -1,0 +1,78 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: neo4j-single
+    image: geerlingguy/docker-debian12-ansible:latest
+    privileged: true
+    command: /lib/systemd/systemd
+    pre_build_image: true
+    groups:
+      - neo4j_servers
+  - name: neo4j-core-01
+    image: geerlingguy/docker-debian12-ansible:latest
+    privileged: true
+    command: /lib/systemd/systemd
+    pre_build_image: true
+    groups:
+      - neo4j_core
+  - name: neo4j-core-02
+    image: geerlingguy/docker-debian12-ansible:latest
+    privileged: true
+    command: /lib/systemd/systemd
+    pre_build_image: true
+    groups:
+      - neo4j_core
+  - name: neo4j-core-03
+    image: geerlingguy/docker-debian12-ansible:latest
+    privileged: true
+    command: /lib/systemd/systemd
+    pre_build_image: true
+    groups:
+      - neo4j_core
+  - name: neo4j-replica-01
+    image: geerlingguy/docker-debian12-ansible:latest
+    privileged: true
+    command: /lib/systemd/systemd
+    pre_build_image: true
+    groups:
+      - neo4j_replica
+provisioner:
+  name: ansible
+  inventory:
+    group_vars:
+      neo4j_servers:
+        neo4j_edition: community
+        neo4j_initial_password: testpassword123
+        neo4j_plugins:
+          - name: apoc
+            enabled: true
+        neo4j_database_backup_individual: true
+        neo4j_query_monitoring: true
+        neo4j_health_checks:
+          - name: database_available
+            enabled: true
+      neo4j_core:
+        neo4j_edition: enterprise
+        neo4j_cluster_enabled: true
+        neo4j_initial_password: testpassword123
+        neo4j_accept_license: true
+        neo4j_plugins:
+          - name: apoc
+            enabled: true
+          - name: graph-data-science
+            enabled: true
+        neo4j_ldap_enabled: false
+        neo4j_audit_enabled: true
+        neo4j_metrics_enabled: true
+        neo4j_backup_enabled: true
+        neo4j_ha_proxy_enabled: true
+      neo4j_replica:
+        neo4j_edition: enterprise
+        neo4j_cluster_enabled: true
+        neo4j_initial_password: testpassword123
+        neo4j_accept_license: true
+verifier:
+  name: ansible

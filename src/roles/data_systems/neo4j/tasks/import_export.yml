@@ -1,0 +1,98 @@
+---
+# Data Import/Export Features
+
+- name: Create import directory
+  ansible.builtin.file:
+    path: "{{ neo4j_import_dir }}"
+    state: directory
+    owner: neo4j
+    group: neo4j
+    mode: '0755'
+
+- name: Create export directory
+  ansible.builtin.file:
+    path: "{{ neo4j_export_dir }}"
+    state: directory
+    owner: neo4j
+    group: neo4j
+    mode: '0755'
+
+- name: Configure CSV import settings
+  ansible.builtin.lineinfile:
+    path: /etc/neo4j/neo4j.conf
+    regexp: "^#?dbms.directories.import="
+    line: "dbms.directories.import={{ neo4j_import_dir }}"
+  when: neo4j_csv_import_enabled
+  notify: restart neo4j
+
+- name: Copy import data files
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ neo4j_import_dir }}/{{ item.dest | default(item.src | basename) }}"
+    owner: neo4j
+    group: neo4j
+    mode: '0644'
+  loop: "{{ neo4j_import_sources }}"
+  when: 
+    - neo4j_import_enabled
+    - item.type | default('file') == 'file'
+
+- name: Download import data files
+  ansible.builtin.get_url:
+    url: "{{ item.url }}"
+    dest: "{{ neo4j_import_dir }}/{{ item.dest | default(item.url | basename) }}"
+    owner: neo4j
+    group: neo4j
+    mode: '0644'
+  loop: "{{ neo4j_import_sources }}"
+  when: 
+    - neo4j_import_enabled
+    - item.type | default('file') == 'url'
+
+- name: Create data seeding scripts
+  ansible.builtin.template:
+    src: seed_data.cypher.j2
+    dest: "{{ neo4j_import_dir }}/seed_data_{{ item.name }}.cypher"
+    owner: neo4j
+    group: neo4j
+    mode: '0644'
+  loop: "{{ neo4j_data_seeding }}"
+  when: neo4j_data_seeding | length > 0
+
+- name: Execute data seeding
+  ansible.builtin.command: >
+    cypher-shell -u neo4j -p "{{ neo4j_initial_password }}" 
+    -f "{{ neo4j_import_dir }}/seed_data_{{ item.name }}.cypher"
+  loop: "{{ neo4j_data_seeding }}"
+  when: 
+    - neo4j_data_seeding | length > 0
+    - neo4j_initial_password | length > 0
+    - item.execute | default(true)
+  register: seeding_result
+  failed_when: seeding_result.rc != 0
+
+- name: Create export backup script
+  ansible.builtin.template:
+    src: export_backup.sh.j2
+    dest: /usr/local/bin/neo4j-export-backup.sh
+    mode: '0755'
+    owner: root
+    group: root
+  when: neo4j_export_scheduled
+
+- name: Schedule data exports
+  ansible.builtin.cron:
+    name: "Neo4j data export"
+    hour: "{{ (neo4j_backup_hour | int) + 1 }}"
+    minute: "30"
+    job: "/usr/local/bin/neo4j-export-backup.sh"
+    user: neo4j
+  when: neo4j_export_scheduled
+
+- name: Configure APOC export settings
+  ansible.builtin.lineinfile:
+    path: /etc/neo4j/neo4j.conf
+    regexp: "^#?apoc.export.file.enabled="
+    line: "apoc.export.file.enabled=true"
+  when: neo4j_export_scheduled
+  notify: restart neo4j

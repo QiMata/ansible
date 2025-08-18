@@ -14,9 +14,33 @@
 - name: Include configuration tasks
   ansible.builtin.import_tasks: config.yml
 
+- name: Include clustering tasks
+  ansible.builtin.import_tasks: clustering.yml
+  when: minio_enable_clustering or minio_multiple_drives | length > 0
+
 - name: Include TLS tasks
   ansible.builtin.import_tasks: tls.yml
   when: minio_enable_tls
 
+- name: Include advanced TLS tasks
+  ansible.builtin.import_tasks: advanced_tls.yml
+  when: minio_enable_tls and (minio_enable_letsencrypt or minio_enable_client_certs or minio_ca_bundle_path != "")
+
+- name: Include network security tasks
+  ansible.builtin.import_tasks: network_security.yml
+  when: minio_enable_firewall or minio_rate_limit_enabled or minio_enable_reverse_proxy
+
 - name: Include service tasks
   ansible.builtin.import_tasks: service.yml
+
+- name: Include user and access management tasks
+  ansible.builtin.import_tasks: users_access.yml
+  when: minio_create_users | length > 0 or minio_create_buckets | length > 0 or minio_bucket_policies | length > 0
+
+- name: Include monitoring tasks
+  ansible.builtin.import_tasks: monitoring.yml
+  when: minio_enable_prometheus or minio_enable_health_checks or minio_enable_audit_logging
+
+- name: Include backup and recovery tasks
+  ansible.builtin.import_tasks: backup_recovery.yml
+  when: minio_enable_backup or minio_enable_replication

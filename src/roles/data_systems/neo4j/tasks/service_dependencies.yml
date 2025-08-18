@@ -1,0 +1,83 @@
+---
+# Service Dependencies
+
+- name: Wait for dependent services
+  ansible.builtin.wait_for:
+    host: "{{ item.host | default('localhost') }}"
+    port: "{{ item.port }}"
+    timeout: "{{ item.timeout | default(60) }}"
+  loop: "{{ neo4j_depends_on_services }}"
+  when: 
+    - neo4j_wait_for_services
+    - item.type | default('port') == 'port'
+
+- name: Check service dependencies via HTTP
+  ansible.builtin.uri:
+    url: "{{ item.url }}"
+    method: "{{ item.method | default('GET') }}"
+    status_code: "{{ item.expected_status | default(200) }}"
+  register: service_check
+  until: service_check.status == (item.expected_status | default(200))
+  retries: "{{ neo4j_health_check_retries }}"
+  delay: "{{ neo4j_health_check_delay }}"
+  loop: "{{ neo4j_depends_on_services }}"
+  when: 
+    - neo4j_wait_for_services
+    - item.type | default('port') == 'http'
+
+- name: Check database service dependencies
+  ansible.builtin.command: "{{ item.command }}"
+  register: db_check
+  until: db_check.rc == 0
+  retries: "{{ neo4j_health_check_retries }}"
+  delay: "{{ neo4j_health_check_delay }}"
+  loop: "{{ neo4j_depends_on_services }}"
+  when: 
+    - neo4j_wait_for_services
+    - item.type | default('port') == 'command'
+
+- name: Configure systemd service dependencies
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/system/neo4j.service.d/dependencies.conf
+    create: true
+    regexp: "^After="
+    line: "After={{ neo4j_depends_on_services | selectattr('systemd_service', 'defined') | map(attribute='systemd_service') | join(' ') }}"
+  when: neo4j_depends_on_services | selectattr('systemd_service', 'defined') | list | length > 0
+  notify: 
+    - reload systemd
+    - restart neo4j
+
+- name: Create systemd override directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/neo4j.service.d
+    state: directory
+    mode: '0755'
+
+- name: Configure service start timeout
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/system/neo4j.service.d/timeout.conf
+    create: true
+    regexp: "^TimeoutStartSec="
+    line: "TimeoutStartSec={{ neo4j_service_start_timeout }}"
+  notify: 
+    - reload systemd
+    - restart neo4j
+
+- name: Create pre-start health check script
+  ansible.builtin.template:
+    src: pre_start_check.sh.j2
+    dest: /usr/local/bin/neo4j-pre-start-check.sh
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Configure pre-start health checks
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/system/neo4j.service.d/prestart.conf
+    create: true
+    regexp: "^ExecStartPre="
+    line: "ExecStartPre=/usr/local/bin/neo4j-pre-start-check.sh"
+  when: neo4j_depends_on_services | length > 0
+  notify: 
+    - reload systemd
+    - restart neo4j

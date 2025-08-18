@@ -15,7 +15,7 @@
 
 ## Overview
 
-The **MinIO** role installs and configures [MinIO](https://min.io) – a high-performance, self-hostable object storage server – on a target Linux host. It sets up MinIO as a systemd service running under a dedicated system user, manages the necessary directories and configuration, and optionally configures TLS for secure access. Key tasks performed by this role include:
+The **MinIO** role installs and configures [MinIO](https://min.io) – a high-performance, self-hostable object storage server – on Linux hosts with comprehensive enterprise features including clustering, security, monitoring, and backup capabilities. This role now supports both single-node and distributed multi-node deployments with advanced features for production environments.
 
 * **System Preparation:** Ensures required system packages like `curl` (for download) and `openssl` (for TLS key/cert generation) are present. It creates a dedicated `minio` group and user account (system user with no login shell) to run the service, enhancing security by not running MinIO as root.
 * **Binary Installation:** Downloads the MinIO server binary from the official source (default is the Linux AMD64 release) and installs it to **`/usr/local/bin/minio`**, setting proper permissions. You can adjust the version or source via role variables (see **Role Variables**).

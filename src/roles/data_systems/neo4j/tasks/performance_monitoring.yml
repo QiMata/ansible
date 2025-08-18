@@ -1,0 +1,103 @@
+---
+# Performance Monitoring & Alerts
+
+- name: Enable JMX monitoring
+  ansible.builtin.lineinfile:
+    path: /etc/neo4j/neo4j.conf
+    regexp: "^#?dbms.jvm.additional=-Dcom.sun.management.jmxremote.port="
+    line: "dbms.jvm.additional=-Dcom.sun.management.jmxremote.port={{ neo4j_jmx_port }}"
+  when: neo4j_jmx_enabled
+  notify: restart neo4j
+
+- name: Configure JMX authentication
+  ansible.builtin.lineinfile:
+    path: /etc/neo4j/neo4j.conf
+    regexp: "^#?dbms.jvm.additional=-Dcom.sun.management.jmxremote.authenticate="
+    line: "dbms.jvm.additional=-Dcom.sun.management.jmxremote.authenticate=false"
+  when: neo4j_jmx_enabled
+  notify: restart neo4j
+
+- name: Enable query logging
+  ansible.builtin.lineinfile:
+    path: /etc/neo4j/neo4j.conf
+    regexp: "^#?dbms.logs.query.enabled="
+    line: "dbms.logs.query.enabled={{ neo4j_query_monitoring | lower }}"
+  when: neo4j_query_monitoring
+  notify: restart neo4j
+
+- name: Configure slow query threshold
+  ansible.builtin.lineinfile:
+    path: /etc/neo4j/neo4j.conf
+    regexp: "^#?dbms.logs.query.threshold="
+    line: "dbms.logs.query.threshold={{ neo4j_slow_query_threshold }}"
+  when: neo4j_query_monitoring
+  notify: restart neo4j
+
+- name: Enable connection logging
+  ansible.builtin.lineinfile:
+    path: /etc/neo4j/neo4j.conf
+    regexp: "^#?dbms.logs.query.parameter_logging_enabled="
+    line: "dbms.logs.query.parameter_logging_enabled={{ neo4j_connection_monitoring | lower }}"
+  when: neo4j_connection_monitoring
+  notify: restart neo4j
+
+- name: Create health check script
+  ansible.builtin.template:
+    src: health_check.sh.j2
+    dest: /usr/local/bin/neo4j-health-check.sh
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Schedule health checks
+  ansible.builtin.cron:
+    name: "Neo4j health check - {{ item.name }}"
+    minute: "*/5"
+    job: "/usr/local/bin/neo4j-health-check.sh {{ item.name }}"
+    user: root
+  loop: "{{ neo4j_health_checks }}"
+  when: item.enabled | default(true)
+
+- name: Configure metrics CSV export
+  ansible.builtin.lineinfile:
+    path: /etc/neo4j/neo4j.conf
+    regexp: "^#?metrics.csv.enabled="
+    line: "metrics.csv.enabled=true"
+  when: neo4j_metrics_enabled
+  notify: restart neo4j
+
+- name: Configure metrics CSV interval
+  ansible.builtin.lineinfile:
+    path: /etc/neo4j/neo4j.conf
+    regexp: "^#?metrics.csv.interval="
+    line: "metrics.csv.interval=30s"
+  when: neo4j_metrics_enabled
+  notify: restart neo4j
+
+- name: Create metrics directory
+  ansible.builtin.file:
+    path: /var/lib/neo4j/metrics
+    state: directory
+    owner: neo4j
+    group: neo4j
+    mode: '0755'
+  when: neo4j_metrics_enabled
+
+- name: Configure alerting webhook
+  ansible.builtin.template:
+    src: alert_webhook.sh.j2
+    dest: /usr/local/bin/neo4j-alert-webhook.sh
+    mode: '0755'
+    owner: root
+    group: root
+  when: 
+    - neo4j_alerting_enabled
+    - neo4j_alerting_webhook | length > 0
+
+- name: Install performance monitoring tools
+  ansible.builtin.apt:
+    name:
+      - htop
+      - iotop
+      - netstat-nat
+    state: present

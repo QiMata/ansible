@@ -1,0 +1,69 @@
+---
+# Database Management
+
+- name: Create databases
+  ansible.builtin.uri:
+    url: "http://{{ neo4j_listen_address }}:{{ neo4j_http_port }}/db/system/tx/commit"
+    method: POST
+    user: neo4j
+    password: "{{ neo4j_initial_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      statements:
+        - statement: "CREATE DATABASE {{ item.name }} IF NOT EXISTS"
+    status_code: 200
+  loop: "{{ neo4j_databases }}"
+  when: 
+    - neo4j_initial_password | length > 0
+    - item.name != "system"
+    - item.name != "neo4j"
+
+- name: Set default database
+  ansible.builtin.lineinfile:
+    path: /etc/neo4j/neo4j.conf
+    regexp: "^#?dbms.default_database="
+    line: "dbms.default_database={{ neo4j_default_database }}"
+  notify: restart neo4j
+
+- name: Enable multi-database support
+  ansible.builtin.lineinfile:
+    path: /etc/neo4j/neo4j.conf
+    regexp: "^#?dbms.databases.default_to_read_only="
+    line: "dbms.databases.default_to_read_only=false"
+  notify: restart neo4j
+  when: neo4j_edition == 'enterprise'
+
+- name: Configure database backup individually
+  ansible.builtin.lineinfile:
+    path: /etc/neo4j/neo4j.conf
+    regexp: "^#?dbms.backup.enabled="
+    line: "dbms.backup.enabled={{ neo4j_database_backup_individual | lower }}"
+  notify: restart neo4j
+  when: 
+    - neo4j_edition == 'enterprise'
+    - neo4j_database_backup_individual
+
+- name: Create database backup script for individual databases
+  ansible.builtin.template:
+    src: database_backup.sh.j2
+    dest: /usr/local/bin/neo4j-database-backup.sh
+    mode: '0755'
+    owner: root
+    group: root
+  when: 
+    - neo4j_database_backup_individual
+    - neo4j_backup_enabled
+
+- name: Schedule individual database backups
+  ansible.builtin.cron:
+    name: "Neo4j database backup - {{ item.name }}"
+    hour: "{{ neo4j_backup_hour }}"
+    minute: "{{ 10 + (loop.index0 * 15) }}"
+    job: "/usr/local/bin/neo4j-database-backup.sh {{ item.name }}"
+    user: neo4j
+  loop: "{{ neo4j_databases }}"
+  when: 
+    - neo4j_database_backup_individual
+    - neo4j_backup_cron_enabled
+    - item.name != "system"

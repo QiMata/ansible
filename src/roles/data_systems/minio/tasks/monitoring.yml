@@ -1,0 +1,115 @@
+---
+# MinIO Monitoring and Observability Tasks
+
+- name: Configure Prometheus metrics endpoint
+  ansible.builtin.lineinfile:
+    path: /etc/default/minio
+    line: "MINIO_PROMETHEUS_AUTH_TYPE=public"
+    regexp: "^MINIO_PROMETHEUS_AUTH_TYPE="
+    state: present
+  when: minio_enable_prometheus
+  notify: restart minio
+
+- name: Add MinIO to Prometheus targets
+  ansible.builtin.include_role:
+    name: monitoring_observability.prometheus
+  vars:
+    prometheus_additional_targets:
+      - job_name: 'minio'
+        static_configs:
+          - targets: ['{{ ansible_default_ipv4.address }}:{{ minio_server_port }}']
+        metrics_path: '/minio/prometheus/metrics'
+        scheme: "{{ 'https' if minio_enable_tls else 'http' }}"
+  when: minio_enable_prometheus
+
+- name: Create health check script
+  ansible.builtin.template:
+    src: health_check.sh.j2
+    dest: "{{ minio_base_dir }}/health_check.sh"
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: '0755'
+  when: minio_enable_health_checks
+
+- name: Create health check systemd timer
+  ansible.builtin.template:
+    src: minio-health-check.timer.j2
+    dest: /etc/systemd/system/minio-health-check.timer
+    mode: '0644'
+  when: minio_enable_health_checks
+  notify: reload systemd
+
+- name: Create health check systemd service
+  ansible.builtin.template:
+    src: minio-health-check.service.j2
+    dest: /etc/systemd/system/minio-health-check.service
+    mode: '0644'
+  when: minio_enable_health_checks
+  notify: reload systemd
+
+- name: Enable health check timer
+  ansible.builtin.systemd:
+    name: minio-health-check.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: minio_enable_health_checks
+
+- name: Configure audit logging
+  ansible.builtin.lineinfile:
+    path: /etc/default/minio
+    line: "{{ item.key }}={{ item.value }}"
+    regexp: "^{{ item.key }}="
+    state: present
+  loop:
+    - { key: "MINIO_AUDIT_WEBHOOK_ENABLE", value: "{{ minio_enable_audit_logging | lower }}" }
+    - { key: "MINIO_AUDIT_WEBHOOK_ENDPOINT", value: "file://{{ minio_audit_log_path }}" }
+  when: minio_enable_audit_logging
+  notify: restart minio
+
+- name: Create audit log file
+  ansible.builtin.file:
+    path: "{{ minio_audit_log_path }}"
+    state: touch
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: '0640'
+  when: minio_enable_audit_logging
+
+- name: Configure log level
+  ansible.builtin.lineinfile:
+    path: /etc/default/minio
+    line: "MINIO_LOG_LEVEL={{ minio_log_level }}"
+    regexp: "^MINIO_LOG_LEVEL="
+    state: present
+  notify: restart minio
+
+- name: Create disk usage monitoring script
+  ansible.builtin.template:
+    src: disk_usage_monitor.sh.j2
+    dest: "{{ minio_base_dir }}/disk_usage_monitor.sh"
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: '0755'
+
+- name: Create disk usage monitoring cron job
+  ansible.builtin.cron:
+    name: "MinIO disk usage monitoring"
+    minute: "*/15"
+    job: "{{ minio_base_dir }}/disk_usage_monitor.sh"
+    user: "{{ minio_user }}"
+
+- name: Create performance monitoring script
+  ansible.builtin.template:
+    src: performance_monitor.sh.j2
+    dest: "{{ minio_base_dir }}/performance_monitor.sh"
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: '0755'
+
+- name: Setup log rotation for MinIO logs
+  ansible.builtin.template:
+    src: minio_logrotate.j2
+    dest: /etc/logrotate.d/minio
+    mode: '0644'
+  when: minio_enable_audit_logging

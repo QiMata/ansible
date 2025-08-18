@@ -27,3 +27,58 @@ minio_certs_dir: "{{ minio_base_dir }}/certs"
 minio_volumes: "{{ minio_data_dir }}"
 
 minio_opts_extra: "--console-address :{{ minio_console_port }}"
+
+# Clustering Configuration
+minio_enable_clustering: false
+minio_cluster_nodes: []  # List of node URLs for distributed mode
+minio_cluster_drive_count: 4  # Minimum drives for erasure coding
+minio_cluster_node_count: 4   # Minimum nodes for distributed mode
+minio_cluster_parity_drives: 2  # Number of parity drives for erasure coding
+
+# Advanced Storage Configuration
+minio_multiple_drives: []  # List of additional drive paths
+minio_storage_class: "STANDARD"  # STANDARD, REDUCED_REDUNDANCY, etc.
+minio_enable_versioning: true
+minio_lifecycle_policies: []  # List of lifecycle policies
+minio_disk_usage_threshold: 85  # Percentage threshold for alerts
+
+# User and Access Management
+minio_create_users: []  # List of users to create
+minio_create_buckets: []  # List of buckets to create
+minio_bucket_policies: []  # List of bucket policies
+minio_service_accounts: []  # List of service accounts
+minio_access_key_rotation_days: 90
+
+# Advanced TLS Configuration
+minio_enable_letsencrypt: false
+minio_letsencrypt_email: ""
+minio_letsencrypt_domains: []
+minio_enable_client_certs: false
+minio_ca_bundle_path: ""
+minio_tls_ciphers: "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256"
+
+# Network Security
+minio_bind_address: "0.0.0.0"
+minio_enable_firewall: false
+minio_allowed_ips: []  # List of allowed IP addresses/ranges
+minio_enable_reverse_proxy: false
+minio_reverse_proxy_config: {}
+minio_rate_limit_enabled: false
+minio_rate_limit_requests: 1000  # requests per minute
+
+# Monitoring and Observability
+minio_enable_prometheus: false
+minio_prometheus_port: 9090
+minio_enable_health_checks: true
+minio_health_check_interval: "30s"
+minio_enable_audit_logging: false
+minio_audit_log_path: "{{ minio_base_dir }}/audit.log"
+minio_log_level: "INFO"  # DEBUG, INFO, WARN, ERROR
+
+# Backup and Recovery
+minio_enable_backup: false
+minio_backup_schedule: "0 2 * * *"  # Daily at 2 AM
+minio_backup_retention_days: 30
+minio_backup_destination: ""  # S3, filesystem, etc.
+minio_enable_replication: false
+minio_replication_targets: []  # List of replication targets

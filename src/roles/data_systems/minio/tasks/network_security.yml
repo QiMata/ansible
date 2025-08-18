@@ -1,0 +1,104 @@
+---
+# Network Security Configuration Tasks
+
+- name: Configure firewall rules for MinIO
+  ansible.builtin.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+    src: "{{ minio_allowed_ips | join(',') if minio_allowed_ips | length > 0 else 'any' }}"
+  loop:
+    - "{{ minio_server_port }}"
+    - "{{ minio_console_port }}"
+  when: 
+    - minio_enable_firewall
+    - ansible_os_family == "Debian"
+
+- name: Configure iptables rules for MinIO (RHEL/CentOS)
+  ansible.builtin.iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: "{{ item }}"
+    source: "{{ minio_allowed_ips | join(',') if minio_allowed_ips | length > 0 else '0.0.0.0/0' }}"
+    jump: ACCEPT
+    state: present
+  loop:
+    - "{{ minio_server_port }}"
+    - "{{ minio_console_port }}"
+  when: 
+    - minio_enable_firewall
+    - ansible_os_family == "RedHat"
+
+- name: Configure MinIO bind address
+  ansible.builtin.replace:
+    path: "{{ minio_base_dir }}/minio.env"
+    regexp: '^MINIO_OPTS="([^"]*)"'
+    replace: 'MINIO_OPTS="\1 --address {{ minio_bind_address }}:{{ minio_server_port }}"'
+  when: minio_bind_address != "0.0.0.0"
+  notify: restart minio
+
+- name: Create rate limiting configuration
+  ansible.builtin.template:
+    src: rate_limit_config.json.j2
+    dest: "{{ minio_base_dir }}/rate_limit_config.json"
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: '0644'
+  when: minio_rate_limit_enabled
+
+- name: Configure rate limiting
+  ansible.builtin.lineinfile:
+    path: /etc/default/minio
+    line: "MINIO_API_REQUESTS_MAX={{ minio_rate_limit_requests }}"
+    regexp: "^MINIO_API_REQUESTS_MAX="
+    state: present
+  when: minio_rate_limit_enabled
+  notify: restart minio
+
+- name: Install and configure fail2ban for MinIO
+  ansible.builtin.package:
+    name: fail2ban
+    state: present
+  when: minio_enable_firewall
+
+- name: Create fail2ban filter for MinIO
+  ansible.builtin.template:
+    src: fail2ban_minio_filter.conf.j2
+    dest: /etc/fail2ban/filter.d/minio.conf
+    mode: '0644'
+  when: minio_enable_firewall
+
+- name: Create fail2ban jail for MinIO
+  ansible.builtin.template:
+    src: fail2ban_minio_jail.conf.j2
+    dest: /etc/fail2ban/jail.d/minio.conf
+    mode: '0644'
+  when: minio_enable_firewall
+  notify: restart fail2ban
+
+- name: Configure reverse proxy support
+  ansible.builtin.template:
+    src: "{{ minio_reverse_proxy_config.type }}_proxy.conf.j2"
+    dest: "{{ minio_base_dir }}/proxy.conf"
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: '0644'
+  when: 
+    - minio_enable_reverse_proxy
+    - minio_reverse_proxy_config.type is defined
+
+- name: Create network security audit script
+  ansible.builtin.template:
+    src: network_security_audit.sh.j2
+    dest: "{{ minio_base_dir }}/network_security_audit.sh"
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: '0755'
+
+- name: Create network security audit cron job
+  ansible.builtin.cron:
+    name: "MinIO network security audit"
+    minute: "0"
+    hour: "6"
+    job: "{{ minio_base_dir }}/network_security_audit.sh"
+    user: "{{ minio_user }}"

@@ -1,0 +1,10 @@
+---
+- name: Converge
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: Include minio role with advanced features
+      ansible.builtin.include_role:
+        name: data_systems.minio
+      vars:
+        minio_root_password: "securepassword123"

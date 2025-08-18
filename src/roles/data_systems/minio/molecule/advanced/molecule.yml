@@ -1,0 +1,62 @@
+---
+dependency:
+  name: galaxy
+
+driver:
+  name: podman
+
+platforms:
+  - name: minio-advanced
+    image: quay.io/ansible/molecule-debian:12
+    pre_build_image: true
+    privileged: true
+    systemd: true
+    published_ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+
+provisioner:
+  name: ansible
+  inventory:
+    host_vars:
+      minio-advanced:
+        minio_enable_prometheus: true
+        minio_enable_health_checks: true
+        minio_enable_backup: true
+        minio_enable_audit_logging: true
+        minio_enable_firewall: false  # Disabled in container
+        minio_rate_limit_enabled: true
+        minio_rate_limit_requests: 500
+        minio_create_buckets:
+          - name: "test-bucket"
+            versioning: true
+          - name: "backup-bucket"
+            versioning: false
+        minio_create_users:
+          - username: "testuser"
+            password: "testpass123"
+          - username: "backupuser"
+            password: "backuppass456"
+        minio_bucket_policies:
+          - name: "read-only-policy"
+            policy:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: "Allow"
+                  Principal: "*"
+                  Action: "s3:GetObject"
+                  Resource: "arn:aws:s3:::test-bucket/*"
+        minio_service_accounts:
+          - parent_user: "testuser"
+            access_key: "testaccess"
+            secret_key: "testsecret123"
+        minio_multiple_drives:
+          - "/opt/minio/data2"
+          - "/opt/minio/data3"
+        minio_disk_usage_threshold: 80
+        minio_log_level: "DEBUG"
+
+verifier:
+  name: ansible

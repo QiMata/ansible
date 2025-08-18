@@ -1,0 +1,10 @@
+[Unit]
+Description=MinIO Health Check Timer
+Requires=minio-health-check.service
+
+[Timer]
+OnCalendar=*:*:{{ minio_health_check_interval.rstrip('s') }}
+Persistent=true
+
+[Install]
+WantedBy=timers.target
