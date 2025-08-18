@@ -1,0 +1,11 @@
+[Unit]
+Description=PostgreSQL Health Check
+After=postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/postgresql_health_check.sh
+User=root
+StandardOutput=journal
+StandardError=journal

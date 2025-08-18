@@ -1,0 +1,19 @@
+---
+- name: Get PostgreSQL users for PgBouncer authentication
+  community.postgresql.postgresql_query:
+    db: postgres
+    query: "SELECT usename, passwd FROM pg_shadow WHERE usename NOT LIKE 'pg_%'"
+  become_user: postgres
+  register: postgresql_users
+
+- name: Generate PgBouncer user list
+  ansible.builtin.template:
+    src: userlist.txt.j2
+    dest: "{{ pgbouncer_auth_file }}"
+    owner: pgbouncer
+    group: pgbouncer
+    mode: '0600'
+    backup: true
+  notify: reload pgbouncer
+  vars:
+    users: "{{ postgresql_users.query_result }}"

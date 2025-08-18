@@ -1,0 +1,48 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: postgresql-monitoring-ubuntu-22
+    image: geerlingguy/docker-ubuntu2204-ansible:latest
+    command: /lib/systemd/systemd
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    privileged: true
+    pre_build_image: true
+    groups:
+      - postgresql_servers
+  - name: postgresql-monitoring-debian-12
+    image: geerlingguy/docker-debian12-ansible:latest
+    command: /lib/systemd/systemd
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    privileged: true
+    pre_build_image: true
+    groups:
+      - postgresql_servers
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      interpreter_python: auto_silent
+      callback_whitelist: profile_tasks, timer, yaml
+      stdout_callback: yaml
+    ssh_connection:
+      pipelining: false
+  inventory:
+    host_vars:
+      postgresql-monitoring-ubuntu-22:
+        postgresql_version: "14"
+        postgresql_monitoring_enabled: true
+        postgresql_health_check_enabled: true
+        postgresql_slow_query_log_enabled: true
+      postgresql-monitoring-debian-12:
+        postgresql_version: "15"
+        postgresql_monitoring_enabled: true
+        postgresql_replication_monitoring_enabled: true
+verifier:
+  name: ansible

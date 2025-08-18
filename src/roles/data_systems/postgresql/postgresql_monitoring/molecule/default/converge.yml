@@ -1,0 +1,13 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    postgresql_version: "{{ postgresql_version | default('14') }}"
+    postgresql_env: "dev"
+    postgresql_monitoring_enabled: true
+    postgresql_health_check_enabled: true
+    postgresql_slow_query_log_enabled: true
+  roles:
+    - role: data_systems.postgresql
+    - role: data_systems.postgresql.postgresql_monitoring

@@ -1,0 +1,116 @@
+;; PgBouncer configuration file
+;; Managed by Ansible - Do not edit manually
+
+[databases]
+{% for db in pgbouncer_databases %}
+{{ db.name }} = host={{ db.host }} port={{ db.port }} pool_size={{ db.pool_size | default(pgbouncer_default_pool_size) }}
+{% endfor %}
+
+[pgbouncer]
+;;;
+;;; Administrative settings
+;;;
+
+logfile = /var/log/pgbouncer/pgbouncer.log
+pidfile = {{ pgbouncer_pidfile }}
+
+;;;
+;;; Where to wait for clients
+;;;
+
+listen_addr = {{ pgbouncer_listen_addr }}
+listen_port = {{ pgbouncer_port }}
+
+;;;
+;;; Authentication settings
+;;;
+
+auth_type = {{ pgbouncer_auth_type }}
+auth_file = {{ pgbouncer_auth_file }}
+
+;;;
+;;; Users allowed into database 'pgbouncer'
+;;;
+
+admin_users = {{ pgbouncer_admin_users }}
+stats_users = {{ pgbouncer_stats_users }}
+
+;;;
+;;; Pooler personality questions
+;;;
+
+pool_mode = {{ pgbouncer_pool_mode }}
+server_reset_query = DISCARD ALL
+server_check_query = select 1
+server_check_delay = 30
+application_name_add_host = {{ pgbouncer_application_name_add_host }}
+
+;;;
+;;; Connection limits
+;;;
+
+max_client_conn = {{ pgbouncer_max_client_conn }}
+default_pool_size = {{ pgbouncer_default_pool_size }}
+min_pool_size = {{ pgbouncer_min_pool_size }}
+reserve_pool_size = {{ pgbouncer_reserve_pool_size }}
+reserve_pool_timeout = {{ pgbouncer_reserve_pool_timeout }}
+max_db_connections = {{ pgbouncer_max_db_connections }}
+max_user_connections = {{ pgbouncer_max_user_connections }}
+
+;;;
+;;; Timeouts
+;;;
+
+server_lifetime = {{ pgbouncer_server_lifetime }}
+server_idle_timeout = {{ pgbouncer_server_idle_timeout }}
+client_idle_timeout = {{ pgbouncer_client_idle_timeout }}
+client_login_timeout = {{ pgbouncer_client_login_timeout }}
+query_timeout = {{ pgbouncer_query_timeout }}
+query_wait_timeout = {{ pgbouncer_query_wait_timeout }}
+cancel_wait_timeout = {{ pgbouncer_cancel_wait_timeout }}
+suspend_timeout = {{ pgbouncer_suspend_timeout }}
+
+;;;
+;;; Logging
+;;;
+
+log_connections = {{ pgbouncer_log_connections }}
+log_disconnections = {{ pgbouncer_log_disconnections }}
+log_pooler_errors = {{ pgbouncer_log_pooler_errors }}
+log_stats = {{ pgbouncer_log_stats }}
+stats_period = {{ pgbouncer_stats_period }}
+verbose = 0
+
+;;;
+;;; Performance settings
+;;;
+
+listen_backlog = {{ pgbouncer_listen_backlog }}
+sbuf_loopcnt = {{ pgbouncer_sbuf_loopcnt }}
+
+;;;
+;;; TCP settings
+;;;
+
+tcp_defer_accept = {{ pgbouncer_tcp_defer_accept }}
+tcp_keepalive = {{ pgbouncer_tcp_keepalive }}
+tcp_keepcnt = {{ pgbouncer_tcp_keepcnt }}
+tcp_keepidle = {{ pgbouncer_tcp_keepidle }}
+tcp_keepintvl = {{ pgbouncer_tcp_keepintvl }}
+
+{% if postgresql_ssl_enabled | default(false) %}
+;;;
+;;; TLS settings
+;;;
+
+server_tls_sslmode = {{ pgbouncer_server_tls_sslmode }}
+{% if pgbouncer_server_tls_ca_file %}
+server_tls_ca_file = {{ pgbouncer_server_tls_ca_file }}
+{% endif %}
+{% if pgbouncer_server_tls_cert_file %}
+server_tls_cert_file = {{ pgbouncer_server_tls_cert_file }}
+{% endif %}
+{% if pgbouncer_server_tls_key_file %}
+server_tls_key_file = {{ pgbouncer_server_tls_key_file }}
+{% endif %}
+{% endif %}

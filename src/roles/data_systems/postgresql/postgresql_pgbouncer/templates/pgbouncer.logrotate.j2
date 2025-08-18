@@ -1,0 +1,12 @@
+/var/log/pgbouncer/pgbouncer.log {
+    weekly
+    rotate 52
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0644 pgbouncer pgbouncer
+    postrotate
+        /bin/systemctl reload pgbouncer.service > /dev/null 2>&1 || true
+    endscript
+}

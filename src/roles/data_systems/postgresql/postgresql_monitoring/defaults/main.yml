@@ -1,0 +1,40 @@
+---
+# PostgreSQL Monitoring Configuration
+postgresql_monitoring_enabled: true
+postgresql_exporter_version: "0.15.0"
+postgresql_exporter_port: 9187
+postgresql_exporter_user: "postgres_exporter"
+postgresql_exporter_password: "{{ vault_postgresql_exporter_password | default('change_me_in_vault') }}"
+postgresql_exporter_database: "postgres"
+
+# Monitoring queries
+postgresql_exporter_custom_queries_enabled: true
+postgresql_exporter_auto_discover_databases: true
+
+# Grafana dashboard configuration
+postgresql_grafana_dashboard_enabled: true
+postgresql_grafana_dashboard_id: 9628  # Popular PostgreSQL dashboard ID
+
+# Health check configuration
+postgresql_health_check_enabled: true
+postgresql_health_check_interval: "30s"
+postgresql_health_check_timeout: "10s"
+
+# Performance monitoring
+postgresql_slow_query_log_enabled: true
+postgresql_slow_query_threshold: "1000ms"  # Log queries slower than 1 second
+
+# Connection monitoring
+postgresql_connection_monitoring_enabled: true
+postgresql_max_connections_alert_threshold: 80  # Alert when 80% of max connections used
+
+# Disk space monitoring
+postgresql_disk_monitoring_enabled: true
+postgresql_disk_alert_threshold: 85  # Alert when disk usage exceeds 85%
+
+# Replication monitoring (when replication is enabled)
+postgresql_replication_monitoring_enabled: "{{ postgresql_enable_replication | default(false) }}"
+postgresql_replication_lag_alert_threshold: "10s"
+
+# Metrics retention
+postgresql_metrics_retention: "30d"

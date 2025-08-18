@@ -1,0 +1,66 @@
+---
+# PostgreSQL Security Hardening Configuration
+postgresql_security_enabled: true
+
+# Fail2ban configuration
+postgresql_fail2ban_enabled: true
+postgresql_fail2ban_maxretry: 5
+postgresql_fail2ban_bantime: 3600  # 1 hour
+postgresql_fail2ban_findtime: 600  # 10 minutes
+postgresql_fail2ban_ignoreip:
+  - "127.0.0.1"
+  - "::1"
+
+# Audit logging
+postgresql_audit_enabled: true
+postgresql_audit_log_level: "info"
+postgresql_audit_log_connections: true
+postgresql_audit_log_disconnections: true
+postgresql_audit_log_statement_once: false
+postgresql_audit_log_parameter: false
+
+# Security extensions
+postgresql_security_extensions:
+  - pgaudit
+  - passwordcheck
+
+# File permissions hardening
+postgresql_harden_file_permissions: true
+postgresql_data_dir_mode: "0700"
+postgresql_config_dir_mode: "0750"
+postgresql_log_dir_mode: "0755"
+
+# Network security
+postgresql_restrict_network_access: true
+postgresql_allowed_networks:
+  - "127.0.0.1/32"
+  - "::1/128"
+
+# Authentication security
+postgresql_password_encryption: "scram-sha-256"
+postgresql_password_min_length: 12
+postgresql_password_complexity: true
+postgresql_session_timeout: 3600  # 1 hour
+
+# Connection security
+postgresql_max_connections_per_user: 10
+postgresql_connection_rate_limit: 5  # connections per second
+postgresql_idle_in_transaction_timeout: 300000  # 5 minutes in milliseconds
+
+# Backup encryption
+postgresql_backup_encryption_enabled: true
+postgresql_backup_encryption_key: "{{ vault_postgresql_backup_key | default('') }}"
+
+# Security monitoring
+postgresql_security_monitoring_enabled: true
+postgresql_failed_login_threshold: 3
+postgresql_suspicious_activity_detection: true
+
+# Database object security
+postgresql_default_privileges_revoked: true
+postgresql_public_schema_restricted: true
+postgresql_function_security_definer: false
+
+# Data encryption at rest (requires compatible filesystem)
+postgresql_data_encryption_enabled: false
+postgresql_tablespace_encryption: false

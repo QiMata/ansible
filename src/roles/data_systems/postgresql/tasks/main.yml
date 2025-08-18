@@ -17,3 +17,24 @@
 - name: Include firewall tasks
   ansible.builtin.include_tasks: firewall.yml
   when: postgresql_configure_firewall | bool
+
+# Include extension roles
+- name: Include monitoring extension
+  ansible.builtin.include_role:
+    name: data_systems.postgresql.postgresql_monitoring
+  when: postgresql_monitoring_enabled | default(false) | bool
+
+- name: Include SSL/TLS extension
+  ansible.builtin.include_role:
+    name: data_systems.postgresql.postgresql_ssl
+  when: postgresql_ssl_enabled | default(false) | bool
+
+- name: Include PgBouncer extension
+  ansible.builtin.include_role:
+    name: data_systems.postgresql.postgresql_pgbouncer
+  when: pgbouncer_enabled | default(false) | bool
+
+- name: Include security hardening extension
+  ansible.builtin.include_role:
+    name: data_systems.postgresql.postgresql_security
+  when: postgresql_security_enabled | default(false) | bool

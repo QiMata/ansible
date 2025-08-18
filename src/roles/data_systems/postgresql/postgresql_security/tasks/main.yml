@@ -1,0 +1,28 @@
+---
+- name: Include fail2ban setup
+  ansible.builtin.include_tasks: fail2ban.yml
+  when: postgresql_fail2ban_enabled | bool
+
+- name: Include audit logging setup
+  ansible.builtin.include_tasks: audit_logging.yml
+  when: postgresql_audit_enabled | bool
+
+- name: Include security extensions setup
+  ansible.builtin.include_tasks: security_extensions.yml
+  when: postgresql_security_extensions | length > 0
+
+- name: Include file permissions hardening
+  ansible.builtin.include_tasks: file_permissions.yml
+  when: postgresql_harden_file_permissions | bool
+
+- name: Include network security setup
+  ansible.builtin.include_tasks: network_security.yml
+  when: postgresql_restrict_network_access | bool
+
+- name: Include authentication security setup
+  ansible.builtin.include_tasks: auth_security.yml
+  when: postgresql_security_enabled | bool
+
+- name: Include database security setup
+  ansible.builtin.include_tasks: database_security.yml
+  when: postgresql_security_enabled | bool

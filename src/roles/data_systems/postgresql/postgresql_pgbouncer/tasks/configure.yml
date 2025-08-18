@@ -1,0 +1,32 @@
+---
+- name: Generate PgBouncer configuration
+  ansible.builtin.template:
+    src: pgbouncer.ini.j2
+    dest: "{{ pgbouncer_conffile }}"
+    owner: pgbouncer
+    group: pgbouncer
+    mode: '0644'
+    backup: true
+  notify: restart pgbouncer
+
+- name: Create PgBouncer systemd service
+  ansible.builtin.template:
+    src: pgbouncer.service.j2
+    dest: /etc/systemd/system/pgbouncer.service
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart pgbouncer
+
+- name: Create logrotate configuration for PgBouncer
+  ansible.builtin.template:
+    src: pgbouncer.logrotate.j2
+    dest: /etc/logrotate.d/pgbouncer
+    mode: '0644'
+
+- name: Enable and start PgBouncer service
+  ansible.builtin.systemd:
+    name: pgbouncer
+    enabled: true
+    state: started
+    daemon_reload: true

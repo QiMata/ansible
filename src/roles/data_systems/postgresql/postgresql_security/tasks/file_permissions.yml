@@ -1,0 +1,50 @@
+---
+- name: Harden PostgreSQL data directory permissions
+  ansible.builtin.file:
+    path: "/var/lib/postgresql/{{ postgresql_version }}/main"
+    mode: "{{ postgresql_data_dir_mode }}"
+    owner: postgres
+    group: postgres
+    recurse: false
+
+- name: Harden PostgreSQL configuration directory permissions
+  ansible.builtin.file:
+    path: "/etc/postgresql/{{ postgresql_version }}/main"
+    mode: "{{ postgresql_config_dir_mode }}"
+    owner: postgres
+    group: postgres
+    recurse: false
+
+- name: Harden PostgreSQL log directory permissions
+  ansible.builtin.file:
+    path: "/var/log/postgresql"
+    mode: "{{ postgresql_log_dir_mode }}"
+    owner: postgres
+    group: postgres
+    recurse: false
+
+- name: Secure PostgreSQL configuration files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    mode: '0640'
+    owner: postgres
+    group: postgres
+  loop:
+    - "/etc/postgresql/{{ postgresql_version }}/main/postgresql.conf"
+    - "/etc/postgresql/{{ postgresql_version }}/main/pg_hba.conf"
+    - "/etc/postgresql/{{ postgresql_version }}/main/pg_ident.conf"
+
+- name: Remove world-readable permissions from PostgreSQL files
+  ansible.builtin.command:
+    cmd: "find /var/lib/postgresql/{{ postgresql_version }}/main -type f -perm /o+r -exec chmod o-r {} +"
+  changed_when: false
+
+- name: Set secure umask for PostgreSQL service
+  ansible.builtin.lineinfile:
+    path: "/etc/systemd/system/multi-user.target.wants/postgresql.service"
+    regexp: "^UMask="
+    line: "UMask=0027"
+    insertafter: "\\[Service\\]"
+  notify: 
+    - reload systemd
+    - restart postgresql

@@ -1,0 +1,18 @@
+---
+- name: Include PostgreSQL exporter installation
+  ansible.builtin.include_tasks: install_exporter.yml
+  when: postgresql_monitoring_enabled | bool
+
+- name: Include health check setup
+  ansible.builtin.include_tasks: health_checks.yml
+  when: postgresql_health_check_enabled | bool
+
+- name: Include performance monitoring setup
+  ansible.builtin.include_tasks: performance_monitoring.yml
+  when: postgresql_slow_query_log_enabled | bool
+
+- name: Include replication monitoring
+  ansible.builtin.include_tasks: replication_monitoring.yml
+  when: 
+    - postgresql_replication_monitoring_enabled | bool
+    - postgresql_enable_replication | default(false) | bool

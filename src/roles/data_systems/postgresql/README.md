@@ -5,6 +5,7 @@
 * [Overview](#overview)
 * [Supported Operating Systems/Platforms](#supported-operating-systemsplatforms)
 * [Role Variables](#role-variables)
+* [Extensions](#extensions)
 * [Tags](#tags)
 * [Dependencies](#dependencies)
 * [Example Playbook](#example-playbook)
@@ -15,7 +16,18 @@
 
 ## Overview
 
-The **PostgreSQL** role installs and configures a PostgreSQL database server on Debian/Ubuntu systems, with optional high-availability features (either streaming replication or a Patroni-managed cluster). It handles the full setup from package installation to configuration tuning, and can optionally open firewall ports and set up replication users. Key tasks and features of this role include:
+The **PostgreSQL** role installs and configures a PostgreSQL database server on Debian/Ubuntu systems, with optional high-availability features (either streaming replication or a Patroni-managed cluster). It handles the full setup from package installation to configuration tuning, and can optionally open firewall ports and set up replication users.
+
+**🔥 NEW: Enhanced with Comprehensive Extensions!**
+
+This role now includes powerful extensions for:
+- **Monitoring & Observability** - Prometheus metrics, health checks, performance monitoring  
+- **SSL/TLS Management** - Automated certificate handling, Let's Encrypt integration
+- **Connection Pooling** - PgBouncer setup and configuration
+- **Security Hardening** - Fail2ban, audit logging, enhanced authentication  
+- **Performance Tuning** - Automated optimization based on system resources
+
+Key tasks and features of this role include:
 
 * **Package Installation:** Installs required OS packages and Python libraries (e.g. `gnupg`, `ca-certificates`, `python3-psycopg2`) and adds the official PostgreSQL APT repository (PGDG) if enabled. By default, it installs PostgreSQL **{{ postgresql_version }}** (15 by default, configurable) from the distribution’s repositories, or from PGDG when `postgresql_use_official_repo: true`.
 * **Service Setup:** Installs the PostgreSQL server packages and ensures the database service is enabled and running. For a standard deployment, the PostgreSQL service (systemd unit) will be started. If Patroni is enabled (see below), the role instead sets up Patroni and disables the default PostgreSQL service.
@@ -89,6 +101,64 @@ Below is a list of variables that can be used to customize the role’s behavior
 <!-- markdownlint-enable MD033 -->
 
 **Notes:** In many cases, the defaults will suffice for a simple installation, but you should **securely set passwords** (e.g. `postgresql_admin_password`, `postgresql_replication_password`) in your inventory or via Ansible Vault if you enable those features. By default, no password is set for the `postgres` user (only local peer auth), and no replication will occur unless configured. Also, if enabling replication or Patroni, remember to adjust `postgresql_replication_role` per host and provide any necessary connection info (like `postgresql_replication_network` for HBA, and `patroni_etcd_host` for Patroni). The role does not automatically create application databases or users; you should create those (e.g. with the `community.postgresql.postgresql_db` and `postgresql_user` modules or a dedicated role) after the database server is up.
+
+## Extensions
+
+This role includes several powerful extensions that can be enabled independently:
+
+### 🔍 PostgreSQL Monitoring (`postgresql_monitoring`)
+- **Prometheus Integration**: postgres_exporter with custom metrics
+- **Health Checks**: Automated monitoring with configurable alerts
+- **Performance Monitoring**: Slow query logging and pg_stat_statements
+- **Replication Monitoring**: Lag detection and slot monitoring
+
+**Enable with:** `postgresql_monitoring_enabled: true`
+
+### 🔒 SSL/TLS Management (`postgresql_ssl`)
+- **Multiple Certificate Sources**: Self-signed, Let's Encrypt, or custom certificates
+- **Automated Certificate Rotation**: Renewal and deployment automation
+- **SSL-Only Mode**: Force encrypted connections
+- **Client Certificate Authentication**: Enhanced security options
+
+**Enable with:** `postgresql_ssl_enabled: true`
+
+### ⚡ Connection Pooling (`postgresql_pgbouncer`)
+- **PgBouncer Integration**: Automated setup and configuration
+- **Multiple Pool Modes**: Session, transaction, or statement-level pooling
+- **Performance Optimization**: Connection limits and timeout tuning
+- **Monitoring**: Built-in connection pool metrics
+
+**Enable with:** `pgbouncer_enabled: true`
+
+### 🛡️ Security Hardening (`postgresql_security`)
+- **Fail2ban Protection**: Automated intrusion prevention
+- **Audit Logging**: Comprehensive activity tracking with pgaudit
+- **File Permissions**: Hardened filesystem security
+- **Network Security**: Restricted access and firewall integration
+- **Password Policies**: Complex password requirements
+
+**Enable with:** `postgresql_security_enabled: true`
+
+### 🚀 Performance Tuning (`postgresql_performance`)
+- **Automated Tuning**: Resource-based configuration optimization
+- **Environment Profiles**: Different settings for dev/staging/production
+- **Memory Optimization**: Intelligent shared_buffers and work_mem sizing
+- **Maintenance Automation**: Vacuum and analyze scheduling
+
+**Enable with:** `postgresql_performance_enabled: true`
+
+**Example Usage:**
+```yaml
+- hosts: postgresql_servers
+  roles:
+    - role: data_systems.postgresql
+      vars:
+        postgresql_monitoring_enabled: true
+        postgresql_ssl_enabled: true
+        pgbouncer_enabled: true
+        postgresql_security_enabled: true
+        postgresql_performance_enabled: true
+```
 
 ## Tags
 

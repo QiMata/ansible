@@ -1,0 +1,11 @@
+[Unit]
+Description=PostgreSQL Health Check Timer
+Requires=postgresql_health_check.service
+
+[Timer]
+OnBootSec={{ postgresql_health_check_interval }}
+OnUnitActiveSec={{ postgresql_health_check_interval }}
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

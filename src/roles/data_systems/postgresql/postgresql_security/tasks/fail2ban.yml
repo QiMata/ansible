@@ -1,0 +1,25 @@
+---
+- name: Install fail2ban
+  ansible.builtin.package:
+    name: fail2ban
+    state: present
+
+- name: Create fail2ban jail for PostgreSQL
+  ansible.builtin.template:
+    src: postgresql.jail.j2
+    dest: /etc/fail2ban/jail.d/postgresql.conf
+    mode: '0644'
+  notify: restart fail2ban
+
+- name: Create fail2ban filter for PostgreSQL
+  ansible.builtin.template:
+    src: postgresql.filter.j2
+    dest: /etc/fail2ban/filter.d/postgresql.conf
+    mode: '0644'
+  notify: restart fail2ban
+
+- name: Enable and start fail2ban service
+  ansible.builtin.systemd:
+    name: fail2ban
+    enabled: true
+    state: started

@@ -1,0 +1,27 @@
+---
+- name: Create certificate rotation script
+  ansible.builtin.template:
+    src: cert_rotation.sh.j2
+    dest: /usr/local/bin/postgresql_cert_rotation.sh
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Create certificate rotation systemd service
+  ansible.builtin.template:
+    src: cert_rotation.service.j2
+    dest: /etc/systemd/system/postgresql_cert_rotation.service
+    mode: '0644'
+
+- name: Create certificate rotation systemd timer
+  ansible.builtin.template:
+    src: cert_rotation.timer.j2
+    dest: /etc/systemd/system/postgresql_cert_rotation.timer
+    mode: '0644'
+
+- name: Enable and start certificate rotation timer
+  ansible.builtin.systemd:
+    name: postgresql_cert_rotation.timer
+    enabled: true
+    state: started
+    daemon_reload: true

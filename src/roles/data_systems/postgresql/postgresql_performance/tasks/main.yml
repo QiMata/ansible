@@ -1,0 +1,12 @@
+---
+- name: Include performance calculation tasks
+  ansible.builtin.include_tasks: calculate_settings.yml
+  when: postgresql_auto_tune | bool
+
+- name: Include performance configuration tasks
+  ansible.builtin.include_tasks: configure_performance.yml
+  when: postgresql_performance_enabled | bool
+
+- name: Include maintenance automation tasks
+  ansible.builtin.include_tasks: maintenance.yml
+  when: postgresql_performance_enabled | bool

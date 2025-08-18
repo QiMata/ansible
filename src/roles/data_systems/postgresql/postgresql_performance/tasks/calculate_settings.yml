@@ -1,0 +1,91 @@
+---
+- name: Get system memory information
+  ansible.builtin.setup:
+    filter: ansible_memtotal_mb
+
+- name: Get CPU information
+  ansible.builtin.setup:
+    filter: ansible_processor_vcpus
+
+- name: Calculate optimal PostgreSQL settings
+  ansible.builtin.set_fact:
+    calculated_shared_buffers: "{{ (ansible_memtotal_mb * 0.25) | int }}MB"
+    calculated_effective_cache_size: "{{ (ansible_memtotal_mb * 0.75) | int }}MB"
+    calculated_maintenance_work_mem: "{{ [(ansible_memtotal_mb * 0.05) | int, 2048] | min }}MB"
+    calculated_max_connections: >-
+      {%- if postgresql_tune_for_environment == 'production' -%}
+      {{ [(ansible_memtotal_mb / 10) | int, 200] | min }}
+      {%- elif postgresql_tune_for_environment == 'staging' -%}
+      {{ [(ansible_memtotal_mb / 20) | int, 100] | min }}
+      {%- else -%}
+      {{ [(ansible_memtotal_mb / 40) | int, 50] | min }}
+      {%- endif -%}
+  when: postgresql_auto_tune | bool
+
+- name: Calculate work_mem based on connections and memory
+  ansible.builtin.set_fact:
+    calculated_work_mem: "{{ ((ansible_memtotal_mb * 0.25) / calculated_max_connections | int) | int }}MB"
+  when: postgresql_auto_tune | bool
+
+- name: Calculate wal_buffers (3% of shared_buffers, min 64kB, max 16MB)
+  ansible.builtin.set_fact:
+    calculated_wal_buffers: "{{ [[(calculated_shared_buffers | regex_replace('MB', '') | int * 0.03) | int, 1] | max, 16] | min }}MB"
+  when: postgresql_auto_tune | bool
+
+- name: Set environment-specific overrides
+  ansible.builtin.set_fact:
+    env_config: "{{ postgresql_performance_environments[postgresql_tune_for_environment] }}"
+  when: postgresql_tune_for_environment in postgresql_performance_environments
+
+- name: Apply calculated settings
+  ansible.builtin.set_fact:
+    final_shared_buffers: >-
+      {%- if postgresql_shared_buffers == 'auto' -%}
+      {{ calculated_shared_buffers }}
+      {%- else -%}
+      {{ postgresql_shared_buffers }}
+      {%- endif -%}
+    final_effective_cache_size: >-
+      {%- if postgresql_effective_cache_size == 'auto' -%}
+      {{ calculated_effective_cache_size }}
+      {%- else -%}
+      {{ postgresql_effective_cache_size }}
+      {%- endif -%}
+    final_work_mem: >-
+      {%- if postgresql_work_mem == 'auto' -%}
+      {{ calculated_work_mem }}
+      {%- else -%}
+      {{ postgresql_work_mem }}
+      {%- endif -%}
+    final_maintenance_work_mem: >-
+      {%- if postgresql_maintenance_work_mem == 'auto' -%}
+      {{ calculated_maintenance_work_mem }}
+      {%- else -%}
+      {{ postgresql_maintenance_work_mem }}
+      {%- endif -%}
+    final_max_connections: >-
+      {%- if postgresql_max_connections_tuned == 'auto' -%}
+      {{ calculated_max_connections }}
+      {%- else -%}
+      {{ postgresql_max_connections_tuned }}
+      {%- endif -%}
+    final_wal_buffers: >-
+      {%- if postgresql_wal_buffers == 'auto' -%}
+      {{ calculated_wal_buffers }}
+      {%- else -%}
+      {{ postgresql_wal_buffers }}
+      {%- endif -%}
+
+- name: Display calculated performance settings
+  ansible.builtin.debug:
+    msg:
+      - "System Memory: {{ ansible_memtotal_mb }}MB"
+      - "CPU Cores: {{ ansible_processor_vcpus }}"
+      - "Environment: {{ postgresql_tune_for_environment }}"
+      - "Calculated Settings:"
+      - "  shared_buffers: {{ final_shared_buffers }}"
+      - "  effective_cache_size: {{ final_effective_cache_size }}"
+      - "  work_mem: {{ final_work_mem }}"
+      - "  maintenance_work_mem: {{ final_maintenance_work_mem }}"
+      - "  max_connections: {{ final_max_connections }}"
+      - "  wal_buffers: {{ final_wal_buffers }}"

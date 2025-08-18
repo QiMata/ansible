@@ -1,0 +1,30 @@
+---
+- name: Restrict listen_addresses to specific networks
+  ansible.builtin.lineinfile:
+    path: "/etc/postgresql/{{ postgresql_version }}/main/postgresql.conf"
+    regexp: "^#?listen_addresses = "
+    line: "listen_addresses = 'localhost'"
+    backup: true
+  notify: restart postgresql
+  when: postgresql_restrict_network_access | bool
+
+- name: Configure restrictive pg_hba.conf
+  ansible.builtin.template:
+    src: pg_hba_secure.conf.j2
+    dest: "/etc/postgresql/{{ postgresql_version }}/main/pg_hba.conf"
+    owner: postgres
+    group: postgres
+    mode: '0640'
+    backup: true
+  notify: reload postgresql
+
+- name: Configure firewall for PostgreSQL (if enabled)
+  ansible.builtin.ufw:
+    rule: allow
+    port: "{{ postgresql_port | default(5432) }}"
+    src: "{{ item }}"
+    proto: tcp
+  loop: "{{ postgresql_allowed_networks }}"
+  when: 
+    - postgresql_configure_firewall | default(false)
+    - ansible_facts['os_family'] == "Debian"

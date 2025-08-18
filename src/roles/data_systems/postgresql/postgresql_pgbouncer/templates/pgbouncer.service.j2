@@ -1,0 +1,29 @@
+[Unit]
+Description=PgBouncer PostgreSQL connection pooler
+Documentation=man:pgbouncer(1)
+After=postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=forking
+User=pgbouncer
+Group=pgbouncer
+ExecStart=/usr/bin/pgbouncer -d {{ pgbouncer_conffile }}
+ExecReload=/bin/kill -HUP $MAINPID
+PIDFile={{ pgbouncer_pidfile }}
+LimitNOFILE=65536
+Restart=on-failure
+RestartSec=5
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/var/log/pgbouncer /var/run/postgresql
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target

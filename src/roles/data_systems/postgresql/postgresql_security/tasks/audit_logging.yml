@@ -1,0 +1,38 @@
+---
+- name: Configure audit logging in postgresql.conf
+  ansible.builtin.lineinfile:
+    path: "/etc/postgresql/{{ postgresql_version }}/main/postgresql.conf"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    backup: true
+  loop:
+    - { regexp: "^#?log_connections = ", line: "log_connections = {{ postgresql_audit_log_connections | ternary('on', 'off') }}" }
+    - { regexp: "^#?log_disconnections = ", line: "log_disconnections = {{ postgresql_audit_log_disconnections | ternary('on', 'off') }}" }
+    - { regexp: "^#?log_statement = ", line: "log_statement = 'all'" }
+    - { regexp: "^#?log_line_prefix = ", line: "log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '" }
+    - { regexp: "^#?log_min_messages = ", line: "log_min_messages = {{ postgresql_audit_log_level }}" }
+    - { regexp: "^#?log_checkpoints = ", line: "log_checkpoints = on" }
+    - { regexp: "^#?log_lock_waits = ", line: "log_lock_waits = on" }
+    - { regexp: "^#?log_temp_files = ", line: "log_temp_files = 0" }
+    - { regexp: "^#?log_autovacuum_min_duration = ", line: "log_autovacuum_min_duration = 0" }
+  notify: restart postgresql
+
+- name: Configure log rotation for PostgreSQL audit logs
+  ansible.builtin.template:
+    src: postgresql_audit.logrotate.j2
+    dest: /etc/logrotate.d/postgresql_audit
+    mode: '0644'
+
+- name: Create audit log analysis script
+  ansible.builtin.template:
+    src: postgresql_audit_analysis.sh.j2
+    dest: /usr/local/bin/postgresql_audit_analysis.sh
+    mode: '0755'
+
+- name: Create daily audit report cron job
+  ansible.builtin.cron:
+    name: "PostgreSQL audit analysis"
+    hour: "6"
+    minute: "0"
+    job: "/usr/local/bin/postgresql_audit_analysis.sh"
+    user: root

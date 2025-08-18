@@ -1,0 +1,73 @@
+---
+# Example comprehensive PostgreSQL deployment playbook
+# This demonstrates how to use all the PostgreSQL extensions together
+
+- name: Deploy PostgreSQL with all extensions
+  hosts: postgresql_servers
+  become: true
+  vars:
+    # Base PostgreSQL configuration
+    postgresql_version: "15"
+    postgresql_env: "production"
+    postgresql_enable_replication: true
+    
+    # Enable all extensions
+    postgresql_monitoring_enabled: true
+    postgresql_ssl_enabled: true
+    pgbouncer_enabled: true
+    postgresql_security_enabled: true
+    postgresql_performance_enabled: true
+    
+    # Monitoring configuration
+    postgresql_health_check_enabled: true
+    postgresql_slow_query_log_enabled: true
+    postgresql_replication_monitoring_enabled: true
+    
+    # SSL configuration
+    postgresql_ssl_self_signed: false
+    postgresql_ssl_letsencrypt: true
+    postgresql_ssl_letsencrypt_email: "admin@example.com"
+    postgresql_ssl_letsencrypt_domains:
+      - "{{ ansible_fqdn }}"
+    
+    # Security configuration
+    postgresql_fail2ban_enabled: true
+    postgresql_audit_enabled: true
+    postgresql_password_complexity: true
+    postgresql_ssl_only: true
+    
+    # Performance tuning
+    postgresql_auto_tune: true
+    postgresql_tune_for_environment: "production"
+    
+    # PgBouncer configuration
+    pgbouncer_pool_mode: "transaction"
+    pgbouncer_max_client_conn: 200
+    pgbouncer_default_pool_size: 30
+    
+  roles:
+    # Main PostgreSQL role (includes all extensions when enabled)
+    - role: data_systems.postgresql
+    
+    # Optional: Backup role (already exists)
+    - role: data_systems.postgresql.postgres_backup
+      vars:
+        backup_dir: "/var/backups/postgresql"
+        backup_schedule: "0 2 * * *"  # Daily at 2 AM
+        backup_retention: 30
+        
+  post_tasks:
+    - name: Display deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "PostgreSQL {{ postgresql_version }} deployed successfully!"
+          - "Extensions enabled:"
+          - "  - Monitoring: {{ postgresql_monitoring_enabled }}"
+          - "  - SSL/TLS: {{ postgresql_ssl_enabled }}"
+          - "  - PgBouncer: {{ pgbouncer_enabled }}"
+          - "  - Security: {{ postgresql_security_enabled }}"
+          - "  - Performance Tuning: {{ postgresql_performance_enabled }}"
+          - "Access URLs:"
+          - "  - Database: {{ ansible_fqdn }}:5432"
+          - "  - PgBouncer: {{ ansible_fqdn }}:6432"
+          - "  - Metrics: {{ ansible_fqdn }}:9187/metrics"

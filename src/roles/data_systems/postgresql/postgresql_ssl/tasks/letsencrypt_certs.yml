@@ -1,0 +1,36 @@
+---
+# Note: This requires the letsencrypt role to be available
+- name: Include Let's Encrypt certificate generation
+  ansible.builtin.include_role:
+    name: security_identity.letsencrypt.letsencrypt_setup
+  vars:
+    letsencrypt_email: "{{ postgresql_ssl_letsencrypt_email }}"
+    letsencrypt_domains: "{{ postgresql_ssl_letsencrypt_domains }}"
+    letsencrypt_webroot_path: "/var/www/html"
+
+- name: Copy Let's Encrypt certificate to PostgreSQL directory
+  ansible.builtin.copy:
+    src: "/etc/letsencrypt/live/{{ postgresql_ssl_letsencrypt_domains[0] }}/fullchain.pem"
+    dest: "{{ postgresql_ssl_cert_path }}"
+    owner: postgres
+    group: postgres
+    mode: '0644'
+    remote_src: true
+
+- name: Copy Let's Encrypt private key to PostgreSQL directory
+  ansible.builtin.copy:
+    src: "/etc/letsencrypt/live/{{ postgresql_ssl_letsencrypt_domains[0] }}/privkey.pem"
+    dest: "{{ postgresql_ssl_key_path }}"
+    owner: postgres
+    group: postgres
+    mode: '0600'
+    remote_src: true
+
+- name: Copy Let's Encrypt CA certificate to PostgreSQL directory
+  ansible.builtin.copy:
+    src: "/etc/letsencrypt/live/{{ postgresql_ssl_letsencrypt_domains[0] }}/chain.pem"
+    dest: "{{ postgresql_ssl_ca_file }}"
+    owner: postgres
+    group: postgres
+    mode: '0644'
+    remote_src: true

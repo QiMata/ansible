@@ -1,0 +1,12 @@
+---
+- name: Include PgBouncer installation
+  ansible.builtin.include_tasks: install.yml
+  when: pgbouncer_enabled | bool
+
+- name: Include PgBouncer configuration
+  ansible.builtin.include_tasks: configure.yml
+  when: pgbouncer_enabled | bool
+
+- name: Include user management
+  ansible.builtin.include_tasks: users.yml
+  when: pgbouncer_enabled | bool

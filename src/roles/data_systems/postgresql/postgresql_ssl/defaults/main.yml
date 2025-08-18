@@ -1,0 +1,46 @@
+---
+# PostgreSQL SSL/TLS Configuration
+postgresql_ssl_enabled: true
+postgresql_ssl_only: false  # Set to true to require SSL for all connections
+postgresql_ssl_cert_path: "/etc/postgresql/{{ postgresql_version }}/main/server.crt"
+postgresql_ssl_key_path: "/etc/postgresql/{{ postgresql_version }}/main/server.key"
+postgresql_ssl_ca_file: "/etc/postgresql/{{ postgresql_version }}/main/ca.crt"
+
+# SSL Certificate Management
+postgresql_ssl_self_signed: true  # Use self-signed certificates
+postgresql_ssl_letsencrypt: false  # Use Let's Encrypt certificates
+postgresql_ssl_custom_certs: false  # Use custom provided certificates
+
+# Self-signed certificate configuration
+postgresql_ssl_cert_country: "US"
+postgresql_ssl_cert_state: "State"
+postgresql_ssl_cert_locality: "City"
+postgresql_ssl_cert_organization: "Organization"
+postgresql_ssl_cert_organizational_unit: "IT Department"
+postgresql_ssl_cert_common_name: "{{ ansible_fqdn }}"
+postgresql_ssl_cert_email: "admin@{{ ansible_domain | default('localhost') }}"
+postgresql_ssl_cert_days: 3650  # 10 years
+
+# Let's Encrypt configuration (requires letsencrypt role)
+postgresql_ssl_letsencrypt_email: "{{ postgresql_ssl_cert_email }}"
+postgresql_ssl_letsencrypt_domains:
+  - "{{ ansible_fqdn }}"
+
+# Custom certificate paths (when postgresql_ssl_custom_certs: true)
+postgresql_ssl_custom_cert_src: ""  # Path to certificate file on control machine
+postgresql_ssl_custom_key_src: ""   # Path to private key file on control machine
+postgresql_ssl_custom_ca_src: ""    # Path to CA certificate file on control machine
+
+# SSL Protocol configuration
+postgresql_ssl_protocols: "TLSv1.2,TLSv1.3"
+postgresql_ssl_ciphers: "ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM:DHE+CHACHA20:!aNULL:!MD5:!DSS"
+postgresql_ssl_prefer_server_ciphers: true
+
+# Certificate rotation
+postgresql_ssl_cert_rotation_enabled: true
+postgresql_ssl_cert_check_interval: "daily"
+postgresql_ssl_cert_renewal_days: 30  # Renew when cert expires in 30 days
+
+# Client certificate authentication
+postgresql_ssl_client_cert_auth: false
+postgresql_ssl_client_cert_required: false

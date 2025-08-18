@@ -1,0 +1,27 @@
+---
+- name: Create health check script
+  ansible.builtin.template:
+    src: postgresql_health_check.sh.j2
+    dest: /usr/local/bin/postgresql_health_check.sh
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Create health check systemd service
+  ansible.builtin.template:
+    src: postgresql_health_check.service.j2
+    dest: /etc/systemd/system/postgresql_health_check.service
+    mode: '0644'
+
+- name: Create health check systemd timer
+  ansible.builtin.template:
+    src: postgresql_health_check.timer.j2
+    dest: /etc/systemd/system/postgresql_health_check.timer
+    mode: '0644'
+
+- name: Enable and start health check timer
+  ansible.builtin.systemd:
+    name: postgresql_health_check.timer
+    enabled: true
+    state: started
+    daemon_reload: true

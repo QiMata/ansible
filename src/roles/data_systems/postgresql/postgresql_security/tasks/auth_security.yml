@@ -1,0 +1,35 @@
+---
+- name: Configure password authentication settings
+  ansible.builtin.lineinfile:
+    path: "/etc/postgresql/{{ postgresql_version }}/main/postgresql.conf"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    backup: true
+  loop:
+    - { regexp: "^#?password_encryption = ", line: "password_encryption = '{{ postgresql_password_encryption }}'" }
+    - { regexp: "^#?idle_in_transaction_session_timeout = ", line: "idle_in_transaction_session_timeout = {{ postgresql_idle_in_transaction_timeout }}" }
+    - { regexp: "^#?statement_timeout = ", line: "statement_timeout = {{ postgresql_session_timeout * 1000 }}" }
+    - { regexp: "^#?tcp_keepalives_idle = ", line: "tcp_keepalives_idle = 600" }
+    - { regexp: "^#?tcp_keepalives_interval = ", line: "tcp_keepalives_interval = 30" }
+    - { regexp: "^#?tcp_keepalives_count = ", line: "tcp_keepalives_count = 3" }
+  notify: restart postgresql
+
+- name: Create password policy function
+  community.postgresql.postgresql_query:
+    db: postgres
+    query: |
+      CREATE OR REPLACE FUNCTION check_password_policy(username text, password text, password_type pgpassword.PasswordType, validuntil_time timestamptz, validuntil_null boolean)
+      RETURNS void AS $$
+      BEGIN
+        IF length(password) < {{ postgresql_password_min_length }} THEN
+          RAISE EXCEPTION 'Password must be at least {{ postgresql_password_min_length }} characters long';
+        END IF;
+        {% if postgresql_password_complexity %}
+        IF password !~ '[A-Z]' OR password !~ '[a-z]' OR password !~ '[0-9]' OR password !~ '[^A-Za-z0-9]' THEN
+          RAISE EXCEPTION 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character';
+        END IF;
+        {% endif %}
+      END;
+      $$ LANGUAGE plpgsql;
+  become_user: postgres
+  when: postgresql_password_complexity | bool

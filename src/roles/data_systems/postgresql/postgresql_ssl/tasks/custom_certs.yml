@@ -1,0 +1,27 @@
+---
+- name: Copy custom certificate to PostgreSQL directory
+  ansible.builtin.copy:
+    src: "{{ postgresql_ssl_custom_cert_src }}"
+    dest: "{{ postgresql_ssl_cert_path }}"
+    owner: postgres
+    group: postgres
+    mode: '0644'
+  when: postgresql_ssl_custom_cert_src != ""
+
+- name: Copy custom private key to PostgreSQL directory
+  ansible.builtin.copy:
+    src: "{{ postgresql_ssl_custom_key_src }}"
+    dest: "{{ postgresql_ssl_key_path }}"
+    owner: postgres
+    group: postgres
+    mode: '0600'
+  when: postgresql_ssl_custom_key_src != ""
+
+- name: Copy custom CA certificate to PostgreSQL directory
+  ansible.builtin.copy:
+    src: "{{ postgresql_ssl_custom_ca_src }}"
+    dest: "{{ postgresql_ssl_ca_file }}"
+    owner: postgres
+    group: postgres
+    mode: '0644'
+  when: postgresql_ssl_custom_ca_src != ""

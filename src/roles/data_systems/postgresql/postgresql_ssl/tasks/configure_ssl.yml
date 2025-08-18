@@ -1,0 +1,57 @@
+---
+- name: Configure SSL in postgresql.conf
+  ansible.builtin.lineinfile:
+    path: "/etc/postgresql/{{ postgresql_version }}/main/postgresql.conf"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    backup: true
+  loop:
+    - { regexp: "^#?ssl = ", line: "ssl = on" }
+    - { regexp: "^#?ssl_cert_file = ", line: "ssl_cert_file = '{{ postgresql_ssl_cert_path }}'" }
+    - { regexp: "^#?ssl_key_file = ", line: "ssl_key_file = '{{ postgresql_ssl_key_path }}'" }
+    - { regexp: "^#?ssl_ca_file = ", line: "ssl_ca_file = '{{ postgresql_ssl_ca_file }}'" }
+    - { regexp: "^#?ssl_protocols = ", line: "ssl_protocols = '{{ postgresql_ssl_protocols }}'" }
+    - { regexp: "^#?ssl_ciphers = ", line: "ssl_ciphers = '{{ postgresql_ssl_ciphers }}'" }
+    - { regexp: "^#?ssl_prefer_server_ciphers = ", line: "ssl_prefer_server_ciphers = {{ postgresql_ssl_prefer_server_ciphers | ternary('on', 'off') }}" }
+  notify: restart postgresql
+
+- name: Configure SSL-only mode if enabled
+  ansible.builtin.lineinfile:
+    path: "/etc/postgresql/{{ postgresql_version }}/main/postgresql.conf"
+    regexp: "^#?ssl_min_protocol_version = "
+    line: "ssl_min_protocol_version = 'TLSv1.2'"
+    backup: true
+  when: postgresql_ssl_only | bool
+  notify: restart postgresql
+
+- name: Update pg_hba.conf for SSL connections
+  ansible.builtin.blockinfile:
+    path: "/etc/postgresql/{{ postgresql_version }}/main/pg_hba.conf"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - SSL Configuration"
+    block: |
+      # SSL connections
+      {% if postgresql_ssl_only %}
+      # Require SSL for all connections
+      hostssl all all 0.0.0.0/0 scram-sha-256
+      {% else %}
+      # Allow both SSL and non-SSL connections
+      hostssl all all 0.0.0.0/0 scram-sha-256
+      host all all 127.0.0.1/32 scram-sha-256
+      host all all ::1/128 scram-sha-256
+      {% endif %}
+      {% if postgresql_ssl_client_cert_auth %}
+      # Client certificate authentication
+      hostssl all all 0.0.0.0/0 cert
+      {% endif %}
+    backup: true
+  notify: reload postgresql
+
+- name: Verify SSL certificate
+  ansible.builtin.command:
+    cmd: "openssl x509 -in {{ postgresql_ssl_cert_path }} -text -noout"
+  register: ssl_cert_info
+  changed_when: false
+
+- name: Display SSL certificate information
+  ansible.builtin.debug:
+    msg: "SSL certificate configured successfully. Common Name: {{ postgresql_ssl_cert_common_name }}"

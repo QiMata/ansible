@@ -1,0 +1,89 @@
+---
+# PostgreSQL Performance Tuning Configuration
+postgresql_performance_enabled: true
+
+# Automatic performance tuning based on system resources
+postgresql_auto_tune: true
+postgresql_tune_for_environment: "{{ postgresql_env | default('dev') }}"
+
+# Memory settings (will be auto-calculated if not specified)
+postgresql_shared_buffers: "auto"  # 25% of RAM for production, 128MB for dev
+postgresql_effective_cache_size: "auto"  # 75% of RAM
+postgresql_work_mem: "auto"  # Based on max_connections and RAM
+postgresql_maintenance_work_mem: "auto"  # 5% of RAM, max 2GB
+
+# Connection settings
+postgresql_max_connections_tuned: "auto"  # Based on environment and resources
+
+# Checkpoint settings
+postgresql_checkpoint_timeout: "15min"
+postgresql_checkpoint_completion_target: 0.9
+postgresql_checkpoint_warning: "30s"
+
+# WAL settings
+postgresql_wal_buffers: "auto"  # 3% of shared_buffers
+postgresql_wal_level: "replica"  # For replication support
+postgresql_max_wal_size: "4GB"
+postgresql_min_wal_size: "1GB"
+
+# Background writer settings
+postgresql_bgwriter_delay: "200ms"
+postgresql_bgwriter_lru_maxpages: 100
+postgresql_bgwriter_lru_multiplier: 2.0
+
+# Query planner settings
+postgresql_random_page_cost: 1.1  # For SSDs
+postgresql_seq_page_cost: 1.0
+postgresql_cpu_tuple_cost: 0.01
+postgresql_cpu_index_tuple_cost: 0.005
+postgresql_cpu_operator_cost: 0.0025
+
+# Vacuum and analyze settings
+postgresql_autovacuum: "on"
+postgresql_autovacuum_max_workers: 3
+postgresql_autovacuum_naptime: "1min"
+postgresql_autovacuum_vacuum_threshold: 50
+postgresql_autovacuum_analyze_threshold: 50
+postgresql_autovacuum_vacuum_scale_factor: 0.2
+postgresql_autovacuum_analyze_scale_factor: 0.1
+
+# Statistics settings
+postgresql_default_statistics_target: 100
+postgresql_track_activity_query_size: 1024
+postgresql_track_functions: "all"
+postgresql_track_io_timing: "on"
+
+# Lock settings
+postgresql_deadlock_timeout: "1s"
+postgresql_max_locks_per_transaction: 64
+postgresql_max_pred_locks_per_transaction: 64
+
+# Environment-specific configurations
+postgresql_performance_environments:
+  dev:
+    shared_buffers: "128MB"
+    effective_cache_size: "1GB"
+    work_mem: "4MB"
+    maintenance_work_mem: "64MB"
+    max_connections: 40
+    checkpoint_timeout: "30min"
+  staging:
+    shared_buffers: "256MB"
+    effective_cache_size: "2GB"
+    work_mem: "8MB"
+    maintenance_work_mem: "128MB"
+    max_connections: 80
+    checkpoint_timeout: "20min"
+  production:
+    shared_buffers: "auto"  # Will be calculated
+    effective_cache_size: "auto"
+    work_mem: "auto"
+    maintenance_work_mem: "auto"
+    max_connections: "auto"
+    checkpoint_timeout: "15min"
+
+# Performance monitoring
+postgresql_performance_monitoring: true
+postgresql_slow_query_threshold_ms: 1000
+postgresql_log_slow_queries: true
+postgresql_log_temp_files: 0

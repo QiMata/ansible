@@ -1,0 +1,119 @@
+#!/bin/bash
+# PostgreSQL Replication Monitoring Script
+
+POSTGRESQL_VERSION="{{ postgresql_version }}"
+REPLICATION_LAG_THRESHOLD="{{ postgresql_replication_lag_alert_threshold }}"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Function to log messages
+log_message() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a /var/log/postgresql_replication_check.log
+}
+
+# Function to check replication lag
+check_replication_lag() {
+    local lag_seconds
+    
+    # Check if this is a primary server
+    local is_primary
+    is_primary=$(sudo -u postgres psql -t -c "SELECT NOT pg_is_in_recovery();" 2>/dev/null | xargs)
+    
+    if [[ "$is_primary" == "t" ]]; then
+        # Primary server - check replica lag
+        local replica_count
+        replica_count=$(sudo -u postgres psql -t -c "SELECT count(*) FROM pg_stat_replication;" 2>/dev/null | xargs)
+        
+        if [[ "$replica_count" -gt 0 ]]; then
+            # Get maximum lag among all replicas
+            lag_seconds=$(sudo -u postgres psql -t -c "
+                SELECT COALESCE(EXTRACT(EPOCH FROM MAX(replay_lag)), 0) 
+                FROM pg_stat_replication 
+                WHERE replay_lag IS NOT NULL;
+            " 2>/dev/null | xargs)
+            
+            if [[ -n "$lag_seconds" ]] && [[ $(echo "$lag_seconds > 0" | bc -l) -eq 1 ]]; then
+                local lag_threshold_seconds
+                lag_threshold_seconds=$(echo "${REPLICATION_LAG_THRESHOLD}" | sed 's/s$//')
+                
+                if [[ $(echo "$lag_seconds > $lag_threshold_seconds" | bc -l) -eq 1 ]]; then
+                    log_message "${YELLOW}⚠ High replication lag: ${lag_seconds}s (threshold: ${lag_threshold_seconds}s)${NC}"
+                    return 1
+                else
+                    log_message "${GREEN}✓ Replication lag normal: ${lag_seconds}s${NC}"
+                    return 0
+                fi
+            else
+                log_message "${GREEN}✓ No replication lag detected${NC}"
+                return 0
+            fi
+        else
+            log_message "${YELLOW}⚠ No replicas connected to primary${NC}"
+            return 1
+        fi
+    else
+        # Standby server - check if receiving WAL
+        local last_received
+        last_received=$(sudo -u postgres psql -t -c "SELECT pg_last_wal_receive_lsn();" 2>/dev/null | xargs)
+        
+        if [[ -n "$last_received" && "$last_received" != "" ]]; then
+            log_message "${GREEN}✓ Standby receiving WAL: $last_received${NC}"
+            return 0
+        else
+            log_message "${RED}✗ Standby not receiving WAL${NC}"
+            return 1
+        fi
+    fi
+}
+
+# Function to check replication slot usage (primary only)
+check_replication_slots() {
+    local is_primary
+    is_primary=$(sudo -u postgres psql -t -c "SELECT NOT pg_is_in_recovery();" 2>/dev/null | xargs)
+    
+    if [[ "$is_primary" == "t" ]]; then
+        local inactive_slots
+        inactive_slots=$(sudo -u postgres psql -t -c "
+            SELECT count(*) 
+            FROM pg_replication_slots 
+            WHERE active = false;
+        " 2>/dev/null | xargs)
+        
+        if [[ "$inactive_slots" -gt 0 ]]; then
+            log_message "${YELLOW}⚠ $inactive_slots inactive replication slot(s) detected${NC}"
+            return 1
+        else
+            log_message "${GREEN}✓ All replication slots active${NC}"
+            return 0
+        fi
+    else
+        log_message "ℹ Standby server - skipping replication slot check"
+        return 0
+    fi
+}
+
+# Main replication check function
+main() {
+    log_message "Starting PostgreSQL replication check"
+    
+    local exit_code=0
+    
+    check_replication_lag || exit_code=1
+    check_replication_slots || exit_code=1
+    
+    if [[ $exit_code -eq 0 ]]; then
+        log_message "${GREEN}✓ All replication checks passed${NC}"
+    else
+        log_message "${RED}✗ Some replication checks failed${NC}"
+    fi
+    
+    log_message "Replication check completed"
+    exit $exit_code
+}
+
+# Run the main function
+main "$@"

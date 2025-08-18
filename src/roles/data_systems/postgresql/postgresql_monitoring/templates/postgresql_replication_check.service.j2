@@ -1,0 +1,11 @@
+[Unit]
+Description=PostgreSQL Replication Check
+After=postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/postgresql_replication_check.sh
+User=root
+StandardOutput=journal
+StandardError=journal

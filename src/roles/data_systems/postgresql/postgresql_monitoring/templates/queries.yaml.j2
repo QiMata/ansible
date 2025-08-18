@@ -1,0 +1,76 @@
+pg_replication:
+  query: "SELECT client_addr, state, sent_lsn, write_lsn, flush_lsn, replay_lsn, (EXTRACT(EPOCH FROM (now() - replay_lag)))::INT AS replay_lag_seconds FROM pg_stat_replication"
+  master: true
+  metrics:
+    - client_addr:
+        usage: "LABEL"
+        description: "Client address of standby"
+    - state:
+        usage: "LABEL"
+        description: "Replication state"
+    - sent_lsn:
+        usage: "COUNTER"
+        description: "Last write-ahead log location sent on this connection"
+    - write_lsn:
+        usage: "COUNTER"
+        description: "Last write-ahead log location written to disk by this standby server"
+    - flush_lsn:
+        usage: "COUNTER"
+        description: "Last write-ahead log location flushed to disk by this standby server"
+    - replay_lsn:
+        usage: "COUNTER"
+        description: "Last write-ahead log location replayed into the database on this standby server"
+    - replay_lag_seconds:
+        usage: "GAUGE"
+        description: "Time elapsed between flushing recent WAL locally and receiving notification that this standby server has written and flushed it"
+
+pg_database_size:
+  query: "SELECT pg_database.datname, pg_database_size(pg_database.datname) as size FROM pg_database"
+  master: true
+  cache_seconds: 30
+  metrics:
+    - datname:
+        usage: "LABEL"
+        description: "Name of the database"
+    - size:
+        usage: "GAUGE"
+        description: "Database size in bytes"
+
+pg_table_size:
+  query: "SELECT schemaname, tablename, pg_total_relation_size(schemaname||'.'||tablename) as size FROM pg_tables"
+  master: true
+  cache_seconds: 600
+  metrics:
+    - schemaname:
+        usage: "LABEL"
+        description: "Name of the schema"
+    - tablename:
+        usage: "LABEL"
+        description: "Name of the table"
+    - size:
+        usage: "GAUGE"
+        description: "Table size in bytes"
+
+pg_slow_queries:
+  query: "SELECT query, calls, total_exec_time, mean_exec_time, stddev_exec_time, rows FROM pg_stat_statements WHERE mean_exec_time > {{ postgresql_slow_query_threshold | regex_replace('ms', '') | int }} ORDER BY mean_exec_time DESC LIMIT 10"
+  master: true
+  cache_seconds: 60
+  metrics:
+    - query:
+        usage: "LABEL"
+        description: "Query text"
+    - calls:
+        usage: "COUNTER"
+        description: "Number of times executed"
+    - total_exec_time:
+        usage: "COUNTER"
+        description: "Total time spent executing this statement, in milliseconds"
+    - mean_exec_time:
+        usage: "GAUGE"
+        description: "Mean time spent executing this statement, in milliseconds"
+    - stddev_exec_time:
+        usage: "GAUGE"
+        description: "Population standard deviation of time spent executing this statement, in milliseconds"
+    - rows:
+        usage: "COUNTER"
+        description: "Total number of rows retrieved or affected by the statement"

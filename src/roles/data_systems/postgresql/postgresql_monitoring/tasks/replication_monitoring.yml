@@ -1,0 +1,27 @@
+---
+- name: Create replication monitoring script
+  ansible.builtin.template:
+    src: postgresql_replication_check.sh.j2
+    dest: /usr/local/bin/postgresql_replication_check.sh
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Create replication monitoring systemd service
+  ansible.builtin.template:
+    src: postgresql_replication_check.service.j2
+    dest: /etc/systemd/system/postgresql_replication_check.service
+    mode: '0644'
+
+- name: Create replication monitoring systemd timer
+  ansible.builtin.template:
+    src: postgresql_replication_check.timer.j2
+    dest: /etc/systemd/system/postgresql_replication_check.timer
+    mode: '0644'
+
+- name: Enable and start replication monitoring timer
+  ansible.builtin.systemd:
+    name: postgresql_replication_check.timer
+    enabled: true
+    state: started
+    daemon_reload: true
