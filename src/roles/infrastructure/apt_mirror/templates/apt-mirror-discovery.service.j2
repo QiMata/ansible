@@ -1,0 +1,34 @@
+[Unit]
+Description=APT Mirror Client Discovery Service
+After=network.target
+
+[Service]
+Type=simple
+User=apt-mirror
+Group=apt-mirror
+WorkingDirectory=/opt/apt-mirror-discovery
+ExecStart=/usr/bin/python3 /opt/apt-mirror-discovery/discovery_service.py
+Restart=always
+RestartSec=10
+Environment=PYTHONPATH=/opt/apt-mirror-discovery
+
+# Security settings
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/apt-mirror-discovery /var/log
+PrivateTmp=true
+PrivateDevices=true
+ProtectHostname=true
+ProtectClock=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RemoveIPC=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

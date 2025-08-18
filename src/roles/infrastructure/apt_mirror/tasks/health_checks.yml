@@ -1,0 +1,88 @@
+---
+# Health Checks Tasks
+- name: Install health check dependencies
+  ansible.builtin.package:
+    name:
+      - python3-flask
+      - python3-psutil
+      - python3-requests
+    state: present
+
+- name: Create health check service directory
+  ansible.builtin.file:
+    path: /opt/apt-mirror-health
+    state: directory
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0755'
+
+- name: Create health check service script
+  ansible.builtin.template:
+    src: health_check_service.py.j2
+    dest: /opt/apt-mirror-health/health_service.py
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0755'
+  notify: restart apt-mirror-health
+
+- name: Create health check configuration
+  ansible.builtin.template:
+    src: health_check_config.yml.j2
+    dest: /opt/apt-mirror-health/config.yml
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0644'
+  notify: restart apt-mirror-health
+
+- name: Create systemd service for health checks
+  ansible.builtin.template:
+    src: apt-mirror-health.service.j2
+    dest: /etc/systemd/system/apt-mirror-health.service
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart apt-mirror-health
+
+- name: Enable and start health check service
+  ansible.builtin.systemd:
+    name: apt-mirror-health
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: Create health check monitoring script
+  ansible.builtin.template:
+    src: monitor_health.sh.j2
+    dest: /usr/local/bin/monitor_health.sh
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Add health monitoring cron job
+  ansible.builtin.cron:
+    name: "Monitor apt-mirror health"
+    cron_file: apt-mirror-health
+    user: root
+    minute: "{{ apt_mirror_health_check_interval.split()[0] }}"
+    hour: "{{ apt_mirror_health_check_interval.split()[1] if apt_mirror_health_check_interval.split()[1] != '*' else '*' }}"
+    job: "/usr/local/bin/monitor_health.sh >> /var/log/apt-mirror-health.log 2>&1"
+
+- name: Configure Apache health check endpoint
+  ansible.builtin.template:
+    src: apache-health-check.conf.j2
+    dest: /etc/apache2/sites-available/apt-mirror-health.conf
+    mode: '0644'
+  notify: restart apache2
+
+- name: Enable health check site
+  ansible.builtin.command:
+    cmd: a2ensite apt-mirror-health
+  notify: restart apache2
+  register: enable_health_site
+  changed_when: "'already enabled' not in enable_health_site.stdout"
+
+- name: Configure log rotation for enhanced features
+  ansible.builtin.template:
+    src: apt-mirror-logs.logrotate.j2
+    dest: /etc/logrotate.d/apt-mirror-enhanced
+    mode: '0644'

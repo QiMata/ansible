@@ -1,0 +1,99 @@
+---
+# Alerting Tasks
+- name: Install alerting dependencies
+  ansible.builtin.package:
+    name:
+      - python3-requests
+      - python3-smtplib
+      - mailutils
+    state: present
+
+- name: Create alerting directory
+  ansible.builtin.file:
+    path: /opt/apt-mirror-alerts
+    state: directory
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0755'
+
+- name: Create alerting configuration
+  ansible.builtin.template:
+    src: alerting_config.yml.j2
+    dest: /opt/apt-mirror-alerts/config.yml
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0600'  # Sensitive config with webhooks/emails
+
+- name: Create alert manager script
+  ansible.builtin.template:
+    src: alert_manager.py.j2
+    dest: /opt/apt-mirror-alerts/alert_manager.py
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0755'
+
+- name: Create sync failure detection script
+  ansible.builtin.template:
+    src: detect_sync_failure.sh.j2
+    dest: /opt/apt-mirror-alerts/detect_sync_failure.sh
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0755'
+
+- name: Create storage monitoring script
+  ansible.builtin.template:
+    src: monitor_storage.sh.j2
+    dest: /opt/apt-mirror-alerts/monitor_storage.sh
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0755'
+
+- name: Create mirror availability checker
+  ansible.builtin.template:
+    src: check_mirror_availability.sh.j2
+    dest: /opt/apt-mirror-alerts/check_mirror_availability.sh
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0755'
+
+- name: Add sync failure detection cron job
+  ansible.builtin.cron:
+    name: "Check for sync failures"
+    cron_file: apt-mirror-alerts
+    user: apt-mirror
+    minute: "*/10"
+    job: "/opt/apt-mirror-alerts/detect_sync_failure.sh"
+  when: apt_mirror_alert_on_sync_failure
+
+- name: Add storage monitoring cron job
+  ansible.builtin.cron:
+    name: "Monitor storage usage"
+    cron_file: apt-mirror-alerts
+    user: apt-mirror
+    minute: "*/15"
+    job: "/opt/apt-mirror-alerts/monitor_storage.sh"
+  when: apt_mirror_alert_on_storage_threshold
+
+- name: Add mirror availability monitoring cron job
+  ansible.builtin.cron:
+    name: "Check mirror availability"
+    cron_file: apt-mirror-alerts
+    user: apt-mirror
+    minute: "*/5"
+    job: "/opt/apt-mirror-alerts/check_mirror_availability.sh"
+
+- name: Create systemd service for alert manager
+  ansible.builtin.template:
+    src: apt-mirror-alerts.service.j2
+    dest: /etc/systemd/system/apt-mirror-alerts.service
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart apt-mirror-alerts
+
+- name: Enable and start alert manager service
+  ansible.builtin.systemd:
+    name: apt-mirror-alerts
+    state: started
+    enabled: true
+    daemon_reload: true

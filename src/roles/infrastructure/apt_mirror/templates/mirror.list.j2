@@ -1,15 +1,78 @@
 set base_path    {{ apt_mirror_base_path }}
+{% if apt_mirror_bandwidth_throttling_enabled %}
+set nthreads     {{ (apt_mirror_bandwidth_limit | regex_replace('[^0-9]', '') | int / apt_mirror_architectures | length) | int | max(1) }}
+set rate_limit   {{ apt_mirror_bandwidth_limit }}{{ apt_mirror_bandwidth_limit_unit }}
+{% else %}
 set nthreads     20
+{% endif %}
 set _tilde       0
+{% if apt_mirror_compression_enabled %}
+set defaultarch  {{ apt_mirror_architectures[0] }}
+set postmirror_script {{ apt_mirror_base_path }}/var/postmirror.sh
+{% endif %}
 
+# Mirror definitions with prioritization support
+{% if apt_mirror_prioritization_enabled and apt_mirror_upstream_mirrors %}
+{% for upstream in apt_mirror_upstream_mirrors | sort(attribute='priority') %}
 {% for mirror in apt_mirror_mirrors %}
+{% if mirror.base_url == upstream.url %}
 {% for distro in mirror.distributions %}
+{% if apt_mirror_selective_mirroring_enabled %}
+# Selective mirroring filters applied
+{% for arch in apt_mirror_architectures %}
+{% for component in mirror.components %}
+{% set include_component = true %}
+{% for filter in apt_mirror_package_filters %}
+{% if filter.type == 'exclude' and component is match(filter.pattern) %}
+{% set include_component = false %}
+{% endif %}
+{% endfor %}
+{% if include_component %}
+deb-{{ arch }} {{ mirror.base_url }} {{ distro }} {{ component }}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% else %}
 {% for arch in apt_mirror_architectures %}
 deb-{{ arch }} {{ mirror.base_url }} {{ distro }} {{ mirror.components | join(' ') }}
+{% endfor %}
+{% endif %}
 {% if apt_mirror_source_pkgs %}
 deb-src {{ mirror.base_url }} {{ distro }} {{ mirror.components | join(' ') }}
 {% endif %}
 {% endfor %}
+clean {{ mirror.base_url }}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% else %}
+# Standard mirror configuration
+{% for mirror in apt_mirror_mirrors %}
+{% for distro in mirror.distributions %}
+{% if apt_mirror_selective_mirroring_enabled %}
+# Selective mirroring filters applied
+{% for arch in apt_mirror_architectures %}
+{% for component in mirror.components %}
+{% set include_component = true %}
+{% for filter in apt_mirror_package_filters %}
+{% if filter.type == 'exclude' and component is match(filter.pattern) %}
+{% set include_component = false %}
+{% endif %}
+{% endfor %}
+{% if include_component %}
+deb-{{ arch }} {{ mirror.base_url }} {{ distro }} {{ component }}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% else %}
+{% for arch in apt_mirror_architectures %}
+deb-{{ arch }} {{ mirror.base_url }} {{ distro }} {{ mirror.components | join(' ') }}
+{% endfor %}
+{% endif %}
+{% if apt_mirror_source_pkgs %}
+deb-src {{ mirror.base_url }} {{ distro }} {{ mirror.components | join(' ') }}
+{% endif %}
 {% endfor %}
 clean {{ mirror.base_url }}
 {% endfor %}
+{% endif %}

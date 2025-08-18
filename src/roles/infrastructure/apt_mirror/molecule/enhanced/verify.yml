@@ -1,0 +1,84 @@
+---
+- name: Verify Enhanced Features
+  hosts: all
+  become: true
+  tasks:
+    - name: Check if apt-mirror is installed
+      package:
+        name: apt-mirror
+        state: present
+      check_mode: true
+      register: apt_mirror_installed
+      
+    - name: Verify configuration files exist
+      stat:
+        path: "{{ item }}"
+      register: config_files
+      loop:
+        - "/etc/apt/mirror.list"
+        - "/var/spool/apt-mirror"
+      failed_when: not config_files.stat.exists
+      
+    - name: Verify Apache is running
+      systemd:
+        name: apache2
+        state: started
+      check_mode: true
+      register: apache_status
+      
+    - name: Check enhanced feature services (Ubuntu only)
+      systemd:
+        name: "{{ item }}"
+        state: started
+      check_mode: true
+      register: enhanced_services
+      loop:
+        - "apt-mirror-health"
+        - "apt-mirror-metrics"
+        - "apt-mirror-discovery"
+        - "apt-mirror-analytics"
+        - "apt-mirror-alerts"
+      when: ansible_distribution == "Ubuntu" and deployment_profile == "complex"
+      ignore_errors: true
+      
+    - name: Verify health check endpoint (Ubuntu complex only)
+      uri:
+        url: "http://localhost:8080/health"
+        method: GET
+        timeout: 5
+      register: health_endpoint
+      when: ansible_distribution == "Ubuntu" and deployment_profile == "complex"
+      ignore_errors: true
+      
+    - name: Verify metrics endpoint (Ubuntu complex only)
+      uri:
+        url: "http://localhost:9090/metrics"
+        method: GET
+        timeout: 5
+      register: metrics_endpoint
+      when: ansible_distribution == "Ubuntu" and deployment_profile == "complex"
+      ignore_errors: true
+      
+    - name: Check GPG configuration exists
+      stat:
+        path: "/var/spool/apt-mirror/.gnupg"
+      register: gpg_dir
+      when: deployment_profile == "complex"
+      
+    - name: Verify mirror.list contains bandwidth settings (if enabled)
+      lineinfile:
+        path: "/etc/apt/mirror.list"
+        line: "set rate_limit"
+        state: present
+      check_mode: true
+      register: bandwidth_config
+      when: apt_mirror_bandwidth_throttling_enabled | default(false)
+      
+    - name: Display verification results
+      debug:
+        msg:
+          - "APT Mirror installed: {{ apt_mirror_installed is not changed }}"
+          - "Apache running: {{ apache_status is not changed }}"
+          - "Health endpoint: {{ health_endpoint.status | default('N/A') }}"
+          - "Metrics endpoint: {{ metrics_endpoint.status | default('N/A') }}"
+          - "GPG directory exists: {{ gpg_dir.stat.exists | default('N/A') }}"

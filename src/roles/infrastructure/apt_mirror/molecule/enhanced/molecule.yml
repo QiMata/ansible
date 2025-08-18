@@ -1,0 +1,72 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: apt-mirror-ubuntu
+    image: ubuntu:22.04
+    privileged: true
+    command: /lib/systemd/systemd
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    capabilities:
+      - SYS_ADMIN
+    tmpfs:
+      - /run
+      - /tmp
+    environment:
+      - DEBIAN_FRONTEND=noninteractive
+  - name: apt-mirror-debian
+    image: debian:12
+    privileged: true
+    command: /lib/systemd/systemd
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    capabilities:
+      - SYS_ADMIN
+    tmpfs:
+      - /run
+      - /tmp
+    environment:
+      - DEBIAN_FRONTEND=noninteractive
+provisioner:
+  name: ansible
+  inventory:
+    host_vars:
+      apt-mirror-ubuntu:
+        deployment_profile: "complex"
+        apt_mirror_mirrors:
+          - name: "ubuntu_test"
+            base_url: "http://archive.ubuntu.com/ubuntu"
+            distributions: ["jammy"]
+            components: ["main"]
+        apt_mirror_gpg_management_enabled: true
+        apt_mirror_health_checks_enabled: true
+        apt_mirror_alerting_enabled: true
+        apt_mirror_performance_monitoring_enabled: true
+        apt_mirror_bandwidth_throttling_enabled: true
+        apt_mirror_selective_mirroring_enabled: true
+        apt_mirror_client_discovery_enabled: true
+        apt_mirror_client_metrics_enabled: true
+        apt_mirror_analytics_enabled: true
+      apt-mirror-debian:
+        deployment_profile: "simple"
+        apt_mirror_mirrors:
+          - name: "debian_test"
+            base_url: "http://deb.debian.org/debian"
+            distributions: ["bookworm"]
+            components: ["main"]
+  playbooks:
+    converge: converge.yml
+    verify: verify.yml
+verifier:
+  name: ansible
+scenario:
+  test_sequence:
+    - dependency
+    - create
+    - prepare
+    - converge
+    - verify
+    - destroy

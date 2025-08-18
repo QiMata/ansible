@@ -1,0 +1,38 @@
+---
+# Runtime API management tasks
+
+- name: Create HAProxy runtime management script
+  ansible.builtin.template:
+    src: haproxy-runtime-manager.sh.j2
+    dest: /usr/local/bin/haproxy-runtime-manager.sh
+    owner: root
+    group: root
+    mode: "0755"
+  when: haproxy_runtime_api.enable | default(true)
+
+- name: Enable server in backend pool via runtime API
+  ansible.builtin.shell: |
+    echo "enable server {{ item.backend }}/{{ item.server }}" | socat stdio {{ haproxy_runtime_api.socket_path | default('/run/haproxy/admin.sock') }}
+  loop: "{{ haproxy_runtime_enable_servers | default([]) }}"
+  when: 
+    - haproxy_runtime_api.enable | default(true)
+    - haproxy_runtime_enable_servers is defined
+  changed_when: true
+
+- name: Disable server in backend pool via runtime API
+  ansible.builtin.shell: |
+    echo "disable server {{ item.backend }}/{{ item.server }}" | socat stdio {{ haproxy_runtime_api.socket_path | default('/run/haproxy/admin.sock') }}
+  loop: "{{ haproxy_runtime_disable_servers | default([]) }}"
+  when: 
+    - haproxy_runtime_api.enable | default(true)
+    - haproxy_runtime_disable_servers is defined
+  changed_when: true
+
+- name: Set server weight via runtime API
+  ansible.builtin.shell: |
+    echo "set weight {{ item.backend }}/{{ item.server }} {{ item.weight }}" | socat stdio {{ haproxy_runtime_api.socket_path | default('/run/haproxy/admin.sock') }}
+  loop: "{{ haproxy_runtime_set_weights | default([]) }}"
+  when: 
+    - haproxy_runtime_api.enable | default(true)
+    - haproxy_runtime_set_weights is defined
+  changed_when: true

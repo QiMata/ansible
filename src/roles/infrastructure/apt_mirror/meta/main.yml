@@ -2,7 +2,7 @@
 galaxy_info:
   role_name: apt_mirror
   author: Example Inc.
-  description: "Modular apt-mirror with Apache, cron, optional ELK/HA/DR."
+  description: "Enterprise-grade apt-mirror with health monitoring, performance metrics, alerting, bandwidth control, selective mirroring, client discovery, and analytics."
   license: MIT
   min_ansible_version: "2.13"
   platforms:
@@ -10,4 +10,23 @@ galaxy_info:
       versions: ["bullseye", "bookworm"]
     - name: Ubuntu
       versions: ["focal", "jammy"]
+  galaxy_tags:
+    - apt
+    - mirror
+    - repository
+    - package-management
+    - monitoring
+    - alerting
+    - performance
+    - analytics
+    - debian
+    - ubuntu
+    - enterprise
+
 dependencies: []
+
+# Optional role dependencies for enhanced features:
+# - community.general (for ufw firewall management)
+# - community.mysql (if using MySQL for analytics storage)
+# - community.postgresql (if using PostgreSQL for analytics storage)
+# - prometheus.prometheus (for metrics collection integration)

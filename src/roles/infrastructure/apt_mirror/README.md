@@ -5,6 +5,7 @@
 * [Overview](#overview)
 * [Supported Operating Systems/Platforms](#supported-operating-systemsplatforms)
 * [Role Variables](#role-variables)
+* [New Features](#new-features)
 * [Tags](#tags)
 * [Dependencies](#dependencies)
 * [Example Playbook](#example-playbook)
@@ -14,7 +15,24 @@
 
 ## Overview
 
-This role installs and configures a local APT package mirror on a Debian/Ubuntu server using the **apt-mirror** utility and serves the mirrored repositories via Apache HTTP. It is designed to be **idempotent** and flexible, allowing you to maintain an in-house mirror of Debian/Ubuntu repositories for faster and controlled package installs. Key features include:
+This role installs and configures a local APT package mirror on a Debian/Ubuntu server using the **apt-mirror** utility and serves the mirrored repositories via Apache HTTP. It is designed to be **idempotent** and flexible, allowing you to maintain an in-house mirror of Debian/Ubuntu repositories for faster and controlled package installs. 
+
+### Enhanced Features (New)
+
+This role now includes comprehensive enterprise-grade features:
+
+* **GPG Key Management** - Automatic import and verification of repository signing keys
+* **Health Monitoring** - Built-in health checks with REST API endpoints
+* **Performance Monitoring** - Metrics collection with Prometheus integration
+* **Alerting System** - Multi-channel alerts (email, webhook, Slack) for failures
+* **Bandwidth Control** - Configurable throttling for sync operations
+* **Selective Mirroring** - Package filtering and exclusion capabilities
+* **Mirror Prioritization** - Upstream failover and load balancing
+* **Compression Support** - Package and index compression options
+* **Client Discovery** - Automatic client configuration via DNS/Consul/etcd
+* **Analytics** - Client usage tracking and package popularity metrics
+
+### Key Features
 
 * Support for mirroring multiple distributions (e.g. Ubuntu, Debian releases), components (main, universe, etc.), and CPU architectures.
 * Automatic regular synchronization via cron (daily by default) to keep the mirror up to date.
@@ -22,9 +40,67 @@ This role installs and configures a local APT package mirror on a Debian/Ubuntu 
 * Optional integration with an ELK stack for shipping mirror logs or metrics to a central logging system.
 * Optional high-availability support (HA stubs) using a Virtual IP (Keepalived) to failover between mirror servers.
 * Optional weekly backup of mirror metadata (indexes) for disaster recovery (DR) purposes.
-* Two deployment profiles: **simple** (default) for basic standalone mirrors, and **complex** for production setups enabling the above optional features via a single switch.
+* Two deployment profiles: **simple** (default) for basic standalone mirrors, and **complex** for production setups enabling advanced features automatically.
 
-By default, the role operates in "simple" mode. Setting `deployment_profile: "complex"` will turn on advanced features (ELK integration, DR backups, and allow HA) automatically. This role focuses on the server-side mirror. To configure client machines to use the new mirror, see the companion **`apt_mirror_client_setup`** role in this repository.
+By default, the role operates in "simple" mode. Setting `deployment_profile: "complex"` will turn on advanced features (ELK integration, DR backups, health monitoring, alerting, and allow HA) automatically. This role focuses on the server-side mirror. To configure client machines to use the new mirror, see the companion **`apt_mirror_client_setup`** role in this repository.
+
+## New Features
+
+### GPG Key Management
+- Automatic import of GPG keys from keyservers or URLs
+- Key verification and validation
+- Integration with system keyring
+- Scheduled key verification checks
+
+### Health Monitoring
+- REST API health endpoints (`/health`, `/health/disk`, `/health/sync`, etc.)
+- Real-time service status monitoring
+- Configurable health check intervals
+- Apache integration for health endpoints
+
+### Performance Monitoring
+- Prometheus metrics integration
+- Sync duration tracking
+- Bandwidth usage monitoring
+- Client access pattern analysis
+- Package download statistics
+
+### Alerting System
+- Multi-channel alerting (email, webhook, Slack)
+- Smart alert debouncing to prevent spam
+- Configurable alert thresholds
+- Sync failure detection
+- Storage usage monitoring
+
+### Bandwidth Throttling
+- Per-thread bandwidth limiting
+- Configurable rate limits
+- Network-friendly sync operations
+
+### Selective Mirroring
+- Package inclusion/exclusion filters
+- Size-based filtering
+- Component-level selection
+- Reduced storage requirements
+
+### Mirror Prioritization
+- Multiple upstream mirror support
+- Automatic failover between mirrors
+- Priority-based selection
+- Health checking of upstream mirrors
+
+### Client Discovery & Management
+- DNS-based service discovery
+- Consul/etcd integration
+- Automatic client configuration
+- Client registration tracking
+
+### Analytics & Metrics
+- Client usage tracking
+- Package popularity analytics
+- Geographic distribution analysis
+- Usage report generation
+- Access pattern insights
 
 ## Supported Operating Systems/Platforms
 
@@ -61,6 +137,121 @@ Below is a list of important variables for this role, along with default values 
 <!-- markdownlint-enable MD033 -->
 
 In addition to the above, you can use `deployment_profile` (string) to quickly toggle groups of features. By default it is `"simple"`. Setting `deployment_profile: "complex"` will effectively set `elk_integration_enabled` to true and allow HA features (while still requiring `ha_features_enabled: true` to fully activate HA). You can also directly toggle each feature via its variable as shown in the table.
+
+### Enhanced Feature Variables
+
+<details>
+<summary>GPG Key Management Variables</summary>
+
+| Variable                         | Default Value           | Description |
+| -------------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`apt_mirror_gpg_management_enabled`** | `true`          | Enable automatic GPG key management for repository verification. |
+| **`apt_mirror_gpg_keys`**        | `[]`                    | List of GPG keys to import. Each entry should contain `name`, and either `keyserver` + `key_id` or `url`. |
+
+</details>
+
+<details>
+<summary>Health Monitoring Variables</summary>
+
+| Variable                         | Default Value           | Description |
+| -------------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`apt_mirror_health_checks_enabled`** | `true`           | Enable health check monitoring service. |
+| **`apt_mirror_health_check_interval`** | `"*/5 * * * *"`  | Cron schedule for health check monitoring. |
+| **`apt_mirror_health_check_endpoint`** | `"/health"`      | HTTP endpoint path for health checks. |
+| **`apt_mirror_health_check_port`**     | `8080`           | Port for health check service. |
+
+</details>
+
+<details>
+<summary>Alerting Variables</summary>
+
+| Variable                         | Default Value           | Description |
+| -------------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`apt_mirror_alerting_enabled`**       | `true`          | Enable alerting system. |
+| **`apt_mirror_alert_email`**            | `""`            | Email address for alerts. |
+| **`apt_mirror_alert_webhook`**          | `""`            | Webhook URL for alerts. |
+| **`apt_mirror_alert_slack_webhook`**    | `""`            | Slack webhook URL for alerts. |
+| **`apt_mirror_alert_on_sync_failure`**  | `true`          | Send alerts on sync failures. |
+| **`apt_mirror_alert_on_storage_threshold`** | `true`      | Send alerts when storage exceeds threshold. |
+| **`apt_mirror_storage_alert_threshold`** | `85`           | Storage usage percentage threshold for alerts. |
+
+</details>
+
+<details>
+<summary>Performance Monitoring Variables</summary>
+
+| Variable                         | Default Value           | Description |
+| -------------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`apt_mirror_performance_monitoring_enabled`** | `true`  | Enable performance monitoring with Prometheus metrics. |
+| **`apt_mirror_metrics_port`**           | `9090`          | Port for Prometheus metrics endpoint. |
+| **`apt_mirror_metrics_endpoint`**       | `"/metrics"`    | HTTP endpoint path for metrics. |
+| **`apt_mirror_track_sync_duration`**    | `true`          | Track mirror sync duration. |
+| **`apt_mirror_track_bandwidth_usage`**  | `true`          | Track bandwidth usage during sync. |
+| **`apt_mirror_track_client_access`**    | `true`          | Track client access patterns. |
+
+</details>
+
+<details>
+<summary>Bandwidth Throttling Variables</summary>
+
+| Variable                         | Default Value           | Description |
+| -------------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`apt_mirror_bandwidth_throttling_enabled`** | `false` | Enable bandwidth throttling for sync operations. |
+| **`apt_mirror_bandwidth_limit`**        | `"10M"`         | Bandwidth limit per thread. |
+| **`apt_mirror_bandwidth_limit_unit`**   | `"K"`           | Unit for bandwidth limit (K, M, G). |
+
+</details>
+
+<details>
+<summary>Selective Mirroring Variables</summary>
+
+| Variable                         | Default Value           | Description |
+| -------------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`apt_mirror_selective_mirroring_enabled`** | `false` | Enable selective package mirroring with filters. |
+| **`apt_mirror_package_filters`**        | `[]`            | List of package filters with `type` (include/exclude) and `pattern`. |
+| **`apt_mirror_size_filters`**           | `[]`            | List of size-based filters with `max_size` and `action`. |
+
+</details>
+
+<details>
+<summary>Mirror Prioritization Variables</summary>
+
+| Variable                         | Default Value           | Description |
+| -------------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`apt_mirror_prioritization_enabled`** | `false`         | Enable upstream mirror prioritization and failover. |
+| **`apt_mirror_upstream_mirrors`**       | `[]`            | List of upstream mirrors with `url`, `priority`, and `timeout`. |
+| **`apt_mirror_failover_enabled`**       | `true`          | Enable automatic failover between mirrors. |
+| **`apt_mirror_mirror_health_check_interval`** | `60`    | Interval for checking upstream mirror health (seconds). |
+
+</details>
+
+<details>
+<summary>Client Discovery Variables</summary>
+
+| Variable                         | Default Value           | Description |
+| -------------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`apt_mirror_client_discovery_enabled`** | `false`       | Enable automatic client discovery and configuration. |
+| **`apt_mirror_discovery_method`**       | `"dns"`         | Method for client discovery (dns, consul, etcd). |
+| **`apt_mirror_discovery_domain`**       | `"mirror.local"` | Domain for DNS-based discovery. |
+| **`apt_mirror_client_registration_enabled`** | `false`  | Enable client registration tracking. |
+| **`apt_mirror_client_config_template`** | `"sources.list.j2"` | Template for client configuration. |
+
+</details>
+
+<details>
+<summary>Analytics Variables</summary>
+
+| Variable                         | Default Value           | Description |
+| -------------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`apt_mirror_client_metrics_enabled`** | `false`         | Enable client usage metrics collection. |
+| **`apt_mirror_analytics_enabled`**      | `false`         | Enable package usage analytics. |
+| **`apt_mirror_analytics_retention_days`** | `30`          | Retention period for analytics data (days). |
+| **`apt_mirror_log_client_access`**      | `true`          | Log client access patterns. |
+| **`apt_mirror_log_package_requests`**   | `true`          | Log individual package requests. |
+| **`apt_mirror_generate_usage_reports`** | `false`         | Generate periodic usage reports. |
+| **`apt_mirror_usage_report_schedule`**  | `"0 6 * * 1"`   | Cron schedule for usage report generation. |
+
+</details>
 
 ## Tags
 

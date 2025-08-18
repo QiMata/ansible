@@ -1,12 +1,13 @@
 # Ansible Role: HAProxy
 
-*Ansible role to install and configure the **HAProxy** load balancer on Linux servers.*
+*Advanced Ansible role to install and configure the **HAProxy** load balancer on Linux servers with comprehensive enterprise features.*
 
 **Table of Contents**
 
 * [Overview](#overview)
 * [Supported Operating Systems/Platforms](#supported-operating-systemsplatforms)
 * [Role Variables](#role-variables)
+* [Advanced Features](#advanced-features)
 * [Tags](#tags)
 * [Dependencies](#dependencies)
 * [Example Playbook](#example-playbook)
@@ -16,25 +17,57 @@
 
 ## Overview
 
-The **HAProxy** role sets up the HAProxy load balancing service on a target host. It installs HAProxy using the system package manager and deploys a consistent configuration to handle client traffic. This role is designed to be **idempotent** and straightforward, providing a simple way to configure a single frontend listener and a single backend pool of servers. Key features include:
+The **HAProxy** role sets up the HAProxy load balancing service on a target host with enterprise-grade features. It installs HAProxy using the system package manager and deploys a comprehensive configuration to handle client traffic with advanced capabilities. This role is designed to be **idempotent** and supports complex production scenarios. Key features include:
 
-* Installation of the HAProxy package (via apt on Debian/Ubuntu) and automatic enabling/start of the HAProxy service.
-* Template-driven configuration for HAProxy: a **frontend** listening on a specified address/port, and a **backend** with a list of member servers. The template uses sane defaults for logging and timeouts, which can be overridden via variables.
-* Optional **SSL termination** support: if you provide a certificate (and key) via variables, the role will configure HAProxy to listen with TLS on the frontend (e.g., for HTTPS traffic) and deploy the certificate file with secure permissions.
-* Optional **stats web interface** for HAProxy: can be enabled with a variable switch, providing a monitoring UI on a configurable port (protected by basic auth credentials).
-* Configurable load balancing algorithm (e.g. round-robin, least connections) and health check behavior for backend servers through simple variables.
-* Applies configuration changes without downtime: the role uses a handler to **reload HAProxy** whenever the config file is updated, so changes take effect immediately (gracefully) without full service restart.
+### Core Features
+* Installation of the HAProxy package (via apt on Debian/Ubuntu or yum/dnf on RHEL/CentOS) and automatic enabling/start of the HAProxy service.
+* Template-driven configuration for HAProxy with support for multiple frontends and backends
+* **SSL termination** support with multiple certificate management and SNI support
+* **Statistics web interface** with comprehensive monitoring capabilities
+* Configurable load balancing algorithms and health check behavior
 
-By default, the role sets up a single frontend on port **80** (HTTP) and a matching backend with no servers (since you must define them). You will typically customize the backend server list (and potentially the frontend port/mode) for your environment. This role focuses on basic HTTP/TCP load balancing use-cases. For more advanced or highly available scenarios (e.g., multiple HAProxy instances in failover), you can combine this role with other roles in this repository – for example, the **`keepalived`** role can be used to manage a floating IP for active-passive HAProxy pairs.
+### Advanced Features
+* **Multiple frontends/backends**: Support for complex multi-service architectures
+* **ACL support**: Advanced Access Control Lists for traffic routing and security
+* **Content switching**: Route traffic based on URL paths, headers, and other criteria
+* **Advanced health checks**: Customizable HTTP, TCP, and external monitoring integration
+* **Rate limiting and DDoS protection**: Connection throttling and request rate limiting
+* **Compression**: Built-in gzip/deflate compression support
+* **Caching**: Integrated caching mechanisms for improved performance
+* **SSL/TLS security**: Advanced cipher suite configuration and security headers
+* **HSTS support**: HTTP Strict Transport Security implementation
+* **SSL redirect**: Automatic HTTP to HTTPS redirection
+* **Prometheus metrics**: Native metrics export for monitoring
+* **Custom logging**: Flexible logging configuration with header capture
+* **Peer synchronization**: Stick-table synchronization between HAProxy instances
+* **Weighted load balancing**: Server weight configuration and backup server support
+* **IP restrictions**: Whitelist/blacklist functionality with ACL-based access control
+* **Request filtering**: Protection against malicious requests and method blocking
+* **Zero-downtime deployments**: Seamless configuration updates and graceful reloads
+* **Runtime API**: Dynamic server management and configuration updates
+* **Configuration validation**: Pre-deployment validation and automatic backup/restore
+
+### Operational Excellence
+* **Configuration backup**: Automatic configuration backup before changes
+* **Health check validation**: Post-deployment validation and monitoring
+* **Error page customization**: Custom error pages for better user experience
+* **Firewall integration**: Automatic firewall rule configuration
+* **Log management**: Advanced logging with rsyslog integration
+
+By default, the role maintains backward compatibility with existing configurations while providing access to advanced features through additional variable configuration.
 
 ## Supported Operating Systems/Platforms
 
-This role is tested on and designed for **Debian**-family Linux distributions, specifically:
+This role is tested on and designed for **Debian**-family and **Red Hat**-family Linux distributions, specifically:
 
 * **Debian** – 11 (Bullseye) and 12 (Bookworm)
-* **Ubuntu** – 20.04 LTS (Focal) and 22.04 LTS (Jammy)
+* **Ubuntu** – 20.04 LTS (Focal), 22.04 LTS (Jammy), and 24.04 LTS (Noble)
+* **Red Hat Enterprise Linux** – 8 and 9
+* **CentOS** – 8 and 9 (Stream)
+* **Rocky Linux** – 8 and 9
+* **AlmaLinux** – 8 and 9
 
-Other Debian-based derivatives may work as well, as long as they use `apt` and have an HAProxy package available. The role uses the `apt` package manager for installation, so **Red Hat/CentOS or other non-APT-based systems are not supported** without modifications. Ensure you run this role on a supported OS to avoid issues.
+The role automatically detects the OS family and uses the appropriate package manager (`apt` for Debian-based systems, `yum`/`dnf` for Red Hat-based systems). Ensure you run this role on a supported OS to avoid issues.
 
 ## Role Variables
 
@@ -56,6 +89,208 @@ Below is a list of important variables for this role, along with their default v
 | **`haproxy_backend_name`**            | "habackend"                                        | Identifier for the backend server pool. This becomes the label of the `backend` section in haproxy.cfg.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | **`haproxy_backend_mode`**            | {{ haproxy_frontend_mode }} (defaults to "http") | Mode for connections to backend servers. By default, it inherits the same mode as the frontend. Typically this should be left as-is (HTTP mode if frontend is HTTP, or TCP if frontend is TCP) to maintain consistency in how traffic is handled.                                                                                                                                                                                                                                                                                                                                                                                                     |
 | **`haproxy_backend_balance_method`**  | "roundrobin"                                       | Load balancing algorithm for distributing traffic among backend servers. Default is "roundrobin" (rotate evenly). Other common options include "leastconn" (least connections) or "source" (source IP hash) depending on your requirements.                                                                                                                                                                                                                                                                                                                                                                                                     |
+
+</details>
+
+## Advanced Features
+
+This role now includes comprehensive enterprise-grade features for production deployments:
+
+### Multiple Frontends and Backends
+
+Configure multiple frontends and backends for complex architectures:
+
+```yaml
+haproxy_frontends:
+  - name: web_frontend
+    bind_address: "*"
+    port: 80
+    mode: "http"
+    default_backend: web_backend
+    ssl_redirect: true
+  - name: api_frontend
+    bind_address: "*"
+    port: 443
+    mode: "http"
+    ssl_certificate: "/etc/haproxy/certs/api.pem"
+    default_backend: api_backend
+
+haproxy_backends:
+  - name: web_backend
+    mode: "http"
+    balance_method: "roundrobin"
+    servers:
+      - name: web1
+        address: "192.168.1.10:80"
+        weight: 100
+      - name: web2
+        address: "192.168.1.11:80"
+        weight: 100
+  - name: api_backend
+    mode: "http"
+    balance_method: "leastconn"
+    servers:
+      - name: api1
+        address: "192.168.1.20:8080"
+        backup: false
+      - name: api2
+        address: "192.168.1.21:8080"
+        backup: true
+```
+
+### Access Control Lists (ACLs) and Content Switching
+
+Route traffic based on various criteria:
+
+```yaml
+haproxy_acls:
+  - name: "is_api"
+    condition: "path_beg /api/"
+  - name: "is_admin"
+    condition: "path_beg /admin/"
+  - name: "trusted_ips"
+    condition: "src 192.168.1.0/24 10.0.0.0/8"
+
+haproxy_use_backends:
+  - condition: "is_api"
+    backend: "api_backend"
+  - condition: "is_admin"
+    backend: "admin_backend"
+```
+
+### SSL/TLS Security Enhancements
+
+Configure advanced SSL settings:
+
+```yaml
+haproxy_global_ssl_default_bind_ciphers: "ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM:DHE+CHACHA20:!aNULL:!SHA1:!AESCCM"
+haproxy_global_ssl_default_bind_options: "ssl-min-ver TLSv1.2 no-tls-tickets"
+
+haproxy_ssl_certificates:
+  - path: "/etc/haproxy/certs/example.com.pem"
+    content: "{{ vault_example_com_cert }}"
+  - path: "/etc/haproxy/certs/api.example.com.pem"
+    content: "{{ vault_api_example_com_cert }}"
+
+haproxy_hsts:
+  enable: true
+  max_age: 31536000
+  include_subdomains: true
+
+haproxy_ssl_redirect:
+  enable: true
+  redirect_code: 301
+```
+
+### Rate Limiting and DDoS Protection
+
+Protect against abuse:
+
+```yaml
+haproxy_rate_limiting:
+  enable: true
+  stick_table_type: "ip"
+  stick_table_size: "100k"
+  stick_table_expire: "30s"
+  http_req_rate: 20
+  http_req_burst: 50
+  tarpit_timeout: "10s"
+
+haproxy_ip_restrictions:
+  whitelist:
+    - "192.168.1.0/24"
+    - "10.0.0.0/8"
+  blacklist:
+    - "1.2.3.4"
+    - "5.6.7.0/24"
+```
+
+### Advanced Health Checks
+
+Configure comprehensive health monitoring:
+
+```yaml
+haproxy_health_checks:
+  - name: "http_check"
+    type: "http"
+    uri: "/health"
+    expect: "string ok"
+  - name: "tcp_check"
+    type: "tcp"
+
+haproxy_external_monitoring:
+  enable: true
+  agent_check: true
+  agent_port: 9999
+```
+
+### Compression and Caching
+
+Optimize performance:
+
+```yaml
+haproxy_compression:
+  enable: true
+  algorithms: ["gzip", "deflate"]
+  types: ["text/html", "text/plain", "text/css", "application/javascript"]
+
+haproxy_caching:
+  enable: true
+  caches:
+    - name: "web_cache"
+      total_max_size: "256m"
+      max_object_size: "10m"
+      max_age: "3600s"
+```
+
+### Prometheus Metrics
+
+Enable monitoring integration:
+
+```yaml
+haproxy_prometheus:
+  enable: true
+  bind_address: "127.0.0.1"
+  port: 9101
+  uri: "/metrics"
+```
+
+### Zero-Downtime Deployments
+
+Enable seamless updates:
+
+```yaml
+haproxy_zero_downtime:
+  enable: true
+  graceful_reload: true
+  reload_timeout: "30s"
+```
+
+### Runtime API Management
+
+Dynamic server management:
+
+```yaml
+haproxy_runtime_api:
+  enable: true
+  socket_path: "/run/haproxy/admin.sock"
+  socket_mode: "660"
+  socket_level: "admin"
+```
+
+### Peer Synchronization
+
+Synchronize stick tables between HAProxy instances:
+
+```yaml
+haproxy_peers:
+  enable: true
+  peers:
+    - name: "haproxy1"
+      address: "192.168.1.10:1024"
+    - name: "haproxy2"
+      address: "192.168.1.11:1024"
+```
 | **`haproxy_backend_httpchk`**         | *Empty string* ""                                  | HTTP health check request for backend servers. If set (e.g., "GET /healthz" or a full HTTP request line), HAProxy will periodically perform HTTP checks to determine backend health. Leave this empty to disable HTTP health checks (HAProxy will use layer4 checks or mark servers up by default).                                                                                                                                                                                                                                                                                                                                                 |
 | **`haproxy_backend_servers`**         | *Empty list* []                                    | List of backend servers in the pool. **This must be provided by the user**, since by default no servers are configured. Each list item is a mapping with keys: <br>`name`: a unique name for the server (for identification in stats/logs) <br>`address`: the host/IP and port of the server (e.g., "192.168.1.10:80"). For example: <br>`yaml<br>haproxy_backend_servers:<br>  - name: app1<br>    address: 192.168.1.10:80<br>  - name: app2<br>    address: 192.168.1.11:80<br>`                                                                                                                                                                 |
 | **`haproxy_global_vars`**             | *(see defaults)*                                     | List of configuration lines to place in the **global** section of haproxy.cfg. By default, this includes:<br>`log 127.0.0.1 local0` (enable logging to local syslog)<br>`log 127.0.0.1 local1 notice` (log facility/level)<br>`chroot /var/lib/haproxy` (chroot directory for HAProxy process)<br>`user haproxy` / `group haproxy` (drop privileges to haproxy user/group)<br>`daemon` (run in background as a daemon). You can override this list to add or change global settings (for instance, to adjust logging or add `maxconn` if needed).                                                                                                     |

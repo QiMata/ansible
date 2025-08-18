@@ -1,0 +1,297 @@
+---
+# Example Playbook demonstrating advanced HAProxy features
+- hosts: loadbalancers
+  become: true
+  vars:
+    # Multiple frontends configuration
+    haproxy_frontends:
+      - name: web_frontend
+        bind_address: "*"
+        port: 80
+        mode: "http"
+        ssl_redirect: true
+        default_backend: web_backend
+        maxconn: 2000
+        compression: true
+        acls:
+          - name: "is_static"
+            condition: "path_end .css .js .png .jpg .gif .ico"
+        use_backends:
+          - condition: "is_static"
+            backend: "static_backend"
+      
+      - name: ssl_frontend
+        bind_address: "*"
+        port: 443
+        mode: "http"
+        ssl_certificate: "/etc/haproxy/certs/example.com.pem"
+        default_backend: web_backend
+        hsts_enable: true
+        compression: true
+        acls:
+          - name: "is_api"
+            condition: "path_beg /api/"
+          - name: "is_admin"
+            condition: "path_beg /admin/"
+        use_backends:
+          - condition: "is_api"
+            backend: "api_backend"
+          - condition: "is_admin"
+            backend: "admin_backend"
+
+    # Multiple backends configuration
+    haproxy_backends:
+      - name: web_backend
+        mode: "http"
+        balance_method: "roundrobin"
+        compression: true
+        cache_enable: true
+        cache_name: "web_cache"
+        httpchk: "GET /health"
+        servers:
+          - name: web1
+            address: "192.168.1.10:80"
+            weight: 100
+            check: true
+          - name: web2
+            address: "192.168.1.11:80"
+            weight: 100
+            check: true
+          - name: web3
+            address: "192.168.1.12:80"
+            weight: 50
+            backup: true
+            check: true
+      
+      - name: api_backend
+        mode: "http"
+        balance_method: "leastconn"
+        httpchk: "GET /api/health"
+        servers:
+          - name: api1
+            address: "192.168.1.20:8080"
+            weight: 100
+            maxconn: 200
+          - name: api2
+            address: "192.168.1.21:8080"
+            weight: 100
+            maxconn: 200
+      
+      - name: admin_backend
+        mode: "http"
+        balance_method: "source"
+        servers:
+          - name: admin1
+            address: "192.168.1.30:9000"
+            weight: 100
+      
+      - name: static_backend
+        mode: "http"
+        balance_method: "roundrobin"
+        compression: true
+        cache_enable: true
+        cache_name: "static_cache"
+        servers:
+          - name: static1
+            address: "192.168.1.40:80"
+          - name: static2
+            address: "192.168.1.41:80"
+
+    # SSL Certificates
+    haproxy_ssl_certificates:
+      - path: "/etc/haproxy/certs/example.com.pem"
+        content: |
+          -----BEGIN CERTIFICATE-----
+          {{ vault_example_com_cert }}
+          -----END CERTIFICATE-----
+          -----BEGIN PRIVATE KEY-----
+          {{ vault_example_com_key }}
+          -----END PRIVATE KEY-----
+
+    # Advanced security configuration
+    haproxy_global_ssl_default_bind_ciphers: "ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM:DHE+CHACHA20:!aNULL:!SHA1:!AESCCM"
+    haproxy_global_ssl_default_bind_options: "ssl-min-ver TLSv1.2 no-tls-tickets"
+
+    # HSTS configuration
+    haproxy_hsts:
+      enable: true
+      max_age: 31536000
+      include_subdomains: true
+      preload: true
+
+    # SSL redirect
+    haproxy_ssl_redirect:
+      enable: true
+      redirect_code: 301
+
+    # Rate limiting and DDoS protection
+    haproxy_rate_limiting:
+      enable: true
+      stick_table_type: "ip"
+      stick_table_size: "100k"
+      stick_table_expire: "30s"
+      http_req_rate: 50
+      http_req_burst: 100
+      tarpit_timeout: "10s"
+
+    # IP restrictions
+    haproxy_ip_restrictions:
+      whitelist:
+        - "192.168.0.0/16"
+        - "10.0.0.0/8"
+        - "172.16.0.0/12"
+      blacklist:
+        - "192.168.100.0/24"  # Example blocked subnet
+
+    # Compression configuration
+    haproxy_compression:
+      enable: true
+      algorithms: ["gzip", "deflate"]
+      types: 
+        - "text/html"
+        - "text/plain"
+        - "text/css"
+        - "application/javascript"
+        - "application/json"
+        - "application/xml"
+
+    # Caching configuration
+    haproxy_caching:
+      enable: true
+      caches:
+        - name: "web_cache"
+          total_max_size: "512m"
+          max_object_size: "10m"
+          max_age: "3600s"
+        - name: "static_cache"
+          total_max_size: "1g"
+          max_object_size: "50m"
+          max_age: "86400s"
+
+    # Statistics configuration
+    haproxy_stats_enable: true
+    haproxy_stats_bind_address: "127.0.0.1"
+    haproxy_stats_port: 9000
+    haproxy_stats_user: "admin"
+    haproxy_stats_password: "{{ vault_haproxy_stats_password }}"
+    haproxy_stats_hide_version: true
+
+    # Prometheus metrics
+    haproxy_prometheus:
+      enable: true
+      bind_address: "127.0.0.1"
+      port: 9101
+
+    # Custom logging
+    haproxy_custom_logging:
+      enable: true
+      capture_headers:
+        - "Host"
+        - "User-Agent"
+        - "X-Forwarded-For"
+        - "X-Real-IP"
+
+    # External monitoring
+    haproxy_external_monitoring:
+      enable: true
+      agent_check: true
+      agent_port: 9999
+
+    # Peer synchronization (for HA setup)
+    haproxy_peers:
+      enable: true
+      peers:
+        - name: "{{ inventory_hostname }}"
+          address: "{{ ansible_default_ipv4.address }}:1024"
+        - name: "haproxy-peer"
+          address: "192.168.1.100:1024"
+
+    # Zero-downtime deployments
+    haproxy_zero_downtime:
+      enable: true
+      graceful_reload: true
+      reload_timeout: "30s"
+
+    # Runtime API
+    haproxy_runtime_api:
+      enable: true
+      socket_path: "/run/haproxy/admin.sock"
+      socket_mode: "660"
+      socket_level: "admin"
+
+    # Configuration validation
+    haproxy_config_validation:
+      enable: true
+      backup_config: true
+
+    # Security enhancements
+    haproxy_security:
+      hide_version: true
+      server_tokens: false
+      request_filtering:
+        enable: true
+        block_methods: ["TRACE", "CONNECT"]
+        max_header_size: "8192"
+        max_request_size: "1048576"
+
+    # Health checks
+    haproxy_health_checks:
+      - name: "http_check"
+        type: "http"
+        uri: "/health"
+        expect: "string ok"
+
+    # Server defaults
+    haproxy_server_defaults:
+      check: true
+      weight: 100
+      maxconn: 100
+      inter: "2s"
+      downinter: "5s"
+      rise: 2
+      fall: 3
+
+  roles:
+    - load_balancing_ha.haproxy
+
+  post_tasks:
+    # Verify HAProxy is working
+    - name: Test HAProxy frontend connectivity
+      uri:
+        url: "http://{{ ansible_default_ipv4.address }}"
+        method: GET
+        status_code: [200, 301, 302]
+      delegate_to: localhost
+      run_once: true
+
+    - name: Test HAProxy stats interface
+      uri:
+        url: "http://127.0.0.1:9000/haproxy?stats"
+        method: GET
+        user: "{{ haproxy_stats_user }}"
+        password: "{{ haproxy_stats_password }}"
+        force_basic_auth: yes
+      when: haproxy_stats_enable
+
+    - name: Display runtime management information
+      debug:
+        msg: |
+          HAProxy has been configured with advanced features:
+          - Runtime API socket: {{ haproxy_runtime_api.socket_path }}
+          - Management script: /usr/local/bin/haproxy-runtime-manager.sh
+          - Zero-downtime reload script: /usr/local/bin/haproxy-zero-downtime-reload.sh
+          - Stats URL: http://{{ haproxy_stats_bind_address }}:{{ haproxy_stats_port }}{{ haproxy_stats_uri }}
+          {% if haproxy_prometheus.enable %}
+          - Prometheus metrics: http://{{ haproxy_prometheus.bind_address }}:{{ haproxy_prometheus.port }}{{ haproxy_prometheus.uri }}
+          {% endif %}
+          
+          Runtime management examples:
+          # Show statistics
+          /usr/local/bin/haproxy-runtime-manager.sh stats
+          
+          # Enable/disable server
+          /usr/local/bin/haproxy-runtime-manager.sh enable web_backend web1
+          /usr/local/bin/haproxy-runtime-manager.sh disable web_backend web1
+          
+          # Set server weight
+          /usr/local/bin/haproxy-runtime-manager.sh weight web_backend web1 50

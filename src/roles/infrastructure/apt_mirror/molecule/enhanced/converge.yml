@@ -1,0 +1,21 @@
+---
+- name: Converge with Enhanced Features
+  hosts: all
+  become: true
+  pre_tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+      
+    - name: Install systemd
+      apt:
+        name: systemd
+        state: present
+        
+    - name: Start systemd
+      systemd:
+        daemon_reload: true
+        
+  roles:
+    - role: infrastructure/apt_mirror

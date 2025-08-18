@@ -9,3 +9,16 @@ apt_mirror_dr_backup_enabled: "{{ apt_mirror_dr_backup_enabled }}"
 
 # cron always on unless explicitly disabled
 apt_mirror_cron_enabled: "{{ apt_mirror_cron_enabled }}"
+
+# New feature flags based on deployment profile
+apt_mirror_gpg_management_enabled: "{{ (deployment_profile | default('simple')) == 'complex' or apt_mirror_gpg_management_enabled }}"
+apt_mirror_health_checks_enabled: "{{ (deployment_profile | default('simple')) == 'complex' or apt_mirror_health_checks_enabled }}"
+apt_mirror_alerting_enabled: "{{ (deployment_profile | default('simple')) == 'complex' or apt_mirror_alerting_enabled }}"
+apt_mirror_performance_monitoring_enabled: "{{ (deployment_profile | default('simple')) == 'complex' or apt_mirror_performance_monitoring_enabled }}"
+apt_mirror_bandwidth_throttling_enabled: "{{ apt_mirror_bandwidth_throttling_enabled }}"
+apt_mirror_selective_mirroring_enabled: "{{ apt_mirror_selective_mirroring_enabled }}"
+apt_mirror_prioritization_enabled: "{{ apt_mirror_prioritization_enabled }}"
+apt_mirror_compression_enabled: "{{ apt_mirror_compression_enabled }}"
+apt_mirror_client_discovery_enabled: "{{ apt_mirror_client_discovery_enabled }}"
+apt_mirror_client_metrics_enabled: "{{ (deployment_profile | default('simple')) == 'complex' or apt_mirror_client_metrics_enabled }}"
+apt_mirror_analytics_enabled: "{{ (deployment_profile | default('simple')) == 'complex' or apt_mirror_analytics_enabled }}"

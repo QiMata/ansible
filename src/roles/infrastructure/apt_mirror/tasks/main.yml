@@ -2,11 +2,35 @@
 - name: Import install tasks
   ansible.builtin.import_tasks: install.yml
 
+- name: Import GPG key management tasks
+  ansible.builtin.import_tasks: gpg_management.yml
+  when: apt_mirror_gpg_management_enabled | bool
+
 - name: Import configure tasks
   ansible.builtin.import_tasks: configure.yml
 
 - name: Import apache tasks
   ansible.builtin.import_tasks: apache.yml
+
+- name: Import health checks tasks
+  ansible.builtin.import_tasks: health_checks.yml
+  when: apt_mirror_health_checks_enabled | bool
+
+- name: Import performance monitoring tasks
+  ansible.builtin.import_tasks: performance_monitoring.yml
+  when: apt_mirror_performance_monitoring_enabled | bool
+
+- name: Import client discovery tasks
+  ansible.builtin.import_tasks: client_discovery.yml
+  when: apt_mirror_client_discovery_enabled | bool
+
+- name: Import client metrics tasks
+  ansible.builtin.import_tasks: client_metrics.yml
+  when: apt_mirror_client_metrics_enabled | bool
+
+- name: Import alerting tasks
+  ansible.builtin.import_tasks: alerting.yml
+  when: apt_mirror_alerting_enabled | bool
 
 - name: Import cron tasks
   ansible.builtin.import_tasks: cron.yml

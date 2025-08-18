@@ -1,4 +1,5 @@
 ---
+# Package Installation
 - name: Install haproxy
   ansible.builtin.apt:
     name: "{{ haproxy_package_name }}"
@@ -6,6 +7,25 @@
   become: true
   when: ansible_facts.os_family == 'Debian'
 
+- name: Install haproxy (RedHat family)
+  ansible.builtin.yum:
+    name: "{{ haproxy_package_name }}"
+    state: present
+  become: true
+  when: ansible_facts.os_family == 'RedHat'
+
+- name: Install additional packages for Prometheus metrics
+  ansible.builtin.apt:
+    name: 
+      - prometheus-haproxy-exporter
+    state: present
+  become: true
+  when: 
+    - ansible_facts.os_family == 'Debian'
+    - haproxy_prometheus.enable | default(false)
+  ignore_errors: true
+
+# Directory Setup
 - name: Ensure certificate directory exists
   ansible.builtin.file:
     path: /etc/haproxy/certs
@@ -13,9 +33,35 @@
     owner: root
     group: haproxy
     mode: "0750"
-  when: haproxy_ssl_certificate | length > 0
+  when: haproxy_ssl_certificate | length > 0 or haproxy_ssl_certificates | length > 0
 
-- name: Deploy certificate
+- name: Ensure error pages directory exists
+  ansible.builtin.file:
+    path: /etc/haproxy/errors
+    state: directory
+    owner: root
+    group: haproxy
+    mode: "0755"
+
+- name: Ensure runtime directory exists
+  ansible.builtin.file:
+    path: /run/haproxy
+    state: directory
+    owner: haproxy
+    group: haproxy
+    mode: "0755"
+
+- name: Ensure log directory exists
+  ansible.builtin.file:
+    path: /var/log/haproxy
+    state: directory
+    owner: haproxy
+    group: haproxy
+    mode: "0755"
+  when: haproxy_custom_logging.enable | default(false)
+
+# SSL Certificate Management
+- name: Deploy legacy SSL certificate
   ansible.builtin.copy:
     content: "{{ haproxy_ssl_certificate_content }}"
     dest: "{{ haproxy_ssl_certificate }}"
@@ -23,7 +69,53 @@
     group: haproxy
     mode: "0640"
   when: haproxy_ssl_certificate | length > 0 and haproxy_ssl_certificate_content | length > 0
+  notify: reload haproxy
 
+- name: Deploy multiple SSL certificates
+  ansible.builtin.copy:
+    content: "{{ item.content }}"
+    dest: "{{ item.path }}"
+    owner: root
+    group: haproxy
+    mode: "0640"
+  loop: "{{ haproxy_ssl_certificates }}"
+  when: haproxy_ssl_certificates | length > 0
+  notify: reload haproxy
+
+# Configuration Backup
+- name: Backup existing configuration
+  ansible.builtin.copy:
+    src: /etc/haproxy/haproxy.cfg
+    dest: "{{ haproxy_config_validation.backup_path | default('/etc/haproxy/haproxy.cfg.backup') }}"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0644"
+  when: 
+    - haproxy_config_validation.backup_config | default(true)
+    - ansible_check_mode == false
+  ignore_errors: true
+
+# Error Pages Setup
+- name: Deploy custom error pages
+  ansible.builtin.template:
+    src: "{{ item }}.http.j2"
+    dest: "/etc/haproxy/errors/{{ item }}.http"
+    owner: root
+    group: haproxy
+    mode: "0644"
+  loop:
+    - "400"
+    - "403"
+    - "408"
+    - "500"
+    - "502"
+    - "503"
+    - "504"
+  when: haproxy_security.request_filtering.enable | default(false)
+  ignore_errors: true
+
+# Configuration Deployment
 - name: Deploy haproxy configuration
   ansible.builtin.template:
     src: haproxy.cfg.j2
@@ -31,10 +123,92 @@
     owner: root
     group: root
     mode: "0644"
+    backup: "{{ haproxy_config_validation.backup_config | default(true) }}"
   notify: reload haproxy
 
+# Configuration Validation
+- name: Validate haproxy configuration
+  ansible.builtin.command:
+    cmd: haproxy -c -f /etc/haproxy/haproxy.cfg
+  register: haproxy_config_check
+  when: haproxy_config_validation.enable | default(true)
+  changed_when: false
+  failed_when: haproxy_config_check.rc != 0
+
+# Logging Configuration
+- name: Configure rsyslog for HAProxy
+  ansible.builtin.template:
+    src: rsyslog-haproxy.conf.j2
+    dest: /etc/rsyslog.d/49-haproxy.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: haproxy_custom_logging.enable | default(false)
+  notify: restart rsyslog
+
+# Prometheus Exporter Configuration
+- name: Configure prometheus haproxy exporter
+  ansible.builtin.template:
+    src: prometheus-haproxy-exporter.j2
+    dest: /etc/default/prometheus-haproxy-exporter
+    owner: root
+    group: root
+    mode: "0644"
+  when: haproxy_prometheus.enable | default(false)
+  notify: restart prometheus-haproxy-exporter
+
+- name: Enable and start prometheus haproxy exporter
+  ansible.builtin.service:
+    name: prometheus-haproxy-exporter
+    state: started
+    enabled: true
+  when: haproxy_prometheus.enable | default(false)
+
+# Service Management
 - name: Enable and start haproxy
   ansible.builtin.service:
     name: "{{ haproxy_service_name }}"
     state: started
     enabled: true
+
+# Runtime API Socket Permissions
+- name: Set HAProxy runtime API socket permissions
+  ansible.builtin.file:
+    path: "{{ haproxy_runtime_api.socket_path | default('/run/haproxy/admin.sock') }}"
+    owner: haproxy
+    group: haproxy
+    mode: "{{ haproxy_runtime_api.socket_mode | default('660') }}"
+  when: haproxy_runtime_api.enable | default(true)
+  ignore_errors: true
+
+# Firewall Configuration (optional)
+- name: Configure firewall for HAProxy
+  ansible.builtin.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop:
+    - "{{ haproxy_frontend_port | default(80) }}"
+    - "{{ haproxy_stats_port | default(9000) }}"
+  when: 
+    - ansible_facts.os_family == 'Debian'
+    - haproxy_firewall_configure | default(false)
+  ignore_errors: true
+
+# Health Check Validation
+- name: Wait for HAProxy to be responsive
+  ansible.builtin.wait_for:
+    port: "{{ haproxy_frontend_port | default(80) }}"
+    host: "{{ haproxy_frontend_bind_address | default('127.0.0.1') }}"
+    delay: 5
+    timeout: 30
+  when: haproxy_health_check_validate | default(true)
+
+# Include additional feature tasks
+- name: Include zero-downtime deployment tasks
+  ansible.builtin.include_tasks: zero_downtime.yml
+  when: haproxy_zero_downtime.enable | default(false)
+
+- name: Include runtime API management tasks
+  ansible.builtin.include_tasks: runtime_api.yml
+  when: haproxy_runtime_api.enable | default(true)

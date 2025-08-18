@@ -3,3 +3,37 @@
   ansible.builtin.service:
     name: apache2
     state: restarted
+
+- name: restart apache2
+  ansible.builtin.service:
+    name: apache2
+    state: restarted
+
+- name: reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: restart apt-mirror-health
+  ansible.builtin.service:
+    name: apt-mirror-health
+    state: restarted
+
+- name: restart apt-mirror-metrics
+  ansible.builtin.service:
+    name: apt-mirror-metrics
+    state: restarted
+
+- name: restart apt-mirror-discovery
+  ansible.builtin.service:
+    name: apt-mirror-discovery
+    state: restarted
+
+- name: restart apt-mirror-analytics
+  ansible.builtin.service:
+    name: apt-mirror-analytics
+    state: restarted
+
+- name: restart apt-mirror-alerts
+  ansible.builtin.service:
+    name: apt-mirror-alerts
+    state: restarted

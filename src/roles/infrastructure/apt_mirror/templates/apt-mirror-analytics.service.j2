@@ -1,0 +1,34 @@
+[Unit]
+Description=APT Mirror Analytics Service
+After=network.target apache2.service
+
+[Service]
+Type=simple
+User=apt-mirror
+Group=apt-mirror
+WorkingDirectory=/opt/apt-mirror-analytics
+ExecStart=/usr/bin/python3 /opt/apt-mirror-analytics/metrics_collector.py
+Restart=always
+RestartSec=10
+Environment=PYTHONPATH=/opt/apt-mirror-analytics
+
+# Security settings
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ apt_mirror_base_path }} /opt/apt-mirror-analytics /var/log /var/lib/apt-mirror-analytics
+PrivateTmp=true
+PrivateDevices=true
+ProtectHostname=true
+ProtectClock=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RemoveIPC=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

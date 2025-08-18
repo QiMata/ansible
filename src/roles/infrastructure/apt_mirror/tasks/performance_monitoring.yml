@@ -1,0 +1,84 @@
+---
+# Performance Monitoring Tasks
+- name: Install performance monitoring dependencies
+  ansible.builtin.package:
+    name:
+      - python3-prometheus-client
+      - python3-psutil
+      - python3-numpy
+      - iotop
+      - iftop
+      - nethogs
+    state: present
+
+- name: Create performance monitoring directory
+  ansible.builtin.file:
+    path: /opt/apt-mirror-metrics
+    state: directory
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0755'
+
+- name: Create metrics collection service
+  ansible.builtin.template:
+    src: metrics_collector.py.j2
+    dest: /opt/apt-mirror-metrics/metrics_collector.py
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0755'
+  notify: restart apt-mirror-metrics
+
+- name: Create bandwidth monitoring script
+  ansible.builtin.template:
+    src: bandwidth_monitor.sh.j2
+    dest: /opt/apt-mirror-metrics/bandwidth_monitor.sh
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0755'
+
+- name: Create sync duration tracking script
+  ansible.builtin.template:
+    src: sync_duration_tracker.sh.j2
+    dest: /opt/apt-mirror-metrics/sync_duration_tracker.sh
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0755'
+
+- name: Create client access tracker
+  ansible.builtin.template:
+    src: client_access_tracker.py.j2
+    dest: /opt/apt-mirror-metrics/client_access_tracker.py
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0755'
+
+- name: Create systemd service for metrics collection
+  ansible.builtin.template:
+    src: apt-mirror-metrics.service.j2
+    dest: /etc/systemd/system/apt-mirror-metrics.service
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart apt-mirror-metrics
+
+- name: Enable and start metrics collection service
+  ansible.builtin.systemd:
+    name: apt-mirror-metrics
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: Configure logrotate for metrics logs
+  ansible.builtin.template:
+    src: apt-mirror-metrics.logrotate.j2
+    dest: /etc/logrotate.d/apt-mirror-metrics
+    mode: '0644'
+
+- name: Create performance monitoring dashboard config
+  ansible.builtin.template:
+    src: performance_dashboard.json.j2
+    dest: /opt/apt-mirror-metrics/dashboard.json
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0644'
+  when: apt_mirror_performance_monitoring_enabled

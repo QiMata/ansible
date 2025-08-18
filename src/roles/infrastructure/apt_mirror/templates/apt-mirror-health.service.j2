@@ -1,0 +1,35 @@
+[Unit]
+Description=APT Mirror Health Check Service
+After=network.target apache2.service
+Wants=apache2.service
+
+[Service]
+Type=simple
+User=apt-mirror
+Group=apt-mirror
+WorkingDirectory=/opt/apt-mirror-health
+ExecStart=/usr/bin/python3 /opt/apt-mirror-health/health_service.py
+Restart=always
+RestartSec=10
+Environment=PYTHONPATH=/opt/apt-mirror-health
+
+# Security settings
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ apt_mirror_base_path }} /opt/apt-mirror-health /var/log
+PrivateTmp=true
+PrivateDevices=true
+ProtectHostname=true
+ProtectClock=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RemoveIPC=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

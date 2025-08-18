@@ -13,3 +13,94 @@ apt_mirror_elk_integration_enabled: false
 apt_mirror_ha_features_enabled: false
 apt_mirror_dr_backup_enabled: true
 apt_mirror_prune: true
+
+# GPG Key Management
+apt_mirror_gpg_management_enabled: true
+apt_mirror_gpg_keys: []
+# Example:
+# apt_mirror_gpg_keys:
+#   - name: "ubuntu-archive-keyring"
+#     keyserver: "keyserver.ubuntu.com"
+#     key_id: "871920D1991BC93C"
+#   - name: "debian-archive-keyring" 
+#     url: "https://ftp-master.debian.org/keys/archive-key-11.asc"
+
+# Health Checks
+apt_mirror_health_checks_enabled: true
+apt_mirror_health_check_interval: "*/5 * * * *"
+apt_mirror_health_check_endpoint: "/health"
+apt_mirror_health_check_port: 8080
+
+# Alerting
+apt_mirror_alerting_enabled: true
+apt_mirror_alert_email: ""
+apt_mirror_alert_webhook: ""
+apt_mirror_alert_slack_webhook: ""
+apt_mirror_alert_on_sync_failure: true
+apt_mirror_alert_on_storage_threshold: true
+apt_mirror_storage_alert_threshold: 85  # percentage
+
+# Performance Monitoring
+apt_mirror_performance_monitoring_enabled: true
+apt_mirror_metrics_port: 9090
+apt_mirror_metrics_endpoint: "/metrics"
+apt_mirror_track_sync_duration: true
+apt_mirror_track_bandwidth_usage: true
+apt_mirror_track_client_access: true
+
+# Bandwidth Throttling
+apt_mirror_bandwidth_throttling_enabled: false
+apt_mirror_bandwidth_limit: "10M"  # per thread
+apt_mirror_bandwidth_limit_unit: "K"  # K, M, G
+
+# Selective Mirroring
+apt_mirror_selective_mirroring_enabled: false
+apt_mirror_package_filters: []
+# Example:
+# apt_mirror_package_filters:
+#   - type: "include"
+#     pattern: "^(apache|nginx|mysql).*"
+#   - type: "exclude"
+#     pattern: ".*-dev$"
+apt_mirror_size_filters: []
+# Example:
+# apt_mirror_size_filters:
+#   - max_size: "100M"
+#     action: "exclude"
+
+# Mirror Prioritization
+apt_mirror_prioritization_enabled: false
+apt_mirror_upstream_mirrors: []
+# Example:
+# apt_mirror_upstream_mirrors:
+#   - url: "http://archive.ubuntu.com/ubuntu"
+#     priority: 1
+#     timeout: 30
+#   - url: "http://us.archive.ubuntu.com/ubuntu"
+#     priority: 2
+#     timeout: 30
+apt_mirror_failover_enabled: true
+apt_mirror_mirror_health_check_interval: 60
+
+# Compression Options
+apt_mirror_compression_enabled: false
+apt_mirror_compression_method: "gzip"  # gzip, bzip2, xz, lz4
+apt_mirror_compression_level: 6
+apt_mirror_compress_indices: true
+apt_mirror_compress_packages: false
+
+# Client Discovery and Management
+apt_mirror_client_discovery_enabled: false
+apt_mirror_discovery_method: "dns"  # dns, consul, etcd
+apt_mirror_discovery_domain: "mirror.local"
+apt_mirror_client_registration_enabled: false
+apt_mirror_client_config_template: "sources.list.j2"
+
+# Client Metrics and Analytics
+apt_mirror_client_metrics_enabled: false
+apt_mirror_analytics_enabled: false
+apt_mirror_analytics_retention_days: 30
+apt_mirror_log_client_access: true
+apt_mirror_log_package_requests: true
+apt_mirror_generate_usage_reports: false
+apt_mirror_usage_report_schedule: "0 6 * * 1"  # Weekly on Monday at 6 AM

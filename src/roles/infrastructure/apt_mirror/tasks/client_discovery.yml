@@ -1,0 +1,101 @@
+---
+# Client Discovery Tasks
+- name: Install client discovery dependencies
+  ansible.builtin.package:
+    name:
+      - python3-consul
+      - python3-etcd3
+      - bind9-dnsutils
+      - python3-dnspython
+    state: present
+
+- name: Create client discovery directory
+  ansible.builtin.file:
+    path: /opt/apt-mirror-discovery
+    state: directory
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0755'
+
+- name: Create client discovery service
+  ansible.builtin.template:
+    src: client_discovery_service.py.j2
+    dest: /opt/apt-mirror-discovery/discovery_service.py
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0755'
+  notify: restart apt-mirror-discovery
+
+- name: Create DNS-based discovery configuration
+  ansible.builtin.template:
+    src: dns_discovery_config.yml.j2
+    dest: /opt/apt-mirror-discovery/dns_config.yml
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0644'
+  when: apt_mirror_discovery_method == "dns"
+
+- name: Create Consul discovery configuration
+  ansible.builtin.template:
+    src: consul_discovery_config.yml.j2
+    dest: /opt/apt-mirror-discovery/consul_config.yml
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0644'
+  when: apt_mirror_discovery_method == "consul"
+
+- name: Create etcd discovery configuration
+  ansible.builtin.template:
+    src: etcd_discovery_config.yml.j2
+    dest: /opt/apt-mirror-discovery/etcd_config.yml
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0644'
+  when: apt_mirror_discovery_method == "etcd"
+
+- name: Create client registration handler
+  ansible.builtin.template:
+    src: client_registration.py.j2
+    dest: /opt/apt-mirror-discovery/client_registration.py
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0755'
+
+- name: Create client configuration template generator
+  ansible.builtin.template:
+    src: generate_client_config.sh.j2
+    dest: /opt/apt-mirror-discovery/generate_client_config.sh
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0755'
+
+- name: Create systemd service for client discovery
+  ansible.builtin.template:
+    src: apt-mirror-discovery.service.j2
+    dest: /etc/systemd/system/apt-mirror-discovery.service
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart apt-mirror-discovery
+
+- name: Enable and start client discovery service
+  ansible.builtin.systemd:
+    name: apt-mirror-discovery
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: Create client registration endpoint in Apache
+  ansible.builtin.template:
+    src: apache-client-registration.conf.j2
+    dest: /etc/apache2/sites-available/apt-mirror-registration.conf
+    mode: '0644'
+  notify: restart apache2
+
+- name: Enable client registration site
+  ansible.builtin.command:
+    cmd: a2ensite apt-mirror-registration
+  notify: restart apache2
+  register: enable_registration_site
+  changed_when: "'already enabled' not in enable_registration_site.stdout"
+  when: apt_mirror_client_registration_enabled

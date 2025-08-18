@@ -1,0 +1,117 @@
+---
+# Client Metrics and Analytics Tasks
+- name: Install client metrics dependencies
+  ansible.builtin.package:
+    name:
+      - python3-geoip2
+      - python3-maxminddb
+      - python3-pandas
+      - python3-matplotlib
+      - geoip-database
+    state: present
+
+- name: Create client metrics directory
+  ansible.builtin.file:
+    path: /opt/apt-mirror-analytics
+    state: directory
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0755'
+
+- name: Create analytics database directory
+  ansible.builtin.file:
+    path: /var/lib/apt-mirror-analytics
+    state: directory
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0755'
+
+- name: Create client metrics collector
+  ansible.builtin.template:
+    src: client_metrics_collector.py.j2
+    dest: /opt/apt-mirror-analytics/metrics_collector.py
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0755'
+  notify: restart apt-mirror-analytics
+
+- name: Create package usage analytics script
+  ansible.builtin.template:
+    src: package_usage_analytics.py.j2
+    dest: /opt/apt-mirror-analytics/package_analytics.py
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0755'
+
+- name: Create client tracking script
+  ansible.builtin.template:
+    src: client_tracker.py.j2
+    dest: /opt/apt-mirror-analytics/client_tracker.py
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0755'
+
+- name: Create usage report generator
+  ansible.builtin.template:
+    src: usage_report_generator.py.j2
+    dest: /opt/apt-mirror-analytics/report_generator.py
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0755'
+
+- name: Configure Apache access log format for analytics
+  ansible.builtin.lineinfile:
+    path: /etc/apache2/sites-available/apt-mirror.conf
+    regexp: '^(\s*)CustomLog.*'
+    line: '    CustomLog ${APACHE_LOG_DIR}/apt-mirror-access.log combined'
+    insertafter: 'DocumentRoot'
+  notify: restart apache2
+
+- name: Create log parser for client analytics
+  ansible.builtin.template:
+    src: log_parser.py.j2
+    dest: /opt/apt-mirror-analytics/log_parser.py
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0755'
+
+- name: Create systemd service for client analytics
+  ansible.builtin.template:
+    src: apt-mirror-analytics.service.j2
+    dest: /etc/systemd/system/apt-mirror-analytics.service
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart apt-mirror-analytics
+
+- name: Enable and start client analytics service
+  ansible.builtin.systemd:
+    name: apt-mirror-analytics
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: Add log processing cron job
+  ansible.builtin.cron:
+    name: "Process client access logs"
+    cron_file: apt-mirror-analytics
+    user: apt-mirror
+    minute: "*/30"
+    job: "/opt/apt-mirror-analytics/log_parser.py"
+
+- name: Add usage report generation cron job
+  ansible.builtin.cron:
+    name: "Generate usage reports"
+    cron_file: apt-mirror-analytics
+    user: apt-mirror
+    minute: "{{ apt_mirror_usage_report_schedule.split()[0] }}"
+    hour: "{{ apt_mirror_usage_report_schedule.split()[1] }}"
+    weekday: "{{ apt_mirror_usage_report_schedule.split()[4] }}"
+    job: "/opt/apt-mirror-analytics/report_generator.py"
+  when: apt_mirror_generate_usage_reports
+
+- name: Configure log rotation for analytics
+  ansible.builtin.template:
+    src: apt-mirror-analytics.logrotate.j2
+    dest: /etc/logrotate.d/apt-mirror-analytics
+    mode: '0644'

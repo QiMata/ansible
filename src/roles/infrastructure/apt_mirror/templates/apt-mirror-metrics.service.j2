@@ -1,0 +1,35 @@
+[Unit]
+Description=APT Mirror Metrics Collection Service
+After=network.target apache2.service
+Wants=apache2.service
+
+[Service]
+Type=simple
+User=apt-mirror
+Group=apt-mirror
+WorkingDirectory=/opt/apt-mirror-metrics
+ExecStart=/usr/bin/python3 /opt/apt-mirror-metrics/metrics_collector.py
+Restart=always
+RestartSec=10
+Environment=PYTHONPATH=/opt/apt-mirror-metrics
+
+# Security settings
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ apt_mirror_base_path }} /opt/apt-mirror-metrics /var/log /var/lib/apt-mirror-metrics
+PrivateTmp=true
+PrivateDevices=true
+ProtectHostname=true
+ProtectClock=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RemoveIPC=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

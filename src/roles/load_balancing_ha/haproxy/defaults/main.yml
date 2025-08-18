@@ -2,18 +2,45 @@
 haproxy_package_name: haproxy
 haproxy_service_name: haproxy
 
+# Multiple frontends/backends support
+haproxy_frontends:
+  - name: hafrontend
+    bind_address: "*"
+    port: 80
+    mode: "http"
+    default_backend: habackend
+    ssl_certificate: ""
+    ssl_redirect: false
+    acls: []
+    use_backends: []
+    maxconn: 2000
+    rate_limit: ""
+    compression: false
+    hsts_enable: false
+    hsts_max_age: 31536000
+
+haproxy_backends:
+  - name: habackend
+    mode: "http"
+    balance_method: "roundrobin"
+    httpchk: ""
+    servers: []
+    compression: false
+    cache_enable: false
+    cache_name: ""
+
+# Legacy variables for backward compatibility
 haproxy_frontend_name: hafrontend
 haproxy_frontend_bind_address: "*"
 haproxy_frontend_port: 80
 haproxy_frontend_mode: "http"
-
 haproxy_backend_name: habackend
 haproxy_backend_mode: "{{ haproxy_frontend_mode }}"
 haproxy_backend_balance_method: "roundrobin"
 haproxy_backend_httpchk: ""
-
 haproxy_backend_servers: []
 
+# Global configuration enhancements
 haproxy_global_vars:
   - "log 127.0.0.1 local0"
   - "log 127.0.0.1 local1 notice"
@@ -22,6 +49,11 @@ haproxy_global_vars:
   - "group haproxy"
   - "daemon"
 
+haproxy_global_maxconn: 4096
+haproxy_global_ssl_default_bind_ciphers: "ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM:DHE+CHACHA20:!aNULL:!SHA1:!AESCCM"
+haproxy_global_ssl_default_bind_options: "ssl-min-ver TLSv1.2 no-tls-tickets"
+
+# Defaults configuration enhancements
 haproxy_defaults_vars:
   - "option  httplog"
   - "option  dontlognull"
@@ -29,11 +61,190 @@ haproxy_defaults_vars:
   - "timeout client  50s"
   - "timeout server  50s"
 
+haproxy_defaults_retries: 3
+haproxy_defaults_option_redispatch: true
+haproxy_defaults_compression: false
+
+# SSL/TLS Configuration
 haproxy_ssl_certificate: ""
 haproxy_ssl_certificate_content: ""
+haproxy_ssl_certificates: []
+# Example:
+# haproxy_ssl_certificates:
+#   - path: "/etc/haproxy/certs/example.com.pem"
+#     content: "{{ vault_example_com_cert }}"
+#   - path: "/etc/haproxy/certs/api.example.com.pem"
+#     content: "{{ vault_api_example_com_cert }}"
 
+# ACL Configuration
+haproxy_acls: []
+# Example:
+# haproxy_acls:
+#   - name: "is_api"
+#     condition: "path_beg /api/"
+#   - name: "is_admin"
+#     condition: "path_beg /admin/"
+#   - name: "whitelist_ips"
+#     condition: "src 192.168.1.0/24 10.0.0.0/8"
+
+# Content Switching
+haproxy_use_backends: []
+# Example:
+# haproxy_use_backends:
+#   - condition: "is_api"
+#     backend: "api_backend"
+#   - condition: "is_admin"
+#     backend: "admin_backend"
+
+# Health Check Configuration
+haproxy_health_checks: []
+# Example:
+# haproxy_health_checks:
+#   - name: "tcp_check"
+#     type: "tcp"
+#   - name: "http_check"
+#     type: "http"
+#     uri: "/health"
+#     expect: "string ok"
+
+# Rate Limiting and DDoS Protection
+haproxy_rate_limiting:
+  enable: false
+  stick_table_type: "ip"
+  stick_table_size: "100k"
+  stick_table_expire: "30s"
+  http_req_rate: 20
+  http_req_burst: 50
+  tarpit_timeout: "10s"
+
+# Connection Limits
+haproxy_connection_limits:
+  global_maxconn: 4096
+  frontend_maxconn: 2000
+  server_maxconn: 100
+
+# Compression Configuration
+haproxy_compression:
+  enable: false
+  algorithms: ["gzip", "deflate"]
+  types: ["text/html", "text/plain", "text/css", "application/javascript", "application/json"]
+
+# Caching Configuration
+haproxy_caching:
+  enable: false
+  caches: []
+  # Example:
+  # caches:
+  #   - name: "web_cache"
+  #     total_max_size: "256m"
+  #     max_object_size: "10m"
+  #     max_age: "3600s"
+
+# Statistics Configuration
 haproxy_stats_enable: false
 haproxy_stats_user: admin
 haproxy_stats_password: admin
 haproxy_stats_port: 9000
 haproxy_stats_bind_address: "127.0.0.1"
+haproxy_stats_uri: "/haproxy?stats"
+haproxy_stats_refresh: "10s"
+haproxy_stats_hide_version: true
+
+# Prometheus Metrics
+haproxy_prometheus:
+  enable: false
+  bind_address: "127.0.0.1"
+  port: 9101
+  uri: "/metrics"
+
+# Custom Logging
+haproxy_custom_logging:
+  enable: false
+  log_format: ""
+  capture_headers: []
+  # Example:
+  # capture_headers:
+  #   - "Host"
+  #   - "User-Agent"
+  #   - "X-Forwarded-For"
+
+# External Monitoring
+haproxy_external_monitoring:
+  enable: false
+  agent_check: false
+  agent_port: 9999
+  
+# Peer Synchronization
+haproxy_peers:
+  enable: false
+  peers: []
+  # Example:
+  # peers:
+  #   - name: "haproxy1"
+  #     address: "192.168.1.10:1024"
+  #   - name: "haproxy2" 
+  #     address: "192.168.1.11:1024"
+
+# Server Configuration Enhancements
+haproxy_server_defaults:
+  check: true
+  weight: 100
+  maxconn: 100
+  backup: false
+  inter: "2s"
+  downinter: "5s"
+  rise: 2
+  fall: 3
+
+# Runtime API Configuration
+haproxy_runtime_api:
+  enable: true
+  socket_path: "/run/haproxy/admin.sock"
+  socket_mode: "660"
+  socket_level: "admin"
+
+# Configuration Validation
+haproxy_config_validation:
+  enable: true
+  backup_config: true
+  backup_path: "/etc/haproxy/haproxy.cfg.backup"
+
+# Zero-downtime Deployment
+haproxy_zero_downtime:
+  enable: false
+  graceful_reload: true
+  reload_timeout: "30s"
+
+# Security Enhancements
+haproxy_security:
+  hide_version: true
+  server_tokens: false
+  request_filtering:
+    enable: false
+    block_methods: ["TRACE", "CONNECT"]
+    max_header_size: "8192"
+    max_request_size: "1048576"
+
+# IP Whitelisting/Blacklisting
+haproxy_ip_restrictions:
+  whitelist: []
+  blacklist: []
+  # Example:
+  # whitelist:
+  #   - "192.168.1.0/24"
+  #   - "10.0.0.0/8"
+  # blacklist:
+  #   - "1.2.3.4"
+  #   - "5.6.7.0/24"
+
+# HSTS Configuration
+haproxy_hsts:
+  enable: false
+  max_age: 31536000
+  include_subdomains: true
+  preload: false
+
+# SSL Redirect Configuration  
+haproxy_ssl_redirect:
+  enable: false
+  redirect_code: 301

@@ -1,5 +1,37 @@
 ---
-- name: Reload haproxy
+- name: reload haproxy
   ansible.builtin.service:
     name: "{{ haproxy_service_name }}"
     state: reloaded
+  when: haproxy_zero_downtime.graceful_reload | default(true)
+
+- name: restart haproxy
+  ansible.builtin.service:
+    name: "{{ haproxy_service_name }}"
+    state: restarted
+
+- name: restart rsyslog
+  ansible.builtin.service:
+    name: rsyslog
+    state: restarted
+
+- name: restart prometheus-haproxy-exporter
+  ansible.builtin.service:
+    name: prometheus-haproxy-exporter
+    state: restarted
+
+- name: validate haproxy config
+  ansible.builtin.command:
+    cmd: haproxy -c -f /etc/haproxy/haproxy.cfg
+  register: haproxy_validation_result
+  failed_when: haproxy_validation_result.rc != 0
+  changed_when: false
+
+- name: graceful reload haproxy
+  ansible.builtin.shell: |
+    if [ -f /run/haproxy.pid ]; then
+      kill -USR2 $(cat /run/haproxy.pid)
+    else
+      systemctl reload {{ haproxy_service_name }}
+    fi
+  when: haproxy_zero_downtime.enable | default(false)
