@@ -1,0 +1,214 @@
+---
+# Integration test playbook for enhanced Neo4j role
+# This playbook tests all the new functionality
+
+- name: Test Enhanced Neo4j Role - Single Node
+  hosts: localhost
+  gather_facts: true
+  become: true
+  vars:
+    neo4j_edition: community
+    neo4j_initial_password: "test-password-123"
+    neo4j_plugins:
+      - name: apoc
+        enabled: true
+    neo4j_databases:
+      - name: testdb
+        default: false
+    neo4j_query_monitoring: true
+    neo4j_slow_query_threshold: "500ms"
+    neo4j_health_checks:
+      - name: database_available
+        enabled: true
+    neo4j_backup_enabled: false  # Community edition
+    neo4j_jmx_enabled: true
+    neo4j_import_enabled: true
+    neo4j_csv_import_enabled: true
+    neo4j_data_seeding:
+      - name: test_data
+        statements:
+          - "CREATE (n:TestNode {name: 'Test'})"
+          - "CREATE (m:TestNode {name: 'Test2'})"
+          - "CREATE (n)-[:CONNECTS_TO]->(m)"
+        execute: true
+    neo4j_depends_on_services: []
+    neo4j_hardware_optimized_config: true
+  tasks:
+    - name: Test single node deployment
+      ansible.builtin.include_role:
+        name: data_systems.neo4j
+      tags: [single_node]
+
+- name: Test Enhanced Neo4j Role - Cluster
+  hosts: localhost
+  gather_facts: true
+  become: true
+  vars:
+    neo4j_edition: enterprise
+    neo4j_accept_license: true
+    neo4j_cluster_enabled: true
+    neo4j_initial_password: "test-cluster-password-123"
+    neo4j_plugins:
+      - name: apoc
+        enabled: true
+      - name: graph-data-science
+        enabled: true
+    neo4j_ldap_enabled: false
+    neo4j_oauth_enabled: false
+    neo4j_password_policy_enabled: true
+    neo4j_audit_enabled: true
+    neo4j_procedures_whitelist:
+      - "apoc.export.*"
+      - "gds.*"
+    neo4j_security_procedures_unrestricted:
+      - "apoc.*"
+      - "gds.*"
+    neo4j_databases:
+      - name: production
+        default: true
+      - name: testing
+        default: false
+    neo4j_database_backup_individual: true
+    neo4j_backup_enabled: true
+    neo4j_backup_cron_enabled: false  # Disable for testing
+    neo4j_metrics_enabled: true
+    neo4j_query_monitoring: true
+    neo4j_connection_monitoring: true
+    neo4j_health_checks:
+      - name: database_available
+        enabled: true
+      - name: cluster_healthy
+        enabled: true
+    neo4j_alerting_enabled: false
+    neo4j_jmx_enabled: true
+    neo4j_ha_proxy_enabled: false  # Would need HAProxy installed
+    neo4j_disaster_recovery_plan: true
+    neo4j_cross_region_backup: false
+    neo4j_depends_on_services: []
+    neo4j_wait_for_services: true
+    neo4j_health_check_retries: 5
+    neo4j_service_start_timeout: 300
+    neo4j_import_enabled: true
+    neo4j_export_scheduled: false  # Disable cron for testing
+    neo4j_upgrade_enabled: false  # Disable for initial deployment
+  tasks:
+    - name: Test cluster deployment
+      ansible.builtin.include_role:
+        name: data_systems.neo4j
+      tags: [cluster]
+
+- name: Validate Neo4j Installation
+  hosts: localhost
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Check Neo4j service status
+      ansible.builtin.service_facts:
+
+    - name: Verify Neo4j is running
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.services['neo4j.service'].state == 'running'
+          - ansible_facts.services['neo4j.service'].status == 'enabled'
+        fail_msg: "Neo4j service is not running or enabled"
+
+    - name: Test Neo4j connectivity
+      ansible.builtin.uri:
+        url: "http://localhost:7474/db/neo4j/tx/commit"
+        method: POST
+        user: neo4j
+        password: "{{ neo4j_initial_password | default('test-password-123') }}"
+        force_basic_auth: true
+        body_format: json
+        body:
+          statements:
+            - statement: "RETURN 1 as test"
+        status_code: 200
+      register: connectivity_test
+
+    - name: Verify connectivity test response
+      ansible.builtin.assert:
+        that:
+          - connectivity_test.status == 200
+          - connectivity_test.json.results[0].data[0].row[0] == 1
+        fail_msg: "Neo4j connectivity test failed"
+
+    - name: Check if APOC plugin is available
+      ansible.builtin.uri:
+        url: "http://localhost:7474/db/neo4j/tx/commit"
+        method: POST
+        user: neo4j
+        password: "{{ neo4j_initial_password | default('test-password-123') }}"
+        force_basic_auth: true
+        body_format: json
+        body:
+          statements:
+            - statement: "CALL dbms.procedures() YIELD name WHERE name STARTS WITH 'apoc' RETURN count(name) as apoc_count"
+        status_code: 200
+      register: apoc_test
+
+    - name: Verify APOC plugin is loaded
+      ansible.builtin.assert:
+        that:
+          - apoc_test.json.results[0].data[0].row[0] > 0
+        fail_msg: "APOC plugin is not loaded"
+      when: neo4j_plugins | selectattr('name', 'equalto', 'apoc') | selectattr('enabled', 'equalto', true) | list | length > 0
+
+    - name: Check important directories exist
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      register: directory_check
+      failed_when: not directory_check.stat.exists or not directory_check.stat.isdir
+      loop:
+        - /var/lib/neo4j
+        - /var/log/neo4j
+        - /var/lib/neo4j/plugins
+        - /var/lib/neo4j/import
+        - /var/lib/neo4j/export
+
+    - name: Check health check script exists and is executable
+      ansible.builtin.stat:
+        path: /usr/local/bin/neo4j-health-check.sh
+      register: health_script_check
+      failed_when: not health_script_check.stat.exists or not health_script_check.stat.executable
+
+    - name: Run health check script
+      ansible.builtin.command: /usr/local/bin/neo4j-health-check.sh database_available
+      register: health_check_result
+      changed_when: false
+
+    - name: Verify health check passed
+      ansible.builtin.assert:
+        that:
+          - health_check_result.rc == 0
+        fail_msg: "Health check failed: {{ health_check_result.stderr }}"
+
+    - name: Test backup script exists (if backup enabled)
+      ansible.builtin.stat:
+        path: /usr/local/bin/neo4j-database-backup.sh
+      register: backup_script_check
+      when: neo4j_backup_enabled | default(false)
+
+    - name: Verify backup script is executable
+      ansible.builtin.assert:
+        that:
+          - backup_script_check.stat.exists
+          - backup_script_check.stat.executable
+        fail_msg: "Backup script does not exist or is not executable"
+      when: neo4j_backup_enabled | default(false)
+
+    - name: Check systemd override directory exists
+      ansible.builtin.stat:
+        path: /etc/systemd/system/neo4j.service.d
+      register: systemd_override_check
+
+    - name: Verify systemd override directory
+      ansible.builtin.assert:
+        that:
+          - systemd_override_check.stat.exists
+          - systemd_override_check.stat.isdir
+        fail_msg: "Systemd override directory does not exist"
+
+    - name: Display test completion message
+      ansible.builtin.debug:
+        msg: "All Neo4j enhanced features validation tests passed successfully!"
