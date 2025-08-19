@@ -1,0 +1,38 @@
+---
+# Module management tasks
+- name: Enable Filebeat modules
+  ansible.builtin.command:
+    cmd: filebeat modules enable {{ item.name }}
+  loop: "{{ filebeat_modules_enabled }}"
+  register: module_enable_result
+  changed_when: "'already enabled' not in module_enable_result.stderr"
+  failed_when: module_enable_result.rc != 0 and 'already enabled' not in module_enable_result.stderr
+
+- name: Disable Filebeat modules
+  ansible.builtin.command:
+    cmd: filebeat modules disable {{ item }}
+  loop: "{{ filebeat_modules_disabled }}"
+  register: module_disable_result
+  changed_when: "'already disabled' not in module_disable_result.stderr"
+  failed_when: module_disable_result.rc != 0 and 'already disabled' not in module_disable_result.stderr
+
+- name: Configure enabled modules
+  ansible.builtin.template:
+    src: "module_{{ item.name }}.yml.j2"
+    dest: "{{ filebeat_modules_dir }}/{{ item.name }}.yml"
+    owner: "{{ filebeat_user }}"
+    group: "{{ filebeat_group }}"
+    mode: '0644'
+  loop: "{{ filebeat_modules_enabled }}"
+  when: item.config is defined
+  notify: restart filebeat
+
+- name: List enabled modules
+  ansible.builtin.command:
+    cmd: filebeat modules list
+  register: enabled_modules
+  changed_when: false
+
+- name: Display enabled modules
+  ansible.builtin.debug:
+    msg: "Enabled modules: {{ enabled_modules.stdout_lines }}"

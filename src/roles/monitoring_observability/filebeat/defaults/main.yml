@@ -1,0 +1,199 @@
+---
+# ============================================================================
+# Filebeat Role Default Variables
+# ============================================================================
+
+# General Configuration
+# ----------------------------------------------------------------------------
+filebeat_version: "8.x"
+filebeat_package_state: present
+filebeat_service_enabled: true
+filebeat_service_state: started
+
+# Environment and Tagging
+# ----------------------------------------------------------------------------
+filebeat_environment: "{{ ansible_facts.env | default('production') }}"
+filebeat_global_tags:
+  environment: "{{ filebeat_environment }}"
+  ansible_managed: true
+
+filebeat_global_fields:
+  datacenter: "{{ ansible_facts.datacenter | default('unknown') }}"
+  region: "{{ ansible_facts.region | default('unknown') }}"
+
+filebeat_global_fields_under_root: false
+
+# Input Configuration
+# ----------------------------------------------------------------------------
+filebeat_inputs:
+  - type: log
+    id: default-log-input
+    enabled: true
+    paths:
+      - /var/log/netbox/netbox.log
+    fields:
+      service: netbox
+      log_type: application
+    fields_under_root: false
+    multiline:
+      pattern: '^\d{4}-\d{2}-\d{2}'
+      negate: true
+      match: after
+    processors:
+      - add_host_metadata:
+          when.not.contains.tags: forwarded
+
+# Additional input types examples (disabled by default)
+filebeat_additional_inputs: []
+  # - type: journald
+  #   id: systemd-journal
+  #   enabled: false
+  # - type: docker
+  #   id: docker-logs
+  #   enabled: false
+  #   containers.ids: ["*"]
+
+# Module Configuration
+# ----------------------------------------------------------------------------
+filebeat_modules_enabled: []
+  # - name: nginx
+  #   config:
+  #     access:
+  #       enabled: true
+  #       var.paths: ["/var/log/nginx/access.log*"]
+  #     error:
+  #       enabled: true
+  #       var.paths: ["/var/log/nginx/error.log*"]
+
+filebeat_modules_disabled: []
+
+# Output Configuration
+# ----------------------------------------------------------------------------
+filebeat_output_type: logstash  # Options: logstash, elasticsearch, kafka, file, console
+
+# Logstash Output
+filebeat_logstash_hosts:
+  - "logstash.example.com:5044"
+filebeat_logstash_worker: 1
+filebeat_logstash_compression_level: 3
+filebeat_logstash_bulk_max_size: 2048
+filebeat_logstash_timeout: 30s
+filebeat_logstash_pipelining: 2
+
+# Elasticsearch Output
+filebeat_elasticsearch_hosts:
+  - "elasticsearch.example.com:9200"
+filebeat_elasticsearch_username: ""
+filebeat_elasticsearch_password: ""
+filebeat_elasticsearch_index: "filebeat-%{+yyyy.MM.dd}"
+filebeat_elasticsearch_template_enabled: true
+
+# Kafka Output
+filebeat_kafka_hosts:
+  - "kafka.example.com:9092"
+filebeat_kafka_topic: "filebeat"
+filebeat_kafka_partition_round_robin:
+  reachable_only: false
+
+# File Output (for testing/debugging)
+filebeat_file_path: "/tmp/filebeat"
+filebeat_file_filename: "filebeat.json"
+filebeat_file_rotate_every_kb: 10000
+filebeat_file_number_of_files: 7
+
+# Security Configuration
+# ----------------------------------------------------------------------------
+filebeat_ssl_enabled: false
+filebeat_ssl_certificate_authorities: []
+filebeat_ssl_certificate: ""
+filebeat_ssl_key: ""
+filebeat_ssl_verification_mode: "full"  # Options: full, strict, certificate, none
+filebeat_ssl_cipher_suites: []
+filebeat_ssl_curve_types: []
+
+# Authentication
+filebeat_api_key_enabled: false
+filebeat_api_key_id: ""
+filebeat_api_key_value: ""
+
+# Processing Configuration
+# ----------------------------------------------------------------------------
+filebeat_processors: []
+  # - add_host_metadata:
+  #     when.not.contains.tags: forwarded
+  # - add_cloud_metadata: ~
+  # - add_docker_metadata: ~
+  # - add_kubernetes_metadata: ~
+
+# Global processors applied to all inputs
+filebeat_global_processors:
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+
+# Performance and Resource Configuration
+# ----------------------------------------------------------------------------
+filebeat_queue_mem_events: 4096
+filebeat_queue_mem_flush_min_events: 512
+filebeat_queue_mem_flush_timeout: 1s
+
+filebeat_max_procs: 0  # 0 = use all available cores
+
+# Harvester limits
+filebeat_harvester_buffer_size: 16384
+filebeat_harvester_max_bytes: 10485760  # 10MB
+
+# Publisher settings
+filebeat_publisher_pipeline_disable_host: false
+
+# Monitoring Configuration
+# ----------------------------------------------------------------------------
+filebeat_monitoring_enabled: false
+filebeat_monitoring_elasticsearch_hosts: "{{ filebeat_elasticsearch_hosts }}"
+filebeat_monitoring_elasticsearch_username: "{{ filebeat_elasticsearch_username }}"
+filebeat_monitoring_elasticsearch_password: "{{ filebeat_elasticsearch_password }}"
+
+# HTTP monitoring endpoint
+filebeat_http_enabled: false
+filebeat_http_host: "localhost"
+filebeat_http_port: 5066
+
+# Logging Configuration
+# ----------------------------------------------------------------------------
+filebeat_logging_level: info  # Options: critical, error, warning, info, debug
+filebeat_logging_to_files: true
+filebeat_logging_files_path: /var/log/filebeat
+filebeat_logging_files_name: filebeat
+filebeat_logging_files_keepfiles: 7
+filebeat_logging_files_rotateeverybytes: 10485760  # 10MB
+
+# Configuration Management
+# ----------------------------------------------------------------------------
+filebeat_config_backup_enabled: true
+filebeat_config_backup_dir: "/etc/filebeat/backups"
+filebeat_config_validate_before_restart: true
+
+# Health Check Configuration
+# ----------------------------------------------------------------------------
+filebeat_health_check_enabled: true
+filebeat_health_check_interval: 30s
+filebeat_health_check_timeout: 10s
+
+# Installation Configuration
+# ----------------------------------------------------------------------------
+filebeat_repo_key_url: "https://artifacts.elastic.co/GPG-KEY-elasticsearch"
+filebeat_repo_url: "deb https://artifacts.elastic.co/packages/{{ filebeat_version }}/apt stable main"
+
+# Platform-specific configurations
+filebeat_package_name: filebeat
+filebeat_service_name: filebeat
+filebeat_config_dir: /etc/filebeat
+filebeat_config_file: "{{ filebeat_config_dir }}/filebeat.yml"
+filebeat_data_dir: /var/lib/filebeat
+filebeat_log_dir: /var/log/filebeat
+
+# Custom configuration snippets
+filebeat_custom_config: {}
+
+# Template rendering options
+filebeat_template_backup: true
+filebeat_template_validate: true

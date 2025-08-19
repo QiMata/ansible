@@ -1,0 +1,38 @@
+---
+# Monitoring setup tasks
+- name: Setup Filebeat monitoring
+  ansible.builtin.template:
+    src: monitoring.yml.j2
+    dest: "{{ filebeat_config_dir }}/monitoring.yml"
+    owner: "{{ filebeat_user }}"
+    group: "{{ filebeat_group }}"
+    mode: '0644'
+  notify: restart filebeat
+
+- name: Enable HTTP endpoint for monitoring
+  ansible.builtin.lineinfile:
+    path: "{{ filebeat_config_file }}"
+    line: |
+      http.enabled: {{ filebeat_http_enabled | lower }}
+      http.host: "{{ filebeat_http_host }}"
+      http.port: {{ filebeat_http_port }}
+    insertafter: EOF
+    create: yes
+  when: filebeat_http_enabled
+  notify: restart filebeat
+
+- name: Create monitoring script
+  ansible.builtin.template:
+    src: filebeat_monitor.sh.j2
+    dest: /usr/local/bin/filebeat_monitor.sh
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Setup monitoring cron job
+  ansible.builtin.cron:
+    name: "Filebeat monitoring"
+    minute: "*/5"
+    job: "/usr/local/bin/filebeat_monitor.sh"
+    user: root
+  when: filebeat_monitoring_enabled

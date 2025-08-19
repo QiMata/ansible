@@ -1,0 +1,37 @@
+---
+# Basic Filebeat deployment example
+- name: Deploy Filebeat with basic configuration
+  hosts: web_servers
+  become: yes
+  vars:
+    filebeat_inputs:
+      - type: log
+        id: application-logs
+        enabled: true
+        paths:
+          - /var/log/app/*.log
+        fields:
+          service: webapp
+          environment: production
+          log_type: application
+        multiline:
+          pattern: '^\d{4}-\d{2}-\d{2}'
+          negate: true
+          match: after
+    
+    filebeat_output_type: logstash
+    filebeat_logstash_hosts:
+      - "logstash1.example.com:5044"
+      - "logstash2.example.com:5044"
+    
+    filebeat_global_tags:
+      datacenter: "{{ datacenter_name | default('dc1') }}"
+      environment: production
+      team: infrastructure
+    
+  roles:
+    - monitoring_observability.filebeat
+  
+  tags:
+    - monitoring
+    - logging

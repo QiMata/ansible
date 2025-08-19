@@ -1,0 +1,23 @@
+---
+# Configuration backup tasks
+- name: Check if existing configuration exists
+  ansible.builtin.stat:
+    path: "{{ filebeat_config_file }}"
+  register: existing_config
+
+- name: Create timestamped backup of existing configuration
+  ansible.builtin.copy:
+    src: "{{ filebeat_config_file }}"
+    dest: "{{ filebeat_config_backup_dir }}/filebeat.yml.{{ ansible_date_time.epoch }}"
+    remote_src: true
+    owner: "{{ filebeat_user }}"
+    group: "{{ filebeat_group }}"
+    mode: '0644'
+  when: existing_config.stat.exists
+
+- name: Keep only last 5 backups
+  ansible.builtin.shell: |
+    cd {{ filebeat_config_backup_dir }}
+    ls -t filebeat.yml.* | tail -n +6 | xargs -r rm
+  changed_when: false
+  failed_when: false

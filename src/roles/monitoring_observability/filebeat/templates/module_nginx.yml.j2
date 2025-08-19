@@ -1,0 +1,18 @@
+# Nginx module configuration
+{% for config_key, config_value in item.config.items() %}
+- module: nginx
+  {{ config_key }}:
+    enabled: {{ config_value.enabled | default(true) | lower }}
+{% if config_value.var is defined %}
+{% for var_key, var_value in config_value.var.items() %}
+    var.{{ var_key }}:
+{% if var_value is list %}
+{% for path in var_value %}
+      - "{{ path }}"
+{% endfor %}
+{% else %}
+      "{{ var_value }}"
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endfor %}

@@ -1,0 +1,16 @@
+# Monitoring configuration for Filebeat
+monitoring:
+  enabled: {{ filebeat_monitoring_enabled | lower }}
+{% if filebeat_monitoring_elasticsearch_hosts %}
+  elasticsearch:
+    hosts:
+{% for host in filebeat_monitoring_elasticsearch_hosts %}
+      - "{{ host }}"
+{% endfor %}
+{% if filebeat_monitoring_elasticsearch_username %}
+    username: "{{ filebeat_monitoring_elasticsearch_username }}"
+{% endif %}
+{% if filebeat_monitoring_elasticsearch_password %}
+    password: "{{ filebeat_monitoring_elasticsearch_password }}"
+{% endif %}
+{% endif %}

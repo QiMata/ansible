@@ -1,0 +1,23 @@
+---
+# Service management tasks
+- name: Start and enable Filebeat service
+  ansible.builtin.service:
+    name: "{{ filebeat_service_name }}"
+    state: "{{ filebeat_service_state }}"
+    enabled: "{{ filebeat_service_enabled }}"
+
+- name: Wait for Filebeat to start
+  ansible.builtin.wait_for:
+    timeout: 30
+  when: filebeat_service_state == "started"
+
+- name: Check Filebeat service status
+  ansible.builtin.service_facts:
+
+- name: Verify Filebeat is running
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.services[filebeat_service_name + '.service'].state == 'running'
+    fail_msg: "Filebeat service is not running"
+    success_msg: "Filebeat service is running successfully"
+  when: filebeat_service_state == "started"

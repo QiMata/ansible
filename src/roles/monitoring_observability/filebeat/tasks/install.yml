@@ -1,0 +1,37 @@
+---
+# Package installation tasks
+- name: Install Filebeat (Debian/Ubuntu)
+  ansible.builtin.apt:
+    name: "{{ filebeat_package_name }}"
+    state: "{{ filebeat_package_state }}"
+    update_cache: "{{ filebeat_apt_update_cache }}"
+    cache_valid_time: "{{ filebeat_apt_cache_valid_time }}"
+  when: ansible_os_family == "Debian"
+
+- name: Install Filebeat (RedHat/CentOS)
+  ansible.builtin.yum:
+    name: "{{ filebeat_package_name }}"
+    state: "{{ filebeat_package_state }}"
+  when: ansible_os_family == "RedHat"
+
+- name: Ensure Filebeat directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ filebeat_user }}"
+    group: "{{ filebeat_group }}"
+    mode: '0755'
+  loop:
+    - "{{ filebeat_config_dir }}"
+    - "{{ filebeat_data_dir }}"
+    - "{{ filebeat_log_dir }}"
+    - "{{ filebeat_modules_dir }}"
+
+- name: Create backup directory
+  ansible.builtin.file:
+    path: "{{ filebeat_config_backup_dir }}"
+    state: directory
+    owner: "{{ filebeat_user }}"
+    group: "{{ filebeat_group }}"
+    mode: '0755'
+  when: filebeat_config_backup_enabled

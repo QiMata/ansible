@@ -1,0 +1,32 @@
+---
+# Repository setup for different platforms
+- name: Setup Elastic repository (Debian/Ubuntu)
+  when: ansible_os_family == "Debian"
+  block:
+    - name: Add Elastic GPG key
+      ansible.builtin.apt_key:
+        url: "{{ filebeat_repo_key_url }}"
+        state: present
+
+    - name: Add Elastic repository
+      ansible.builtin.apt_repository:
+        repo: "{{ filebeat_repo_url }}"
+        state: present
+        update_cache: "{{ filebeat_apt_update_cache }}"
+
+- name: Setup Elastic repository (RedHat/CentOS)
+  when: ansible_os_family == "RedHat"
+  block:
+    - name: Import Elastic GPG key
+      ansible.builtin.rpm_key:
+        key: "{{ filebeat_repo_key_url }}"
+        state: present
+
+    - name: Add Elastic repository
+      ansible.builtin.yum_repository:
+        name: "{{ filebeat_repo_name }}"
+        description: "{{ filebeat_repo_description }}"
+        baseurl: "{{ filebeat_repo_baseurl }}"
+        gpgcheck: "{{ filebeat_repo_gpgcheck }}"
+        gpgkey: "{{ filebeat_repo_key_url }}"
+        enabled: true

@@ -1,19 +1,75 @@
 ---
-- name: Install Filebeat
-  ansible.builtin.apt:
-    pkg: filebeat
-    state: present
-    update_cache: true
+# Load platform-specific variables
+- name: Load platform-specific variables
+  ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
+  tags:
+    - filebeat
+    - config
 
-- name: Deploy Filebeat config
-  ansible.builtin.template:
-    src: filebeat.yml.j2
-    dest: /etc/filebeat/filebeat.yml
-    mode: "0644"
-  notify: restart filebeat
+# Validation tasks
+- name: Validate configuration
+  ansible.builtin.include_tasks: validate.yml
+  tags:
+    - filebeat
+    - validation
 
-- name: Enable and start Filebeat
-  ansible.builtin.service:
-    name: filebeat
-    enabled: true
-    state: started
+# Repository setup
+- name: Setup repository
+  ansible.builtin.include_tasks: repo.yml
+  tags:
+    - filebeat
+    - install
+
+# Package installation
+- name: Install Filebeat package
+  ansible.builtin.include_tasks: install.yml
+  tags:
+    - filebeat
+    - install
+
+# Configuration backup
+- name: Backup existing configuration
+  ansible.builtin.include_tasks: backup.yml
+  when: filebeat_config_backup_enabled
+  tags:
+    - filebeat
+    - config
+    - backup
+
+# Configuration deployment
+- name: Deploy Filebeat configuration
+  ansible.builtin.include_tasks: config.yml
+  tags:
+    - filebeat
+    - config
+
+# Module management
+- name: Manage Filebeat modules
+  ansible.builtin.include_tasks: modules.yml
+  when: filebeat_modules_enabled | length > 0 or filebeat_modules_disabled | length > 0
+  tags:
+    - filebeat
+    - modules
+
+# Service management
+- name: Manage Filebeat service
+  ansible.builtin.include_tasks: service.yml
+  tags:
+    - filebeat
+    - service
+
+# Health checks
+- name: Perform health checks
+  ansible.builtin.include_tasks: health.yml
+  when: filebeat_health_check_enabled
+  tags:
+    - filebeat
+    - health
+
+# Monitoring setup
+- name: Setup monitoring
+  ansible.builtin.include_tasks: monitoring.yml
+  when: filebeat_monitoring_enabled
+  tags:
+    - filebeat
+    - monitoring

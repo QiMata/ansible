@@ -7,56 +7,141 @@ An Ansible role that installs and configures [Filebeat](https://www.elastic.co/b
 
 ## Features
 
-- 📦 **Automated Installation**: Installs Filebeat from official repositories
-- ⚙️ **Flexible Configuration**: Template-based configuration management
-- 🔄 **Service Management**: Ensures Filebeat is enabled and running
-- 🧪 **Molecule Testing**: Comprehensive testing with Docker and Podman
-- 📊 **Log Shipping**: Pre-configured for Logstash output
-- 🏷️ **Field Enrichment**: Automatic service and environment tagging
+### Core Functionality
+- 📦 **Automated Installation**: Installs Filebeat from official repositories (Debian/Ubuntu, RHEL/CentOS)
+- ⚙️ **Flexible Configuration**: Comprehensive template-based configuration with 100+ variables
+- 🔄 **Service Management**: Advanced service lifecycle management with health checks
+- 🧪 **Extensive Testing**: Comprehensive Molecule testing with multiple scenarios
+
+### Input & Output Flexibility
+- 📊 **Multi-Input Support**: Log files, journald, Docker containers, and custom inputs
+- 🎯 **Multiple Output Types**: Logstash, Elasticsearch, Kafka, File, and Console outputs
+- 🔀 **Smart Processing**: Built-in processors for parsing, filtering, and enriching logs
+- 🏷️ **Advanced Field Enrichment**: Global and input-specific tagging and metadata
+
+### Security & Authentication
+- 🔒 **SSL/TLS Support**: Complete SSL configuration with certificate management
+- 🔑 **Multiple Authentication**: API keys, username/password, and certificate-based auth
+- �️ **Security Hardening**: Configurable verification modes and cipher suites
+- 📋 **Compliance Ready**: Security-focused configurations for audit requirements
+
+### Performance & Scalability
+- ⚡ **Performance Tuning**: Configurable buffers, queues, and resource limits
+- 📈 **High-Volume Support**: Optimized settings for enterprise-scale log processing
+- 🔄 **Load Balancing**: Multi-host output configuration with failover
+- 💾 **Memory Management**: Advanced queue and harvester buffer configuration
+
+### Operational Excellence
+- 🔍 **Health Monitoring**: Built-in health checks and connectivity testing
+- 📊 **Metrics Collection**: HTTP endpoint for monitoring and metrics collection
+- 💾 **Configuration Backup**: Automatic backup and rollback capabilities
+- 🔧 **Module Support**: Native Filebeat modules (Nginx, Apache, System, etc.)
+
+### Monitoring & Observability
+- 📈 **Self-Monitoring**: Integration with Elasticsearch monitoring cluster
+- 🚨 **Alerting Ready**: Monitoring scripts and cron job integration
+- 📋 **Operational Dashboards**: HTTP endpoints for status and metrics
+- 🔍 **Troubleshooting**: Comprehensive logging and diagnostic capabilities
 
 ## Requirements
 
-- **Operating System**: Debian/Ubuntu (APT-based systems)
+- **Operating System**: Debian/Ubuntu (APT-based) or RHEL/CentOS/Rocky/AlmaLinux (YUM-based)
 - **Ansible**: >= 2.9
 - **Python**: >= 3.6
 - **Privileges**: Root or sudo access for package installation and service management
+- **Collections**: `ansible.posix`, `community.general`
 
 ## Role Variables
 
-### Default Variables
-
-Currently, this role uses a minimal configuration approach with hardcoded values in the template. The following variables are implicitly used:
+### Essential Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ansible_facts.env` | `production` | Environment identifier for log field enrichment |
+| `filebeat_inputs` | See defaults | List of input configurations |
+| `filebeat_output_type` | `logstash` | Output type (logstash, elasticsearch, kafka, file, console) |
+| `filebeat_environment` | `production` | Environment identifier for log field enrichment |
 
-### Template Variables
-
-The Filebeat configuration template (`templates/filebeat.yml.j2`) includes:
-
-- **Input Configuration**: Monitors `/var/log/netbox/netbox.log` by default
-- **Output Configuration**: Ships logs to Logstash at `logstash.example.com:5044`
-- **Field Enrichment**: Adds `service: netbox` and environment fields
-
-### Customizable Variables (Recommended Enhancement)
-
-For better flexibility, consider implementing these variables in `defaults/main.yml`:
+### Input Configuration
 
 ```yaml
 filebeat_inputs:
   - type: log
+    id: app-logs
+    enabled: true
     paths:
-      - /var/log/netbox/netbox.log
+      - /var/log/app/*.log
     fields:
-      service: netbox
-
-filebeat_output:
-  logstash:
-    hosts: ["logstash.example.com:5044"]
-
-filebeat_environment: "{{ ansible_facts.env | default('production') }}"
+      service: webapp
+      log_type: application
+    multiline:
+      pattern: '^\d{4}-\d{2}-\d{2}'
+      negate: true
+      match: after
 ```
+
+### Output Configuration
+
+#### Logstash Output
+```yaml
+filebeat_output_type: logstash
+filebeat_logstash_hosts:
+  - "logstash1.example.com:5044"
+  - "logstash2.example.com:5044"
+```
+
+#### Elasticsearch Output
+```yaml
+filebeat_output_type: elasticsearch
+filebeat_elasticsearch_hosts:
+  - "https://es1.example.com:9200"
+filebeat_elasticsearch_username: "filebeat_writer"
+filebeat_elasticsearch_password: "{{ vault_password }}"
+```
+
+### Security Configuration
+
+```yaml
+# SSL/TLS Configuration
+filebeat_ssl_enabled: true
+filebeat_ssl_certificate: "/path/to/cert.crt"
+filebeat_ssl_key: "/path/to/cert.key"
+filebeat_ssl_verification_mode: "full"
+
+# API Key Authentication
+filebeat_api_key_enabled: true
+filebeat_api_key_id: "{{ vault_api_key_id }}"
+filebeat_api_key_value: "{{ vault_api_key_value }}"
+```
+
+### Advanced Features
+
+```yaml
+# Module Configuration
+filebeat_modules_enabled:
+  - name: nginx
+    config:
+      access:
+        enabled: true
+        var:
+          paths: ["/var/log/nginx/access.log*"]
+
+# Global Processors
+filebeat_global_processors:
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+  - add_cloud_metadata: ~
+
+# Performance Tuning
+filebeat_queue_mem_events: 4096
+filebeat_harvester_buffer_size: 16384
+
+# Monitoring
+filebeat_monitoring_enabled: true
+filebeat_http_enabled: true
+filebeat_health_check_enabled: true
+```
+
+For a complete list of all variables and detailed configuration examples, see [CONFIGURATION.md](CONFIGURATION.md).
 
 ## Dependencies
 
@@ -131,6 +216,8 @@ This role includes comprehensive testing with [Molecule](https://molecule.readth
 
 - **default**: Docker-based testing with Debian 12
 - **podman**: Podman-based testing for containerized environments
+- **elasticsearch**: Tests Elasticsearch output configuration
+- **ssl**: Tests SSL/TLS security features
 
 ### Running Tests
 
@@ -158,17 +245,56 @@ molecule verify
 ```
 roles/monitoring_observability/filebeat/
 ├── README.md                    # This documentation
+├── CONFIGURATION.md             # Comprehensive configuration guide
+├── defaults/
+│   └── main.yml                # Default variables and configuration
+├── vars/
+│   ├── Debian.yml              # Debian/Ubuntu specific variables
+│   └── RedHat.yml              # RHEL/CentOS specific variables
+├── meta/
+│   └── main.yml                # Role metadata and dependencies
 ├── tasks/
-│   └── main.yml                # Main task definitions
+│   ├── main.yml                # Main task orchestration
+│   ├── validate.yml            # Configuration validation
+│   ├── repo.yml                # Repository setup
+│   ├── install.yml             # Package installation
+│   ├── backup.yml              # Configuration backup
+│   ├── config.yml              # Configuration deployment
+│   ├── modules.yml             # Module management
+│   ├── service.yml             # Service management
+│   ├── health.yml              # Health checks
+│   └── monitoring.yml          # Monitoring setup
 ├── templates/
-│   └── filebeat.yml.j2         # Filebeat configuration template
+│   ├── filebeat.yml.j2         # Main Filebeat configuration
+│   ├── monitoring.yml.j2       # Monitoring configuration
+│   ├── filebeat_monitor.sh.j2  # Monitoring script
+│   ├── module_nginx.yml.j2     # Nginx module template
+│   └── module_apache.yml.j2    # Apache module template
 ├── handlers/
 │   └── main.yml                # Service restart handlers
+├── files/
+├── examples/
+│   ├── basic-deployment.yml    # Basic usage example
+│   ├── advanced-deployment.yml # Advanced features example
+│   ├── multi-environment.yml   # Multi-environment setup
+│   └── security-deployment.yml # Security-focused example
 └── molecule/
     ├── default/                # Docker-based tests
-    │   └── molecule.yml
-    └── podman/                 # Podman-based tests
-        └── molecule.yml
+    │   ├── molecule.yml
+    │   └── tests/
+    │       └── test_filebeat.py
+    ├── podman/                 # Podman-based tests
+    │   ├── molecule.yml
+    │   └── tests/
+    │       └── test_filebeat.py
+    ├── elasticsearch/          # Elasticsearch output tests
+    │   ├── molecule.yml
+    │   └── tests/
+    │       └── test_elasticsearch.py
+    └── ssl/                    # SSL/TLS security tests
+        ├── molecule.yml
+        └── tests/
+            └── test_ssl.py
 ```
 
 ## Security Considerations
@@ -235,9 +361,18 @@ This role was created as part of a comprehensive monitoring and observability in
 ## Changelog
 
 ### [Unreleased]
-- Enhanced README documentation
-- Added comprehensive testing examples
-- Improved troubleshooting guide
+- ✅ **Configuration Flexibility**: Added comprehensive defaults with 100+ configurable variables
+- ✅ **Multi-Input Support**: Support for log, journald, docker, and custom input types
+- ✅ **Multiple Output Types**: Logstash, Elasticsearch, Kafka, File, and Console outputs
+- ✅ **Security Features**: SSL/TLS configuration and API key authentication
+- ✅ **Processing Capabilities**: Global and input-specific processors for log enrichment
+- ✅ **Module Support**: Native Filebeat modules (Nginx, Apache, System, etc.)
+- ✅ **Operational Features**: Configuration backup, validation, and health checks
+- ✅ **Performance Tuning**: Configurable buffers, queues, and resource limits
+- ✅ **Cross-Platform Support**: Added RHEL/CentOS/Rocky/AlmaLinux support
+- ✅ **Monitoring Integration**: HTTP endpoints and self-monitoring capabilities
+- ✅ **Enhanced Testing**: Additional test scenarios for Elasticsearch and SSL
+- ✅ **Documentation**: Comprehensive configuration guide and examples
 
 ### [1.0.0] - Initial Release
 - Basic Filebeat installation and configuration

@@ -1,0 +1,53 @@
+---
+# Validation tasks for Filebeat role
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - filebeat_version is defined
+      - filebeat_output_type in ['logstash', 'elasticsearch', 'kafka', 'file', 'console']
+      - filebeat_inputs is defined and filebeat_inputs | length > 0
+    fail_msg: "Required variables are not properly defined"
+    success_msg: "All required variables are properly defined"
+
+- name: Validate output-specific configuration
+  ansible.builtin.assert:
+    that:
+      - filebeat_logstash_hosts | length > 0
+    fail_msg: "Logstash hosts must be defined when using logstash output"
+  when: filebeat_output_type == 'logstash'
+
+- name: Validate Elasticsearch output configuration
+  ansible.builtin.assert:
+    that:
+      - filebeat_elasticsearch_hosts | length > 0
+    fail_msg: "Elasticsearch hosts must be defined when using elasticsearch output"
+  when: filebeat_output_type == 'elasticsearch'
+
+- name: Validate Kafka output configuration
+  ansible.builtin.assert:
+    that:
+      - filebeat_kafka_hosts | length > 0
+      - filebeat_kafka_topic is defined
+    fail_msg: "Kafka hosts and topic must be defined when using kafka output"
+  when: filebeat_output_type == 'kafka'
+
+- name: Validate SSL configuration
+  ansible.builtin.assert:
+    that:
+      - filebeat_ssl_certificate is defined and filebeat_ssl_certificate != ""
+      - filebeat_ssl_key is defined and filebeat_ssl_key != ""
+    fail_msg: "SSL certificate and key must be defined when SSL is enabled"
+  when: filebeat_ssl_enabled | bool
+
+- name: Validate API key authentication
+  ansible.builtin.assert:
+    that:
+      - filebeat_api_key_id is defined and filebeat_api_key_id != ""
+      - filebeat_api_key_value is defined and filebeat_api_key_value != ""
+    fail_msg: "API key ID and value must be defined when API key authentication is enabled"
+  when: filebeat_api_key_enabled | bool
+
+- name: Check if running as privileged user
+  ansible.builtin.fail:
+    msg: "This role requires root privileges or sudo access"
+  when: ansible_user_uid != 0 and not ansible_become

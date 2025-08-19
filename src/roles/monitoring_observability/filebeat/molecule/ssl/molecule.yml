@@ -1,0 +1,59 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: debian12-ssl
+    image: debian:12
+    pre_build_image: true
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    command: "/sbin/init"
+    tmpfs:
+      - /run
+      - /tmp
+    capabilities:
+      - SYS_ADMIN
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      stdout_callback: yaml
+  inventory:
+    host_vars:
+      debian12-ssl:
+        filebeat_ssl_enabled: true
+        filebeat_ssl_verification_mode: "certificate"
+        filebeat_config_backup_enabled: true
+        filebeat_health_check_enabled: true
+        filebeat_monitoring_enabled: false
+        filebeat_http_enabled: true
+        filebeat_inputs:
+          - type: log
+            id: secure-log
+            enabled: true
+            paths:
+              - /var/log/secure.log
+            fields:
+              service: security
+              environment: production
+              security_level: high
+verifier:
+  name: testinfra
+scenario:
+  name: ssl
+  test_sequence:
+    - dependency
+    - cleanup
+    - destroy
+    - syntax
+    - create
+    - prepare
+    - converge
+    - idempotence
+    - side_effect
+    - verify
+    - cleanup
+    - destroy

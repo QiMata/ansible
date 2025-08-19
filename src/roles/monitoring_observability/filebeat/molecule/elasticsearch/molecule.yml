@@ -1,0 +1,56 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: debian12-elasticsearch
+    image: debian:12
+    pre_build_image: true
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    command: "/sbin/init"
+    tmpfs:
+      - /run
+      - /tmp
+    capabilities:
+      - SYS_ADMIN
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      stdout_callback: yaml
+  inventory:
+    host_vars:
+      debian12-elasticsearch:
+        filebeat_output_type: elasticsearch
+        filebeat_elasticsearch_hosts:
+          - "elasticsearch.test.local:9200"
+        filebeat_elasticsearch_index: "test-filebeat-%{+yyyy.MM.dd}"
+        filebeat_inputs:
+          - type: log
+            id: test-log
+            enabled: true
+            paths:
+              - /var/log/test.log
+            fields:
+              service: test-service
+              environment: testing
+verifier:
+  name: testinfra
+scenario:
+  name: elasticsearch
+  test_sequence:
+    - dependency
+    - cleanup
+    - destroy
+    - syntax
+    - create
+    - prepare
+    - converge
+    - idempotence
+    - side_effect
+    - verify
+    - cleanup
+    - destroy

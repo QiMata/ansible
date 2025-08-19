@@ -1,5 +1,37 @@
 ---
 - name: Restart filebeat
   ansible.builtin.service:
-    name: filebeat
+    name: "{{ filebeat_service_name }}"
     state: restarted
+  register: filebeat_restart_result
+
+- name: Validate filebeat after restart
+  ansible.builtin.command:
+    cmd: filebeat test config -c {{ filebeat_config_file }}
+  register: post_restart_validation
+  failed_when: post_restart_validation.rc != 0
+  changed_when: false
+  listen: restart filebeat
+
+- name: Wait for filebeat to be ready
+  ansible.builtin.wait_for:
+    timeout: 30
+  listen: restart filebeat
+
+- name: Verify filebeat service status
+  ansible.builtin.service_facts:
+  listen: restart filebeat
+
+- name: Ensure filebeat is running after restart
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.services[filebeat_service_name + '.service'].state == 'running'
+    fail_msg: "Filebeat service failed to start after restart"
+    success_msg: "Filebeat service restarted successfully"
+  listen: restart filebeat
+
+- name: Reload filebeat config
+  ansible.builtin.service:
+    name: "{{ filebeat_service_name }}"
+    state: reloaded
+  when: filebeat_service_state == "started"

@@ -1,0 +1,20 @@
+---
+# Platform-specific variables for Debian/Ubuntu
+filebeat_repo_key_url: "https://artifacts.elastic.co/GPG-KEY-elasticsearch"
+filebeat_repo_url: "deb https://artifacts.elastic.co/packages/{{ filebeat_version }}/apt stable main"
+filebeat_package_name: filebeat
+filebeat_service_name: filebeat
+
+# System paths
+filebeat_config_dir: /etc/filebeat
+filebeat_data_dir: /var/lib/filebeat
+filebeat_log_dir: /var/log/filebeat
+filebeat_modules_dir: "{{ filebeat_config_dir }}/modules.d"
+
+# User and group
+filebeat_user: root
+filebeat_group: root
+
+# Package manager specific
+filebeat_apt_update_cache: true
+filebeat_apt_cache_valid_time: 3600

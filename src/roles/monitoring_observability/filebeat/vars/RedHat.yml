@@ -1,0 +1,21 @@
+---
+# Platform-specific variables for RedHat/CentOS/Rocky/AlmaLinux
+filebeat_repo_key_url: "https://artifacts.elastic.co/GPG-KEY-elasticsearch"
+filebeat_repo_baseurl: "https://artifacts.elastic.co/packages/{{ filebeat_version }}/yum"
+filebeat_package_name: filebeat
+filebeat_service_name: filebeat
+
+# System paths
+filebeat_config_dir: /etc/filebeat
+filebeat_data_dir: /var/lib/filebeat
+filebeat_log_dir: /var/log/filebeat
+filebeat_modules_dir: "{{ filebeat_config_dir }}/modules.d"
+
+# User and group
+filebeat_user: root
+filebeat_group: root
+
+# Repository configuration
+filebeat_repo_name: "elastic-{{ filebeat_version }}"
+filebeat_repo_description: "Elastic repository for {{ filebeat_version }} packages"
+filebeat_repo_gpgcheck: true

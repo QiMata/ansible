@@ -1,0 +1,58 @@
+---
+# Configuration deployment tasks
+- name: Deploy Filebeat configuration
+  ansible.builtin.template:
+    src: filebeat.yml.j2
+    dest: "{{ filebeat_config_file }}"
+    owner: "{{ filebeat_user }}"
+    group: "{{ filebeat_group }}"
+    mode: '0644'
+    backup: "{{ filebeat_template_backup }}"
+  register: filebeat_config_result
+  notify: restart filebeat
+
+- name: Validate Filebeat configuration
+  ansible.builtin.command:
+    cmd: filebeat test config -c {{ filebeat_config_file }}
+  register: config_validation
+  failed_when: config_validation.rc != 0
+  changed_when: false
+  when: filebeat_config_validate_before_restart
+
+- name: Deploy SSL certificates
+  when: filebeat_ssl_enabled
+  block:
+    - name: Copy SSL certificate
+      ansible.builtin.copy:
+        src: "{{ filebeat_ssl_certificate }}"
+        dest: "{{ filebeat_config_dir }}/filebeat.crt"
+        owner: "{{ filebeat_user }}"
+        group: "{{ filebeat_group }}"
+        mode: '0644'
+      when: filebeat_ssl_certificate != ""
+
+    - name: Copy SSL private key
+      ansible.builtin.copy:
+        src: "{{ filebeat_ssl_key }}"
+        dest: "{{ filebeat_config_dir }}/filebeat.key"
+        owner: "{{ filebeat_user }}"
+        group: "{{ filebeat_group }}"
+        mode: '0600'
+      when: filebeat_ssl_key != ""
+
+    - name: Copy SSL CA certificates
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "{{ filebeat_config_dir }}/ca.crt"
+        owner: "{{ filebeat_user }}"
+        group: "{{ filebeat_group }}"
+        mode: '0644'
+      loop: "{{ filebeat_ssl_certificate_authorities }}"
+      when: filebeat_ssl_certificate_authorities | length > 0
+
+- name: Set file permissions for configuration
+  ansible.builtin.file:
+    path: "{{ filebeat_config_file }}"
+    owner: "{{ filebeat_user }}"
+    group: "{{ filebeat_group }}"
+    mode: '0644'
