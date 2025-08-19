@@ -1,0 +1,70 @@
+---
+- name: Wait for Grafana API to be available
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/health"
+    method: GET
+    status_code: 200
+  register: grafana_health
+  until: grafana_health.status == 200
+  retries: 30
+  delay: 5
+
+- name: Get existing organizations
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/orgs"
+    method: GET
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    status_code: 200
+  register: existing_orgs
+
+- name: Create organizations
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/orgs"
+    method: POST
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    body_format: json
+    body:
+      name: "{{ item.name }}"
+    status_code: [200, 409]  # 409 if org already exists
+  loop: "{{ grafana_organizations }}"
+  register: org_creation_result
+  when: item.name not in (existing_orgs.json | map(attribute='name') | list)
+
+- name: Get updated organizations list
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/orgs"
+    method: GET
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    status_code: 200
+  register: updated_orgs
+
+- name: Display organization information
+  ansible.builtin.debug:
+    msg: "Organization '{{ item.name }}' (ID: {{ item.id }}) exists"
+  loop: "{{ updated_orgs.json }}"
+  when: ansible_verbosity >= 1
+
+- name: Set organization preferences
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/orgs/{{ org_item.id }}/preferences"
+    method: PUT
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    body_format: json
+    body:
+      theme: "{{ org_item.theme | default('') }}"
+      homeDashboardId: "{{ org_item.home_dashboard_id | default(0) }}"
+      timezone: "{{ org_item.timezone | default('') }}"
+    status_code: 200
+  loop: "{{ grafana_organizations }}"
+  loop_control:
+    loop_var: org_item
+  when: 
+    - org_item.theme is defined or org_item.home_dashboard_id is defined or org_item.timezone is defined

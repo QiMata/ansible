@@ -1,29 +1,312 @@
 ---
+# Core Configuration
 grafana_version: "10.4.0"
 grafana_ha_enabled: false
 grafana_admin_user: admin
 grafana_admin_password: "{{ vault_grafana_admin_password }}"
+
+# Port and Protocol Configuration
+grafana_http_port: 3000
+grafana_protocol: http
+grafana_domain: localhost
+grafana_root_url: ""  # Auto-generated if empty
+grafana_https_enabled: false
+grafana_cert_file: ""
+grafana_cert_key: ""
+
+# Database Configuration
 grafana_database:
   type: sqlite3
   host: ""
   name: grafana
   user: grafana
   password: ""
+  ssl_mode: disable
+  ca_cert_path: ""
+  client_cert_path: ""
+  client_key_path: ""
+  max_idle_conn: 2
+  max_open_conn: 0
+  conn_max_lifetime: 14400
+
+# Database Migration
+grafana_database_migration_enabled: false
+grafana_database_backup_before_migration: true
+
+# Plugin Management
+grafana_plugins_enabled: false
+grafana_plugins: []
+# Example:
+# grafana_plugins:
+#   - grafana-clock-panel
+#   - grafana-simple-json-datasource
+
+# Organization and User Management
+grafana_organizations_enabled: false
+grafana_organizations: []
+# Example:
+# grafana_organizations:
+#   - name: "Main Org"
+#     id: 1
+#   - name: "Dev Team"
+#     id: 2
+
+grafana_users_enabled: false
+grafana_users: []
+# Example:
+# grafana_users:
+#   - name: "John Doe"
+#     email: "john@example.com"
+#     login: "john"
+#     password: "{{ vault_john_password }}"
+#     org_id: 1
+#     role: "Editor"
+
+grafana_teams_enabled: false
+grafana_teams: []
+# Example:
+# grafana_teams:
+#   - name: "DevOps Team"
+#     email: "devops@example.com"
+#     org_id: 1
+#     members:
+#       - "john"
+#       - "jane"
+
+# High Availability Configuration
+grafana_session_provider: file
+grafana_session_provider_config: ""
+grafana_session_cookie_name: grafana_sess
+grafana_session_cookie_secure: false
+grafana_session_session_life_time: 86400
+
+# Load Balancer Integration
+grafana_lb_enabled: false
+grafana_lb_health_check_enabled: true
+grafana_lb_health_check_path: "/api/health"
+
+# LDAP Configuration
 grafana_ldap_enabled: false
 grafana_ldap_file: "/etc/grafana/ldap.toml"
+
+# OAuth/SSO Configuration
+grafana_oauth_enabled: false
+grafana_oauth_auto_login: false
+grafana_oauth_providers: {}
+# Example:
+# grafana_oauth_providers:
+#   google:
+#     enabled: true
+#     client_id: "{{ vault_google_client_id }}"
+#     client_secret: "{{ vault_google_client_secret }}"
+#     scopes: "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email"
+#     auth_url: "https://accounts.google.com/o/oauth2/auth"
+#     token_url: "https://accounts.google.com/o/oauth2/token"
+#     api_url: "https://www.googleapis.com/oauth2/v1/userinfo"
+#     allow_sign_up: true
+#     role_attribute_path: ""
+#   github:
+#     enabled: true
+#     client_id: "{{ vault_github_client_id }}"
+#     client_secret: "{{ vault_github_client_secret }}"
+#     scopes: "user:email,read:org"
+#     auth_url: "https://github.com/login/oauth/authorize"
+#     token_url: "https://github.com/login/oauth/access_token"
+#     api_url: "https://api.github.com/user"
+#     allow_sign_up: true
+#     team_ids: ""
+#     allowed_organizations: ""
+
+# API Key Management
+grafana_api_keys_enabled: false
+grafana_api_keys: []
+# Example:
+# grafana_api_keys:
+#   - name: "monitoring-service"
+#     role: "Viewer"
+#     seconds_to_live: 3600
+#   - name: "admin-service"
+#     role: "Admin"
+#     seconds_to_live: 86400
+
+# Service Accounts
+grafana_service_accounts_enabled: false
+grafana_service_accounts: []
+# Example:
+# grafana_service_accounts:
+#   - name: "prometheus-reader"
+#     role: "Viewer"
+#     is_disabled: false
+
+# Security Configuration
+grafana_security_enabled: false
+grafana_security_headers:
+  strict_transport_security: false
+  strict_transport_security_max_age_seconds: 86400
+  strict_transport_security_preload: false
+  strict_transport_security_subdomains: false
+  x_content_type_options: false
+  x_xss_protection: false
+  x_frame_options: "deny"
+  content_security_policy: false
+  content_security_policy_template: ""
+
+grafana_cors_enabled: false
+grafana_cors_allow_origin: "*"
+grafana_cors_allow_credentials: false
+
+# Alerting Configuration
+grafana_alerting_enabled: false
+grafana_alerting_rules: []
+# Example:
+# grafana_alerting_rules:
+#   - uid: "alert-rule-1"
+#     title: "High CPU Usage"
+#     condition: "B"
+#     data:
+#       - refId: "A"
+#         queryType: "prometheus"
+#         model:
+#           expr: "cpu_usage_percent > 80"
+
+grafana_notification_policies: []
+grafana_contact_points: []
+# Example:
+# grafana_contact_points:
+#   - name: "email-alerts"
+#     type: "email"
+#     settings:
+#       addresses: "admin@example.com"
+#   - name: "slack-alerts"
+#     type: "slack"
+#     settings:
+#       url: "{{ vault_slack_webhook_url }}"
+
+# Dashboard Management
+grafana_dashboard_provisioning_enabled: false
+grafana_dashboard_folders: []
+# Example:
+# grafana_dashboard_folders:
+#   - name: "System Monitoring"
+#     uid: "system-monitoring"
+#   - name: "Application Metrics"
+#     uid: "app-metrics"
+
+grafana_dashboard_providers: []
+# Example:
+# grafana_dashboard_providers:
+#   - name: "default"
+#     type: "file"
+#     options:
+#       path: "/var/lib/grafana/dashboards"
+#   - name: "git-dashboards"
+#     type: "git"
+#     options:
+#       url: "https://github.com/company/grafana-dashboards.git"
+#       path: "dashboards/"
+#       branch: "main"
+
+# Provisioning Configuration
 grafana_provisioning_path: "/etc/grafana/provisioning"
-grafana_backup_enabled: true
-grafana_backup_path: "/var/backups/grafana"
+
+# Data Source Configuration
 grafana_datasources:
   - name: Prometheus
     type: prometheus
     url: "http://prometheus:9090"
     access: proxy
     isDefault: true
+    basicAuth: false
+    basicAuthUser: ""
+    basicAuthPassword: ""
+    customHeaders: {}
+    jsonData: {}
+    secureJsonData: {}
   - name: Elasticsearch
     type: elasticsearch
     url: "http://elasticsearch:9200"
     access: proxy
     database: "[logstash-]YYYY.MM.DD"
-# list of dashboard UIDs to back up
+    basicAuth: false
+    basicAuthUser: ""
+    basicAuthPassword: ""
+    customHeaders: {}
+    jsonData:
+      esVersion: "7.10.0"
+      timeField: "@timestamp"
+    secureJsonData: {}
+
+# Advanced Data Source Configuration
+grafana_datasource_discovery_enabled: false
+grafana_datasource_discovery_services: []
+# Example:
+# grafana_datasource_discovery_services:
+#   - type: "consul"
+#     config:
+#       address: "consul.service.consul:8500"
+#       service_name: "prometheus"
+#   - type: "kubernetes"
+#     config:
+#       namespace: "monitoring"
+#       label_selector: "app=prometheus"
+
+# Performance Configuration
+grafana_performance_enabled: false
+grafana_performance_config:
+  max_concurrent_user_queries: 20
+  max_concurrent_dashboard_queries: 200
+  query_timeout: "30s"
+  max_query_length: 1048576
+  max_series_per_dashboard: 250000
+  max_annotations_to_fetch: 100
+  max_tag_values_per_tag: 100
+
+# Memory and Resource Limits
+grafana_memory_limit: ""  # e.g., "1Gi" for systemd
+grafana_cpu_limit: ""     # e.g., "500m" for systemd
+
+# Caching Configuration
+grafana_caching_enabled: false
+grafana_caching_config:
+  type: "memory"  # memory, redis, memcached
+  ttl: "5m"
+  redis:
+    address: "redis:6379"
+    password: ""
+    db: 0
+  memcached:
+    servers: "memcached:11211"
+
+# Backup and Restore
+grafana_backup_enabled: true
+grafana_backup_path: "/var/backups/grafana"
+grafana_backup_retention_days: 30
+grafana_backup_full_enabled: false
+grafana_backup_schedule: ""  # Cron format for automated backups
+grafana_restore_enabled: false
+grafana_restore_from_path: ""
+
+# Dashboard Backup (existing functionality)
 grafana_dashboard_uids: []
+
+# Monitoring and Logging
+grafana_monitoring_enabled: false
+grafana_monitoring_config:
+  metrics_enabled: true
+  metrics_basic_auth_username: ""
+  metrics_basic_auth_password: ""
+  tracing_enabled: false
+  tracing_jaeger_address: ""
+  logging_level: "info"
+  log_queries: false
+  log_request_at_debug_level: false
+
+# External Monitoring Integration
+grafana_external_monitoring: []
+# Example:
+# grafana_external_monitoring:
+#   - type: "prometheus"
+#     config:
+#       job_name: "grafana"
+#       metrics_path: "/metrics"
+#       targets: ["localhost:3000"]

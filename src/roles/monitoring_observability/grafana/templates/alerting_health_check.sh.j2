@@ -1,0 +1,53 @@
+#!/bin/bash
+# Grafana Alerting Health Check Script
+
+GRAFANA_URL="{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}"
+ADMIN_USER="{{ grafana_admin_user }}"
+ADMIN_PASS="{{ grafana_admin_password }}"
+TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+
+echo "${TIMESTAMP} - Starting Grafana alerting health check"
+
+# Check alertmanager status
+ALERTMANAGER_STATUS=$(curl -s -u "${ADMIN_USER}:${ADMIN_PASS}" \
+    "${GRAFANA_URL}/api/alertmanager/grafana/api/v1/status" | \
+    jq -r '.data.uptime // "unknown"')
+
+echo "${TIMESTAMP} - Alertmanager uptime: ${ALERTMANAGER_STATUS}"
+
+# Check alert rules
+RULES_COUNT=$(curl -s -u "${ADMIN_USER}:${ADMIN_PASS}" \
+    "${GRAFANA_URL}/api/ruler/grafana/api/v1/rules" | \
+    jq '[.[] | .[] | .rules[]] | length')
+
+echo "${TIMESTAMP} - Active alert rules: ${RULES_COUNT}"
+
+# Check contact points
+CONTACT_POINTS_COUNT=$(curl -s -u "${ADMIN_USER}:${ADMIN_PASS}" \
+    "${GRAFANA_URL}/api/v1/provisioning/contact-points" | \
+    jq 'length')
+
+echo "${TIMESTAMP} - Configured contact points: ${CONTACT_POINTS_COUNT}"
+
+# Check for firing alerts
+FIRING_ALERTS=$(curl -s -u "${ADMIN_USER}:${ADMIN_PASS}" \
+    "${GRAFANA_URL}/api/alertmanager/grafana/api/v1/alerts" | \
+    jq '[.[] | select(.status.state == "active")] | length')
+
+echo "${TIMESTAMP} - Currently firing alerts: ${FIRING_ALERTS}"
+
+# Check notification policies
+POLICIES_COUNT=$(curl -s -u "${ADMIN_USER}:${ADMIN_PASS}" \
+    "${GRAFANA_URL}/api/v1/provisioning/policies" | \
+    jq '.routes | length // 0')
+
+echo "${TIMESTAMP} - Notification policies: ${POLICIES_COUNT}"
+
+# Health summary
+if [ "${ALERTMANAGER_STATUS}" != "unknown" ] && [ "${RULES_COUNT}" -gt 0 ] && [ "${CONTACT_POINTS_COUNT}" -gt 0 ]; then
+    echo "${TIMESTAMP} - ✓ Alerting system is healthy"
+else
+    echo "${TIMESTAMP} - ⚠ Alerting system has issues - check configuration"
+fi
+
+echo "${TIMESTAMP} - Alerting health check completed"

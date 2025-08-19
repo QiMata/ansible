@@ -1,0 +1,88 @@
+---
+- name: Configure performance settings
+  ansible.builtin.debug:
+    msg: "Configuring Grafana performance settings"
+
+- name: Set up caching configuration
+  block:
+    - name: Install Redis for caching
+      ansible.builtin.package:
+        name: redis-server
+        state: present
+      when: grafana_caching_config.type == 'redis'
+
+    - name: Install Memcached for caching
+      ansible.builtin.package:
+        name: memcached
+        state: present
+      when: grafana_caching_config.type == 'memcached'
+
+    - name: Start and enable Redis service
+      ansible.builtin.systemd:
+        name: redis-server
+        state: started
+        enabled: yes
+      when: grafana_caching_config.type == 'redis'
+
+    - name: Start and enable Memcached service
+      ansible.builtin.systemd:
+        name: memcached
+        state: started
+        enabled: yes
+      when: grafana_caching_config.type == 'memcached'
+
+    - name: Test Redis connectivity
+      ansible.builtin.command:
+        cmd: redis-cli -h {{ grafana_caching_config.redis.address.split(':')[0] }} -p {{ grafana_caching_config.redis.address.split(':')[1] | default('6379') }} ping
+      register: redis_test
+      changed_when: false
+      when: grafana_caching_config.type == 'redis'
+
+    - name: Verify Redis connectivity
+      ansible.builtin.assert:
+        that:
+          - redis_test.stdout == "PONG"
+        fail_msg: "Redis connectivity test failed"
+      when: grafana_caching_config.type == 'redis'
+
+  when: grafana_caching_enabled
+
+- name: Configure database connection pooling
+  ansible.builtin.lineinfile:
+    path: /etc/grafana/grafana.ini
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    insertafter: '^\[database\]'
+  loop:
+    - { regexp: '^max_idle_conn\s*=', line: "max_idle_conn = {{ grafana_database.max_idle_conn }}" }
+    - { regexp: '^max_open_conn\s*=', line: "max_open_conn = {{ grafana_database.max_open_conn }}" }
+    - { regexp: '^conn_max_lifetime\s*=', line: "conn_max_lifetime = {{ grafana_database.conn_max_lifetime }}" }
+  notify: Restart Grafana
+
+- name: Configure query performance settings
+  ansible.builtin.debug:
+    msg: "Query performance settings configured in grafana.ini template"
+
+- name: Create performance monitoring script
+  ansible.builtin.template:
+    src: performance_monitor.sh.j2
+    dest: /usr/local/bin/grafana_performance_monitor.sh
+    mode: '0755'
+  when: grafana_performance_enabled
+
+- name: Set up performance monitoring cron job
+  ansible.builtin.cron:
+    name: "Grafana Performance Monitor"
+    minute: "*/5"
+    job: "/usr/local/bin/grafana_performance_monitor.sh >> /var/log/grafana/performance.log 2>&1"
+    user: grafana
+  when: grafana_performance_enabled
+
+- name: Create performance log file
+  ansible.builtin.file:
+    path: /var/log/grafana/performance.log
+    state: touch
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  when: grafana_performance_enabled

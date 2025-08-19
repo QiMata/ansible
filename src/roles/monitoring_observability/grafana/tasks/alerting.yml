@@ -1,0 +1,133 @@
+---
+- name: Create alerting provisioning configuration
+  ansible.builtin.template:
+    src: alerting_config.yml.j2
+    dest: "{{ grafana_provisioning_path }}/alerting/rules.yml"
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  notify: Restart Grafana
+
+- name: Create contact points configuration
+  ansible.builtin.template:
+    src: contact_points.yml.j2
+    dest: "{{ grafana_provisioning_path }}/alerting/contactpoints.yml"
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  notify: Restart Grafana
+
+- name: Create notification policies configuration
+  ansible.builtin.template:
+    src: notification_policies.yml.j2
+    dest: "{{ grafana_provisioning_path }}/alerting/policies.yml"
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  notify: Restart Grafana
+
+- name: Validate alerting rules via API
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/ruler/grafana/api/v1/rules"
+    method: GET
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    status_code: 200
+  register: existing_alerting_rules
+
+- name: Create alerting rules via API
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/ruler/grafana/api/v1/rules/{{ item.namespace | default('default') }}"
+    method: POST
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    body_format: json
+    body:
+      rules:
+        - uid: "{{ item.uid }}"
+          title: "{{ item.title }}"
+          condition: "{{ item.condition }}"
+          data: "{{ item.data }}"
+          intervalSeconds: "{{ item.interval_seconds | default(60) }}"
+          maxDataPoints: "{{ item.max_data_points | default(43200) }}"
+          noDataState: "{{ item.no_data_state | default('NoData') }}"
+          execErrState: "{{ item.exec_err_state | default('Alerting') }}"
+          for: "{{ item.for_duration | default('5m') }}"
+          annotations: "{{ item.annotations | default({}) }}"
+          labels: "{{ item.labels | default({}) }}"
+    status_code: [200, 202]
+  loop: "{{ grafana_alerting_rules }}"
+  register: alerting_rule_creation
+
+- name: Get contact points
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/v1/provisioning/contact-points"
+    method: GET
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    status_code: 200
+  register: existing_contact_points
+
+- name: Create contact points via API
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/v1/provisioning/contact-points"
+    method: POST
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    body_format: json
+    body:
+      uid: "{{ item.uid | default(item.name | lower | replace(' ', '-')) }}"
+      name: "{{ item.name }}"
+      type: "{{ item.type }}"
+      settings: "{{ item.settings }}"
+      disableResolveMessage: "{{ item.disable_resolve_message | default(false) }}"
+    status_code: [201, 409]  # 409 if contact point already exists
+  loop: "{{ grafana_contact_points }}"
+  when: item.name not in (existing_contact_points.json | map(attribute='name') | list)
+
+- name: Test contact points
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/alertmanager/grafana/api/v1/receivers/{{ item.name }}/test"
+    method: POST
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    body_format: json
+    body:
+      receivers:
+        - name: "{{ item.name }}"
+          grafana_managed_receiver_configs:
+            - uid: "{{ item.uid | default(item.name | lower | replace(' ', '-')) }}"
+              type: "{{ item.type }}"
+              settings: "{{ item.settings }}"
+      annotations:
+        summary: "Test alert from Ansible provisioning"
+        description: "This is a test alert to verify contact point configuration"
+    status_code: [200, 207]
+  loop: "{{ grafana_contact_points }}"
+  when: 
+    - item.test_on_creation | default(false)
+    - item.type in ['email', 'slack', 'webhook']
+  register: contact_point_tests
+
+- name: Display alerting configuration status
+  ansible.builtin.debug:
+    msg: "Alerting configured with {{ grafana_alerting_rules | length }} rules and {{ grafana_contact_points | length }} contact points"
+  when: ansible_verbosity >= 1
+
+- name: Create alerting health check script
+  ansible.builtin.template:
+    src: alerting_health_check.sh.j2
+    dest: /usr/local/bin/grafana_alerting_health_check.sh
+    mode: '0755'
+
+- name: Set up alerting health check cron job
+  ansible.builtin.cron:
+    name: "Grafana Alerting Health Check"
+    minute: "*/15"
+    job: "/usr/local/bin/grafana_alerting_health_check.sh >> /var/log/grafana/alerting_health.log 2>&1"
+    user: grafana

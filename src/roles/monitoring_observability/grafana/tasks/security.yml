@@ -1,0 +1,82 @@
+---
+- name: Configure SSL/TLS certificates
+  block:
+    - name: Ensure certificate file exists
+      ansible.builtin.stat:
+        path: "{{ grafana_cert_file }}"
+      register: cert_file_check
+      when: grafana_https_enabled
+
+    - name: Ensure certificate key file exists
+      ansible.builtin.stat:
+        path: "{{ grafana_cert_key }}"
+      register: cert_key_check
+      when: grafana_https_enabled
+
+    - name: Validate certificate files
+      ansible.builtin.assert:
+        that:
+          - cert_file_check.stat.exists
+          - cert_key_check.stat.exists
+        fail_msg: "SSL certificate files not found"
+      when: grafana_https_enabled
+
+- name: Set proper permissions on certificate files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: grafana
+    group: grafana
+    mode: '0640'
+  loop:
+    - "{{ grafana_cert_file }}"
+    - "{{ grafana_cert_key }}"
+  when: 
+    - grafana_https_enabled
+    - cert_file_check.stat.exists
+    - cert_key_check.stat.exists
+
+- name: Create security headers configuration
+  ansible.builtin.template:
+    src: security_headers.conf.j2
+    dest: /etc/grafana/security_headers.conf
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  when: grafana_security_enabled
+  notify: Restart Grafana
+
+- name: Configure firewall rules for Grafana
+  ansible.posix.firewalld:
+    port: "{{ grafana_http_port }}/tcp"
+    permanent: yes
+    state: enabled
+    immediate: yes
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: Configure UFW firewall rules for Grafana
+  community.general.ufw:
+    rule: allow
+    port: "{{ grafana_http_port }}"
+    proto: tcp
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: Validate security configuration
+  ansible.builtin.assert:
+    that:
+      - grafana_admin_password != "admin"
+      - grafana_admin_password != ""
+    fail_msg: "Grafana admin password must be changed from default"
+
+- name: Generate random session secret if not provided
+  ansible.builtin.set_fact:
+    grafana_session_secret: "{{ lookup('password', '/dev/null length=32 chars=ascii_letters,digits') }}"
+  when: grafana_session_secret is not defined
+
+- name: Ensure secure session configuration
+  ansible.builtin.lineinfile:
+    path: /etc/grafana/grafana.ini
+    regexp: '^secret_key\s*='
+    line: "secret_key = {{ grafana_session_secret }}"
+    insertafter: '^\[security\]'
+  notify: Restart Grafana
+  when: grafana_session_secret is defined

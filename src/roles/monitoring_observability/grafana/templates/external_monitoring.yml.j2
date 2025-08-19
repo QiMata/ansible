@@ -1,0 +1,69 @@
+# External Monitoring Configuration for {{ item.type }}
+
+{% if item.type == 'prometheus' %}
+# Prometheus Job Configuration
+# Add this to your prometheus.yml configuration file
+
+job_name: '{{ item.config.job_name | default("grafana") }}'
+static_configs:
+  - targets: {{ item.config.targets | default(["localhost:3000"]) | to_json }}
+metrics_path: '{{ item.config.metrics_path | default("/metrics") }}'
+scrape_interval: {{ item.config.scrape_interval | default("30s") }}
+scrape_timeout: {{ item.config.scrape_timeout | default("10s") }}
+
+{% if item.config.basic_auth is defined %}
+basic_auth:
+  username: {{ item.config.basic_auth.username }}
+  password: {{ item.config.basic_auth.password }}
+{% endif %}
+
+{% if item.config.scheme is defined %}
+scheme: {{ item.config.scheme }}
+{% endif %}
+
+{% if item.config.tls_config is defined %}
+tls_config:
+  insecure_skip_verify: {{ item.config.tls_config.insecure_skip_verify | default(false) | lower }}
+{% if item.config.tls_config.ca_file is defined %}
+  ca_file: {{ item.config.tls_config.ca_file }}
+{% endif %}
+{% endif %}
+
+relabel_configs:
+  - source_labels: [__address__]
+    target_label: __param_target
+  - source_labels: [__param_target]
+    target_label: instance
+  - target_label: __address__
+    replacement: {{ item.config.targets | default(["localhost:3000"]) | first }}
+
+{% elif item.type == 'zabbix' %}
+# Zabbix Monitoring Configuration
+# Template for Grafana monitoring
+
+UserParameter=grafana.health,curl -s http://localhost:3000/api/health | jq -r '.database'
+UserParameter=grafana.version,grafana-server --version | grep -oP 'version \K[0-9.]+'
+UserParameter=grafana.uptime,systemctl show grafana-server --property=ActiveEnterTimestamp | cut -d= -f2
+UserParameter=grafana.memory,ps -o rss= -p $(pgrep grafana-server) | tail -1
+UserParameter=grafana.cpu,ps -o %cpu= -p $(pgrep grafana-server) | tail -1
+
+{% elif item.type == 'nagios' %}
+# Nagios Check Configuration
+# Add this command definition to your Nagios configuration
+
+define command {
+    command_name    check_grafana_health
+    command_line    /usr/lib/nagios/plugins/check_http -H {{ grafana_domain }} -p {{ grafana_http_port }} -u /api/health -s '"database":"ok"'
+}
+
+define service {
+    use                     generic-service
+    host_name               {{ ansible_hostname }}
+    service_description     Grafana Health
+    check_command           check_grafana_health
+    check_interval          5
+    retry_interval          1
+    max_check_attempts      3
+}
+
+{% endif %}

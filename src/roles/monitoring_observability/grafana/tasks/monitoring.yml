@@ -1,0 +1,113 @@
+---
+- name: Create monitoring configuration directory
+  ansible.builtin.file:
+    path: /etc/grafana/monitoring
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: '0755'
+
+- name: Configure Grafana self-monitoring
+  ansible.builtin.template:
+    src: self_monitoring.json.j2
+    dest: /var/lib/grafana/dashboards/grafana-self-monitoring.json
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  notify: Restart Grafana
+
+- name: Create external monitoring configurations
+  ansible.builtin.template:
+    src: external_monitoring.yml.j2
+    dest: "/etc/grafana/monitoring/{{ item.type }}_{{ item.config.job_name | default('grafana') }}.yml"
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  loop: "{{ grafana_external_monitoring }}"
+  when: grafana_external_monitoring is defined
+
+- name: Create Prometheus metrics endpoint configuration
+  ansible.builtin.template:
+    src: prometheus_metrics.yml.j2
+    dest: /etc/grafana/monitoring/prometheus_metrics.yml
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  when: grafana_monitoring_config.metrics_enabled
+
+- name: Configure log aggregation for external systems
+  ansible.builtin.template:
+    src: log_config.yml.j2
+    dest: /etc/grafana/monitoring/logging.yml
+    owner: grafana
+    group: grafana
+    mode: '0644'
+
+- name: Create monitoring health check script
+  ansible.builtin.template:
+    src: monitoring_health_check.sh.j2
+    dest: /usr/local/bin/grafana_monitoring_health_check.sh
+    mode: '0755'
+
+- name: Set up monitoring health check cron job
+  ansible.builtin.cron:
+    name: "Grafana Monitoring Health Check"
+    minute: "*/5"
+    job: "/usr/local/bin/grafana_monitoring_health_check.sh >> /var/log/grafana/monitoring_health.log 2>&1"
+    user: grafana
+
+- name: Create monitoring log files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: touch
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  loop:
+    - /var/log/grafana/monitoring_health.log
+    - /var/log/grafana/external_monitoring.log
+
+- name: Configure log rotation for Grafana logs
+  ansible.builtin.template:
+    src: grafana_logrotate.j2
+    dest: /etc/logrotate.d/grafana-monitoring
+    mode: '0644'
+
+- name: Validate monitoring endpoints
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/metrics"
+    method: GET
+    status_code: [200, 401]  # 401 if basic auth is required
+  register: metrics_endpoint_check
+  when: grafana_monitoring_config.metrics_enabled
+
+- name: Test metrics endpoint with authentication
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/metrics"
+    method: GET
+    user: "{{ grafana_monitoring_config.metrics_basic_auth_username }}"
+    password: "{{ grafana_monitoring_config.metrics_basic_auth_password }}"
+    force_basic_auth: yes
+    status_code: 200
+  register: authenticated_metrics_check
+  when: 
+    - grafana_monitoring_config.metrics_enabled
+    - grafana_monitoring_config.metrics_basic_auth_username is defined
+    - metrics_endpoint_check.status == 401
+
+- name: Display monitoring status
+  ansible.builtin.debug:
+    msg: "Grafana monitoring configured - metrics endpoint: {{ 'accessible' if metrics_endpoint_check.status == 200 or authenticated_metrics_check.status == 200 else 'requires authentication' }}"
+  when: 
+    - grafana_monitoring_config.metrics_enabled
+    - ansible_verbosity >= 1
+
+- name: Create monitoring alerts for Grafana itself
+  ansible.builtin.template:
+    src: grafana_monitoring_alerts.yml.j2
+    dest: "{{ grafana_provisioning_path }}/alerting/grafana_self_monitoring.yml"
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  notify: Restart Grafana
+  when: grafana_alerting_enabled

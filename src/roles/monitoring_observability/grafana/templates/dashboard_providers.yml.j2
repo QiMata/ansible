@@ -1,0 +1,34 @@
+apiVersion: 1
+
+providers:
+{% for provider in grafana_dashboard_providers %}
+  - name: {{ provider.name }}
+    type: {{ provider.type }}
+    disableDeletion: {{ provider.disable_deletion | default(false) | lower }}
+    updateIntervalSeconds: {{ provider.update_interval_seconds | default(10) }}
+    allowUiUpdates: {{ provider.allow_ui_updates | default(true) | lower }}
+    options:
+{% if provider.type == 'file' %}
+      path: {{ provider.options.path }}
+{% elif provider.type == 'git' %}
+      url: {{ provider.options.url }}
+      branch: {{ provider.options.branch | default('main') }}
+      path: {{ provider.options.path | default('') }}
+{% endif %}
+{% if provider.folder is defined %}
+      folder: {{ provider.folder }}
+{% endif %}
+{% if provider.folder_uid is defined %}
+      folderUid: {{ provider.folder_uid }}
+{% endif %}
+{% endfor %}
+
+{% if grafana_dashboard_providers | length == 0 %}
+  - name: default
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+{% endif %}

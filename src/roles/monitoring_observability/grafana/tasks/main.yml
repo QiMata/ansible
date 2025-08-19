@@ -1,16 +1,77 @@
 ---
 - name: Import install tasks
   ansible.builtin.import_tasks: install.yml
+
 - name: Import config tasks
   ansible.builtin.import_tasks: config.yml
+
+- name: Import plugin tasks
+  ansible.builtin.import_tasks: plugins.yml
+  when: grafana_plugins_enabled
+
+- name: Import database migration tasks
+  ansible.builtin.import_tasks: database_migration.yml
+  when: grafana_database_migration_enabled
+
 - name: Import HA tasks
   ansible.builtin.import_tasks: ha.yml
   when: grafana_ha_enabled
+
 - name: Import LDAP tasks
   ansible.builtin.import_tasks: ldap.yml
   when: grafana_ldap_enabled
+
+- name: Import OAuth/SSO tasks
+  ansible.builtin.import_tasks: oauth.yml
+  when: grafana_oauth_enabled
+
+- name: Import security tasks
+  ansible.builtin.import_tasks: security.yml
+  when: grafana_security_enabled
+
+- name: Import performance tasks
+  ansible.builtin.import_tasks: performance.yml
+  when: grafana_performance_enabled
+
 - name: Import provisioning tasks
   ansible.builtin.import_tasks: provision.yml
+
+- name: Import organization management tasks
+  ansible.builtin.import_tasks: organizations.yml
+  when: grafana_organizations_enabled
+
+- name: Import user management tasks
+  ansible.builtin.import_tasks: users.yml
+  when: grafana_users_enabled
+
+- name: Import team management tasks
+  ansible.builtin.import_tasks: teams.yml
+  when: grafana_teams_enabled
+
+- name: Import API key management tasks
+  ansible.builtin.import_tasks: api_keys.yml
+  when: grafana_api_keys_enabled
+
+- name: Import service account management tasks
+  ansible.builtin.import_tasks: service_accounts.yml
+  when: grafana_service_accounts_enabled
+
+- name: Import dashboard management tasks
+  ansible.builtin.import_tasks: dashboards.yml
+  when: grafana_dashboard_provisioning_enabled
+
+- name: Import alerting tasks
+  ansible.builtin.import_tasks: alerting.yml
+  when: grafana_alerting_enabled
+
+- name: Import monitoring tasks
+  ansible.builtin.import_tasks: monitoring.yml
+  when: grafana_monitoring_enabled
+
 - name: Import backup tasks
   ansible.builtin.import_tasks: backup.yml
   when: grafana_backup_enabled
+
+- name: Import restore tasks
+  ansible.builtin.import_tasks: restore.yml
+  when: grafana_restore_enabled

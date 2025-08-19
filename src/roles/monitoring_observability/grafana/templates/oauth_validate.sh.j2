@@ -1,0 +1,31 @@
+#!/bin/bash
+# OAuth Provider Validation Script
+
+{% for provider, config in grafana_oauth_providers.items() %}
+{% if config.enabled %}
+echo "Testing {{ provider }} OAuth endpoints..."
+
+# Test auth URL
+if ! curl -s --head "{{ config.auth_url }}" | grep -q "200 OK\|302 Found\|301 Moved"; then
+    echo "ERROR: {{ provider }} auth_url {{ config.auth_url }} is not reachable"
+    exit 1
+fi
+
+# Test token URL
+if ! curl -s --head "{{ config.token_url }}" | grep -q "200 OK\|405 Method\|400 Bad"; then
+    echo "ERROR: {{ provider }} token_url {{ config.token_url }} is not reachable"
+    exit 1
+fi
+
+# Test API URL
+if ! curl -s --head "{{ config.api_url }}" | grep -q "200 OK\|401 Unauthorized\|403 Forbidden"; then
+    echo "ERROR: {{ provider }} api_url {{ config.api_url }} is not reachable"
+    exit 1
+fi
+
+echo "{{ provider }} OAuth endpoints are reachable"
+{% endif %}
+{% endfor %}
+
+echo "All OAuth provider validations passed"
+exit 0

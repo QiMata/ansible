@@ -1,0 +1,49 @@
+apiVersion: 1
+
+datasources:
+{% for datasource in grafana_datasources %}
+  - name: {{ datasource.name }}
+    type: {{ datasource.type }}
+    url: {{ datasource.url }}
+    access: {{ datasource.access | default('proxy') }}
+    isDefault: {{ datasource.isDefault | default(false) | lower }}
+    version: {{ datasource.version | default(1) }}
+    editable: {{ datasource.editable | default(true) | lower }}
+    uid: {{ datasource.uid | default(datasource.name | lower | replace(' ', '_')) }}
+{% if datasource.basicAuth is defined %}
+    basicAuth: {{ datasource.basicAuth | lower }}
+{% endif %}
+{% if datasource.basicAuthUser is defined %}
+    basicAuthUser: {{ datasource.basicAuthUser }}
+{% endif %}
+{% if datasource.basicAuthPassword is defined %}
+    basicAuthPassword: {{ datasource.basicAuthPassword }}
+{% endif %}
+{% if datasource.database is defined %}
+    database: {{ datasource.database }}
+{% endif %}
+{% if datasource.customHeaders is defined and datasource.customHeaders %}
+    customHeaders:
+{% for key, value in datasource.customHeaders.items() %}
+      {{ key }}: {{ value }}
+{% endfor %}
+{% endif %}
+{% if datasource.jsonData is defined and datasource.jsonData %}
+    jsonData:
+{% for key, value in datasource.jsonData.items() %}
+      {{ key }}: {{ value | to_json }}
+{% endfor %}
+{% endif %}
+{% if datasource.secureJsonData is defined and datasource.secureJsonData %}
+    secureJsonData:
+{% for key, value in datasource.secureJsonData.items() %}
+      {{ key }}: {{ value }}
+{% endfor %}
+{% endif %}
+{% if datasource.withCredentials is defined %}
+    withCredentials: {{ datasource.withCredentials | lower }}
+{% endif %}
+{% if datasource.timeout is defined %}
+    timeout: {{ datasource.timeout }}
+{% endif %}
+{% endfor %}

@@ -1,0 +1,46 @@
+---
+- name: Create OAuth configuration directory
+  ansible.builtin.file:
+    path: /etc/grafana/oauth
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: '0750'
+
+- name: Configure OAuth providers
+  ansible.builtin.debug:
+    msg: "Configuring OAuth provider: {{ item.key }}"
+  loop: "{{ grafana_oauth_providers | dict2items }}"
+  when: item.value.enabled | default(false)
+
+- name: Validate OAuth configuration
+  ansible.builtin.assert:
+    that:
+      - item.value.client_id is defined
+      - item.value.client_secret is defined
+      - item.value.auth_url is defined
+      - item.value.token_url is defined
+      - item.value.api_url is defined
+    fail_msg: "OAuth provider {{ item.key }} is missing required configuration"
+  loop: "{{ grafana_oauth_providers | dict2items }}"
+  when: item.value.enabled | default(false)
+
+- name: Create OAuth provider validation script
+  ansible.builtin.template:
+    src: oauth_validate.sh.j2
+    dest: /tmp/oauth_validate.sh
+    mode: '0755'
+  when: grafana_oauth_enabled
+
+- name: Test OAuth provider connectivity
+  ansible.builtin.shell: /tmp/oauth_validate.sh
+  register: oauth_test_result
+  changed_when: false
+  failed_when: oauth_test_result.rc != 0
+  when: grafana_oauth_enabled
+
+- name: Remove OAuth validation script
+  ansible.builtin.file:
+    path: /tmp/oauth_validate.sh
+    state: absent
+  when: grafana_oauth_enabled

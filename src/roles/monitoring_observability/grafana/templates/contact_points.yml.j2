@@ -1,0 +1,15 @@
+apiVersion: 1
+
+contactPoints:
+{% for contact_point in grafana_contact_points %}
+  - uid: {{ contact_point.uid | default(contact_point.name | lower | replace(' ', '-')) }}
+    name: {{ contact_point.name }}
+    receivers:
+      - uid: {{ contact_point.uid | default(contact_point.name | lower | replace(' ', '-')) }}-receiver
+        type: {{ contact_point.type }}
+        settings:
+{% for key, value in contact_point.settings.items() %}
+          {{ key }}: {{ value | to_json }}
+{% endfor %}
+        disableResolveMessage: {{ contact_point.disable_resolve_message | default(false) | lower }}
+{% endfor %}

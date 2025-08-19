@@ -1,0 +1,40 @@
+#!/bin/bash
+# Grafana Performance Monitoring Script
+
+TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+GRAFANA_URL="{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}"
+
+# Check Grafana health
+HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${GRAFANA_URL}/api/health")
+
+# Get system metrics
+MEMORY_USAGE=$(ps -o pid,ppid,cmd,%mem,%cpu --sort=-%mem -C grafana-server | head -2 | tail -1 | awk '{print $4}')
+CPU_USAGE=$(ps -o pid,ppid,cmd,%mem,%cpu --sort=-%cpu -C grafana-server | head -2 | tail -1 | awk '{print $5}')
+
+# Get database connection info if available
+DB_CONNECTIONS=""
+{% if grafana_database.type == 'postgres' %}
+DB_CONNECTIONS=$(psql -h {{ grafana_database.host.split(':')[0] }} -U {{ grafana_database.user }} -d {{ grafana_database.name }} -t -c "SELECT count(*) FROM pg_stat_activity WHERE datname = '{{ grafana_database.name }}';" 2>/dev/null || echo "N/A")
+{% elif grafana_database.type == 'mysql' %}
+DB_CONNECTIONS=$(mysql -h {{ grafana_database.host.split(':')[0] }} -u {{ grafana_database.user }} -p{{ grafana_database.password }} -e "SHOW STATUS LIKE 'Threads_connected';" 2>/dev/null | tail -1 | awk '{print $2}' || echo "N/A")
+{% else %}
+DB_CONNECTIONS="N/A"
+{% endif %}
+
+# Log performance metrics
+echo "${TIMESTAMP} | Health: ${HEALTH_STATUS} | Memory: ${MEMORY_USAGE}% | CPU: ${CPU_USAGE}% | DB Connections: ${DB_CONNECTIONS}"
+
+# Alert if health check fails
+if [ "${HEALTH_STATUS}" != "200" ]; then
+    echo "${TIMESTAMP} | ALERT: Grafana health check failed with status ${HEALTH_STATUS}"
+fi
+
+# Alert if memory usage is high
+if [ "${MEMORY_USAGE%.*}" -gt 80 ] 2>/dev/null; then
+    echo "${TIMESTAMP} | ALERT: High memory usage detected: ${MEMORY_USAGE}%"
+fi
+
+# Alert if CPU usage is high
+if [ "${CPU_USAGE%.*}" -gt 80 ] 2>/dev/null; then
+    echo "${TIMESTAMP} | ALERT: High CPU usage detected: ${CPU_USAGE}%"
+fi

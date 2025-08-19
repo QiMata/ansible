@@ -1,0 +1,34 @@
+---
+- name: Install Grafana plugins
+  ansible.builtin.command:
+    cmd: "grafana-cli plugins install {{ item }}"
+  loop: "{{ grafana_plugins }}"
+  notify: Restart Grafana
+  register: plugin_install_result
+  changed_when: "'Already installed' not in plugin_install_result.stdout"
+  failed_when: 
+    - plugin_install_result.rc != 0
+    - "'Already installed' not in plugin_install_result.stdout"
+
+- name: List installed plugins
+  ansible.builtin.command:
+    cmd: "grafana-cli plugins list-remote"
+  register: installed_plugins
+  changed_when: false
+
+- name: Debug installed plugins
+  ansible.builtin.debug:
+    var: installed_plugins.stdout_lines
+  when: ansible_verbosity >= 2
+
+- name: Verify plugin installation
+  ansible.builtin.stat:
+    path: "/var/lib/grafana/plugins/{{ item }}"
+  loop: "{{ grafana_plugins }}"
+  register: plugin_verification
+
+- name: Report plugin installation status
+  ansible.builtin.debug:
+    msg: "Plugin {{ item.item }} is {{ 'installed' if item.stat.exists else 'NOT installed' }}"
+  loop: "{{ plugin_verification.results }}"
+  when: ansible_verbosity >= 1

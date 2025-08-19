@@ -1,0 +1,136 @@
+---
+- name: Create dashboard folders
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/folders"
+    method: POST
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    body_format: json
+    body:
+      uid: "{{ item.uid }}"
+      title: "{{ item.name }}"
+    status_code: [200, 409]  # 409 if folder already exists
+  loop: "{{ grafana_dashboard_folders }}"
+  register: folder_creation_result
+
+- name: Get existing folders
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/folders"
+    method: GET
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    status_code: 200
+  register: existing_folders
+
+- name: Create dashboard provisioning configuration
+  ansible.builtin.template:
+    src: dashboard_providers.yml.j2
+    dest: "{{ grafana_provisioning_path }}/dashboards/providers.yml"
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  notify: Restart Grafana
+
+- name: Create dashboard directories for file-based providers
+  ansible.builtin.file:
+    path: "{{ item.options.path }}"
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: '0755'
+  loop: "{{ grafana_dashboard_providers }}"
+  when: 
+    - item.type == 'file'
+    - item.options.path is defined
+
+- name: Clone Git repositories for Git-based providers
+  ansible.builtin.git:
+    repo: "{{ item.options.url }}"
+    dest: "/var/lib/grafana/dashboards/{{ item.name }}"
+    version: "{{ item.options.branch | default('main') }}"
+    force: yes
+  become_user: grafana
+  loop: "{{ grafana_dashboard_providers }}"
+  when: 
+    - item.type == 'git'
+    - item.options.url is defined
+
+- name: Set up Git repository update cron job
+  ansible.builtin.cron:
+    name: "Update Grafana dashboards from {{ item.name }}"
+    minute: "{{ item.options.update_interval_minutes | default('*/30') }}"
+    job: "cd /var/lib/grafana/dashboards/{{ item.name }} && git pull"
+    user: grafana
+  loop: "{{ grafana_dashboard_providers }}"
+  when: 
+    - item.type == 'git'
+    - item.options.auto_update | default(true)
+
+- name: Copy dashboard files to provisioning directory
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/var/lib/grafana/dashboards/"
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  with_fileglob:
+    - "files/dashboards/*.json"
+  notify: Restart Grafana
+
+- name: Import dashboards via API
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/dashboards/db"
+    method: POST
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    body_format: json
+    body:
+      dashboard: "{{ lookup('file', item) | from_json }}"
+      folderId: "{{ folder_lookup.id | default(0) }}"
+      overwrite: true
+    status_code: 200
+  loop: "{{ grafana_dashboards_to_import | default([]) }}"
+  vars:
+    dashboard_content: "{{ lookup('file', item) | from_json }}"
+    folder_lookup: "{{ existing_folders.json | selectattr('title', 'equalto', dashboard_content.meta.folderTitle | default('')) | first | default({}) }}"
+  when: grafana_dashboards_to_import is defined
+
+- name: Validate dashboard JSON files
+  ansible.builtin.shell: |
+    find /var/lib/grafana/dashboards -name "*.json" -exec python3 -m json.tool {} \; > /dev/null
+  register: json_validation
+  changed_when: false
+  failed_when: json_validation.rc != 0
+
+- name: Display dashboard provisioning status
+  ansible.builtin.debug:
+    msg: "Dashboard provisioning configured with {{ grafana_dashboard_providers | length }} providers"
+  when: ansible_verbosity >= 1
+
+- name: Create dashboard backup directory structure
+  ansible.builtin.file:
+    path: "{{ grafana_backup_path }}/dashboards/{{ item.name }}"
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: '0755'
+  loop: "{{ grafana_dashboard_folders }}"
+
+- name: Set up automated dashboard backup
+  ansible.builtin.cron:
+    name: "Backup Grafana dashboards"
+    minute: "0"
+    hour: "2"
+    job: "/usr/local/bin/grafana_dashboard_backup.sh >> /var/log/grafana/dashboard_backup.log 2>&1"
+    user: grafana
+  when: grafana_backup_enabled
+
+- name: Create dashboard backup script
+  ansible.builtin.template:
+    src: dashboard_backup.sh.j2
+    dest: /usr/local/bin/grafana_dashboard_backup.sh
+    mode: '0755'
+  when: grafana_backup_enabled

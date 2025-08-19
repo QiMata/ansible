@@ -1,0 +1,85 @@
+#!/bin/bash
+# Grafana Dashboard Backup Script
+
+GRAFANA_URL="{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}"
+ADMIN_USER="{{ grafana_admin_user }}"
+ADMIN_PASS="{{ grafana_admin_password }}"
+BACKUP_PATH="{{ grafana_backup_path }}/dashboards"
+TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
+
+# Create backup directory
+mkdir -p "${BACKUP_PATH}/${TIMESTAMP}"
+
+# Function to backup dashboards from a folder
+backup_folder_dashboards() {
+    local folder_uid="$1"
+    local folder_name="$2"
+    
+    echo "Backing up dashboards from folder: ${folder_name}"
+    
+    # Get dashboards in the folder
+    local dashboards
+    if [ "${folder_uid}" = "general" ]; then
+        dashboards=$(curl -s -u "${ADMIN_USER}:${ADMIN_PASS}" \
+            "${GRAFANA_URL}/api/search?type=dash-db&folderIds=0" | \
+            jq -r '.[].uid')
+    else
+        dashboards=$(curl -s -u "${ADMIN_USER}:${ADMIN_PASS}" \
+            "${GRAFANA_URL}/api/search?type=dash-db&folderUids=${folder_uid}" | \
+            jq -r '.[].uid')
+    fi
+    
+    # Create folder in backup
+    mkdir -p "${BACKUP_PATH}/${TIMESTAMP}/${folder_name}"
+    
+    # Backup each dashboard
+    for dashboard_uid in $dashboards; do
+        if [ -n "$dashboard_uid" ] && [ "$dashboard_uid" != "null" ]; then
+            echo "  Backing up dashboard: ${dashboard_uid}"
+            
+            curl -s -u "${ADMIN_USER}:${ADMIN_PASS}" \
+                "${GRAFANA_URL}/api/dashboards/uid/${dashboard_uid}" | \
+                jq '.dashboard' > "${BACKUP_PATH}/${TIMESTAMP}/${folder_name}/${dashboard_uid}.json"
+            
+            if [ $? -eq 0 ]; then
+                echo "    ✓ Successfully backed up ${dashboard_uid}"
+            else
+                echo "    ✗ Failed to backup ${dashboard_uid}"
+            fi
+        fi
+    done
+}
+
+echo "Starting Grafana dashboard backup at $(date)"
+
+# Backup general folder dashboards
+backup_folder_dashboards "general" "General"
+
+# Backup dashboards from custom folders
+{% for folder in grafana_dashboard_folders %}
+backup_folder_dashboards "{{ folder.uid }}" "{{ folder.name }}"
+{% endfor %}
+
+# Create a summary file
+cat > "${BACKUP_PATH}/${TIMESTAMP}/backup_summary.txt" << EOF
+Grafana Dashboard Backup Summary
+Generated: $(date)
+Grafana URL: ${GRAFANA_URL}
+Backup Path: ${BACKUP_PATH}/${TIMESTAMP}
+
+Folders backed up:
+- General
+{% for folder in grafana_dashboard_folders %}
+- {{ folder.name }} ({{ folder.uid }})
+{% endfor %}
+
+Total files: $(find "${BACKUP_PATH}/${TIMESTAMP}" -name "*.json" | wc -l)
+Backup size: $(du -sh "${BACKUP_PATH}/${TIMESTAMP}" | cut -f1)
+EOF
+
+# Clean up old backups (keep last {{ grafana_backup_retention_days }} days)
+find "${BACKUP_PATH}" -type d -name "*_*" -mtime +{{ grafana_backup_retention_days }} -exec rm -rf {} \; 2>/dev/null
+
+echo "Dashboard backup completed at $(date)"
+echo "Backup saved to: ${BACKUP_PATH}/${TIMESTAMP}"
+echo "Summary available at: ${BACKUP_PATH}/${TIMESTAMP}/backup_summary.txt"

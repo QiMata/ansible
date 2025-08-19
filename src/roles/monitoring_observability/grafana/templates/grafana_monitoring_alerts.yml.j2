@@ -1,0 +1,219 @@
+apiVersion: 1
+
+groups:
+  - name: grafana-self-monitoring
+    orgId: 1
+    folder: monitoring
+    interval: 1m
+    rules:
+      - uid: grafana-instance-down
+        title: Grafana Instance Down
+        condition: B
+        data:
+          - refId: A
+            queryType: prometheus
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus-uid
+            model:
+              expr: 'up{job="grafana"}'
+              interval: ""
+              refId: A
+          - refId: B
+            queryType: ""
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: [1]
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              hide: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              type: reduce
+        noDataState: NoData
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          description: "Grafana instance has been down for more than 5 minutes"
+          summary: "Grafana instance is not responding"
+        labels:
+          severity: critical
+          service: grafana
+
+      - uid: grafana-high-memory
+        title: Grafana High Memory Usage
+        condition: B
+        data:
+          - refId: A
+            queryType: prometheus
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus-uid
+            model:
+              expr: 'process_resident_memory_bytes{job="grafana"} / 1024 / 1024'
+              interval: ""
+              refId: A
+          - refId: B
+            queryType: ""
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: [1000]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              hide: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              type: reduce
+        noDataState: NoData
+        execErrState: NoData
+        for: 10m
+        annotations:
+          description: "Grafana memory usage is {{ $value }}MB, which is above 1000MB threshold"
+          summary: "Grafana memory usage is high"
+        labels:
+          severity: warning
+          service: grafana
+
+      - uid: grafana-database-issues
+        title: Grafana Database Connection Issues
+        condition: B
+        data:
+          - refId: A
+            queryType: prometheus
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus-uid
+            model:
+              expr: 'grafana_database_conn_open{job="grafana"}'
+              interval: ""
+              refId: A
+          - refId: B
+            queryType: ""
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: [0]
+                    type: eq
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              hide: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              type: reduce
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 2m
+        annotations:
+          description: "Grafana has no open database connections"
+          summary: "Grafana database connection issues detected"
+        labels:
+          severity: critical
+          service: grafana
+
+      - uid: grafana-slow-queries
+        title: Grafana Slow HTTP Responses
+        condition: B
+        data:
+          - refId: A
+            queryType: prometheus
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus-uid
+            model:
+              expr: 'histogram_quantile(0.95, rate(grafana_http_request_duration_seconds_bucket{job="grafana"}[5m]))'
+              interval: ""
+              refId: A
+          - refId: B
+            queryType: ""
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: [5]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              hide: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              type: reduce
+        noDataState: NoData
+        execErrState: NoData
+        for: 10m
+        annotations:
+          description: "95th percentile response time is {{ $value }}s, which is above 5s threshold"
+          summary: "Grafana is experiencing slow HTTP responses"
+        labels:
+          severity: warning
+          service: grafana

@@ -4,4 +4,131 @@
   become: true
   roles:
     - role: grafana
+      # Basic Configuration
       grafana_admin_password: admin
+      grafana_http_port: 3000
+      grafana_protocol: http
+      grafana_domain: localhost
+      
+      # Plugin Management Testing
+      grafana_plugins_enabled: true
+      grafana_plugins:
+        - grafana-clock-panel
+        - grafana-simple-json-datasource
+      
+      # Performance Configuration Testing
+      grafana_performance_enabled: true
+      grafana_performance_config:
+        max_concurrent_user_queries: 20
+        max_concurrent_dashboard_queries: 200
+        query_timeout: "30s"
+        max_query_length: 1048576
+        max_series_per_dashboard: 250000
+        max_annotations_to_fetch: 100
+        max_tag_values_per_tag: 100
+      
+      # Security Configuration Testing
+      grafana_security_enabled: true
+      grafana_security_headers:
+        strict_transport_security: false  # Don't require HTTPS in testing
+        x_content_type_options: true
+        x_xss_protection: true
+        x_frame_options: "deny"
+        content_security_policy: false
+      
+      # Organization and User Management Testing
+      grafana_organizations_enabled: true
+      grafana_organizations:
+        - name: "Test Organization"
+          id: 2
+      
+      grafana_users_enabled: true
+      grafana_users:
+        - name: "Test User"
+          email: "test@example.com"
+          login: "testuser"
+          password: "testpass123"
+          org_id: 1
+          role: "Editor"
+      
+      grafana_teams_enabled: true
+      grafana_teams:
+        - name: "Test Team"
+          email: "team@example.com"
+          org_id: 1
+          members:
+            - "testuser"
+      
+      # API Key Management Testing
+      grafana_api_keys_enabled: true
+      grafana_api_keys:
+        - name: "test-key"
+          role: "Viewer"
+          seconds_to_live: 3600
+      
+      # Service Account Testing
+      grafana_service_accounts_enabled: true
+      grafana_service_accounts:
+        - name: "test-service-account"
+          role: "Viewer"
+          is_disabled: false
+      
+      # Dashboard Management Testing
+      grafana_dashboard_provisioning_enabled: true
+      grafana_dashboard_folders:
+        - name: "Test Folder"
+          uid: "test-folder"
+      
+      grafana_dashboard_providers:
+        - name: "default"
+          type: "file"
+          options:
+            path: "/var/lib/grafana/dashboards"
+      
+      # Alerting Testing
+      grafana_alerting_enabled: true
+      grafana_contact_points:
+        - name: "test-email"
+          type: "email"
+          settings:
+            addresses: "test@example.com"
+      
+      # Monitoring Testing
+      grafana_monitoring_enabled: true
+      grafana_monitoring_config:
+        metrics_enabled: true
+        tracing_enabled: false
+        logging_level: "info"
+        log_queries: false
+        log_request_at_debug_level: false
+      
+      # Backup Testing
+      grafana_backup_enabled: true
+      grafana_backup_path: "/var/backups/grafana"
+      grafana_backup_retention_days: 7
+      
+      # Enhanced Data Source Configuration
+      grafana_datasources:
+        - name: Prometheus
+          type: prometheus
+          url: "http://prometheus:9090"
+          access: proxy
+          isDefault: true
+          basicAuth: false
+          customHeaders: {}
+          jsonData:
+            httpMethod: "POST"
+            queryTimeout: "60s"
+          secureJsonData: {}
+        - name: TestInfluxDB
+          type: influxdb
+          url: "http://influxdb:8086"
+          access: proxy
+          database: "test"
+          basicAuth: false
+          customHeaders:
+            "X-Custom-Header": "test-value"
+          jsonData:
+            version: "1.8"
+            timeInterval: "15s"
+          secureJsonData: {}

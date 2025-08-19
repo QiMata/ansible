@@ -1,6 +1,101 @@
 ---
-- name: Ensure external database configuration
+- name: Ensure external database configuration for HA
   ansible.builtin.debug:
     msg: "HA setup requires external DB - ensure database is available"
 
-# Note: DB setup managed externally; provide connection parameters only
+- name: Validate HA database configuration
+  ansible.builtin.assert:
+    that:
+      - grafana_database.type != 'sqlite3'
+      - grafana_database.host != ""
+      - grafana_database.name != ""
+      - grafana_database.user != ""
+      - grafana_database.password != ""
+    fail_msg: "HA mode requires external database configuration (MySQL or PostgreSQL)"
+
+- name: Configure session storage for HA
+  ansible.builtin.lineinfile:
+    path: /etc/grafana/grafana.ini
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    insertafter: '^\[session\]'
+  loop:
+    - { regexp: '^provider\s*=', line: "provider = {{ grafana_session_provider }}" }
+    - { regexp: '^cookie_secure\s*=', line: "cookie_secure = {{ grafana_session_cookie_secure | lower }}" }
+    - { regexp: '^session_life_time\s*=', line: "session_life_time = {{ grafana_session_session_life_time }}" }
+  notify: Restart Grafana
+  when: grafana_session_provider != 'file'
+
+- name: Configure Redis session storage
+  ansible.builtin.lineinfile:
+    path: /etc/grafana/grafana.ini
+    regexp: '^provider_config\s*='
+    line: "provider_config = {{ grafana_session_provider_config }}"
+    insertafter: '^\[session\]'
+  notify: Restart Grafana
+  when: 
+    - grafana_session_provider == 'redis'
+    - grafana_session_provider_config != ""
+
+- name: Test database connectivity for HA
+  block:
+    - name: Test PostgreSQL connectivity
+      community.postgresql.postgresql_ping:
+        login_host: "{{ grafana_database.host.split(':')[0] }}"
+        login_port: "{{ grafana_database.host.split(':')[1] | default('5432') }}"
+        login_user: "{{ grafana_database.user }}"
+        login_password: "{{ grafana_database.password }}"
+        login_db: "{{ grafana_database.name }}"
+      when: grafana_database.type == 'postgres'
+
+    - name: Test MySQL connectivity
+      community.mysql.mysql_info:
+        login_host: "{{ grafana_database.host.split(':')[0] }}"
+        login_port: "{{ grafana_database.host.split(':')[1] | default('3306') }}"
+        login_user: "{{ grafana_database.user }}"
+        login_password: "{{ grafana_database.password }}"
+        login_db: "{{ grafana_database.name }}"
+      when: grafana_database.type == 'mysql'
+  rescue:
+    - name: Database connectivity failed
+      ansible.builtin.fail:
+        msg: "Cannot connect to {{ grafana_database.type }} database for HA setup"
+
+- name: Configure load balancer health check endpoint
+  ansible.builtin.template:
+    src: lb_health_check.conf.j2
+    dest: /etc/grafana/lb_health_check.conf
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  when: grafana_lb_enabled
+  notify: Restart Grafana
+
+- name: Create HA monitoring script
+  ansible.builtin.template:
+    src: ha_monitor.sh.j2
+    dest: /usr/local/bin/grafana_ha_monitor.sh
+    mode: '0755'
+
+- name: Set up HA monitoring cron job
+  ansible.builtin.cron:
+    name: "Grafana HA Monitor"
+    minute: "*/2"
+    job: "/usr/local/bin/grafana_ha_monitor.sh >> /var/log/grafana/ha_monitor.log 2>&1"
+    user: grafana
+
+- name: Create HA monitor log file
+  ansible.builtin.file:
+    path: /var/log/grafana/ha_monitor.log
+    state: touch
+    owner: grafana
+    group: grafana
+    mode: '0644'
+
+- name: Display HA configuration status
+  ansible.builtin.debug:
+    msg: 
+      - "HA mode enabled with {{ grafana_database.type }} database"
+      - "Session provider: {{ grafana_session_provider }}"
+      - "Load balancer health check: {{ 'enabled' if grafana_lb_enabled else 'disabled' }}"
+  when: ansible_verbosity >= 1

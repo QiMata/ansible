@@ -1,0 +1,80 @@
+---
+- name: Get existing users
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/users"
+    method: GET
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    status_code: 200
+  register: existing_users
+
+- name: Create users
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/admin/users"
+    method: POST
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    body_format: json
+    body:
+      name: "{{ item.name }}"
+      email: "{{ item.email }}"
+      login: "{{ item.login }}"
+      password: "{{ item.password }}"
+      orgId: "{{ item.org_id | default(1) }}"
+    status_code: [200, 412]  # 412 if user already exists
+  loop: "{{ grafana_users }}"
+  register: user_creation_result
+  when: item.login not in (existing_users.json | map(attribute='login') | list)
+
+- name: Get updated users list
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/users"
+    method: GET
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    status_code: 200
+  register: updated_users
+
+- name: Set user organization roles
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/orgs/{{ item.org_id | default(1) }}/users/{{ user_lookup.id }}"
+    method: PATCH
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    body_format: json
+    body:
+      role: "{{ item.role | default('Viewer') }}"
+    status_code: 200
+  loop: "{{ grafana_users }}"
+  vars:
+    user_lookup: "{{ updated_users.json | selectattr('login', 'equalto', item.login) | first }}"
+  when: user_lookup is defined
+
+- name: Display user information
+  ansible.builtin.debug:
+    msg: "User '{{ item.login }}' ({{ item.name }}) created with role {{ item.role | default('Viewer') }}"
+  loop: "{{ grafana_users }}"
+  when: ansible_verbosity >= 1
+
+- name: Update user passwords if changed
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/admin/users/{{ user_lookup.id }}/password"
+    method: PUT
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    body_format: json
+    body:
+      password: "{{ item.password }}"
+    status_code: 200
+  loop: "{{ grafana_users }}"
+  vars:
+    user_lookup: "{{ updated_users.json | selectattr('login', 'equalto', item.login) | first }}"
+  when: 
+    - user_lookup is defined
+    - item.update_password | default(false)
+  no_log: true

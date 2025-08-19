@@ -1,0 +1,96 @@
+---
+- name: Get existing teams
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/teams/search"
+    method: GET
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    status_code: 200
+  register: existing_teams
+
+- name: Create teams
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/teams"
+    method: POST
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    body_format: json
+    body:
+      name: "{{ item.name }}"
+      email: "{{ item.email | default('') }}"
+      orgId: "{{ item.org_id | default(1) }}"
+    status_code: [200, 409]  # 409 if team already exists
+  loop: "{{ grafana_teams }}"
+  register: team_creation_result
+  when: item.name not in (existing_teams.json.teams | default([]) | map(attribute='name') | list)
+
+- name: Get updated teams list
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/teams/search"
+    method: GET
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    status_code: 200
+  register: updated_teams
+
+- name: Get all users for team membership management
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/users"
+    method: GET
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    status_code: 200
+  register: all_users
+
+- name: Add team members
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/teams/{{ team_lookup.id }}/members"
+    method: POST
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    body_format: json
+    body:
+      userId: "{{ user_lookup.id }}"
+    status_code: [200, 409]  # 409 if user already in team
+  loop: "{{ grafana_teams | subelements('members', skip_missing=True) }}"
+  vars:
+    team_lookup: "{{ updated_teams.json.teams | selectattr('name', 'equalto', item.0.name) | first }}"
+    user_lookup: "{{ all_users.json | selectattr('login', 'equalto', item.1) | first }}"
+  when: 
+    - team_lookup is defined
+    - user_lookup is defined
+
+- name: Display team information
+  ansible.builtin.debug:
+    msg: "Team '{{ item.name }}' created in organization {{ item.org_id | default(1) }}"
+  loop: "{{ grafana_teams }}"
+  when: ansible_verbosity >= 1
+
+- name: Get team members for verification
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/teams/{{ team_lookup.id }}/members"
+    method: GET
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    status_code: 200
+  loop: "{{ grafana_teams }}"
+  vars:
+    team_lookup: "{{ updated_teams.json.teams | selectattr('name', 'equalto', item.name) | first }}"
+  register: team_members
+  when: 
+    - team_lookup is defined
+    - ansible_verbosity >= 2
+
+- name: Display team membership
+  ansible.builtin.debug:
+    msg: "Team '{{ item.item.name }}' has {{ item.json | length }} members"
+  loop: "{{ team_members.results }}"
+  when: 
+    - item.json is defined
+    - ansible_verbosity >= 2

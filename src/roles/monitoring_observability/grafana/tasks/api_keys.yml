@@ -1,0 +1,93 @@
+---
+- name: Get existing API keys
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/auth/keys"
+    method: GET
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    status_code: 200
+  register: existing_api_keys
+
+- name: Create API keys
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/auth/keys"
+    method: POST
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    body_format: json
+    body:
+      name: "{{ item.name }}"
+      role: "{{ item.role }}"
+      secondsToLive: "{{ item.seconds_to_live | default(null) }}"
+    status_code: 200
+  loop: "{{ grafana_api_keys }}"
+  register: api_key_creation_result
+  when: item.name not in (existing_api_keys.json | map(attribute='name') | list)
+  no_log: true
+
+- name: Store API keys securely
+  ansible.builtin.copy:
+    content: |
+      # Grafana API Keys
+      # Generated on {{ ansible_date_time.iso8601 }}
+      {% for result in api_key_creation_result.results %}
+      {% if result.json is defined %}
+      # {{ result.item.name }} ({{ result.item.role }})
+      {{ result.item.name }}_API_KEY="{{ result.json.key }}"
+      {% endif %}
+      {% endfor %}
+    dest: "/etc/grafana/api_keys.env"
+    owner: grafana
+    group: grafana
+    mode: '0600'
+  when: api_key_creation_result.results | selectattr('json', 'defined') | list | length > 0
+  no_log: true
+
+- name: Display API key information (without keys)
+  ansible.builtin.debug:
+    msg: "API key '{{ item.name }}' created with role {{ item.role }}"
+  loop: "{{ grafana_api_keys }}"
+  when: 
+    - ansible_verbosity >= 1
+    - item.name not in (existing_api_keys.json | map(attribute='name') | list)
+
+- name: Validate API key permissions
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/auth/keys"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ result.json.key }}"
+    status_code: [200, 403]  # 403 expected for non-admin keys
+  loop: "{{ api_key_creation_result.results }}"
+  loop_control:
+    loop_var: result
+  register: api_key_validation
+  when: 
+    - result.json is defined
+    - result.item.role == 'Admin'
+  no_log: true
+
+- name: Remove expired API keys
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/auth/keys/{{ item.id }}"
+    method: DELETE
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    status_code: 200
+  loop: "{{ existing_api_keys.json }}"
+  when: 
+    - item.expiration is defined
+    - item.expiration < ansible_date_time.epoch|int
+  register: expired_key_removal
+
+- name: Display removed expired keys
+  ansible.builtin.debug:
+    msg: "Removed expired API key: {{ item.item.name }}"
+  loop: "{{ expired_key_removal.results }}"
+  when: 
+    - item.status is defined
+    - item.status == 200
+    - ansible_verbosity >= 1

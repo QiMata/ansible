@@ -1,0 +1,29 @@
+# Security Headers Configuration for Grafana
+# This file contains security-related headers and settings
+
+{% if grafana_security_headers.strict_transport_security %}
+# Strict Transport Security
+add_header Strict-Transport-Security "max-age={{ grafana_security_headers.strict_transport_security_max_age_seconds }}{% if grafana_security_headers.strict_transport_security_subdomains %}; includeSubDomains{% endif %}{% if grafana_security_headers.strict_transport_security_preload %}; preload{% endif %}" always;
+{% endif %}
+
+{% if grafana_security_headers.x_content_type_options %}
+# Prevent MIME type sniffing
+add_header X-Content-Type-Options "nosniff" always;
+{% endif %}
+
+{% if grafana_security_headers.x_xss_protection %}
+# XSS Protection
+add_header X-XSS-Protection "1; mode=block" always;
+{% endif %}
+
+# Frame Options
+add_header X-Frame-Options "{{ grafana_security_headers.x_frame_options | upper }}" always;
+
+{% if grafana_security_headers.content_security_policy %}
+# Content Security Policy
+{% if grafana_security_headers.content_security_policy_template %}
+add_header Content-Security-Policy "{{ grafana_security_headers.content_security_policy_template }}" always;
+{% else %}
+add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' wss: ws:;" always;
+{% endif %}
+{% endif %}

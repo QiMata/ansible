@@ -1,0 +1,7 @@
+[Service]
+{% if grafana_memory_limit %}
+MemoryLimit={{ grafana_memory_limit }}
+{% endif %}
+{% if grafana_cpu_limit %}
+CPUQuota={{ grafana_cpu_limit }}
+{% endif %}

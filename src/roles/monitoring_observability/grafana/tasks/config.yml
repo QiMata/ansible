@@ -1,4 +1,12 @@
 ---
+- name: Create Grafana configuration directory
+  ansible.builtin.file:
+    path: /etc/grafana
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: '0755'
+
 - name: Configure Grafana
   ansible.builtin.template:
     src: grafana.ini.j2
@@ -6,10 +14,79 @@
     owner: root
     group: grafana
     mode: "0640"
+    backup: yes
   notify: Restart Grafana
+
+- name: Create Grafana data directory
+  ansible.builtin.file:
+    path: /var/lib/grafana
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: '0755'
+
+- name: Create Grafana log directory
+  ansible.builtin.file:
+    path: /var/log/grafana
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: '0755'
+
+- name: Create Grafana plugins directory
+  ansible.builtin.file:
+    path: /var/lib/grafana/plugins
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: '0755'
+
+- name: Create Grafana provisioning directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: '0755'
+  loop:
+    - "{{ grafana_provisioning_path }}"
+    - "{{ grafana_provisioning_path }}/datasources"
+    - "{{ grafana_provisioning_path }}/dashboards"
+    - "{{ grafana_provisioning_path }}/notifiers"
+    - "{{ grafana_provisioning_path }}/plugins"
+    - "{{ grafana_provisioning_path }}/access-control"
+    - "{{ grafana_provisioning_path }}/alerting"
+
+- name: Create systemd service override directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/grafana-server.service.d
+    state: directory
+    mode: '0755'
+  when: grafana_memory_limit or grafana_cpu_limit
+
+- name: Set up systemd service overrides for resource limits
+  ansible.builtin.template:
+    src: systemd-override.conf.j2
+    dest: /etc/systemd/system/grafana-server.service.d/limits.conf
+    mode: '0644'
+  when: grafana_memory_limit or grafana_cpu_limit
+  notify:
+    - reload systemd
+    - Restart Grafana
 
 - name: Ensure Grafana service is started and enabled
   ansible.builtin.service:
     name: "{{ grafana_service_name }}"
     state: started
     enabled: true
+
+- name: Wait for Grafana to be ready
+  ansible.builtin.uri:
+    url: "{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/api/health"
+    method: GET
+    status_code: 200
+  register: grafana_health_check
+  until: grafana_health_check.status == 200
+  retries: 30
+  delay: 5
+  when: grafana_lb_health_check_enabled

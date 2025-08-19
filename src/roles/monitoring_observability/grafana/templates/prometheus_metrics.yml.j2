@@ -1,0 +1,61 @@
+# Prometheus Metrics Configuration for Grafana
+
+# Metrics endpoint configuration
+endpoint: {{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}/metrics
+
+{% if grafana_monitoring_config.metrics_basic_auth_username %}
+# Authentication required
+basic_auth:
+  username: {{ grafana_monitoring_config.metrics_basic_auth_username }}
+  password: {{ grafana_monitoring_config.metrics_basic_auth_password }}
+{% endif %}
+
+# Available Grafana metrics:
+# - grafana_build_info: Build information
+# - grafana_stat_*: Statistics (users, dashboards, etc.)
+# - grafana_database_*: Database metrics
+# - grafana_http_*: HTTP request metrics
+# - grafana_api_*: API metrics
+# - grafana_alerting_*: Alerting metrics
+# - grafana_live_*: Live features metrics
+# - grafana_plugin_*: Plugin metrics
+
+# Sample Prometheus rules for Grafana monitoring:
+groups:
+  - name: grafana
+    rules:
+      - alert: GrafanaDown
+        expr: up{job="grafana"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Grafana is down"
+          description: "Grafana has been down for more than 5 minutes"
+
+      - alert: GrafanaHighMemoryUsage
+        expr: process_resident_memory_bytes{job="grafana"} / 1024 / 1024 > 1000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Grafana high memory usage"
+          description: "Grafana memory usage is above 1GB"
+
+      - alert: GrafanaHighCPUUsage
+        expr: rate(process_cpu_seconds_total{job="grafana"}[5m]) * 100 > 80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Grafana high CPU usage"
+          description: "Grafana CPU usage is above 80%"
+
+      - alert: GrafanaSlowQueries
+        expr: histogram_quantile(0.95, rate(grafana_http_request_duration_seconds_bucket{handler!~".*\\.css|.*\\.js|.*\\.png|.*\\.ico"}[5m])) > 5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Grafana slow queries"
+          description: "95th percentile of Grafana HTTP requests is above 5 seconds"

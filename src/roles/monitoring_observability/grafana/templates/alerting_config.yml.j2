@@ -1,0 +1,36 @@
+apiVersion: 1
+
+groups:
+{% for rule in grafana_alerting_rules %}
+  - name: {{ rule.group_name | default('default') }}
+    orgId: {{ rule.org_id | default(1) }}
+    folder: {{ rule.folder | default('alerting') }}
+    interval: {{ rule.group_interval | default('5m') }}
+    rules:
+      - uid: {{ rule.uid }}
+        title: {{ rule.title }}
+        condition: {{ rule.condition }}
+        data:
+{% for data_item in rule.data %}
+          - refId: {{ data_item.refId }}
+            queryType: {{ data_item.queryType | default('') }}
+            relativeTimeRange:
+              from: {{ data_item.relativeTimeRange.from | default(600) }}
+              to: {{ data_item.relativeTimeRange.to | default(0) }}
+            datasourceUid: {{ data_item.datasourceUid | default('prometheus-uid') }}
+            model: {{ data_item.model | to_json }}
+{% endfor %}
+        intervalSeconds: {{ rule.interval_seconds | default(60) }}
+        maxDataPoints: {{ rule.max_data_points | default(43200) }}
+        noDataState: {{ rule.no_data_state | default('NoData') }}
+        execErrState: {{ rule.exec_err_state | default('Alerting') }}
+        for: {{ rule.for_duration | default('5m') }}
+        annotations:
+{% for key, value in (rule.annotations | default({})).items() %}
+          {{ key }}: {{ value }}
+{% endfor %}
+        labels:
+{% for key, value in (rule.labels | default({})).items() %}
+          {{ key }}: {{ value }}
+{% endfor %}
+{% endfor %}

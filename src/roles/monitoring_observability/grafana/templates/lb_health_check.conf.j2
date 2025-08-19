@@ -1,0 +1,40 @@
+# Grafana Load Balancer Health Check Configuration
+
+# Health check endpoint: {{ grafana_lb_health_check_path }}
+# This endpoint should be used by load balancers to determine instance health
+
+{% if grafana_lb_health_check_enabled %}
+# Health check is enabled - load balancer should check:
+# URL: {{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}{{ grafana_lb_health_check_path }}
+# Expected response: HTTP 200
+# Content-Type: application/json
+
+# Example HAProxy configuration:
+# backend grafana_servers
+#     balance roundrobin
+#     option httpchk GET {{ grafana_lb_health_check_path }}
+#     http-check expect status 200
+#     server grafana1 {{ grafana_domain }}:{{ grafana_http_port }} check inter 5000ms
+#     server grafana2 other-grafana:{{ grafana_http_port }} check inter 5000ms
+
+# Example NGINX upstream configuration:
+# upstream grafana {
+#     server {{ grafana_domain }}:{{ grafana_http_port }} max_fails=3 fail_timeout=30s;
+#     server other-grafana:{{ grafana_http_port }} max_fails=3 fail_timeout=30s;
+# }
+#
+# location {{ grafana_lb_health_check_path }} {
+#     access_log off;
+#     proxy_pass http://grafana;
+#     proxy_set_header Host $host;
+# }
+
+{% else %}
+# Health check is disabled
+# Load balancer should use basic TCP check on port {{ grafana_http_port }}
+{% endif %}
+
+# Additional health indicators:
+# - Database connectivity (included in health endpoint)
+# - Session storage availability (Redis/file)
+# - API responsiveness

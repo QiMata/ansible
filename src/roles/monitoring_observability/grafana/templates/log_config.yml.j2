@@ -1,0 +1,61 @@
+# Grafana Logging Configuration
+
+# Log file locations
+log_files:
+  - /var/log/grafana/grafana.log
+  - /var/log/grafana/performance.log
+  - /var/log/grafana/monitoring_health.log
+  - /var/log/grafana/ha_monitor.log
+  - /var/log/grafana/alerting_health.log
+  - /var/log/grafana/dashboard_backup.log
+
+# Log level: {{ grafana_monitoring_config.logging_level }}
+
+# Grafana log configuration in grafana.ini:
+# [log]
+# mode = console file
+# level = {{ grafana_monitoring_config.logging_level }}
+# 
+# [log.console]
+# level = {{ grafana_monitoring_config.logging_level }}
+# format = console
+# 
+# [log.file]
+# level = {{ grafana_monitoring_config.logging_level }}
+# format = text
+# log_rotate = true
+# max_lines = 1000000
+# max_size_shift = 28
+# daily_rotate = true
+# max_days = 7
+
+# Rsyslog configuration for centralized logging:
+# $ModLoad imfile
+# $InputFileName /var/log/grafana/grafana.log
+# $InputFileTag grafana:
+# $InputFileStateFile stat-grafana
+# $InputFileSeverity info
+# $InputFileFacility local0
+# $InputRunFileMonitor
+#
+# local0.* @@your-log-server:514
+
+# Fluentd configuration:
+# <source>
+#   @type tail
+#   path /var/log/grafana/*.log
+#   pos_file /var/log/fluentd/grafana.log.pos
+#   tag grafana
+#   format json
+# </source>
+#
+# <match grafana>
+#   @type forward
+#   <server>
+#     name log-server
+#     host your-log-server
+#     port 24224
+#   </server>
+# </match>
+
+# Logrotate configuration is created automatically in /etc/logrotate.d/grafana-monitoring

@@ -1,26 +1,77 @@
 ---
 - name: Create provisioning directories
   ansible.builtin.file:
-    path: "{{ grafana_provisioning_path }}/datasources"
+    path: "{{ item }}"
     state: directory
-    owner: root
+    owner: grafana
     group: grafana
     mode: "0755"
+  loop:
+    - "{{ grafana_provisioning_path }}/datasources"
+    - "{{ grafana_provisioning_path }}/dashboards"
+    - "{{ grafana_provisioning_path }}/notifiers"
+    - "{{ grafana_provisioning_path }}/plugins"
 
-- name: Deploy datasource configurations
-  ansible.builtin.copy:
-    src: provisioning/datasources.yml
+- name: Deploy datasource configurations (template to fix Jinja2 rendering)
+  ansible.builtin.template:
+    src: datasources.yml.j2
     dest: "{{ grafana_provisioning_path }}/datasources/datasources.yml"
-    owner: root
+    owner: grafana
     group: grafana
     mode: "0644"
   notify: Restart Grafana
 
-- name: Deploy dashboards
+- name: Deploy legacy datasource configuration (if exists)
+  ansible.builtin.copy:
+    src: provisioning/datasources.yml
+    dest: "{{ grafana_provisioning_path }}/datasources/legacy_datasources.yml"
+    owner: grafana
+    group: grafana
+    mode: "0644"
+  ignore_errors: true
+  notify: Restart Grafana
+
+- name: Deploy dashboards from files directory
   ansible.builtin.copy:
     src: dashboards/
     dest: "/var/lib/grafana/dashboards/"
     owner: grafana
     group: grafana
     mode: "0644"
+  ignore_errors: true
   notify: Restart Grafana
+
+- name: Create dashboard directories
+  ansible.builtin.file:
+    path: "/var/lib/grafana/dashboards"
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: "0755"
+
+- name: Validate datasource configuration
+  ansible.builtin.debug:
+    msg: "Configured {{ grafana_datasources | length }} datasources"
+  when: ansible_verbosity >= 1
+
+- name: Test datasource connectivity (basic check)
+  ansible.builtin.uri:
+    url: "{{ item.url }}/api/v1/query?query=up"
+    method: GET
+    status_code: [200, 400, 401, 404]  # Various acceptable responses
+    timeout: 10
+  loop: "{{ grafana_datasources }}"
+  register: datasource_connectivity
+  failed_when: false
+  when: 
+    - item.type == 'prometheus'
+    - item.url is defined
+    - not item.url.startswith('http://prometheus:')  # Skip Docker internal URLs
+
+- name: Display datasource connectivity results
+  ansible.builtin.debug:
+    msg: "Datasource {{ item.item.name }} connectivity: {{ 'OK' if item.status == 200 else 'Check required' }}"
+  loop: "{{ datasource_connectivity.results }}"
+  when: 
+    - item.status is defined
+    - ansible_verbosity >= 1

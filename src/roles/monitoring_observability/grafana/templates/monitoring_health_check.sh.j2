@@ -1,0 +1,69 @@
+#!/bin/bash
+# Grafana Monitoring Health Check Script
+
+GRAFANA_URL="{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}"
+ADMIN_USER="{{ grafana_admin_user }}"
+ADMIN_PASS="{{ grafana_admin_password }}"
+TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+
+echo "${TIMESTAMP} - Starting Grafana monitoring health check"
+
+# Check Grafana health endpoint
+HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${GRAFANA_URL}/api/health")
+echo "${TIMESTAMP} - Health endpoint status: ${HEALTH_STATUS}"
+
+# Check metrics endpoint
+{% if grafana_monitoring_config.metrics_enabled %}
+{% if grafana_monitoring_config.metrics_basic_auth_username %}
+METRICS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+    -u "{{ grafana_monitoring_config.metrics_basic_auth_username }}:{{ grafana_monitoring_config.metrics_basic_auth_password }}" \
+    "${GRAFANA_URL}/metrics")
+{% else %}
+METRICS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${GRAFANA_URL}/metrics")
+{% endif %}
+echo "${TIMESTAMP} - Metrics endpoint status: ${METRICS_STATUS}"
+{% endif %}
+
+# Check database connectivity
+DB_STATUS=$(curl -s -u "${ADMIN_USER}:${ADMIN_PASS}" \
+    "${GRAFANA_URL}/api/admin/stats" | \
+    jq -r '.users // "error"')
+echo "${TIMESTAMP} - Database connectivity: ${DB_STATUS}"
+
+# Check data source health
+DATASOURCE_COUNT=$(curl -s -u "${ADMIN_USER}:${ADMIN_PASS}" \
+    "${GRAFANA_URL}/api/datasources" | \
+    jq 'length')
+echo "${TIMESTAMP} - Configured data sources: ${DATASOURCE_COUNT}"
+
+# Check for any data source health issues
+DATASOURCE_HEALTH=$(curl -s -u "${ADMIN_USER}:${ADMIN_PASS}" \
+    "${GRAFANA_URL}/api/datasources" | \
+    jq -r '.[] | select(.readOnly == false) | .name')
+
+for ds in $DATASOURCE_HEALTH; do
+    DS_ID=$(curl -s -u "${ADMIN_USER}:${ADMIN_PASS}" \
+        "${GRAFANA_URL}/api/datasources/name/${ds}" | \
+        jq -r '.id')
+    
+    DS_CHECK=$(curl -s -u "${ADMIN_USER}:${ADMIN_PASS}" \
+        "${GRAFANA_URL}/api/datasources/${DS_ID}/health" | \
+        jq -r '.status // "unknown"')
+    
+    echo "${TIMESTAMP} - Data source '${ds}' health: ${DS_CHECK}"
+done
+
+# Check plugin status
+PLUGIN_COUNT=$(curl -s -u "${ADMIN_USER}:${ADMIN_PASS}" \
+    "${GRAFANA_URL}/api/plugins" | \
+    jq '[.[] | select(.enabled == true)] | length')
+echo "${TIMESTAMP} - Active plugins: ${PLUGIN_COUNT}"
+
+# Overall health assessment
+if [ "${HEALTH_STATUS}" = "200" ] && [ "${DB_STATUS}" != "error" ]; then
+    echo "${TIMESTAMP} - ✓ Grafana monitoring is healthy"
+    exit 0
+else
+    echo "${TIMESTAMP} - ⚠ Grafana monitoring has issues"
+    exit 1
+fi

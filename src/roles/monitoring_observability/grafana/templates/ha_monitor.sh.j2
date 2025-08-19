@@ -1,0 +1,67 @@
+#!/bin/bash
+# Grafana HA Monitoring Script
+
+GRAFANA_URL="{{ grafana_protocol }}://{{ grafana_domain }}:{{ grafana_http_port }}"
+TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+LOG_PREFIX="${TIMESTAMP} [HA-MONITOR]"
+
+echo "${LOG_PREFIX} Starting Grafana HA health check"
+
+# Check Grafana health endpoint
+HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${GRAFANA_URL}/api/health")
+echo "${LOG_PREFIX} Health endpoint status: ${HEALTH_STATUS}"
+
+# Check database connectivity
+DB_STATUS="unknown"
+{% if grafana_database.type == 'postgres' %}
+DB_STATUS=$(psql -h {{ grafana_database.host.split(':')[0] }} -p {{ grafana_database.host.split(':')[1] | default('5432') }} -U {{ grafana_database.user }} -d {{ grafana_database.name }} -c "SELECT 1;" 2>/dev/null && echo "ok" || echo "error")
+{% elif grafana_database.type == 'mysql' %}
+DB_STATUS=$(mysql -h {{ grafana_database.host.split(':')[0] }} -P {{ grafana_database.host.split(':')[1] | default('3306') }} -u {{ grafana_database.user }} -p{{ grafana_database.password }} -D {{ grafana_database.name }} -e "SELECT 1;" 2>/dev/null && echo "ok" || echo "error")
+{% endif %}
+echo "${LOG_PREFIX} Database connectivity: ${DB_STATUS}"
+
+# Check session storage
+SESSION_STATUS="unknown"
+{% if grafana_session_provider == 'redis' %}
+REDIS_HOST="{{ grafana_session_provider_config.split(',')[0] if grafana_session_provider_config else 'localhost:6379' }}"
+SESSION_STATUS=$(redis-cli -h ${REDIS_HOST%:*} -p ${REDIS_HOST#*:} ping 2>/dev/null || echo "error")
+{% else %}
+SESSION_STATUS="file-based"
+{% endif %}
+echo "${LOG_PREFIX} Session storage status: ${SESSION_STATUS}"
+
+# Check if this instance can serve requests
+API_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${GRAFANA_URL}/api/admin/stats")
+echo "${LOG_PREFIX} API responsiveness: ${API_STATUS}"
+
+# Overall health assessment
+HEALTHY=true
+
+if [ "${HEALTH_STATUS}" != "200" ]; then
+    echo "${LOG_PREFIX} ERROR: Health endpoint failed"
+    HEALTHY=false
+fi
+
+if [ "${DB_STATUS}" = "error" ]; then
+    echo "${LOG_PREFIX} ERROR: Database connectivity failed"
+    HEALTHY=false
+fi
+
+{% if grafana_session_provider == 'redis' %}
+if [ "${SESSION_STATUS}" != "PONG" ]; then
+    echo "${LOG_PREFIX} ERROR: Redis session storage failed"
+    HEALTHY=false
+fi
+{% endif %}
+
+if [ "${API_STATUS}" != "200" ]; then
+    echo "${LOG_PREFIX} WARNING: API not fully responsive"
+fi
+
+if [ "${HEALTHY}" = "true" ]; then
+    echo "${LOG_PREFIX} ✓ HA instance is healthy"
+    exit 0
+else
+    echo "${LOG_PREFIX} ✗ HA instance has issues"
+    exit 1
+fi

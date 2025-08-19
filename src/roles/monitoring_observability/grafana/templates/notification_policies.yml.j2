@@ -1,0 +1,26 @@
+apiVersion: 1
+
+policies:
+  - orgId: 1
+    receiver: {{ grafana_notification_policies[0].receiver | default('grafana-default-email') }}
+    group_by: {{ grafana_notification_policies[0].group_by | default(['grafana_folder', 'alertname']) | to_json }}
+    group_wait: {{ grafana_notification_policies[0].group_wait | default('10s') }}
+    group_interval: {{ grafana_notification_policies[0].group_interval | default('5m') }}
+    repeat_interval: {{ grafana_notification_policies[0].repeat_interval | default('12h') }}
+    routes:
+{% for policy in grafana_notification_policies %}
+{% if policy.routes is defined %}
+{% for route in policy.routes %}
+      - receiver: {{ route.receiver }}
+        object_matchers:
+{% for matcher in route.object_matchers | default([]) %}
+          - [{{ matcher.name }}, {{ matcher.type }}, {{ matcher.value }}]
+{% endfor %}
+        group_by: {{ route.group_by | default(['grafana_folder', 'alertname']) | to_json }}
+        group_wait: {{ route.group_wait | default('10s') }}
+        group_interval: {{ route.group_interval | default('5m') }}
+        repeat_interval: {{ route.repeat_interval | default('12h') }}
+        continue: {{ route.continue | default(false) | lower }}
+{% endfor %}
+{% endif %}
+{% endfor %}

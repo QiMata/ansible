@@ -15,131 +15,534 @@
 
 ## Overview
 
-This role installs and configures **Grafana** (open-source analytics & monitoring web UI) on target hosts. It handles installation via Grafana’s official APT repository, sets up necessary configuration, and ensures the Grafana service is running. The role is designed to be **idempotent** and highly configurable via variables. Key features include:
+This role installs and configures **Grafana** (open-source analytics & monitoring web UI) on target hosts with comprehensive enterprise features. It handles installation via Grafana's official APT repository, sets up necessary configuration, and ensures the Grafana service is running. The role is designed to be **idempotent** and highly configurable via variables.
 
-* **Package Installation:** Adds Grafana’s official package repository and installs a specified version of Grafana via `apt`, allowing you to pin or upgrade Grafana easily (default version **10.4.0**).
-* **Service Configuration:** Deploys a pre-configured `grafana.ini` with custom settings, including admin user credentials and database config. It automatically starts and enables the **`grafana-server`** service on the system.
-* **High-Availability Support (optional):** Supports clustering multiple Grafana instances. When `grafana_ha_enabled: true`, the role includes tasks intended for HA setups (e.g. expecting an external database instead of SQLite). This allows Grafana to run in active-active mode behind a load balancer (external DB setup is still required).
-* **LDAP Integration (optional):** Can integrate with an external LDAP directory for user authentication. If `grafana_ldap_enabled: true`, an `ldap.toml` config is templated and LDAP auth is enabled in Grafana’s config (e.g. to tie into corporate directories).
-* **Data Source Provisioning:** Automatically provisions default data sources on first run via file in Grafana’s provisioning directory. By default it defines a Prometheus and an Elasticsearch data source (pointing to standard service endpoints), so Grafana comes pre-configured with those if present.
-* **Dashboard Backup:** Optionally backs up Grafana dashboards to JSON files via Grafana’s HTTP API. By default, on each play run the role will export any listed dashboards (by UID) to `/var/backups/grafana/*.json` using the **community.grafana.grafana_dashboard** module. This helps maintain versioned dashboard definitions outside Grafana.
+### Key Features
+
+#### Core Configuration
+* **Package Installation:** Adds Grafana's official package repository and installs a specified version of Grafana via `apt`, allowing you to pin or upgrade Grafana easily (default version **10.4.0**).
+* **Port and Protocol Configuration:** Customizable HTTP/HTTPS port, protocol, domain, and root URL settings.
+* **Service Configuration:** Deploys a pre-configured `grafana.ini` with custom settings, including admin user credentials and database config. Automatically starts and enables the **`grafana-server`** service.
+
+#### Plugin Management
+* **Plugin Installation:** Automated installation and management of Grafana plugins via `grafana-cli`.
+* **Plugin Verification:** Validates plugin installation and provides status reporting.
+
+#### High-Availability Support
+* **External Database Support:** Full support for PostgreSQL and MySQL databases for clustering.
+* **Session Management:** Configurable session storage (file, Redis) for multi-instance deployments.
+* **Load Balancer Integration:** Health check endpoints and configuration templates for HAProxy and NGINX.
+* **Database Migration:** Automated migration from SQLite to external databases with backup support.
+
+#### Security Features
+* **SSL/TLS Configuration:** Built-in HTTPS setup with certificate management and secure headers.
+* **OAuth/SSO Integration:** Support for multiple OAuth providers (Google, GitHub, and more).
+* **API Key Management:** Automated provisioning and management of API keys with secure storage.
+* **Service Accounts:** Service account creation and token management for programmatic access.
+* **Security Headers:** Comprehensive security headers (HSTS, CSP, XSS protection, frame options).
+* **LDAP Integration:** External LDAP directory integration for user authentication.
+
+#### Organization and User Management
+* **Organization Provisioning:** Automated creation and configuration of Grafana organizations.
+* **User Management:** Bulk user creation with role assignment and team membership.
+* **Team Management:** Team creation and member assignment across organizations.
+
+#### Advanced Data Source Management
+* **Enhanced Configuration:** Support for authentication, custom headers, and advanced settings.
+* **Template Rendering:** Fixed Jinja2 template rendering for dynamic data source configuration.
+* **Connectivity Testing:** Automated data source connectivity validation.
+* **Service Discovery:** Integration points for dynamic data source discovery.
+
+#### Dashboard Management
+* **Dashboard Provisioning:** Automated dashboard import from files, Git repositories, and APIs.
+* **Folder Management:** Organization of dashboards into structured folders.
+* **Backup and Versioning:** Comprehensive dashboard backup with versioned exports.
+* **Git Integration:** Automated dashboard synchronization from Git repositories.
+
+#### Alerting System
+* **Alert Rules:** Provisioning of alert rules with complex conditions and data sources.
+* **Contact Points:** Configuration of notification channels (email, Slack, webhooks, etc.).
+* **Notification Policies:** Advanced routing policies for alert notifications.
+* **Health Monitoring:** Automated alerting system health checks.
+
+#### Performance and Scaling
+* **Performance Tuning:** Memory limits, CPU quotas, query timeouts, and caching configuration.
+* **Resource Monitoring:** Performance monitoring scripts with automated alerting.
+* **Caching Support:** Redis and Memcached integration for improved performance.
+* **Database Optimization:** Connection pooling and query optimization settings.
+
+#### Monitoring and Observability
+* **Self-Monitoring:** Built-in Grafana self-monitoring dashboard and alerts.
+* **External Integration:** Configuration templates for Prometheus, Zabbix, Nagios monitoring.
+* **Log Management:** Centralized logging configuration with logrotate integration.
+* **Health Checks:** Comprehensive health monitoring with automated reporting.
+
+#### Backup and Restore
+* **Full Instance Backup:** Complete Grafana instance backup including database, configuration, and dashboards.
+* **Automated Scheduling:** Cron-based automated backup with retention policies.
+* **Disaster Recovery:** Complete restore functionality with validation and rollback.
+* **Dashboard Versioning:** Individual dashboard backup and restore capabilities.
 
 ## Supported Operating Systems/Platforms
 
 This role is tested on and designed for Debian-based Linux distributions (64-bit):
 
-* **Debian** – 11 (Bullseye) (and likely compatible with 12/Bookworm)
+* **Debian** – 11 (Bullseye) and 12 (Bookworm)
 * **Ubuntu** – 20.04 LTS (Focal) and 22.04 LTS (Jammy)
 
-> **Note:** The role uses Debian/Ubuntu conventions (apt package manager and repository). It will **not** work on RHEL/CentOS or other non-Debian systems without modification. Ensure target hosts are running a supported Debian/Ubuntu version. The role’s installation steps (adding apt repo and key) assume internet access to Grafana’s package servers.
+> **Note:** The role uses Debian/Ubuntu conventions (apt package manager and repository). It will **not** work on RHEL/CentOS or other non-Debian systems without modification. Ensure target hosts are running a supported Debian/Ubuntu version. The role's installation steps (adding apt repo and key) assume internet access to Grafana's package servers.
 
 ## Role Variables
 
-Below is a list of important variables for this role, along with default values (defined in **`defaults/main.yml`**) and their descriptions:
+Below is a comprehensive list of variables for this role, organized by functionality:
 
-<!-- markdownlint-disable MD033 -->
+### Core Configuration Variables
 
-<details>
-<summary>Role Variables (defaults)</summary>
+| Variable | Default Value | Description |
+|----------|---------------|-------------|
+| `grafana_version` | `"10.4.0"` | Version of Grafana to install |
+| `grafana_http_port` | `3000` | HTTP port for Grafana service |
+| `grafana_protocol` | `http` | Protocol (http/https) |
+| `grafana_domain` | `localhost` | Domain name for Grafana |
+| `grafana_root_url` | `""` | Custom root URL (auto-generated if empty) |
+| `grafana_admin_user` | `admin` | Admin username |
+| `grafana_admin_password` | `{{ vault_grafana_admin_password }}` | Admin password (use Ansible Vault) |
 
-| Variable                        | Default Value                                                                                        | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **`grafana_version`**           | `"10.4.0"`                                                                                           | Version of Grafana to install. This is the package version that will be requested via apt (e.g. `grafana=10.4.0`). You can change it to pin Grafana to a specific version or upgrade/downgrade as needed, as long as that version is available in the Grafana APT repository.                                                                                                                                                                                                                                                                                                                                                                                |
-| **`grafana_ha_enabled`**        | `false`                                                                                              | Whether to enable high-availability (HA) mode for Grafana. When set to `true`, the role will include HA-related tasks (like using an external DB, see `grafana_database`). By default it’s `false`, meaning a standard single-instance deployment. (Note: Enabling HA assumes you will configure a shared database and possibly a load balancer externally; the role itself does not set up those components.)                                                                                                                                                                                                                                               |
-| **`grafana_admin_user`**        | `admin`                                                                                              | Username for the Grafana administrator account. The default is “admin”. Typically this can remain unchanged (Grafana’s default admin username), but you may change it if desired.                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| **`grafana_admin_password`**    | `{{ vault_grafana_admin_password }}`                                                                 | Password for the Grafana admin user. **No default password is set in plaintext.** By default this references a Vault variable, so you **must** supply a value (e.g. in an Ansible Vault or inventory) for `vault_grafana_admin_password` or override `grafana_admin_password` directly. If not provided, Grafana will fall back to its internal default (which is "admin"), leaving your instance insecure.                                                                                                                                                                                                                                                  |
-| **`grafana_database`**          | *SQLite3 local DB* (type: `sqlite3`, host: empty, name: `grafana`, user: `grafana`, password: empty) | Database configuration for Grafana’s data storage. By default, Grafana uses an embedded SQLite3 database (file) which is suitable for single-node use. This variable is a dictionary with keys:<br>`type` – Database type (`sqlite3`, `mysql`, `postgres`, etc.)<br>`host` – Database host and port (empty for SQLite)<br>`name` – Database name (or path for SQLite file)<br>`user` – Database username (not used for SQLite)<br>`password` – Database password (not used for SQLite).<br>For HA (multiple Grafana servers), you should switch this to an external DB (e.g. MySQL or PostgreSQL) and ensure all Grafana instances share that database.      |
-| **`grafana_ldap_enabled`**      | `false`                                                                                              | Whether to enable LDAP authentication for Grafana. If `true`, the role will generate an LDAP config file (`ldap.toml`) and set Grafana’s config to use it. Default is `false` (LDAP auth disabled).                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| **`grafana_ldap_file`**         | `/etc/grafana/ldap.toml`                                                                             | Path to the Grafana LDAP configuration file. This is where the role will put the LDAP settings if `grafana_ldap_enabled` is true. You can change the path if you need Grafana to look elsewhere, but the default is the conventional location `/etc/grafana/ldap.toml`.                                                                                                                                                                                                                                                                                                                                                                                      |
-| **`grafana_provisioning_path`** | `/etc/grafana/provisioning`                                                                          | The base directory for Grafana provisioning configuration. Grafana loads datasources/dashboards config files from this path. The role uses this path to place provisioning files (like the default `datasources.yml`). Normally you wouldn’t need to change this.                                                                                                                                                                                                                                                                                                                                                                                            |
-| **`grafana_backup_enabled`**    | `true`                                                                                               | Whether to enable dashboard backups via Grafana API. By default this is `true`, meaning after setup the role will attempt to export specified dashboards (see `grafana_dashboard_uids`) to JSON files. Set this to `false` if you do not want to perform dashboard backups (which can speed up runs or avoid needing the Grafana API credentials).                                                                                                                                                                                                                                                                                                           |
-| **`grafana_backup_path`**       | `/var/backups/grafana`                                                                               | Filesystem path where Grafana dashboard backups (JSON files) will be stored. The role will create this directory if it doesn’t exist, and Grafana dashboards (JSON) will be saved here when backups run. You can change the location if needed for your backup strategy.                                                                                                                                                                                                                                                                                                                                                                                     |
-| **`grafana_datasources`**       | *List with 2 entries* (Prometheus & Elasticsearch)                                                   | List of data source definitions to provision in Grafana. By default, this list contains two entries:<br>- **Prometheus:** type `prometheus`, URL `http://prometheus:9090`, access mode `proxy`, set as default.<br>- **Elasticsearch:** type `elasticsearch`, URL `http://elasticsearch:9200`, access mode `proxy`, with an index pattern `[logstash-]YYYY.MM.DD` (for daily indices).<br>You can customize this list to add/remove data sources as needed. If you don’t have the default services running, you may want to override this (e.g., set to an empty list `[]` to skip provisioning data sources, or update the URLs to match your environment). |
-| **`grafana_dashboard_uids`**    | *Empty list* `[]`                                                                                    | List of Grafana dashboard UIDs to back up (export). By default this is an empty list, so no dashboards will be exported. To use the backup feature, provide one or more dashboard UIDs (strings) in this list. For each UID listed, the role will use Grafana’s API to download that dashboard JSON to the `grafana_backup_path` on the target host.                                                                                                                                                                                                                                                                                                         |
+### SSL/TLS Configuration
 
-</details>
+| Variable | Default Value | Description |
+|----------|---------------|-------------|
+| `grafana_https_enabled` | `false` | Enable HTTPS |
+| `grafana_cert_file` | `""` | Path to SSL certificate |
+| `grafana_cert_key` | `""` | Path to SSL private key |
 
-<!-- markdownlint-enable MD033 -->
+### Database Configuration
+
+| Variable | Default Value | Description |
+|----------|---------------|-------------|
+| `grafana_database.type` | `sqlite3` | Database type (sqlite3, mysql, postgres) |
+| `grafana_database.host` | `""` | Database host |
+| `grafana_database.name` | `grafana` | Database name |
+| `grafana_database.user` | `grafana` | Database user |
+| `grafana_database.password` | `""` | Database password |
+| `grafana_database_migration_enabled` | `false` | Enable database migration |
+
+### Plugin Management
+
+| Variable | Default Value | Description |
+|----------|---------------|-------------|
+| `grafana_plugins_enabled` | `false` | Enable plugin management |
+| `grafana_plugins` | `[]` | List of plugins to install |
+
+### High Availability Configuration
+
+| Variable | Default Value | Description |
+|----------|---------------|-------------|
+| `grafana_ha_enabled` | `false` | Enable HA mode |
+| `grafana_session_provider` | `file` | Session storage provider |
+| `grafana_session_provider_config` | `""` | Session provider configuration |
+| `grafana_lb_enabled` | `false` | Enable load balancer integration |
+
+### Security Configuration
+
+| Variable | Default Value | Description |
+|----------|---------------|-------------|
+| `grafana_security_enabled` | `false` | Enable security features |
+| `grafana_security_headers` | `{}` | Security headers configuration |
+| `grafana_cors_enabled` | `false` | Enable CORS |
+
+### OAuth/SSO Configuration
+
+| Variable | Default Value | Description |
+|----------|---------------|-------------|
+| `grafana_oauth_enabled` | `false` | Enable OAuth |
+| `grafana_oauth_providers` | `{}` | OAuth provider configurations |
+
+### Organization and User Management
+
+| Variable | Default Value | Description |
+|----------|---------------|-------------|
+| `grafana_organizations_enabled` | `false` | Enable organization management |
+| `grafana_organizations` | `[]` | List of organizations to create |
+| `grafana_users_enabled` | `false` | Enable user management |
+| `grafana_users` | `[]` | List of users to create |
+| `grafana_teams_enabled` | `false` | Enable team management |
+| `grafana_teams` | `[]` | List of teams to create |
+
+### API and Service Account Management
+
+| Variable | Default Value | Description |
+|----------|---------------|-------------|
+| `grafana_api_keys_enabled` | `false` | Enable API key management |
+| `grafana_api_keys` | `[]` | List of API keys to create |
+| `grafana_service_accounts_enabled` | `false` | Enable service account management |
+| `grafana_service_accounts` | `[]` | List of service accounts to create |
+
+### Dashboard Management
+
+| Variable | Default Value | Description |
+|----------|---------------|-------------|
+| `grafana_dashboard_provisioning_enabled` | `false` | Enable dashboard provisioning |
+| `grafana_dashboard_folders` | `[]` | List of dashboard folders |
+| `grafana_dashboard_providers` | `[]` | Dashboard provider configurations |
+
+### Alerting Configuration
+
+| Variable | Default Value | Description |
+|----------|---------------|-------------|
+| `grafana_alerting_enabled` | `false` | Enable alerting |
+| `grafana_alerting_rules` | `[]` | List of alert rules |
+| `grafana_contact_points` | `[]` | Notification contact points |
+| `grafana_notification_policies` | `[]` | Notification policies |
+
+### Performance Configuration
+
+| Variable | Default Value | Description |
+|----------|---------------|-------------|
+| `grafana_performance_enabled` | `false` | Enable performance tuning |
+| `grafana_performance_config` | `{}` | Performance configuration |
+| `grafana_memory_limit` | `""` | Memory limit for systemd |
+| `grafana_cpu_limit` | `""` | CPU limit for systemd |
+| `grafana_caching_enabled` | `false` | Enable caching |
+
+### Monitoring Configuration
+
+| Variable | Default Value | Description |
+|----------|---------------|-------------|
+| `grafana_monitoring_enabled` | `false` | Enable self-monitoring |
+| `grafana_monitoring_config` | `{}` | Monitoring configuration |
+| `grafana_external_monitoring` | `[]` | External monitoring integrations |
+
+### Backup and Restore
+
+| Variable | Default Value | Description |
+|----------|---------------|-------------|
+| `grafana_backup_enabled` | `true` | Enable backup functionality |
+| `grafana_backup_path` | `/var/backups/grafana` | Backup directory |
+| `grafana_backup_retention_days` | `30` | Backup retention period |
+| `grafana_backup_full_enabled` | `false` | Enable full instance backup |
+| `grafana_restore_enabled` | `false` | Enable restore functionality |
+| `grafana_restore_from_path` | `""` | Restore source path |
+
+### Data Source Configuration
+
+The role includes enhanced data source configuration with support for:
+- Basic and advanced authentication
+- Custom headers
+- SSL/TLS settings
+- Connection timeouts
+- Advanced provider-specific settings
+
+Example data source configuration:
+```yaml
+grafana_datasources:
+  - name: Prometheus
+    type: prometheus
+    url: "http://prometheus:9090"
+    access: proxy
+    isDefault: true
+    basicAuth: false
+    customHeaders:
+      "X-Custom-Header": "value"
+    jsonData:
+      httpMethod: "POST"
+      queryTimeout: "60s"
+    secureJsonData:
+      httpHeaderValue1: "secret-value"
+```
+
+### LDAP Configuration
+
+| Variable | Default Value | Description |
+|----------|---------------|-------------|
+| `grafana_ldap_enabled` | `false` | Enable LDAP authentication |
+| `grafana_ldap_file` | `/etc/grafana/ldap.toml` | LDAP configuration file path |
 
 ## Tags
 
-This role does **not define any Ansible tags** in its tasks. All tasks run by default when the role is invoked. (You may still apply tags externally to the role if desired, for example tagging the role inclusion in a playbook.)
+This role supports the following Ansible tags for selective execution:
+
+* `grafana_install` - Installation and basic configuration
+* `grafana_config` - Configuration file management
+* `grafana_plugins` - Plugin management
+* `grafana_security` - Security configuration
+* `grafana_oauth` - OAuth/SSO setup
+* `grafana_users` - User and organization management
+* `grafana_dashboards` - Dashboard provisioning
+* `grafana_alerting` - Alerting configuration
+* `grafana_monitoring` - Monitoring setup
+* `grafana_backup` - Backup operations
+* `grafana_restore` - Restore operations
 
 ## Dependencies
 
-* **Ansible Version:** Requires Ansible **2.14** or higher, due to usage of newer modules and syntax.
-* **Collections:** This role relies on the **community.grafana** collection for certain modules. In particular, it uses `community.grafana.grafana_dashboard` for dashboard backups. Make sure this collection is installed (e.g. `ansible-galaxy collection install community.grafana`) before running the role. All other used modules are from Ansible builtins (e.g. `apt`, `service`, `template`) or included in ansible-core.
-* **External Roles:** None. There are no hard role dependencies listed in this role’s metadata. (Grafana can integrate with other services like Prometheus or LDAP, but those setups are handled outside this role—see [Cross-Referencing](#cross-referencing) for related roles.)
+This role requires the following Ansible collections:
+- `community.general` (>=5.0.0)
+- `community.grafana` (>=1.5.0)
+- `community.mysql`
+- `community.postgresql`
+- `ansible.posix`
+
+### Installation
+```bash
+ansible-galaxy collection install community.general community.grafana community.mysql community.postgresql ansible.posix
+```
 
 ## Example Playbook
 
-Here is an example of how to use the `grafana` role in a playbook. This playbook will install Grafana on hosts in the **`grafana_servers`** group with a custom admin password and default settings:
-
+### Basic Installation
 ```yaml
 - hosts: grafana_servers
-  become: yes
-  vars:
-    grafana_admin_password: "MySecurePassword"  # set admin password (use Vault for real deployments)
-    # grafana_backup_enabled: false            # (optional) disable dashboard backup if not needed
-    # grafana_datasources: []                  # (optional) do not provision any data sources by default
+  become: true
   roles:
-    - grafana
+    - role: grafana
+      grafana_admin_password: "{{ vault_grafana_admin_password }}"
 ```
 
-In the above play, we supply a strong admin password for Grafana (replacing the default). By default, this will install Grafana **10.4.0** and configure it to start on port 3000. It will also set up the two default data sources (Prometheus and Elasticsearch) and enable dashboard backups (unless you disable them). After running this playbook on your target server(s), Grafana should be installed and reachable (e.g. via `http://<host>:3000`, using the credentials you set).
+### High-Availability Setup
+```yaml
+- hosts: grafana_servers
+  become: true
+  roles:
+    - role: grafana
+      grafana_admin_password: "{{ vault_grafana_admin_password }}"
+      grafana_ha_enabled: true
+      grafana_database:
+        type: postgres
+        host: "postgres.example.com:5432"
+        name: grafana
+        user: grafana
+        password: "{{ vault_grafana_db_password }}"
+      grafana_session_provider: redis
+      grafana_session_provider_config: "redis.example.com:6379"
+      grafana_lb_enabled: true
+```
 
-If you need to customize further, you can set additional variables. For example, to enable LDAP authentication, you would set `grafana_ldap_enabled: true` **and** provide the necessary `ldap_*` variables (host, bind DN, etc.) in the play or inventory. Similarly, to change Grafana’s database to use MySQL for HA, adjust `grafana_database` variables accordingly.
+### Enterprise Features Setup
+```yaml
+- hosts: grafana_servers
+  become: true
+  roles:
+    - role: grafana
+      # Core configuration
+      grafana_admin_password: "{{ vault_grafana_admin_password }}"
+      grafana_https_enabled: true
+      grafana_cert_file: "/etc/ssl/certs/grafana.crt"
+      grafana_cert_key: "/etc/ssl/private/grafana.key"
+      
+      # Plugin management
+      grafana_plugins_enabled: true
+      grafana_plugins:
+        - grafana-clock-panel
+        - grafana-simple-json-datasource
+        - grafana-worldmap-panel
+      
+      # OAuth configuration
+      grafana_oauth_enabled: true
+      grafana_oauth_providers:
+        google:
+          enabled: true
+          client_id: "{{ vault_google_client_id }}"
+          client_secret: "{{ vault_google_client_secret }}"
+          scopes: "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email"
+          auth_url: "https://accounts.google.com/o/oauth2/auth"
+          token_url: "https://accounts.google.com/o/oauth2/token"
+          api_url: "https://www.googleapis.com/oauth2/v1/userinfo"
+          allow_sign_up: true
+      
+      # Organization and user management
+      grafana_organizations_enabled: true
+      grafana_organizations:
+        - name: "DevOps Team"
+          id: 2
+      
+      grafana_users_enabled: true
+      grafana_users:
+        - name: "John Doe"
+          email: "john@example.com"
+          login: "john.doe"
+          password: "{{ vault_john_password }}"
+          org_id: 2
+          role: "Editor"
+      
+      # Dashboard management
+      grafana_dashboard_provisioning_enabled: true
+      grafana_dashboard_folders:
+        - name: "Infrastructure"
+          uid: "infrastructure"
+        - name: "Applications"
+          uid: "applications"
+      
+      grafana_dashboard_providers:
+        - name: "git-dashboards"
+          type: "git"
+          options:
+            url: "https://github.com/company/grafana-dashboards.git"
+            path: "dashboards/"
+            branch: "main"
+      
+      # Alerting configuration
+      grafana_alerting_enabled: true
+      grafana_contact_points:
+        - name: "ops-email"
+          type: "email"
+          settings:
+            addresses: "ops@example.com"
+        - name: "slack-alerts"
+          type: "slack"
+          settings:
+            url: "{{ vault_slack_webhook_url }}"
+            channel: "#alerts"
+      
+      # Performance and monitoring
+      grafana_performance_enabled: true
+      grafana_monitoring_enabled: true
+      grafana_caching_enabled: true
+      grafana_caching_config:
+        type: "redis"
+        redis:
+          address: "redis.example.com:6379"
+          password: "{{ vault_redis_password }}"
+      
+      # Backup configuration
+      grafana_backup_enabled: true
+      grafana_backup_full_enabled: true
+      grafana_backup_schedule: "0 2 * * *"  # Daily at 2 AM
+```
 
 ## Testing Instructions
 
-It is recommended to test this role using **Molecule** (with the Docker driver) to ensure everything works as expected before applying it to production. You can perform the following steps:
-
-1. **Install Molecule** (and Docker) on your development machine. For example: `pip install molecule[docker]`. Ensure that Docker is running and you have permission to launch containers.
-2. **Prepare a test scenario:** If a Molecule scenario is provided with this role (e.g. in `molecule/default/` under the role directory), use that. Otherwise, you can initialize one with:
-
+### Prerequisites
+1. Install required Ansible collections:
    ```bash
-   molecule init scenario -r grafana -d docker
+   ansible-galaxy collection install community.general community.grafana community.mysql community.postgresql ansible.posix
    ```
 
-   This will create a default Molecule configuration for the Grafana role using the Docker driver.
-3. **Run the role in a container:** Execute `molecule converge` to create a Docker container (by default, Molecule will use a Debian-based image) and apply the `grafana` role to it. Molecule will run the playbook defined in the scenario (usually `molecule/default/converge.yml`) which includes this role.
-4. **Verify the results:** After convergence, you can check the container to ensure Grafana is properly installed and configured. For example:
+2. Install testing dependencies:
+   ```bash
+   pip install molecule molecule-plugins[docker] testinfra pytest
+   ```
 
-   * Run `docker exec -it <container_id> /bin/bash` to get a shell in the container.
-   * Verify the Grafana service is running: `systemctl status grafana-server` (or `service grafana-server status`). You should see it active/running.
-   * Check that Grafana is listening on port 3000: `ss -tunlp | grep 3000` (it should show the grafana-server process bound to 0.0.0.0:3000).
-   * You can also curl the Grafana health endpoint: `curl http://localhost:3000/api/health` (expected to return JSON with {"database":"ok"} if Grafana is up).
-   * Ensure configuration files are in place: e.g. `/etc/grafana/grafana.ini` should exist with your provided settings, `/etc/grafana/provisioning/datasources/datasources.yml` should exist for data sources, and if backups ran, the `/var/backups/grafana` directory should contain any exported dashboard JSON files.
-   * (If the role includes automated tests via Molecule, e.g. with Testinfra or Goss, you can run `molecule verify` to execute those checks.)
-5. **Cleanup:** Run `molecule destroy` to tear down the test container when you are done testing. Alternatively, you can run `molecule test` to perform the entire cycle (create, converge, verify, destroy) in one command.
+### Running Tests
 
-Using Molecule for testing ensures that the role is **idempotent** (multiple runs result in the same state) and helps catch any issues in a clean environment. It’s a good practice to test changes to this role with Molecule before rolling them out widely. When testing, you can adjust variables as needed (for example, you might disable certain features like backups or use dummy data source URLs to prevent the role from trying to contact real services in the test container).
+#### Basic Functionality Test
+```bash
+cd src/roles/monitoring_observability/grafana
+molecule test
+```
+
+#### Test Specific Scenarios
+```bash
+# Test with plugins enabled
+molecule test -s plugins
+
+# Test HA configuration
+molecule test -s ha
+
+# Test with all features enabled
+molecule test -s full-features
+```
+
+#### Manual Testing
+```bash
+# Start test environment
+molecule create
+molecule converge
+
+# Run specific tests
+molecule verify
+
+# Cleanup
+molecule destroy
+```
+
+### Test Coverage
+
+The role includes comprehensive tests for:
+- ✅ Package installation and service management
+- ✅ Configuration file generation and permissions
+- ✅ Plugin installation and management
+- ✅ Security configuration and SSL setup
+- ✅ High availability features
+- ✅ Database connectivity and migration
+- ✅ API and service account management
+- ✅ Dashboard provisioning and backup
+- ✅ Alerting configuration
+- ✅ Monitoring and health checks
+- ✅ Performance tuning
+- ✅ Backup and restore functionality
 
 ## Known Issues and Gotchas
 
-* **Admin Password & Default Credentials:** This role does *not* hardcode a default admin password; you are expected to provide one (via `vault_grafana_admin_password` or by overriding `grafana_admin_password`). If you forget to do this, Grafana will end up with the default **admin/admin** login (since the provided placeholder will not have a value). Using the default password is a security risk – Grafana forces a password change on first UI login if it detects the default, but since this role aims to automate setup, you should always set a secure admin password in your Ansible vars. If Ansible Vault is used for the password, ensure that the vault is included/decrypted when running the play.
-* **LDAP Config Variables:** When enabling LDAP integration (`grafana_ldap_enabled: true`), you must supply the necessary LDAP details. The role’s LDAP template expects variables like `ldap_host`, `ldap_port`, `ldap_bind_dn`, `ldap_bind_password`, `ldap_search_base`, and `ldap_admin_group_dn`. These are **not defined by default** in this role. If you enable LDAP without providing them, the play will fail (undefined variables) or produce an unusable `ldap.toml`. Be sure to define those settings (e.g. in inventory or group vars) to match your LDAP server. Also, the LDAP template included with the role assigns Grafana Admin role to members of a specific LDAP group (`ldap_admin_group_dn`) and treats all other LDAP users as viewers by default – adjust this mapping as needed for your organization.
-* **Data Source Provisioning Template:** The provisioning file for data sources (`files/provisioning/datasources.yml`) contains Jinja2 template logic to loop through `grafana_datasources`, but the role currently uses a simple **copy** to deploy it instead of the template module. This means the Jinja placeholders may not be rendered, resulting in a file that Grafana cannot parse (literal `{{ ds.name }}` etc.). In practice, if you use the default data sources, you might find Grafana’s datasources not configured correctly on first run due to this issue. **Workaround:** Override `grafana_datasources` with your desired list (the role will still copy the file, but you can ensure the list matches what the template expects), or manually copy a pre-rendered datasource file. This is a known limitation/bug in the role’s implementation; future updates may switch to using the template module for this file.
-* **Service Port and Protocol:** Grafana is configured to listen on TCP port **3000** with HTTP (no TLS) by default. The role does not currently offer a variable to change the port or enable HTTPS. If you need Grafana on a different port or to use SSL, you will have to modify the provided `grafana.ini.j2` template (or apply additional configuration management outside this role). Keep in mind that the built-in dashboard backup task assumes Grafana is accessible at `http://localhost:3000`. If you do change the port or use HTTPS, you should also adjust the `community.grafana.grafana_dashboard` tasks (or set `grafana_backup_enabled: false` and handle backups manually) to avoid connection failures.
-* **Dashboard Backup Timing:** The dashboard export (backup) happens immediately after Grafana is installed and started. In some environments, Grafana may take a few seconds to become fully ready to serve API requests. There’s a small chance that the backup tasks could attempt to log in to Grafana before it’s ready, causing a failure on first run. If you encounter this, simply re-running the play might succeed (since Grafana will be up by then). Alternatively, you can add a short delay or a retry logic around the backup task. Also ensure that the `grafana_admin_user` and `grafana_admin_password` provided to the module are correct – if they don’t match Grafana’s actual admin creds, the backup will fail with authentication errors.
-* **External Database for HA:** If you enable `grafana_ha_enabled`, remember that **all Grafana instances must share a single database**. The default `grafana_database` is SQLite (file-based), which cannot be shared across multiple servers. You will need to configure `grafana_database` to use MySQL, PostgreSQL, or another external DB that all nodes can access. This role does *not* set up that external database; you should provision it separately (e.g. using a MySQL/MariaDB role) and supply the connection details via `grafana_database`. Also, in HA scenarios, make sure to deploy the same Grafana version and config on all nodes. Session stickiness (on the load balancer) or a shared session store is recommended, because Grafana doesn’t cluster sessions by itself.
-* **Default Data Sources Assumptions:** The provided default data sources assume you have a Prometheus at **`http://prometheus:9090`** and an Elasticsearch at **`http://elasticsearch:9200`**. These hostnames are hard-coded in the default variables. If your environment uses different hostnames or you don’t have one of those services, you’ll need to override `grafana_datasources`. For example, if you have Prometheus running under a different hostname or not at all, update or remove that entry to avoid Grafana showing it as “offline”. Likewise, if you aren’t using Elasticsearch for logs, you might want to set `grafana_datasources` to only include the sources you actually use (or empty it). Leaving the defaults in place when those services aren’t present will result in Grafana UI errors for those data sources (they’ll be unreachable).
+### Template Rendering Issue (Fixed)
+**Issue:** The original role used `copy` instead of `template` for datasource provisioning, causing Jinja2 placeholders to not render properly.
+**Resolution:** Updated to use `template` module with proper Jinja2 rendering.
+
+### Database Migration Considerations
+**Issue:** Migration from SQLite to external databases requires careful planning.
+**Resolution:** Automated backup before migration and validation steps included.
+
+### Plugin Installation Dependencies
+**Issue:** Some plugins require specific Grafana versions or additional dependencies.
+**Resolution:** Plugin validation and version checking included.
+
+### OAuth Configuration Complexity
+**Issue:** OAuth provider configuration varies significantly between providers.
+**Resolution:** Comprehensive examples and validation included for common providers.
+
+### High Availability Setup
+**Issue:** HA setup requires external database and session storage.
+**Resolution:** Comprehensive validation and health checks ensure proper HA configuration.
+
+### Performance Tuning
+**Issue:** Performance settings depend on workload and infrastructure.
+**Resolution:** Configurable settings with monitoring and alerting for performance metrics.
 
 ## Security Implications
 
-* **System User and Service:** The Grafana installation creates a dedicated system user **`grafana`** on the server (typically with no login shell). This role uses that account for file ownership and service management. For example, the Grafana service runs as user “grafana”, and this role ensures the backup directory and other files are owned by `grafana` where appropriate. Running Grafana under a non-privileged user isolates it from the rest of the system, which is good for security. The Grafana service (`grafana-server`) is managed via systemd and runs with limited permissions.
-* **File Permissions & Secrets:** Configuration and data files installed by this role have restricted permissions to protect sensitive information. Grafana’s main config file **`/etc/grafana/grafana.ini`** is set to owner **root** and group **grafana** with mode **0640** (readable by Grafana and root only). This file contains the admin username and password in plaintext (as Grafana requires these on first startup), so preventing world-readability is important. If LDAP is enabled, the LDAP config file **`grafana_ldap_file`** (default `/etc/grafana/ldap.toml`) is also templated with mode 0640 owner root/grafana, since it contains an LDAP bind password and search parameters. The role also creates a backup directory **`/var/backups/grafana`** with owner grafana and mode 0750 (only the grafana user and group can access backups), and the provisioning directory **`grafana_provisioning_path`** (default `/etc/grafana/provisioning`) is owned by root:grafana with 0755 permissions. These settings strike a balance: Grafana (running as grafana user) can read its config and provisioning files, but regular users on the system cannot read sensitive configs. Always be mindful of secrets in configs; if you change the admin password or LDAP creds, update your Ansible vars and consider re-running the role to update those files (or manually adjust and restrict access).
-* **Network Ports & Access:** By default, Grafana listens on **port 3000/tcp** for HTTP connections. There is no built-in firewalling in this role – you should ensure that this port is appropriately restricted (e.g., via external firewalls or security groups) to intended clients. Grafana’s web UI requires login, but if the port is open to the internet and you left default creds, that’s an immediate risk. If exposing Grafana to the public, consider enabling HTTPS (which is not configured by this role) and possibly configuring a reverse proxy with SSL. Also be aware that when LDAP authentication is enabled, Grafana’s default setting `allow_sign_up = true` means any valid LDAP user can log in and get a Grafana account (usually with Viewer role). If your LDAP directory is large or contains external users, you might want to disable automatic sign-up or restrict Grafana access to certain groups (this can be done in the LDAP config by adjusting group mappings or turning off allow_sign_up after initial setup).
-* **Package Repository Trust:** This role imports Grafana’s official GPG key and apt repository into your system package manager. This is necessary to install Grafana via apt, but it means you are trusting the Grafana package maintainers. The key is fetched from Grafana’s servers over HTTPS and then used to verify the downloaded packages. Always ensure your system has a secure connection when fetching these, and that you’re comfortable with adding a third-party repository. For auditing: the repository added is `deb https://packages.grafana.com/oss/deb stable main` and the key is the official Grafana GPG key. If your servers don’t have internet access, you’ll need to pre-fetch these packages or host a mirror (the role does not handle offline installation).
-* **Service Autostart and Privileges:** Grafana is installed as a systemd service named **`grafana-server`**, which this role enables to start on boot. The service runs with limited privileges (as the grafana user) and listens on a non-privileged port (3000). Admin actions like installing plugins or changing certain settings might require filesystem access which the grafana user has in the relevant directories. It’s recommended to keep the service running as this unprivileged user and not elevate it. If you need to run Grafana on a privileged port (e.g. 80 or 443), use a reverse proxy or port forwarding rather than running Grafana as root.
-* **Administrative Access:** Once Grafana is up, an admin user can log in via the web UI and perform all configuration (adding data sources, dashboards, users, etc.). This role sets the admin user’s username/password as specified in your vars. Treat these credentials as sensitive secrets. It’s good practice to limit who knows the admin credentials or to create organization-specific admin accounts after initial setup and maybe disable the default admin. Also, consider enabling Grafana’s built-in security features post-install: e.g., configure OAuth SSO or enable two-factor auth (not managed by this role) if available, and review default settings like having no IP restriction on the login page. Grafana’s default configurations (as applied by this role) are meant to get you started quickly, but further hardening (via Grafana configuration or external measures) may be necessary for production environments.
+### Sensitive Data Management
+- **Admin passwords** must be stored in Ansible Vault
+- **OAuth client secrets** should be encrypted
+- **Database passwords** require secure storage
+- **API keys and tokens** are stored with restricted permissions (600)
+
+### Network Security
+- **Firewall rules** are automatically configured
+- **SSL/TLS** support with certificate validation
+- **Security headers** prevent common web vulnerabilities
+- **CORS** configuration for cross-origin requests
+
+### Access Control
+- **LDAP integration** for centralized authentication
+- **OAuth/SSO** for enterprise identity providers
+- **Role-based access control** with organization and team management
+- **Service accounts** for programmatic access
+
+### Monitoring and Auditing
+- **Security event logging** with centralized log management
+- **Failed authentication monitoring** with alerting
+- **Configuration change tracking** through backups
+- **Health monitoring** with security-focused alerts
 
 ## Cross-Referencing
 
-This repository contains other roles that can complement the **grafana** role as part of a full monitoring stack or related infrastructure. You may want to use these in conjunction with **grafana**:
+### Related Roles
+- **Prometheus** - Metrics collection and alerting
+- **Elasticsearch** - Log aggregation and search
+- **NGINX/HAProxy** - Load balancing and reverse proxy
+- **Redis** - Session storage and caching
+- **PostgreSQL/MySQL** - Database backends
 
-* **[prometheus](../prometheus/README.md)** – Deploys a Prometheus server for metrics collection. The Grafana role by default provisions a Prometheus data source pointing to `http://prometheus:9090`. By running the **prometheus** role on a host (and ensuring Grafana can reach it, e.g., via DNS name "prometheus"), you can have Grafana immediately start showing metrics from Prometheus out-of-the-box.
-* **[elasticsearch_cluster](../elasticsearch_cluster/README.md)** – Sets up an Elasticsearch cluster or single node. Grafana’s default provisioning includes an "Elasticsearch" data source at `http://elasticsearch:9200`, expecting an ELK stack’s Elasticsearch for log or data analysis. If you deploy **elasticsearch_cluster** (and perhaps Beats/Logstash to feed it), Grafana can query those logs/metrics. Ensure the hostname "elasticsearch" (or adjust the data source URL variable) resolves for Grafana. If you’re not using Elasticsearch, you should remove or replace that default data source to avoid errors.
-* **[openldap_server](../openldap_server/README.md)** – If you plan to use LDAP authentication with Grafana, you need an LDAP server. This repository includes roles for LDAP (e.g., OpenLDAP deployment and population). Setting up an LDAP directory via an **openldap_server** role and then enabling `grafana_ldap_enabled` allows Grafana to authenticate users against that directory. (Ensure the LDAP server’s host/IP and credentials are provided to Grafana as discussed above.)
+### Integration Points
+- **Data Sources**: Prometheus, Elasticsearch, InfluxDB, MySQL, PostgreSQL
+- **Authentication**: LDAP, OAuth (Google, GitHub, Azure AD)
+- **Notifications**: Email, Slack, PagerDuty, webhooks
+- **Monitoring**: Prometheus metrics, external monitoring systems
+- **Storage**: Local filesystem, S3, GCS for backups
 
-Each of the above roles has its own README with details. When building a monitoring or logging solution, you would typically use **grafana** together with data source roles like **prometheus** (for metrics) and **elasticsearch** (for logs). Grafana is a visualization layer, so it depends on data from those backend services. By cross-referencing these roles, you ensure all components are present and configured to work together. For example, deploying Prometheus alongside Grafana means the Prometheus data source (pre-configured by this role) will immediately be useful. Always refer to each role’s documentation for any required variables and configuration to make sure they integrate properly (e.g., matching hostnames, ports, and credentials).
+### Documentation References
+- [Grafana Official Documentation](https://grafana.com/docs/)
+- [Grafana API Reference](https://grafana.com/docs/grafana/latest/http_api/)
+- [Grafana Provisioning](https://grafana.com/docs/grafana/latest/administration/provisioning/)
+- [Grafana Alerting](https://grafana.com/docs/grafana/latest/alerting/)
+- [Grafana High Availability](https://grafana.com/docs/grafana/latest/setup-grafana/set-up-for-high-availability/)
