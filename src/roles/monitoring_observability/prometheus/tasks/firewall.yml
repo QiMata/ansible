@@ -1,0 +1,84 @@
+---
+- name: Enable UFW firewall
+  community.general.ufw:
+    state: enabled
+    policy: deny
+    direction: incoming
+  become: true
+  when: prometheus_enable_firewall
+  tags: firewall
+
+- name: Allow SSH access
+  community.general.ufw:
+    rule: allow
+    port: '22'
+    proto: tcp
+  become: true
+  when: prometheus_enable_firewall
+  tags: firewall
+
+- name: Allow Prometheus port from specified IPs
+  community.general.ufw:
+    rule: allow
+    port: '9090'
+    proto: tcp
+    src: "{{ item }}"
+  become: true
+  loop: "{{ prometheus_firewall_allowed_ips }}"
+  when: 
+    - prometheus_enable_firewall
+    - prometheus_firewall_allowed_ips | length > 0
+  tags: firewall
+
+- name: Allow Node Exporter port from specified IPs
+  community.general.ufw:
+    rule: allow
+    port: '9100'
+    proto: tcp
+    src: "{{ item }}"
+  become: true
+  loop: "{{ prometheus_firewall_allowed_ips }}"
+  when: 
+    - prometheus_enable_firewall
+    - prometheus_firewall_allowed_ips | length > 0
+    - "'node_exporter' in prometheus_install_exporters"
+  tags: firewall
+
+- name: Allow Blackbox Exporter port from specified IPs
+  community.general.ufw:
+    rule: allow
+    port: '9115'
+    proto: tcp
+    src: "{{ item }}"
+  become: true
+  loop: "{{ prometheus_firewall_allowed_ips }}"
+  when: 
+    - prometheus_enable_firewall
+    - prometheus_firewall_allowed_ips | length > 0
+    - "'blackbox_exporter' in prometheus_install_exporters"
+  tags: firewall
+
+- name: Allow Process Exporter port from specified IPs
+  community.general.ufw:
+    rule: allow
+    port: '9256'
+    proto: tcp
+    src: "{{ item }}"
+  become: true
+  loop: "{{ prometheus_firewall_allowed_ips }}"
+  when: 
+    - prometheus_enable_firewall
+    - prometheus_firewall_allowed_ips | length > 0
+    - "'process_exporter' in prometheus_install_exporters"
+  tags: firewall
+
+- name: Deny Prometheus port from all other sources
+  community.general.ufw:
+    rule: deny
+    port: '9090'
+    proto: tcp
+  become: true
+  when: 
+    - prometheus_enable_firewall
+    - prometheus_firewall_allowed_ips | length > 0
+  tags: firewall

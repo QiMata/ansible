@@ -1,0 +1,35 @@
+#!/bin/bash
+# Managed by Ansible: Prometheus Backup Script
+
+set -euo pipefail
+
+BACKUP_DIR="{{ prometheus_backup_destination }}"
+PROMETHEUS_DATA="{{ prometheus_data_dir }}"
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_NAME="prometheus_backup_${DATE}"
+
+# Create backup directory if it doesn't exist
+mkdir -p "${BACKUP_DIR}"
+
+# Stop Prometheus briefly for consistent backup
+systemctl stop prometheus
+
+# Create backup
+if [[ "${BACKUP_DIR}" =~ ^s3:// ]]; then
+    # S3 backup
+    tar -czf "/tmp/${BACKUP_NAME}.tar.gz" -C "${PROMETHEUS_DATA}" .
+    aws s3 cp "/tmp/${BACKUP_NAME}.tar.gz" "${BACKUP_DIR}/${BACKUP_NAME}.tar.gz"
+    rm "/tmp/${BACKUP_NAME}.tar.gz"
+elif [[ "${BACKUP_DIR}" =~ ^/ ]]; then
+    # Local backup
+    tar -czf "${BACKUP_DIR}/${BACKUP_NAME}.tar.gz" -C "${PROMETHEUS_DATA}" .
+else
+    # Remote backup via rsync
+    rsync -avz "${PROMETHEUS_DATA}/" "${BACKUP_DIR}/${BACKUP_NAME}/"
+fi
+
+# Start Prometheus
+systemctl start prometheus
+
+# Log backup completion
+echo "$(date): Backup ${BACKUP_NAME} completed successfully" >> /var/log/prometheus_backup.log

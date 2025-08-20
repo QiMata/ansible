@@ -1,0 +1,13 @@
+/var/log/prometheus/*.log {
+    daily
+    missingok
+    rotate {{ prometheus_log_retention_days }}
+    compress
+    delaycompress
+    notifempty
+    create 644 prometheus prometheus
+    size {{ prometheus_log_max_size }}
+    postrotate
+        systemctl reload prometheus > /dev/null 2>&1 || true
+    endscript
+}

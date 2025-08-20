@@ -1,0 +1,160 @@
+---
+# Example: Advanced Prometheus Configuration
+# This file demonstrates all the new features added to the Prometheus role
+
+# TLS/HTTPS Configuration
+prometheus_enable_tls: true
+prometheus_tls_cert_file: "/etc/ssl/certs/prometheus.crt"
+prometheus_tls_key_file: "/etc/ssl/private/prometheus.key"
+
+# Basic Authentication (passwords should be bcrypt hashed)
+prometheus_basic_auth_users:
+  admin: "$2b$12$hNf2lSsxfm0.i4a.1kVpSOVyBCfIB51VRjgBUyv6kdnyTlgWj81Ay"  # admin123
+  monitor: "$2b$12$mS2U5N8qNfE1jjOZ8Y.ZKOhv8h4c9xNrQfL4vH2e1rYwqR3F5D6aG"  # monitor456
+
+# Federation Configuration
+prometheus_enable_federation: true
+prometheus_federation_targets:
+  - "prometheus-east.example.com:9090"
+  - "prometheus-west.example.com:9090"
+prometheus_federation_match:
+  - '{__name__=~"up|prometheus_.*"}'
+  - '{__name__=~".*_total"}'
+
+# Recording Rules
+prometheus_recording_rules: |
+  groups:
+    - name: node.rules
+      interval: 30s
+      rules:
+        - record: node:node_cpu_utilization:rate5m
+          expr: 1 - avg(irate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance)
+        - record: node:node_memory_utilization:ratio
+          expr: 1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)
+        - record: node:node_disk_utilization:ratio
+          expr: 1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)
+
+# Remote Storage Configuration
+prometheus_remote_write_configs:
+  - url: "https://remote-storage.example.com/api/v1/write"
+    basic_auth:
+      username: "prometheus"
+      password: "secret"
+    queue_config:
+      capacity: 10000
+      max_shards: 50
+
+prometheus_remote_read_configs:
+  - url: "https://remote-storage.example.com/api/v1/read"
+    basic_auth:
+      username: "prometheus"
+      password: "secret"
+
+# Service Discovery - Kubernetes
+prometheus_kubernetes_sd_configs:
+  - api_server: "https://kubernetes.example.com"
+    role: "pod"
+    bearer_token_file: "/var/run/secrets/kubernetes.io/serviceaccount/token"
+    namespaces:
+      names: ["production", "staging"]
+  - api_server: "https://kubernetes.example.com"
+    role: "service"
+    bearer_token_file: "/var/run/secrets/kubernetes.io/serviceaccount/token"
+
+# Service Discovery - Consul
+prometheus_consul_sd_configs:
+  - server: "consul.example.com:8500"
+    services: ["web", "api", "database"]
+    tags: ["production"]
+
+# Service Discovery - EC2
+prometheus_ec2_sd_configs:
+  - region: "us-west-2"
+    port: 9100
+    filters:
+      - name: "tag:Environment"
+        values: ["production"]
+      - name: "tag:Monitoring"
+        values: ["enabled"]
+
+# Service Discovery - DNS
+prometheus_dns_sd_configs:
+  - names: ["_prometheus._tcp.example.com"]
+    type: "SRV"
+    port: 9100
+
+# Service Discovery - File-based
+prometheus_file_sd_configs:
+  - files: ["/etc/prometheus/targets/*.json"]
+    refresh_interval: "30s"
+
+# Relabeling Configuration
+prometheus_relabel_configs:
+  - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+    action: keep
+    regex: true
+  - source_labels: [__meta_ec2_tag_Name]
+    target_label: instance_name
+
+prometheus_metric_relabel_configs:
+  - source_labels: [__name__]
+    regex: "prometheus_config_.*"
+    action: drop
+
+# Multiple Exporters
+prometheus_install_exporters:
+  - "node_exporter"
+  - "blackbox_exporter"
+  - "process_exporter"
+  - "nginx_exporter"
+
+# Blackbox Monitoring
+prometheus_blackbox_targets:
+  - name: "website"
+    url: "https://example.com"
+    module: "http_2xx"
+  - name: "api"
+    url: "https://api.example.com/health"
+    module: "http_2xx"
+  - name: "database"
+    url: "tcp://db.example.com:5432"
+    module: "tcp_connect"
+
+# Process Monitoring
+prometheus_process_exporter_config:
+  process_names:
+    - name: "nginx"
+      cmdline:
+        - "nginx"
+    - name: "postgres"
+      cmdline:
+        - "postgres"
+
+# High Availability / Clustering
+prometheus_enable_clustering: true
+prometheus_cluster_peers:
+  - "prometheus-secondary.example.com:9090"
+
+# Backup Configuration
+prometheus_enable_backup: true
+prometheus_backup_destination: "/backup/prometheus"
+prometheus_backup_retention_days: 14
+prometheus_backup_schedule: "0 2 * * *"  # Daily at 2 AM
+
+# Security & Firewall
+prometheus_enable_firewall: true
+prometheus_firewall_allowed_ips:
+  - "10.0.0.0/8"
+  - "192.168.1.0/24"
+  - "172.16.0.0/12"
+
+# Logging Configuration
+prometheus_log_level: "info"
+prometheus_log_format: "json"
+prometheus_enable_log_rotation: true
+prometheus_log_max_size: "100M"
+prometheus_log_retention_days: 30
+
+# Custom Web Console (optional)
+# prometheus_web_console_templates: "/path/to/custom/consoles"
+# prometheus_web_console_libraries: "/path/to/custom/console_libraries"

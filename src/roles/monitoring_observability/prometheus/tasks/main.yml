@@ -1,7 +1,34 @@
 ---
 - name: Include install tasks
   ansible.builtin.import_tasks: install.yml
+
+- name: Include TLS configuration tasks
+  ansible.builtin.import_tasks: tls.yml
+  when: prometheus_enable_tls or prometheus_basic_auth_users | length > 0
+
+- name: Include firewall configuration tasks
+  ansible.builtin.import_tasks: firewall.yml
+  when: prometheus_enable_firewall
+
+- name: Include service discovery tasks
+  ansible.builtin.import_tasks: service_discovery.yml
+  when: >
+    prometheus_kubernetes_sd_configs | length > 0 or
+    prometheus_consul_sd_configs | length > 0 or
+    prometheus_ec2_sd_configs | length > 0 or
+    prometheus_dns_sd_configs | length > 0 or
+    prometheus_file_sd_configs | length > 0
+
+- name: Include backup configuration tasks
+  ansible.builtin.import_tasks: backup.yml
+  when: prometheus_enable_backup
+
+- name: Include logging configuration tasks
+  ansible.builtin.import_tasks: logging.yml
+  when: prometheus_enable_log_rotation
+
 - name: Include configuration tasks
   ansible.builtin.import_tasks: configure.yml
+
 - name: Include exporter tasks
   ansible.builtin.import_tasks: exporters.yml

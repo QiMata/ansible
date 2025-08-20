@@ -3,7 +3,248 @@
 **Table of Contents**
 
 * [Overview](#overview)
-* [Supported Operating Systems/Platforms](#supported-operating-systemsplatforms)
+* [Supported Operating Systems/Platforms](#supported-operating-system**OS Packages:** The target host needs access to the Debian/UbuntuWhen you run this playbook, the Prometheus role will install Prometheus on the hosts in `monitoring_servers`, start the service, and apply the configuration. Prometheus will then begin scraping metrics from itself and the two specified servers, and it will send any firing alerts (like "HighLoad" if triggered) to the Alertmanager at the given address.
+
+### Advanced Usage Examples
+
+#### Example 1: Production Setup with TLS and Authentication
+```yaml
+- hosts: monitoring_servers
+  become: yes
+  vars:
+    # TLS Configuration
+    prometheus_enable_tls: true
+    prometheus_tls_cert_file: "/etc/ssl/certs/prometheus.crt"
+    prometheus_tls_key_file: "/etc/ssl/private/prometheus.key"
+    
+    # Basic Authentication (password: admin123)
+    prometheus_basic_auth_users:
+      admin: "$2b$12$hNf2lSsxfm0.i4a.1kVpSOVyBCfIB51VRjgBUyv6kdnyTlgWj81Ay"
+    
+    # Security and Firewall
+    prometheus_enable_firewall: true
+    prometheus_firewall_allowed_ips:
+      - "10.0.0.0/8"
+      - "192.168.1.0/24"
+    
+    # Backup Configuration
+    prometheus_enable_backup: true
+    prometheus_backup_destination: "/backup/prometheus"
+    prometheus_backup_retention_days: 14
+    
+    # Multiple Exporters
+    prometheus_install_exporters:
+      - "node_exporter"
+      - "blackbox_exporter"
+      - "process_exporter"
+    
+    # Blackbox monitoring
+    prometheus_blackbox_targets:
+      - name: "website"
+        url: "https://example.com"
+        module: "http_2xx"
+      - name: "api"
+        url: "https://api.example.com/health"
+        module: "http_2xx"
+  roles:
+    - prometheus
+```
+
+#### Example 2: High Availability Setup with Federation
+```yaml
+- hosts: prometheus_primary
+  become: yes
+  vars:
+    prometheus_external_label_monitor: "production"
+    prometheus_external_label_replica: "A"
+    prometheus_enable_clustering: true
+    prometheus_cluster_peers:
+      - "prometheus-secondary.example.com:9090"
+    
+    # Federation from regional Prometheus instances
+    prometheus_enable_federation: true
+    prometheus_federation_targets:
+      - "prometheus-east.example.com:9090"
+      - "prometheus-west.example.com:9090"
+    prometheus_federation_match:
+      - '{__name__=~"up|prometheus_.*"}'
+      - '{__name__=~".*_total"}'
+  roles:
+    - prometheus
+
+- hosts: prometheus_secondary  
+  become: yes
+  vars:
+    prometheus_external_label_monitor: "production"
+    prometheus_external_label_replica: "B"
+    prometheus_enable_clustering: true
+    prometheus_cluster_peers:
+      - "prometheus-primary.example.com:9090"
+  roles:
+    - prometheus
+```
+
+#### Example 3: Cloud-Native Setup with Service Discovery
+```yaml
+- hosts: prometheus_k8s
+  become: yes
+  vars:
+    # Kubernetes Service Discovery
+    prometheus_kubernetes_sd_configs:
+      - api_server: "https://kubernetes.example.com"
+        role: "pod"
+        bearer_token_file: "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        namespaces:
+          names: ["production", "staging"]
+      - api_server: "https://kubernetes.example.com"
+        role: "service"
+        bearer_token_file: "/var/run/secrets/kubernetes.io/serviceaccount/token"
+    
+    # Consul Service Discovery
+    prometheus_consul_sd_configs:
+      - server: "consul.example.com:8500"
+        services: ["web", "api", "database"]
+        tags: ["production"]
+    
+    # EC2 Service Discovery
+    prometheus_ec2_sd_configs:
+      - region: "us-west-2"
+        port: 9100
+        filters:
+          - name: "tag:Environment"
+            values: ["production"]
+          - name: "tag:Monitoring"
+            values: ["enabled"]
+    
+    # DNS Service Discovery
+    prometheus_dns_sd_configs:
+      - names: ["_prometheus._tcp.example.com"]
+        type: "SRV"
+        port: 9100
+    
+    # Global Relabeling
+    prometheus_relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+      - source_labels: [__meta_ec2_tag_Name]
+        target_label: instance_name
+    
+    # Remote Storage
+    prometheus_remote_write_configs:
+      - url: "https://remote-storage.example.com/api/v1/write"
+        basic_auth:
+          username: "prometheus"
+          password: "secret"
+        queue_config:
+          capacity: 10000
+          max_shards: 50
+  roles:
+    - prometheus
+```
+
+#### Example 4: Advanced Monitoring with Recording Rules
+```yaml
+- hosts: monitoring_servers
+  become: yes
+  vars:
+    # Recording Rules for Dashboard Performance
+    prometheus_recording_rules: |
+      groups:
+        - name: aggregate.rules
+          interval: 30s
+          rules:
+            - record: node:node_cpu_utilization:rate5m
+              expr: 1 - avg(irate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance)
+            - record: node:node_memory_utilization:ratio
+              expr: 1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)
+            - record: node:node_disk_utilization:ratio
+              expr: 1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)
+        
+        - name: application.rules
+          interval: 15s
+          rules:
+            - record: http:request_rate_5m
+              expr: rate(http_requests_total[5m])
+            - record: http:request_latency_99p
+              expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m]))
+    
+    # Advanced Alerting Rules
+    prometheus_alert_rules: |
+      groups:
+        - name: infrastructure.rules
+          rules:
+            - alert: HighCPUUsage
+              expr: node:node_cpu_utilization:rate5m > 0.8
+              for: 5m
+              labels:
+                severity: warning
+                team: infrastructure
+              annotations:
+                summary: "High CPU usage detected"
+                description: "CPU usage is above 80% for 5 minutes on {{ $labels.instance }}"
+            
+            - alert: HighMemoryUsage
+              expr: node:node_memory_utilization:ratio > 0.9
+              for: 2m
+              labels:
+                severity: critical
+                team: infrastructure
+              annotations:
+                summary: "High memory usage detected"
+                description: "Memory usage is above 90% on {{ $labels.instance }}"
+            
+            - alert: DiskSpaceLow
+              expr: node:node_disk_utilization:ratio > 0.85
+              for: 1m
+              labels:
+                severity: warning
+                team: infrastructure
+              annotations:
+                summary: "Low disk space"
+                description: "Disk usage is above 85% on {{ $labels.instance }} {{ $labels.mountpoint }}"
+        
+        - name: application.rules
+          rules:
+            - alert: HighRequestLatency
+              expr: http:request_latency_99p > 0.5
+              for: 2m
+              labels:
+                severity: warning
+                team: backend
+              annotations:
+                summary: "High request latency"
+                description: "99th percentile latency is above 500ms"
+    
+    # Log Configuration
+    prometheus_log_level: "info"
+    prometheus_log_format: "json"
+    prometheus_enable_log_rotation: true
+    prometheus_log_max_size: "100M"
+    prometheus_log_retention_days: 30
+  roles:
+    - prometheus
+```
+
+These examples demonstrate the comprehensive capabilities of the enhanced Prometheus role, from basic monitoring to enterprise-grade production deployments with high availability, security, and advanced service discovery.package repositories to install Prometheus. The role will automatically install the following packages on the host:
+
+* **prometheus** – The Prometheus server binary and default configuration, installed via apt.
+* **prometheus-node-exporter** – The Node Exporter agent for host metrics, installed via apt (always installed).
+
+**Optional Exporters** (installed based on `prometheus_install_exporters` configuration):
+* **prometheus-blackbox-exporter** – For monitoring HTTP/HTTPS/DNS/TCP/ICMP endpoints.
+* **prometheus-process-exporter** – For monitoring system processes and their resource usage.
+* **prometheus-nginx-exporter** – For monitoring NGINX web server metrics.
+* **prometheus-mysql-exporter** – For monitoring MySQL database metrics.
+* **prometheus-postgres-exporter** – For monitoring PostgreSQL database metrics.
+
+**Additional Packages** (installed when certain features are enabled):
+* **ufw** or **iptables-persistent** – For firewall management when `prometheus_enable_firewall` is true.
+* **logrotate** – For log rotation when `prometheus_enable_log_rotation` is true (usually already present).
+* **cron** – For backup scheduling when `prometheus_enable_backup` is true (usually already present).
+* **openssl** – For TLS certificate validation when `prometheus_enable_tls` is true (usually already present).
+
+These are standard packages in Debian 11+/Ubuntu 20.04+ official repos. No additional package repository is added by this role (unlike some roles that use upstream sources). Ensure the default apt repositories (or your internal mirrors) provide these packages. On Ubuntu, the packages reside in the "universe" repository which is typically enabled by default.orms)
 * [Role Variables](#role-variables)
 * [Tags](#tags)
 * [Dependencies](#dependencies)
@@ -15,15 +256,19 @@
 
 ## Overview
 
-The **Prometheus** role installs and configures the [Prometheus](https://prometheus.io/) monitoring system on target hosts. It handles installation via OS packages (Debian/Ubuntu), sets up Prometheus as a systemd service, and deploys a basic configuration for scraping metrics. By default, Prometheus will scrape itself (the Prometheus server on port 9090) and a Node Exporter for host metrics. This role is designed to be **idempotent** and customizable via variables, allowing you to define which targets to monitor, alerting rules, retention period, and integrations with alert managers or dashboards. Key features include:
+The **Prometheus** role installs and configures the [Prometheus](https://prometheus.io/) monitoring system on target hosts. It handles installation via OS packages (Debian/Ubuntu), sets up Prometheus as a systemd service, and deploys a comprehensive configuration for scraping metrics. By default, Prometheus will scrape itself (the Prometheus server on port 9090) and a Node Exporter for host metrics. This role is designed to be **idempotent** and highly customizable via variables, allowing you to define which targets to monitor, alerting rules, retention period, and integrations with alert managers or dashboards. Key features include:
 
-* **Package Installation:** Installs the Prometheus server and a Node Exporter agent via apt, ensuring both are present on the host. The Node Exporter is automatically started as a service so that Prometheus can collect local host metrics out-of-the-box.
-* **Configuration Management:** Deploys a generated `prometheus.yml` (main config) and an `alert.rules` file from Jinja2 templates. The configuration sets global scrape and evaluation intervals, defines default scrape jobs (Prometheus itself and node exporter targets), and includes any additional jobs or Alertmanager endpoints you configure via variables. An example alert rule is provided by default (triggering if any instance is down for 5 minutes) to demonstrate alerting functionality.
-* **Service Setup:** Ensures the Prometheus service is enabled and running under a dedicated **`prometheus`** system user. The role installs a systemd unit override that configures Prometheus to use the specified data directory and retention time, and to listen on port 9090 on all interfaces. The service is set to automatically restart on failure and includes sensible defaults for resource limits and security protections (via systemd settings).
-* **Alerting Integration:** Supports integration with an external **Alertmanager** – you can supply one or more Alertmanager addresses (e.g. `alertmanager:9093`) via variables, and the role will configure Prometheus to send alerts to those endpoints. By default, no Alertmanager is configured (alerts will remain pending in Prometheus unless an Alertmanager is provided).
-* **Extensibility:** Allows adding custom scrape targets and jobs through the `prometheus_additional_scrape_configs` variable (in YAML format). This means you can easily extend Prometheus to monitor other exporters or services by defining additional `scrape_configs` without modifying the core template. The role also supports setting **external labels** (such as cluster name or replica ID) to aid in federation or high-availability setups.
+* **Package Installation:** Installs the Prometheus server and configurable exporters (Node Exporter by default, with support for Blackbox, Process, and other exporters) via apt, ensuring all components are present on the host. Exporters are automatically started as services so that Prometheus can collect metrics out-of-the-box.
+* **Advanced Configuration Management:** Deploys generated `prometheus.yml` (main config), alert rules, and recording rules files from Jinja2 templates. The configuration supports TLS/HTTPS, basic authentication, federation, remote read/write, and custom web console templates. Configuration includes global scrape and evaluation intervals, service discovery (Kubernetes, Consul, EC2, DNS), relabeling rules, and any additional jobs or Alertmanager endpoints you configure via variables.
+* **Service Discovery:** Supports dynamic target discovery through multiple mechanisms including Kubernetes service discovery, Consul, EC2/AWS, DNS-based discovery, and file-based discovery. This eliminates the need for manual target management in dynamic environments.
+* **Security & TLS:** Optional HTTPS/TLS encryption for the web interface, basic authentication support, firewall rule management, and comprehensive logging with rotation. The service runs under a dedicated system user with systemd security hardening.
+* **High Availability & Clustering:** Supports Prometheus clustering and HA setups with external labels, peer configuration, and federation between multiple Prometheus instances. Includes backup and restore functionality for data protection.
+* **Service Setup:** Ensures the Prometheus service is enabled and running under a dedicated **`prometheus`** system user. The role installs a systemd unit override that configures Prometheus to use the specified data directory and retention time, and to listen on port 9090 on all interfaces. The service is set to automatically restart on failure and includes comprehensive security protections and resource limits via systemd settings.
+* **Alerting Integration:** Supports integration with external **Alertmanager** instances and includes both alerting and recording rules. You can supply one or more Alertmanager addresses via variables, and the role will configure Prometheus to send alerts to those endpoints. Recording rules allow pre-computation of expensive queries for dashboards.
+* **Monitoring & Operations:** Built-in backup functionality, log rotation, multiple exporter support (Node, Blackbox, Process exporters), and operational monitoring features. Supports remote storage integration for long-term metrics retention.
+* **Extensibility:** Allows adding custom scrape targets and jobs through multiple configuration variables. This means you can easily extend Prometheus to monitor other exporters or services by defining additional `scrape_configs`, service discovery configurations, or relabeling rules without modifying the core templates.
 
-In summary, this role will result in a running Prometheus server (listening on port 9090) with a baseline configuration and metrics collection from the local system. You can tailor it to scrape multiple hosts and exporters and to send alerts to an Alertmanager. Apply this role to a dedicated monitoring host (or hosts) after your basic system setup, and combine it with a visualization tool like Grafana (see **Cross-Referencing** below) to build a full monitoring stack.
+In summary, this role will result in a production-ready Prometheus server (listening on port 9090) with enterprise-grade configuration and metrics collection capabilities. You can deploy it in simple single-node setups or complex multi-node HA configurations with dynamic service discovery. Apply this role to dedicated monitoring hosts after your basic system setup, and combine it with visualization tools like Grafana to build a complete monitoring stack.
 
 ## Supported Operating Systems/Platforms
 
@@ -58,6 +303,62 @@ Below is a list of key variables for this role, along with their default values 
 | **`prometheus_alert_rules`**               | *(Multi-line YAML)* See default content | YAML-formatted string defining Prometheus alerting rules. By default, this includes an example rule file with one alert group (`example.rules`) and a single alert **InstanceDown** that fires if any scraped instance is down for >5 minutes. You should customize this with your own alert definitions. You can directly define the YAML here or use an external file and set this variable via a lookup (ensuring the content ends up as valid YAML). The role will deploy whatever rules content you provide to the target file (see `prometheus_rules_file`). **Note:** If you leave this at the default, you will get a test alert for any down instance – consider removing or replacing the example in production. |
 | **`prometheus_rules_file`**                | `/etc/prometheus/alert.rules`           | File path where the alert rules (from `prometheus_alert_rules`) will be written on the target host. The Prometheus config is set to load this file (via `rule_files` entry). By default it uses `/etc/prometheus/alert.rules`, which is the conventional location. You can change this path if needed (for example, if following a different filesystem layout); the role will ensure the Prometheus config points to the new location by using this variable.                                                                                                                                                                                                                                                             |
 
+### Advanced Configuration Variables
+
+| Variable                                   | Default Value                           | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------------------ | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`prometheus_enable_tls`**                | `false`                                 | Enable HTTPS/TLS for the Prometheus web interface. When enabled, requires `prometheus_tls_cert_file` and `prometheus_tls_key_file` to be configured. Default is false (HTTP only). Enabling TLS provides encryption for web UI and API access.                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **`prometheus_tls_cert_file`**             | `""`                                    | Path to TLS certificate file for HTTPS. Required when `prometheus_enable_tls` is true. The certificate file must be readable by the prometheus user. Example: `/etc/prometheus/tls/prometheus.crt`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **`prometheus_tls_key_file`**              | `""`                                    | Path to TLS private key file for HTTPS. Required when `prometheus_enable_tls` is true. The key file must be readable by the prometheus user and should have restrictive permissions (600). Example: `/etc/prometheus/tls/prometheus.key`                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **`prometheus_basic_auth_users`**          | `{}`                                    | Dictionary of username/password pairs for basic authentication. Passwords should be bcrypt hashed. Example: `{"admin": "$2b$12$hNf2lSsxfm0.i4a.1kVpSOVyBCfIB51VRjgBUyv6kdnyTlgWj81Ay"}`. When configured, requires authentication to access Prometheus web UI and API.                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| **`prometheus_enable_federation`**         | `false`                                 | Enable Prometheus federation configuration. When true, configures this instance to scrape metrics from other Prometheus servers via federation endpoint. Requires `prometheus_federation_targets` to be configured.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **`prometheus_federation_targets`**        | `[]`                                    | List of Prometheus server endpoints to federate from. Each entry should be in format `"hostname:9090"`. Federation allows this Prometheus to scrape selected metrics from other Prometheus instances. Example: `["prometheus1:9090", "prometheus2:9090"]`                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **`prometheus_federation_match`**          | `['{__name__=~"up\|prometheus_.*"}']`   | List of metric selectors for federation. Defines which metrics to pull from federated Prometheus servers. Default pulls only 'up' and Prometheus internal metrics. Use PromQL-style selectors.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| **`prometheus_recording_rules`**           | `""`                                    | YAML-formatted string defining Prometheus recording rules. Recording rules pre-compute frequently needed or computationally expensive expressions and save them as new time series. Example: Computing average request rates or percentiles for dashboards.                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **`prometheus_recording_rules_file`**      | `/etc/prometheus/recording.rules`       | File path where recording rules will be written. The Prometheus config will include this file in the `rule_files` section alongside alert rules.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **`prometheus_remote_write_configs`**      | `[]`                                    | List of remote write configurations for sending metrics to external systems. Each entry should be a dictionary with remote write config parameters. Example: `[{"url": "https://remote-storage.example.com/api/v1/write", "basic_auth": {"username": "user", "password": "pass"}}]`                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **`prometheus_remote_read_configs`**       | `[]`                                    | List of remote read configurations for reading metrics from external systems. Allows Prometheus to query historical data from remote storage. Each entry should be a dictionary with remote read config parameters.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **`prometheus_web_console_templates`**     | `""`                                    | Custom web console templates directory. When specified, copies custom console templates to Prometheus for custom web UI pages. Templates should be in Go template format.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **`prometheus_web_console_libraries`**     | `""`                                    | Custom web console libraries directory. When specified, copies console library files (CSS, JS) to support custom web console templates.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+
+### Service Discovery Variables
+
+| Variable                                   | Default Value                           | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------------------ | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`prometheus_kubernetes_sd_configs`**    | `[]`                                    | List of Kubernetes service discovery configurations. Each entry should be a dictionary defining Kubernetes API access and discovery parameters. Example: `[{"api_server": "https://k8s.example.com", "role": "pod", "bearer_token_file": "/var/run/secrets/kubernetes.io/serviceaccount/token"}]`                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **`prometheus_consul_sd_configs`**        | `[]`                                    | List of Consul service discovery configurations. Enables automatic discovery of services registered in Consul. Example: `[{"server": "consul.example.com:8500", "services": ["web", "api"]}]`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **`prometheus_ec2_sd_configs`**           | `[]`                                    | List of EC2 service discovery configurations for AWS environments. Automatically discovers EC2 instances based on tags and regions. Example: `[{"region": "us-west-2", "port": 9100, "filters": [{"name": "tag:Environment", "values": ["production"]}]}]`                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| **`prometheus_dns_sd_configs`**           | `[]`                                    | List of DNS service discovery configurations. Discovers targets via DNS A, AAAA, or SRV records. Example: `[{"names": ["_prometheus._tcp.example.com"], "type": "SRV", "port": 9100}]`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **`prometheus_file_sd_configs`**          | `[]`                                    | List of file-based service discovery configurations. Reads target configurations from JSON/YAML files that can be updated dynamically. Example: `[{"files": ["/etc/prometheus/targets/*.json"], "refresh_interval": "30s"}]`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **`prometheus_relabel_configs`**          | `[]`                                    | Global relabeling configurations applied to all targets before scraping. Used to modify target labels, drop targets, or add metadata. Each entry should be a relabeling rule dictionary.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **`prometheus_metric_relabel_configs`**   | `[]`                                    | Global metric relabeling configurations applied to scraped metrics. Used to drop metrics, modify metric names/labels, or aggregate data. Each entry should be a metric relabeling rule dictionary.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+
+### Monitoring & Operations Variables
+
+| Variable                                   | Default Value                           | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------------------ | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`prometheus_enable_backup`**            | `false`                                 | Enable automated backup of Prometheus data. When enabled, creates backup scripts and schedules them via cron. Requires `prometheus_backup_destination` to be configured.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **`prometheus_backup_destination`**       | `""`                                    | Destination path or remote location for Prometheus backups. Can be a local directory or remote location (rsync/s3). Example: `/backup/prometheus` or `s3://my-bucket/prometheus-backups`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| **`prometheus_backup_retention_days`**    | `7`                                     | Number of days to retain backup files. Older backups are automatically cleaned up.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **`prometheus_backup_schedule`**          | `"0 2 * * *"`                          | Cron schedule for automated backups. Default runs daily at 2 AM. Use standard cron syntax.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **`prometheus_install_exporters`**        | `["node_exporter"]`                     | List of exporters to install alongside Prometheus. Default includes only node_exporter. Available options: `["node_exporter", "blackbox_exporter", "process_exporter", "nginx_exporter", "mysql_exporter", "postgres_exporter"]`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| **`prometheus_blackbox_targets`**         | `[]`                                    | List of HTTP/HTTPS endpoints to monitor with blackbox exporter. Each entry should specify URL and check type. Example: `[{"name": "website", "url": "https://example.com", "module": "http_2xx"}]`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **`prometheus_process_exporter_config`**  | `{}`                                    | Configuration for process exporter to monitor specific processes. Define process matching patterns and grouping rules.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **`prometheus_enable_clustering`**        | `false`                                 | Enable Prometheus clustering/HA setup. When true, configures this instance as part of a cluster with shared external labels and gossip communication.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **`prometheus_cluster_peers`**            | `[]`                                    | List of peer Prometheus servers in the cluster. Used for HA setups and cluster coordination. Example: `["prometheus1.example.com:9090", "prometheus2.example.com:9090"]`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+
+### Security & Firewall Variables
+
+| Variable                                   | Default Value                           | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------------------ | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`prometheus_enable_firewall`**          | `false`                                 | Enable automatic firewall rule management. When true, creates UFW/iptables rules to control access to Prometheus ports.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| **`prometheus_firewall_allowed_ips`**     | `[]`                                    | List of IP addresses or CIDR blocks allowed to access Prometheus. Example: `["10.0.0.0/8", "192.168.1.100"]`. When firewall is enabled, only these IPs can access ports 9090 and 9100.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **`prometheus_log_level`**                | `"info"`                                | Prometheus logging level. Options: `debug`, `info`, `warn`, `error`. Higher verbosity useful for troubleshooting.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **`prometheus_log_format`**               | `"logfmt"`                              | Prometheus log format. Options: `logfmt`, `json`. JSON format better for log aggregation systems.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **`prometheus_enable_log_rotation`**      | `true`                                  | Enable log rotation for Prometheus logs. When true, configures logrotate to manage Prometheus log files.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| **`prometheus_log_max_size`**             | `"100M"`                                | Maximum size for individual log files before rotation. Use format like "100M", "1G".                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| **`prometheus_log_retention_days`**       | `30`                                    | Number of days to retain rotated log files.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+
 </details>
 
 <!-- markdownlint-enable MD033 -->
@@ -66,12 +367,18 @@ Below is a list of key variables for this role, along with their default values 
 
 ## Tags
 
-This role defines a couple of tags that can be used to control task execution:
+This role defines several tags that can be used to control task execution:
 
 * **`install`** – Applies only the installation tasks. Use this tag if you want to install Prometheus and Node Exporter packages without running the configuration steps (for example, `--tags install` will run package installation tasks).
-* **`exporters`** – Applies tasks related to managing the exporter service(s). In this role, it ensures the Node Exporter service is enabled and started. You might run with `--tags exporters` if you only want to (re)start or enable the exporter without reinstalling everything.
+* **`exporters`** – Applies tasks related to managing the exporter service(s). This includes Node Exporter and any additional exporters configured via `prometheus_install_exporters`. You might run with `--tags exporters` if you only want to (re)start or enable exporters without reinstalling everything.
+* **`config`** – Applies only configuration-related tasks including prometheus.yml, alert rules, recording rules, and TLS certificate management. Use this when you only want to update configuration without reinstalling packages.
+* **`tls`** – Applies only TLS/HTTPS configuration tasks. Use this to set up or update TLS certificates and web configuration without affecting other settings.
+* **`backup`** – Applies only backup-related tasks including backup script creation and cron job setup. Use this to configure or update backup functionality independently.
+* **`firewall`** – Applies only firewall configuration tasks. Use this to set up or update firewall rules for Prometheus ports without affecting other components.
+* **`federation`** – Applies only federation configuration tasks. Use this to set up or update federation settings between Prometheus instances.
+* **`service_discovery`** – Applies tasks related to service discovery configuration including Kubernetes, Consul, EC2, DNS, and file-based discovery setup.
 
-All other tasks (configuration, service setup) have no dedicated tags and will run by default. If you run the role normally (without specifying tags), **all tasks execute** in the intended order. You can combine tags or exclude them (e.g., `--skip-tags exporters` if for some reason you want to install and configure Prometheus but not start the Node Exporter service).
+All other tasks (basic service setup, data directory creation) have no dedicated tags and will run by default. If you run the role normally (without specifying tags), **all tasks execute** in the intended order. You can combine tags or exclude them (e.g., `--skip-tags exporters` if for some reason you want to install and configure Prometheus but not start the exporter services, or `--tags config,tls` to only update configuration and TLS settings).
 
 ## Dependencies
 
@@ -197,6 +504,124 @@ It is highly recommended to test this role in a safe environment (such as a loca
 **Testing tips:** When running in Docker, you may need a systemd-enabled base image for all services to start properly (since Prometheus and Node Exporter are systemd services). The default Molecule Docker images might not have systemd. If you encounter issues with services not starting, consider using a Docker base image that supports systemd, or adjust the Molecule provisioning to start Prometheus manually for testing purposes. Also, in a test scenario you might reduce the scrape interval or retention if you want to simulate or verify certain behaviors quickly (though the defaults are fine for basic validation).
 
 Using Molecule ensures that the role can be applied on a clean system and is **idempotent** (running it multiple times should result in no changes after the first time, assuming no input variables changed). Always run through a Molecule or staging test to catch any issues with your variable values or environment before rolling out to production.
+
+### Advanced Feature Testing
+
+To test the advanced features added to this role, you can create additional Molecule scenarios or use the following approaches:
+
+#### TLS/HTTPS Testing
+```bash
+# Generate test certificates for TLS testing
+openssl req -x509 -newkey rsa:2048 -keyout /tmp/prometheus.key -out /tmp/prometheus.crt -days 365 -nodes -subj "/CN=localhost"
+
+# Test with TLS enabled
+molecule test -- --extra-vars "prometheus_enable_tls=true prometheus_tls_cert_file=/tmp/prometheus.crt prometheus_tls_key_file=/tmp/prometheus.key"
+```
+
+#### Service Discovery Testing
+Create test configurations for different service discovery mechanisms:
+
+```yaml
+# molecule/default/converge.yml - Add to your test playbook
+- name: Test Kubernetes Service Discovery
+  set_fact:
+    prometheus_kubernetes_sd_configs:
+      - api_server: "https://kubernetes.example.com"
+        role: "pod"
+        bearer_token_file: "/var/run/secrets/kubernetes.io/serviceaccount/token"
+
+- name: Test Consul Service Discovery  
+  set_fact:
+    prometheus_consul_sd_configs:
+      - server: "consul.example.com:8500"
+        services: ["web", "api"]
+
+- name: Test File-based Service Discovery
+  set_fact:
+    prometheus_file_sd_configs:
+      - files: ["/etc/prometheus/targets/*.json"]
+        refresh_interval: "30s"
+```
+
+#### Federation Testing
+```bash
+# Test federation between multiple Prometheus instances
+molecule test -- --extra-vars "prometheus_enable_federation=true prometheus_federation_targets=['prometheus1:9090','prometheus2:9090']"
+```
+
+#### Backup Testing
+```bash
+# Test backup functionality
+molecule test -- --extra-vars "prometheus_enable_backup=true prometheus_backup_destination=/tmp/prometheus-backup"
+
+# Verify backup files are created
+docker exec -it <container_id> ls -la /tmp/prometheus-backup
+```
+
+#### Multiple Exporters Testing
+```bash
+# Test with multiple exporters
+molecule test -- --extra-vars "prometheus_install_exporters=['node_exporter','blackbox_exporter','process_exporter']"
+
+# Verify exporters are running
+docker exec -it <container_id> systemctl status prometheus-node-exporter
+docker exec -it <container_id> systemctl status prometheus-blackbox-exporter
+```
+
+#### Recording Rules Testing
+Create a test scenario with recording rules:
+
+```yaml
+# Test recording rules
+prometheus_recording_rules: |
+  groups:
+    - name: test.recording.rules
+      rules:
+        - record: test:up_sum
+          expr: sum(up)
+        - record: test:load_avg
+          expr: avg(node_load1)
+```
+
+Verify recording rules are working:
+```bash
+# Check if recording rules are loaded
+docker exec -it <container_id> curl -s http://localhost:9090/api/v1/rules | jq '.data.groups[].rules[].name'
+```
+
+#### Firewall Testing
+```bash
+# Test with firewall enabled
+molecule test -- --extra-vars "prometheus_enable_firewall=true prometheus_firewall_allowed_ips=['10.0.0.0/8','192.168.1.0/24']"
+
+# Verify firewall rules
+docker exec -it <container_id> ufw status
+```
+
+#### Integration Testing with External Services
+
+Create a comprehensive test that validates integration with external systems:
+
+```bash
+# Create a test environment with multiple services
+docker-compose up -d consul alertmanager
+
+# Run integration test
+molecule test -s integration -- --extra-vars "@molecule/integration/test_vars.yml"
+```
+
+Where `test_vars.yml` contains:
+```yaml
+prometheus_consul_sd_configs:
+  - server: "consul:8500"
+prometheus_alertmanager_urls:
+  - "alertmanager:9093"
+prometheus_enable_federation: true
+prometheus_federation_targets:
+  - "prometheus-replica:9090"
+```
+
+These advanced tests ensure that all new features work correctly and integrate properly with existing functionality.
 
 ## Known Issues and Gotchas
 

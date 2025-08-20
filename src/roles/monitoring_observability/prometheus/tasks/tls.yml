@@ -1,0 +1,75 @@
+---
+- name: Validate TLS configuration
+  ansible.builtin.assert:
+    that:
+      - prometheus_tls_cert_file != ""
+      - prometheus_tls_key_file != ""
+    msg: "TLS cert and key files must be specified when TLS is enabled"
+  when: prometheus_enable_tls
+  tags: tls
+
+- name: Check if TLS certificate file exists
+  ansible.builtin.stat:
+    path: "{{ prometheus_tls_cert_file }}"
+  register: cert_file_stat
+  when: prometheus_enable_tls
+  tags: tls
+
+- name: Check if TLS key file exists
+  ansible.builtin.stat:
+    path: "{{ prometheus_tls_key_file }}"
+  register: key_file_stat
+  when: prometheus_enable_tls
+  tags: tls
+
+- name: Ensure certificate file exists and is readable
+  ansible.builtin.assert:
+    that:
+      - cert_file_stat.stat.exists
+      - cert_file_stat.stat.readable
+    msg: "TLS certificate file must exist and be readable"
+  when: prometheus_enable_tls
+  tags: tls
+
+- name: Ensure key file exists and is readable
+  ansible.builtin.assert:
+    that:
+      - key_file_stat.stat.exists
+      - key_file_stat.stat.readable
+    msg: "TLS key file must exist and be readable"
+  when: prometheus_enable_tls
+  tags: tls
+
+- name: Set correct permissions on TLS key file
+  ansible.builtin.file:
+    path: "{{ prometheus_tls_key_file }}"
+    owner: prometheus
+    group: prometheus
+    mode: '0600'
+  become: true
+  when: prometheus_enable_tls
+  tags: tls
+
+- name: Set correct permissions on TLS cert file
+  ansible.builtin.file:
+    path: "{{ prometheus_tls_cert_file }}"
+    owner: prometheus
+    group: prometheus
+    mode: '0644'
+  become: true
+  when: prometheus_enable_tls
+  tags: tls
+
+- name: Create web config file for TLS/Authentication
+  ansible.builtin.template:
+    src: web_config.yml.j2
+    dest: /etc/prometheus/web_config.yml
+    owner: prometheus
+    group: prometheus
+    mode: '0640'
+  become: true
+  when: prometheus_enable_tls or prometheus_basic_auth_users | length > 0
+  notify: restart prometheus
+  tags: 
+    - tls
+    - config

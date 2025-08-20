@@ -5,4 +5,50 @@
     state: started
     enabled: true
   become: true
+  when: "'node_exporter' in prometheus_install_exporters"
+  tags: exporters
+
+- name: Ensure Blackbox Exporter service is enabled and started
+  ansible.builtin.service:
+    name: prometheus-blackbox-exporter
+    state: started
+    enabled: true
+  become: true
+  when: "'blackbox_exporter' in prometheus_install_exporters"
+  tags: exporters
+
+- name: Ensure Process Exporter service is enabled and started
+  ansible.builtin.service:
+    name: prometheus-process-exporter
+    state: started
+    enabled: true
+  become: true
+  when: "'process_exporter' in prometheus_install_exporters"
+  tags: exporters
+
+- name: Ensure NGINX Exporter service is enabled and started
+  ansible.builtin.service:
+    name: prometheus-nginx-exporter
+    state: started
+    enabled: true
+  become: true
+  when: "'nginx_exporter' in prometheus_install_exporters"
+  tags: exporters
+
+- name: Ensure MySQL Exporter service is enabled and started
+  ansible.builtin.service:
+    name: prometheus-mysql-exporter
+    state: started
+    enabled: true
+  become: true
+  when: "'mysql_exporter' in prometheus_install_exporters"
+  tags: exporters
+
+- name: Ensure PostgreSQL Exporter service is enabled and started
+  ansible.builtin.service:
+    name: prometheus-postgres-exporter
+    state: started
+    enabled: true
+  become: true
+  when: "'postgres_exporter' in prometheus_install_exporters"
   tags: exporters

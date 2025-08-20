@@ -1,0 +1,29 @@
+#!/bin/bash
+# Managed by Ansible: Prometheus Backup Cleanup Script
+
+set -euo pipefail
+
+BACKUP_DIR="{{ prometheus_backup_destination }}"
+RETENTION_DAYS={{ prometheus_backup_retention_days }}
+
+# Cleanup old backups
+if [[ "${BACKUP_DIR}" =~ ^s3:// ]]; then
+    # S3 cleanup (requires aws cli with lifecycle policy or manual cleanup)
+    aws s3 ls "${BACKUP_DIR}/" | grep "prometheus_backup_" | while read -r line; do
+        backup_date=$(echo "$line" | awk '{print $1" "$2}')
+        backup_file=$(echo "$line" | awk '{print $4}')
+        
+        if [[ $(date -d "$backup_date" +%s) -lt $(date -d "${RETENTION_DAYS} days ago" +%s) ]]; then
+            aws s3 rm "${BACKUP_DIR}/${backup_file}"
+            echo "$(date): Deleted old backup ${backup_file}" >> /var/log/prometheus_backup.log
+        fi
+    done
+elif [[ "${BACKUP_DIR}" =~ ^/ ]]; then
+    # Local cleanup
+    find "${BACKUP_DIR}" -name "prometheus_backup_*.tar.gz" -mtime +${RETENTION_DAYS} -delete
+    echo "$(date): Cleaned up backups older than ${RETENTION_DAYS} days" >> /var/log/prometheus_backup.log
+else
+    # Remote cleanup via find (if accessible)
+    find "${BACKUP_DIR}" -name "prometheus_backup_*" -mtime +${RETENTION_DAYS} -exec rm -rf {} \; 2>/dev/null || true
+    echo "$(date): Attempted cleanup of remote backups older than ${RETENTION_DAYS} days" >> /var/log/prometheus_backup.log
+fi

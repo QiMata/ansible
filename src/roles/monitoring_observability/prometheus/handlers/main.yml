@@ -5,3 +5,28 @@
     state: restarted
     daemon_reload: true
   become: true
+
+- name: restart prometheus
+  ansible.builtin.service:
+    name: prometheus
+    state: restarted
+    daemon_reload: true
+  become: true
+
+- name: restart blackbox exporter
+  ansible.builtin.service:
+    name: prometheus-blackbox-exporter
+    state: restarted
+  become: true
+
+- name: restart process exporter
+  ansible.builtin.service:
+    name: prometheus-process-exporter
+    state: restarted
+  become: true
+
+- name: restart node exporter
+  ansible.builtin.service:
+    name: prometheus-node-exporter
+    state: restarted
+  become: true

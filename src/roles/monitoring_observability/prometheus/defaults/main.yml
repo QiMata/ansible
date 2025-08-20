@@ -33,3 +33,49 @@ prometheus_alert_rules: |
             description: "{% raw %}{{ $labels.instance }}{% endraw %} is down for more than 5 minutes."
 
 prometheus_rules_file: /etc/prometheus/alert.rules
+
+# Advanced Configuration Variables
+prometheus_enable_tls: false
+prometheus_tls_cert_file: ""
+prometheus_tls_key_file: ""
+prometheus_basic_auth_users: {}
+prometheus_enable_federation: false
+prometheus_federation_targets: []
+prometheus_federation_match:
+  - '{__name__=~"up|prometheus_.*"}'
+prometheus_recording_rules: ""
+prometheus_recording_rules_file: /etc/prometheus/recording.rules
+prometheus_remote_write_configs: []
+prometheus_remote_read_configs: []
+prometheus_web_console_templates: ""
+prometheus_web_console_libraries: ""
+
+# Service Discovery Variables
+prometheus_kubernetes_sd_configs: []
+prometheus_consul_sd_configs: []
+prometheus_ec2_sd_configs: []
+prometheus_dns_sd_configs: []
+prometheus_file_sd_configs: []
+prometheus_relabel_configs: []
+prometheus_metric_relabel_configs: []
+
+# Monitoring & Operations Variables
+prometheus_enable_backup: false
+prometheus_backup_destination: ""
+prometheus_backup_retention_days: 7
+prometheus_backup_schedule: "0 2 * * *"
+prometheus_install_exporters:
+  - "node_exporter"
+prometheus_blackbox_targets: []
+prometheus_process_exporter_config: {}
+prometheus_enable_clustering: false
+prometheus_cluster_peers: []
+
+# Security & Firewall Variables
+prometheus_enable_firewall: false
+prometheus_firewall_allowed_ips: []
+prometheus_log_level: "info"
+prometheus_log_format: "logfmt"
+prometheus_enable_log_rotation: true
+prometheus_log_max_size: "100M"
+prometheus_log_retention_days: 30

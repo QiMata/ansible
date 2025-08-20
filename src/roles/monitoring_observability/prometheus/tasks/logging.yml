@@ -1,0 +1,39 @@
+---
+- name: Create logrotate configuration for Prometheus
+  ansible.builtin.template:
+    src: prometheus_logrotate.j2
+    dest: /etc/logrotate.d/prometheus
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  when: prometheus_enable_log_rotation
+  tags: 
+    - config
+    - logs
+
+- name: Ensure log directory exists
+  ansible.builtin.file:
+    path: /var/log/prometheus
+    state: directory
+    owner: prometheus
+    group: prometheus
+    mode: '0755'
+  become: true
+  when: prometheus_enable_log_rotation
+  tags: 
+    - config
+    - logs
+
+- name: Create log file if it doesn't exist
+  ansible.builtin.file:
+    path: /var/log/prometheus/prometheus.log
+    state: touch
+    owner: prometheus
+    group: prometheus
+    mode: '0644'
+  become: true
+  when: prometheus_enable_log_rotation
+  tags: 
+    - config
+    - logs

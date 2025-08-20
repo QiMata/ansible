@@ -1,0 +1,84 @@
+---
+- name: Validate backup configuration
+  ansible.builtin.assert:
+    that:
+      - prometheus_backup_destination != ""
+    msg: "Backup destination must be specified when backup is enabled"
+  when: prometheus_enable_backup
+  tags: backup
+
+- name: Create backup destination directory
+  ansible.builtin.file:
+    path: "{{ prometheus_backup_destination }}"
+    state: directory
+    owner: prometheus
+    group: prometheus
+    mode: '0755'
+  become: true
+  when: 
+    - prometheus_enable_backup
+    - prometheus_backup_destination is match('^/')  # Local path
+  tags: backup
+
+- name: Create backup script directory
+  ansible.builtin.file:
+    path: /opt/prometheus/scripts
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: true
+  when: prometheus_enable_backup
+  tags: backup
+
+- name: Create Prometheus backup script
+  ansible.builtin.template:
+    src: backup_prometheus.sh.j2
+    dest: /opt/prometheus/scripts/backup_prometheus.sh
+    owner: root
+    group: root
+    mode: '0755'
+  become: true
+  when: prometheus_enable_backup
+  tags: backup
+
+- name: Create backup cleanup script
+  ansible.builtin.template:
+    src: cleanup_backups.sh.j2
+    dest: /opt/prometheus/scripts/cleanup_backups.sh
+    owner: root
+    group: root
+    mode: '0755'
+  become: true
+  when: prometheus_enable_backup
+  tags: backup
+
+- name: Schedule Prometheus backup via cron
+  ansible.builtin.cron:
+    name: "Prometheus backup"
+    cron_file: prometheus_backup
+    user: prometheus
+    minute: "{{ prometheus_backup_schedule.split()[0] }}"
+    hour: "{{ prometheus_backup_schedule.split()[1] }}"
+    day: "{{ prometheus_backup_schedule.split()[2] }}"
+    month: "{{ prometheus_backup_schedule.split()[3] }}"
+    weekday: "{{ prometheus_backup_schedule.split()[4] }}"
+    job: "/opt/prometheus/scripts/backup_prometheus.sh"
+  become: true
+  when: prometheus_enable_backup
+  tags: backup
+
+- name: Schedule backup cleanup via cron
+  ansible.builtin.cron:
+    name: "Prometheus backup cleanup"
+    cron_file: prometheus_backup_cleanup
+    user: prometheus
+    minute: "0"
+    hour: "3"
+    day: "*"
+    month: "*"
+    weekday: "*"
+    job: "/opt/prometheus/scripts/cleanup_backups.sh"
+  become: true
+  when: prometheus_enable_backup
+  tags: backup

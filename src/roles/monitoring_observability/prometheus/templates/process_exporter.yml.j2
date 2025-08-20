@@ -1,0 +1,10 @@
+# Managed by Ansible: Process Exporter Configuration
+
+{% if prometheus_process_exporter_config %}
+{{ prometheus_process_exporter_config | to_nice_yaml }}
+{% else %}
+process_names:
+  - name: "{{.Comm}}"
+    cmdline:
+    - '.+'
+{% endif %}

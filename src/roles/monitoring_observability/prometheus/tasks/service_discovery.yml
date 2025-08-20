@@ -1,0 +1,58 @@
+---
+- name: Create service discovery directory
+  ansible.builtin.file:
+    path: /etc/prometheus/discovery
+    state: directory
+    owner: prometheus
+    group: prometheus
+    mode: '0755'
+  become: true
+  when: >
+    prometheus_kubernetes_sd_configs | length > 0 or
+    prometheus_consul_sd_configs | length > 0 or
+    prometheus_ec2_sd_configs | length > 0 or
+    prometheus_dns_sd_configs | length > 0 or
+    prometheus_file_sd_configs | length > 0
+  tags: service_discovery
+
+- name: Create file-based service discovery files directory
+  ansible.builtin.file:
+    path: /etc/prometheus/targets
+    state: directory
+    owner: prometheus
+    group: prometheus
+    mode: '0755'
+  become: true
+  when: prometheus_file_sd_configs | length > 0
+  tags: service_discovery
+
+- name: Create empty targets file for file-based service discovery
+  ansible.builtin.copy:
+    content: "[]"
+    dest: /etc/prometheus/targets/default.json
+    owner: prometheus
+    group: prometheus
+    mode: '0644'
+  become: true
+  when: prometheus_file_sd_configs | length > 0
+  tags: service_discovery
+
+- name: Create Kubernetes service account directory
+  ansible.builtin.file:
+    path: /var/run/secrets/kubernetes.io/serviceaccount
+    state: directory
+    owner: prometheus
+    group: prometheus
+    mode: '0755'
+  become: true
+  when: prometheus_kubernetes_sd_configs | length > 0
+  tags: service_discovery
+
+- name: Note about Kubernetes credentials
+  ansible.builtin.debug:
+    msg: >
+      Kubernetes service discovery is configured, but you need to provide
+      the bearer token file at /var/run/secrets/kubernetes.io/serviceaccount/token
+      or configure appropriate credentials for Kubernetes API access.
+  when: prometheus_kubernetes_sd_configs | length > 0
+  tags: service_discovery

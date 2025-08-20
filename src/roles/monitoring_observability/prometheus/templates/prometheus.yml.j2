@@ -3,6 +3,15 @@
 global:
   scrape_interval: {{ prometheus_scrape_interval }}
   evaluation_interval: {{ prometheus_evaluation_interval }}
+{% if prometheus_external_label_monitor or prometheus_external_label_replica %}
+  external_labels:
+{% if prometheus_external_label_monitor %}
+    monitor: "{{ prometheus_external_label_monitor }}"
+{% endif %}
+{% if prometheus_external_label_replica %}
+    replica: "{{ prometheus_external_label_replica }}"
+{% endif %}
+{% endif %}
 
 {% if prometheus_alertmanager_urls %}
 alerting:
@@ -11,25 +20,138 @@ alerting:
         - targets: {{ prometheus_alertmanager_urls | to_json }}
 {% endif %}
 
-{% if prometheus_external_label_monitor or prometheus_external_label_replica %}
-external_labels:
-  {% if prometheus_external_label_monitor %}monitor: "{{ prometheus_external_label_monitor }}"{% endif %}
-  {% if prometheus_external_label_replica %}replica: "{{ prometheus_external_label_replica }}"{% endif %}
-{% endif %}
-
 rule_files:
   - "{{ prometheus_rules_file }}"
+{% if prometheus_recording_rules != "" %}
+  - "{{ prometheus_recording_rules_file }}"
+{% endif %}
+
+{% if prometheus_remote_write_configs %}
+remote_write:
+{{ prometheus_remote_write_configs | to_nice_yaml | indent(2, first=false) }}
+{% endif %}
+
+{% if prometheus_remote_read_configs %}
+remote_read:
+{{ prometheus_remote_read_configs | to_nice_yaml | indent(2, first=false) }}
+{% endif %}
 
 scrape_configs:
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
 
+{% if 'node_exporter' in prometheus_install_exporters %}
   - job_name: 'node_exporter'
     static_configs:
       - targets: {{ prometheus_node_targets | to_nice_yaml(indent=10) }}
+{% if prometheus_relabel_configs %}
+    relabel_configs:
+{{ prometheus_relabel_configs | to_nice_yaml | indent(6, first=false) }}
+{% endif %}
+{% if prometheus_metric_relabel_configs %}
+    metric_relabel_configs:
+{{ prometheus_metric_relabel_configs | to_nice_yaml | indent(6, first=false) }}
+{% endif %}
+{% endif %}
+
+{% if 'blackbox_exporter' in prometheus_install_exporters and prometheus_blackbox_targets %}
+  - job_name: 'blackbox'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+{% for target in prometheus_blackbox_targets %}
+      - targets:
+          - {{ target.url }}
+        labels:
+          instance: {{ target.name }}
+{% endfor %}
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 127.0.0.1:9115
+{% endif %}
+
+{% if 'process_exporter' in prometheus_install_exporters %}
+  - job_name: 'process_exporter'
+    static_configs:
+      - targets: ['localhost:9256']
+{% endif %}
+
+{% if 'nginx_exporter' in prometheus_install_exporters %}
+  - job_name: 'nginx_exporter'
+    static_configs:
+      - targets: ['localhost:9113']
+{% endif %}
+
+{% if 'mysql_exporter' in prometheus_install_exporters %}
+  - job_name: 'mysql_exporter'
+    static_configs:
+      - targets: ['localhost:9104']
+{% endif %}
+
+{% if 'postgres_exporter' in prometheus_install_exporters %}
+  - job_name: 'postgres_exporter'
+    static_configs:
+      - targets: ['localhost:9187']
+{% endif %}
+
+{% if prometheus_enable_federation and prometheus_federation_targets %}
+  - job_name: 'federate'
+    scrape_interval: 15s
+    honor_labels: true
+    metrics_path: '/federate'
+    params:
+      'match[]': {{ prometheus_federation_match | to_json }}
+    static_configs:
+      - targets: {{ prometheus_federation_targets | to_json }}
+{% endif %}
+
+{% if prometheus_kubernetes_sd_configs %}
+{% for sd_config in prometheus_kubernetes_sd_configs %}
+  - job_name: 'kubernetes-{{ sd_config.role }}'
+    kubernetes_sd_configs:
+      - {{ sd_config | to_nice_yaml | indent(8, first=false) }}
+{% endfor %}
+{% endif %}
+
+{% if prometheus_consul_sd_configs %}
+{% for sd_config in prometheus_consul_sd_configs %}
+  - job_name: 'consul-{{ loop.index }}'
+    consul_sd_configs:
+      - {{ sd_config | to_nice_yaml | indent(8, first=false) }}
+{% endfor %}
+{% endif %}
+
+{% if prometheus_ec2_sd_configs %}
+{% for sd_config in prometheus_ec2_sd_configs %}
+  - job_name: 'ec2-{{ loop.index }}'
+    ec2_sd_configs:
+      - {{ sd_config | to_nice_yaml | indent(8, first=false) }}
+{% endfor %}
+{% endif %}
+
+{% if prometheus_dns_sd_configs %}
+{% for sd_config in prometheus_dns_sd_configs %}
+  - job_name: 'dns-{{ loop.index }}'
+    dns_sd_configs:
+      - {{ sd_config | to_nice_yaml | indent(8, first=false) }}
+{% endfor %}
+{% endif %}
+
+{% if prometheus_file_sd_configs %}
+{% for sd_config in prometheus_file_sd_configs %}
+  - job_name: 'file-{{ loop.index }}'
+    file_sd_configs:
+      - {{ sd_config | to_nice_yaml | indent(8, first=false) }}
+{% endfor %}
+{% endif %}
 
 {% if prometheus_additional_scrape_configs %}
 # Additional user-provided scrape configs
-{{ prometheus_additional_scrape_configs | indent(2) }}
+{{ prometheus_additional_scrape_configs | to_nice_yaml | indent(2, first=false) }}
 {% endif %}

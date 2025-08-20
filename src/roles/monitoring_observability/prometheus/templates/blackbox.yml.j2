@@ -1,0 +1,34 @@
+# Managed by Ansible: Blackbox Exporter Configuration
+
+modules:
+  http_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      valid_status_codes: []
+      method: GET
+      preferred_ip_protocol: "ip4"
+      
+  http_post_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      valid_status_codes: []
+      method: POST
+      
+  tcp_connect:
+    prober: tcp
+    timeout: 5s
+    
+  ping:
+    prober: icmp
+    timeout: 5s
+    icmp:
+      preferred_ip_protocol: "ip4"
+      
+  dns:
+    prober: dns
+    timeout: 5s
+    dns:
+      preferred_ip_protocol: "ip4"
+      query_name: "example.com"

@@ -4,11 +4,59 @@
     update_cache: true
   become: true
 
-- name: Install Prometheus and Node Exporter
+- name: Install Prometheus
   ansible.builtin.apt:
-    name:
-      - prometheus
-      - prometheus-node-exporter
+    name: prometheus
+    state: "{{ 'present' if prometheus_version == '' else 'present=' + prometheus_version }}"
+  become: true
+  tags: install
+
+- name: Build exporter package list
+  ansible.builtin.set_fact:
+    exporter_packages: "{{ exporter_packages | default([]) + ['prometheus-' + item.replace('_', '-')] }}"
+  loop: "{{ prometheus_install_exporters }}"
+  tags: install
+
+- name: Install exporters
+  ansible.builtin.apt:
+    name: "{{ exporter_packages }}"
     state: present
   become: true
+  when: exporter_packages is defined
+  tags: 
+    - install
+    - exporters
+
+- name: Install firewall packages
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+  become: true
+  when: prometheus_enable_firewall
+  tags: install
+
+- name: Install backup tools
+  ansible.builtin.apt:
+    name:
+      - cron
+      - rsync
+    state: present
+  become: true
+  when: prometheus_enable_backup
+  tags: install
+
+- name: Install log rotation tools
+  ansible.builtin.apt:
+    name: logrotate
+    state: present
+  become: true
+  when: prometheus_enable_log_rotation
+  tags: install
+
+- name: Install TLS tools
+  ansible.builtin.apt:
+    name: openssl
+    state: present
+  become: true
+  when: prometheus_enable_tls
   tags: install

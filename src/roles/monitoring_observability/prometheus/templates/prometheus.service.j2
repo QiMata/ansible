@@ -11,7 +11,20 @@ ExecStart=/usr/bin/prometheus \
           --config.file=/etc/prometheus/prometheus.yml \
           --storage.tsdb.path={{ prometheus_data_dir }} \
           --storage.tsdb.retention.time={{ prometheus_retention_time }} \
-          --web.listen-address=0.0.0.0:9090
+          --web.listen-address=0.0.0.0:9090 \
+{% if prometheus_enable_tls or prometheus_basic_auth_users | length > 0 %}
+          --web.config.file=/etc/prometheus/web_config.yml \
+{% endif %}
+{% if prometheus_web_console_templates != "" %}
+          --web.console.templates=/etc/prometheus/consoles \
+{% endif %}
+{% if prometheus_web_console_libraries != "" %}
+          --web.console.libraries=/etc/prometheus/console_libraries \
+{% endif %}
+          --log.level={{ prometheus_log_level }} \
+          --log.format={{ prometheus_log_format }}{% if prometheus_enable_log_rotation %} \
+          --log.file=/var/log/prometheus/prometheus.log{% endif %}
+
 Restart=on-failure
 RestartSec=5s
 TimeoutStopSec=600s
@@ -19,6 +32,14 @@ LimitNOFILE=65535
 LimitNPROC=4096
 ProtectHome=yes
 ProtectSystem=full
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectControlGroups=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+SystemCallArchitectures=native
 
 [Install]
 WantedBy=multi-user.target
