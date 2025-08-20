@@ -1,0 +1,220 @@
+---
+# High Availability iTop Deployment
+# This playbook deploys iTop across multiple web servers with shared database
+
+- name: Deploy iTop ITSM High Availability Cluster
+  hosts: itop_web_cluster
+  become: yes
+  serial: 1  # Deploy one at a time to prevent conflicts
+  
+  vars:
+    # Version and paths
+    itop_version: "2.7.5"
+    itop_root_dir: "/var/www/html/itop"
+    
+    # Shared database configuration
+    itop_db_name: "itop_ha_cluster"
+    itop_db_user: "itop_cluster_user"
+    itop_db_password: "{{ vault_itop_cluster_db_password }}"
+    itop_db_host: "{{ groups['galera_cluster'][0] }}"  # Use first Galera node
+    itop_db_port: 3306
+    
+    # SSL Configuration with shared certificates
+    itop_enable_ssl: true
+    itop_ssl_redirect_http: true
+    itop_ssl_cert_path: "/etc/ssl/certs/itop-cluster.crt"
+    itop_ssl_key_path: "/etc/ssl/private/itop-cluster.key"
+    
+    # Only run auto-install on first node
+    itop_auto_install: "{{ ansible_play_hosts.index(inventory_hostname) == 0 }}"
+    itop_admin_user: "admin"
+    itop_admin_password: "{{ vault_itop_admin_password }}"
+    itop_admin_email: "itop-admin@{{ ansible_domain }}"
+    itop_organization: "{{ organization_name }}"
+    
+    # Production modules
+    itop_modules:
+      - "itop-config-mgmt"
+      - "itop-incident-mgmt"
+      - "itop-problem-mgmt"
+      - "itop-change-mgmt"
+      - "itop-service-mgmt"
+      - "itop-knownerror-mgmt"
+      - "itop-request-mgmt"
+      - "itop-datacenter-mgmt"
+    
+    # High-performance settings
+    itop_config_mode: "production"
+    itop_timezone: "{{ system_timezone | default('UTC') }}"
+    itop_language: "EN US"
+    itop_log_level: "Error"
+    itop_session_timeout: 3600
+    itop_max_execution_time: 300
+    itop_memory_limit: "1024M"
+    itop_max_file_upload: "100M"
+    
+    # LDAP for enterprise authentication
+    itop_enable_ldap: true
+    itop_ldap_host: "{{ vault_ldap_host }}"
+    itop_ldap_port: 636
+    itop_ldap_bind_dn: "{{ vault_ldap_bind_dn }}"
+    itop_ldap_bind_password: "{{ vault_ldap_bind_password }}"
+    itop_ldap_base_dn: "{{ ldap_base_dn }}"
+    itop_ldap_user_filter: "{{ ldap_user_filter }}"
+    
+    # Enhanced monitoring for cluster
+    itop_enable_monitoring: true
+    itop_health_check_url: "/itop/health.php"
+    itop_log_rotation: true
+    itop_log_retention_days: 90
+    
+  pre_tasks:
+    - name: Validate cluster requirements
+      assert:
+        that:
+          - groups['galera_cluster'] is defined
+          - groups['galera_cluster'] | length > 0
+          - vault_itop_cluster_db_password is defined
+          - vault_itop_admin_password is defined
+          - vault_ldap_host is defined
+        fail_msg: "Required cluster configuration is missing"
+        
+    - name: Install prerequisite packages
+      apt:
+        name:
+          - apache2
+          - php
+          - php-mysql
+          - php-gd
+          - php-xml
+          - php-mbstring
+          - php-curl
+          - php-zip
+          - php-ldap
+          - php-intl
+          - unzip
+          - openssl
+          - python3-pymysql
+          - logrotate
+          - rsync
+        state: present
+        update_cache: yes
+        
+    - name: Configure PHP for high availability
+      lineinfile:
+        path: /etc/php/8.1/apache2/php.ini
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        backup: true
+      loop:
+        - { regexp: '^session.save_handler', line: 'session.save_handler = memcached' }
+        - { regexp: '^session.save_path', line: 'session.save_path = "{{ memcached_servers }}"' }
+        - { regexp: '^opcache.enable', line: 'opcache.enable = 1' }
+        - { regexp: '^opcache.memory_consumption', line: 'opcache.memory_consumption = 256' }
+      notify: restart apache2
+      when: memcached_servers is defined
+        
+    - name: Deploy shared SSL certificates
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: "{{ item.mode }}"
+        owner: root
+        group: root
+      loop:
+        - { src: "files/ssl/itop-cluster.crt", dest: "{{ itop_ssl_cert_path }}", mode: "0644" }
+        - { src: "files/ssl/itop-cluster.key", dest: "{{ itop_ssl_key_path }}", mode: "0600" }
+      when: itop_enable_ssl
+        
+    - name: Start and enable Apache
+      service:
+        name: apache2
+        state: started
+        enabled: yes
+  
+  roles:
+    - role: operations_management/itop
+      tags: ['itop']
+  
+  post_tasks:
+    - name: Configure session synchronization
+      copy:
+        content: |
+          <?php
+          // Session sync configuration for HA cluster
+          ini_set('session.save_handler', 'memcached');
+          ini_set('session.save_path', '{{ memcached_servers | default("localhost:11211") }}');
+          ?>
+        dest: "{{ itop_root_dir }}/conf/{{ itop_config_mode }}/session-sync.php"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+      when: memcached_servers is defined
+      
+    - name: Test cluster connectivity
+      uri:
+        url: "http{% if itop_enable_ssl %}s{% endif %}://{{ ansible_fqdn }}/itop/health.php"
+        method: GET
+        status_code: 200
+        validate_certs: false
+      register: cluster_health
+      
+    - name: Register node in load balancer
+      uri:
+        url: "http://{{ groups['load_balancers'][0] }}/api/nodes"
+        method: POST
+        body: |
+          {
+            "name": "{{ inventory_hostname }}",
+            "address": "{{ ansible_default_ipv4.address }}",
+            "port": "{{ 443 if itop_enable_ssl else 80 }}",
+            "protocol": "{{ 'https' if itop_enable_ssl else 'http' }}",
+            "health_check": "/itop/health.php"
+          }
+        body_format: json
+        headers:
+          Content-Type: "application/json"
+          Authorization: "Bearer {{ vault_lb_api_token }}"
+      when: 
+        - groups['load_balancers'] is defined
+        - vault_lb_api_token is defined
+      delegate_to: localhost
+      
+    - name: Display cluster node status
+      debug:
+        msg: |
+          ========================================
+          iTop HA Cluster Node Deployed
+          ========================================
+          
+          Node: {{ inventory_hostname }}
+          IP: {{ ansible_default_ipv4.address }}
+          Health: {{ 'HEALTHY' if cluster_health.status == 200 else 'UNHEALTHY' }}
+          
+          {% if ansible_play_hosts.index(inventory_hostname) == 0 %}
+          Primary Node: YES (Installation completed)
+          Admin URL: http{% if itop_enable_ssl %}s{% endif %}://{{ ansible_fqdn }}/itop
+          {% else %}
+          Primary Node: NO (Configuration synced)
+          {% endif %}
+          
+          SSL: {{ 'ENABLED' if itop_enable_ssl else 'DISABLED' }}
+          LDAP: {{ 'ENABLED' if itop_enable_ldap else 'DISABLED' }}
+          
+          Database: {{ itop_db_name }} on {{ itop_db_host }}
+          Session Store: {{ memcached_servers | default('Local files') }}
+          
+          {% if ansible_play_hosts.index(inventory_hostname) == (ansible_play_hosts | length - 1) %}
+          
+          ========================================
+          CLUSTER DEPLOYMENT COMPLETE
+          ========================================
+          All {{ ansible_play_hosts | length }} nodes deployed successfully.
+          Configure your load balancer to distribute traffic.
+          {% endif %}
+          
+  handlers:
+    - name: restart apache2
+      service:
+        name: apache2
+        state: restarted

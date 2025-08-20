@@ -1,0 +1,48 @@
+---
+# Automated iTop installation using unattended installer
+- name: Create unattended installation response file
+  ansible.builtin.template:
+    src: unattended_install.xml.j2
+    dest: "{{ itop_root_dir }}/unattended_install.xml"
+    owner: www-data
+    group: www-data
+    mode: '0644'
+  when: itop_auto_install and itop_needs_installation
+
+- name: Run iTop unattended installation
+  ansible.builtin.command: |
+    php {{ itop_root_dir }}/toolkit/unattended_install.php
+    --response_file={{ itop_root_dir }}/unattended_install.xml
+  args:
+    chdir: "{{ itop_root_dir }}"
+    creates: "{{ itop_root_dir }}/conf/{{ itop_config_mode }}/config-itop.php"
+  become_user: www-data
+  register: unattended_install_result
+  when: itop_auto_install and itop_needs_installation
+
+- name: Display installation result
+  ansible.builtin.debug:
+    var: unattended_install_result.stdout_lines
+  when: itop_auto_install and itop_needs_installation and unattended_install_result is defined
+
+- name: Remove unattended installation response file
+  ansible.builtin.file:
+    path: "{{ itop_root_dir }}/unattended_install.xml"
+    state: absent
+  when: itop_auto_install and itop_needs_installation
+
+- name: Verify installation completed
+  ansible.builtin.stat:
+    path: "{{ itop_root_dir }}/conf/{{ itop_config_mode }}/config-itop.php"
+  register: config_file_exists
+  when: itop_auto_install
+
+- name: Display installation status
+  ansible.builtin.debug:
+    msg: |
+      {% if itop_auto_install %}
+      iTop automated installation: {{ 'COMPLETED' if config_file_exists.stat.exists else 'FAILED' }}
+      {% else %}
+      iTop automated installation: SKIPPED (itop_auto_install is false)
+      Manual setup required: Access http://{{ ansible_fqdn }}/itop to complete installation
+      {% endif %}

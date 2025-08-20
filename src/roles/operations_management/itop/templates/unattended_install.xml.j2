@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<installation>
+    <steps>
+        <step id="welcome">
+            <action>skip</action>
+        </step>
+        <step id="license">
+            <action>accept</action>
+        </step>
+        <step id="database">
+            <action>configure</action>
+            <parameters>
+                <server>{{ itop_db_host }}</server>
+                <user>{{ itop_db_user }}</user>
+                <pwd>{{ itop_db_password }}</pwd>
+                <name>{{ itop_db_name }}</name>
+                <prefix></prefix>
+            </parameters>
+        </step>
+        <step id="modules">
+            <action>configure</action>
+            <parameters>
+                <modules>
+{% for module in itop_modules %}
+                    <module>{{ module }}</module>
+{% endfor %}
+                </modules>
+            </parameters>
+        </step>
+        <step id="admin_account">
+            <action>configure</action>
+            <parameters>
+                <user>{{ itop_admin_user }}</user>
+                <password>{{ itop_admin_password }}</password>
+                <language>{{ itop_language }}</language>
+            </parameters>
+        </step>
+        <step id="config">
+            <action>configure</action>
+            <parameters>
+                <mode>{{ itop_config_mode }}</mode>
+                <timezone>{{ itop_timezone }}</timezone>
+                <log_level>{{ itop_log_level }}</log_level>
+{% if itop_enable_ldap %}
+                <ldap_host>{{ itop_ldap_host }}</ldap_host>
+                <ldap_port>{{ itop_ldap_port }}</ldap_port>
+                <ldap_bind_dn>{{ itop_ldap_bind_dn }}</ldap_bind_dn>
+                <ldap_bind_password>{{ itop_ldap_bind_password }}</ldap_bind_password>
+                <ldap_base_dn>{{ itop_ldap_base_dn }}</ldap_base_dn>
+                <ldap_user_filter>{{ itop_ldap_user_filter }}</ldap_user_filter>
+{% endif %}
+            </parameters>
+        </step>
+        <step id="misc">
+            <action>configure</action>
+            <parameters>
+                <organization>{{ itop_organization }}</organization>
+                <email>{{ itop_admin_email }}</email>
+            </parameters>
+        </step>
+        <step id="done">
+            <action>complete</action>
+        </step>
+    </steps>
+</installation>

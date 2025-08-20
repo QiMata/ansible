@@ -1,0 +1,77 @@
+---
+# Configuration management
+- name: Ensure config directory exists
+  ansible.builtin.file:
+    path: "{{ itop_root_dir }}/conf/{{ itop_config_mode }}"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'
+
+- name: Deploy custom iTop configuration
+  ansible.builtin.template:
+    src: config-itop.php.j2
+    dest: "{{ itop_root_dir }}/conf/{{ itop_config_mode }}/config-itop.php"
+    owner: www-data
+    group: www-data
+    mode: '0644'
+    backup: true
+  when: not itop_auto_install or (itop_auto_install and config_file_exists.stat.exists)
+
+- name: Set PHP configuration for iTop
+  ansible.builtin.lineinfile:
+    path: /etc/php/{{ ansible_php_version | default('8.1') }}/apache2/php.ini
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    backup: true
+  loop:
+    - { regexp: '^max_execution_time', line: "max_execution_time = {{ itop_max_execution_time }}" }
+    - { regexp: '^memory_limit', line: "memory_limit = {{ itop_memory_limit }}" }
+    - { regexp: '^upload_max_filesize', line: "upload_max_filesize = {{ itop_max_file_upload }}" }
+    - { regexp: '^post_max_size', line: "post_max_size = {{ itop_max_file_upload }}" }
+  notify: restart apache2
+
+- name: Create PHP info file for diagnostics
+  ansible.builtin.copy:
+    content: |
+      <?php
+      // iTop PHP Configuration Check
+      echo "PHP Version: " . phpversion() . "\n";
+      echo "Memory Limit: " . ini_get('memory_limit') . "\n";
+      echo "Max Execution Time: " . ini_get('max_execution_time') . "\n";
+      echo "Upload Max Filesize: " . ini_get('upload_max_filesize') . "\n";
+      echo "MySQL Extension: " . (extension_loaded('mysqli') ? 'Loaded' : 'NOT LOADED') . "\n";
+      echo "GD Extension: " . (extension_loaded('gd') ? 'Loaded' : 'NOT LOADED') . "\n";
+      ?>
+    dest: "{{ itop_root_dir }}/phpinfo.php"
+    owner: www-data
+    group: www-data
+    mode: '0644'
+
+- name: Create .htaccess file for security
+  ansible.builtin.copy:
+    content: |
+      # iTop Security Configuration
+      RewriteEngine On
+      
+      # Protect config files
+      <FilesMatch "^(config.*\.php|.*\.xml)$">
+          Require all denied
+      </FilesMatch>
+      
+      # Protect log files
+      <FilesMatch "\.log$">
+          Require all denied
+      </FilesMatch>
+      
+      # Set security headers
+      Header always set X-Content-Type-Options nosniff
+      Header always set X-Frame-Options DENY
+      Header always set X-XSS-Protection "1; mode=block"
+      {% if itop_enable_ssl %}
+      Header always set Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+      {% endif %}
+    dest: "{{ itop_root_dir }}/.htaccess"
+    owner: www-data
+    group: www-data
+    mode: '0644'

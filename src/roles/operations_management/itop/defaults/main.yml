@@ -1,6 +1,57 @@
 ---
+# iTop version and basic configuration
 itop_version: "2.7.5"
 itop_root_dir: "/var/www/html/itop"
+
+# Database configuration
 itop_db_name: "itop_db"
 itop_db_user: "itop_user"
 itop_db_password: "itop_password"
+itop_db_host: "localhost"
+itop_db_port: 3306
+
+# SSL/HTTPS Configuration
+itop_enable_ssl: false
+itop_ssl_cert_path: "/etc/ssl/certs/itop.crt"
+itop_ssl_key_path: "/etc/ssl/private/itop.key"
+itop_ssl_redirect_http: true
+
+# Automated Installation Configuration
+itop_auto_install: false
+itop_admin_user: "admin"
+itop_admin_password: "admin"
+itop_admin_email: "admin@example.com"
+itop_organization: "My Organization"
+itop_modules:
+  - "itop-config-mgmt"
+  - "itop-incident-mgmt"
+  - "itop-problem-mgmt"
+  - "itop-change-mgmt"
+  - "itop-service-mgmt"
+
+# Configuration Management
+itop_config_mode: "production"
+itop_timezone: "UTC"
+itop_language: "EN US"
+itop_log_level: "Error"
+itop_session_timeout: 3600
+
+# External Authentication
+itop_enable_ldap: false
+itop_ldap_host: ""
+itop_ldap_port: 389
+itop_ldap_bind_dn: ""
+itop_ldap_bind_password: ""
+itop_ldap_base_dn: ""
+itop_ldap_user_filter: ""
+
+# Monitoring and Health Checks
+itop_enable_monitoring: true
+itop_health_check_url: "/itop/pages/exec.php"
+itop_log_rotation: true
+itop_log_retention_days: 30
+
+# Performance and Tuning
+itop_max_execution_time: 300
+itop_memory_limit: "512M"
+itop_max_file_upload: "50M"

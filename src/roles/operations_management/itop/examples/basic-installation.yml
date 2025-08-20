@@ -1,0 +1,76 @@
+---
+# Basic iTop Installation with Manual Setup
+# This playbook installs iTop with minimal configuration
+# Manual setup wizard will be required to complete installation
+
+- name: Deploy iTop ITSM Basic Installation
+  hosts: itop_servers
+  become: yes
+  
+  vars:
+    # Basic configuration
+    itop_version: "2.7.5"
+    itop_root_dir: "/var/www/html/itop"
+    
+    # Database settings (CHANGE PASSWORDS!)
+    itop_db_name: "itop_db"
+    itop_db_user: "itop_user"
+    itop_db_password: "CHANGE_THIS_PASSWORD"
+    
+    # Security - SSL disabled for basic setup
+    itop_enable_ssl: false
+    
+    # Monitoring enabled but not required
+    itop_enable_monitoring: true
+    
+  pre_tasks:
+    - name: Install prerequisite packages
+      apt:
+        name:
+          - apache2
+          - mysql-server
+          - php
+          - php-mysql
+          - php-gd
+          - php-xml
+          - php-mbstring
+          - php-curl
+          - php-zip
+          - unzip
+          - python3-pymysql
+        state: present
+        update_cache: yes
+        
+    - name: Start and enable services
+      service:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      loop:
+        - apache2
+        - mysql
+  
+  roles:
+    - role: operations_management/itop
+      tags: ['itop']
+  
+  post_tasks:
+    - name: Display next steps
+      debug:
+        msg: |
+          =====================================
+          iTop Basic Installation Complete
+          =====================================
+          
+          Next Steps:
+          1. Open http://{{ ansible_fqdn }}/itop in your web browser
+          2. Complete the installation wizard with these details:
+             - Database Host: {{ itop_db_host | default('localhost') }}
+             - Database Name: {{ itop_db_name }}
+             - Database User: {{ itop_db_user }}
+             - Database Password: {{ itop_db_password }}
+          3. Choose your modules and create admin account
+          4. Configure organization settings
+          
+          Note: Please change the default passwords immediately!
+          ====================================

@@ -1,0 +1,59 @@
+---
+# Apache virtual host configuration
+- name: Create Apache virtual host for iTop
+  ansible.builtin.template:
+    src: itop.conf.j2
+    dest: /etc/apache2/sites-available/itop.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - enable itop site
+    - reload apache2
+
+- name: Enable required Apache modules
+  ansible.builtin.command: "a2enmod {{ item }}"
+  loop:
+    - rewrite
+    - ssl
+  notify: restart apache2
+  register: apache_modules
+  changed_when: "'already enabled' not in apache_modules.stdout"
+
+- name: Disable default Apache site
+  ansible.builtin.command: a2dissite 000-default
+  notify: reload apache2
+  register: disable_default
+  changed_when: "'already disabled' not in disable_default.stderr"
+
+# SSL Certificate handling (if enabled)
+- name: Create SSL certificate directory
+  ansible.builtin.file:
+    path: "{{ item | dirname }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ itop_ssl_cert_path }}"
+    - "{{ itop_ssl_key_path }}"
+  when: itop_enable_ssl
+
+- name: Generate self-signed SSL certificate (if not exists)
+  ansible.builtin.command: |
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048
+    -keyout {{ itop_ssl_key_path }}
+    -out {{ itop_ssl_cert_path }}
+    -subj "/C=US/ST=State/L=City/O=Organization/CN={{ ansible_fqdn }}"
+  args:
+    creates: "{{ itop_ssl_cert_path }}"
+  when: itop_enable_ssl
+
+- name: Set SSL certificate permissions
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    mode: "{{ item.mode }}"
+    owner: root
+    group: root
+  loop:
+    - { path: "{{ itop_ssl_cert_path }}", mode: '0644' }
+    - { path: "{{ itop_ssl_key_path }}", mode: '0600' }
+  when: itop_enable_ssl

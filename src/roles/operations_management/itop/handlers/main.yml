@@ -1,0 +1,28 @@
+---
+- name: restart apache2
+  ansible.builtin.service:
+    name: apache2
+    state: restarted
+
+- name: reload apache2
+  ansible.builtin.service:
+    name: apache2
+    state: reloaded
+
+- name: restart mysql
+  ansible.builtin.service:
+    name: mysql
+    state: restarted
+
+- name: enable itop site
+  ansible.builtin.command: a2ensite itop
+  notify: reload apache2
+
+- name: enable ssl module
+  ansible.builtin.command: a2enmod ssl
+  notify: restart apache2
+  when: itop_enable_ssl
+
+- name: enable rewrite module
+  ansible.builtin.command: a2enmod rewrite
+  notify: restart apache2

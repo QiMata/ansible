@@ -1,29 +1,65 @@
 ---
-- name: Download and unzip iTop
-  ansible.builtin.unarchive:
-    src: "https://sourceforge.net/projects/itop/files/itop/{{ itop_version }}/iTop-{{ itop_version }}-2633.zip"
-    dest: "/tmp"
-    remote_src: true
+# Main iTop installation and configuration tasks
+- name: Include pre-installation checks
+  ansible.builtin.include_tasks: pre_install.yml
+  tags: ['itop', 'pre_install']
 
-- name: Move iTop to Apache DocumentRoot
-  ansible.builtin.command: mv /tmp/web/{{ itop_version }}/{{ itop_root_dir }}
-  changed_when: false
+- name: Include iTop installation tasks
+  ansible.builtin.include_tasks: install.yml
+  tags: ['itop', 'install']
 
-- name: Change ownership of iTop directory
-  ansible.builtin.file:
-    path: "{{ itop_root_dir }}"
-    owner: www-data
-    group: www-data
-    recurse: true
+- name: Include database setup tasks
+  ansible.builtin.include_tasks: database.yml
+  tags: ['itop', 'database']
 
-- name: Create iTop Database
-  community.mysql.mysql_db:
-    name: "{{ itop_db_name }}"
-    state: present
+- name: Include web server configuration tasks
+  ansible.builtin.include_tasks: webserver.yml
+  tags: ['itop', 'webserver']
 
-- name: Create iTop DB User
-  community.mysql.mysql_user:
-    name: "{{ itop_db_user }}"
-    password: "{{ itop_db_password }}"
-    priv: "{{ itop_db_name }}.*:ALL"
-    state: present
+- name: Include automated installation tasks
+  ansible.builtin.include_tasks: auto_install.yml
+  tags: ['itop', 'auto_install']
+  when: itop_auto_install
+
+- name: Include configuration management tasks
+  ansible.builtin.include_tasks: configure.yml
+  tags: ['itop', 'configure']
+
+- name: Include monitoring and health check tasks
+  ansible.builtin.include_tasks: monitoring.yml
+  tags: ['itop', 'monitoring']
+  when: itop_enable_monitoring
+
+- name: Final installation summary
+  ansible.builtin.debug:
+    msg: |
+      ===========================================
+      iTop Installation Summary
+      ===========================================
+      Version: {{ itop_version }}
+      Install Path: {{ itop_root_dir }}
+      Database: {{ itop_db_name }} on {{ itop_db_host }}
+      SSL Enabled: {{ itop_enable_ssl }}
+      Auto Install: {{ itop_auto_install }}
+      Monitoring: {{ itop_enable_monitoring }}
+      
+      {% if not itop_auto_install %}
+      MANUAL SETUP REQUIRED:
+      Please visit http{% if itop_enable_ssl %}s{% endif %}://{{ ansible_fqdn }}/itop
+      to complete the installation wizard.
+      
+      Database Details:
+      - Host: {{ itop_db_host }}
+      - Database: {{ itop_db_name }}
+      - Username: {{ itop_db_user }}
+      - Password: {{ itop_db_password }}
+      {% else %}
+      Installation completed automatically.
+      Access iTop at: http{% if itop_enable_ssl %}s{% endif %}://{{ ansible_fqdn }}/itop
+      
+      Default Admin Credentials:
+      - Username: {{ itop_admin_user }}
+      - Password: {{ itop_admin_password }}
+      (Please change the admin password immediately!)
+      {% endif %}
+      ===========================================

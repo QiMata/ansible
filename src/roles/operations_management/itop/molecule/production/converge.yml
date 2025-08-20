@@ -1,5 +1,5 @@
 ---
-- name: Converge
+- name: Converge Production
   hosts: all
   become: true
   
@@ -20,9 +20,13 @@
           - php-mbstring
           - php-curl
           - php-zip
+          - php-ldap
+          - php-intl
           - unzip
+          - openssl
           - python3-pymysql
           - systemctl
+          - logrotate
         state: present
         
     - name: Start MySQL service
@@ -36,6 +40,12 @@
         name: apache2
         state: started
         enabled: yes
+        
+    - name: Create SSL certificate directory
+      file:
+        path: /etc/ssl/private
+        state: directory
+        mode: '0755'
   
   roles:
     - role: operations_management/itop

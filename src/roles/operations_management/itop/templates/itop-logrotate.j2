@@ -1,0 +1,22 @@
+/var/log/itop-health.log {
+    daily
+    missingok
+    rotate {{ itop_log_retention_days }}
+    compress
+    delaycompress
+    notifempty
+    create 644 www-data www-data
+}
+
+{{ itop_root_dir }}/log/*.log {
+    daily
+    missingok
+    rotate {{ itop_log_retention_days }}
+    compress
+    delaycompress
+    notifempty
+    create 644 www-data www-data
+    postrotate
+        systemctl reload apache2 > /dev/null 2>&1 || true
+    endscript
+}

@@ -6,7 +6,7 @@ dependency:
 driver:
   name: docker
 platforms:
-  - name: itop-default
+  - name: itop-production
     image: debian:12
     privileged: true
     command: /lib/systemd/systemd
@@ -20,11 +20,15 @@ provisioner:
   name: ansible
   inventory:
     host_vars:
-      itop-default:
-        itop_enable_ssl: false
-        itop_auto_install: false
+      itop-production:
+        itop_enable_ssl: true
+        itop_auto_install: true
         itop_enable_monitoring: true
-        itop_db_password: "test_password"
+        itop_enable_ldap: false
+        itop_db_password: "secure_test_password"
+        itop_admin_password: "admin_test_password"
+        itop_log_rotation: true
+        itop_log_retention_days: 30
   playbooks:
     converge: converge.yml
   config_options:

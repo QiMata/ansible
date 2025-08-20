@@ -1,0 +1,25 @@
+---
+# Pre-installation checks and idempotency
+- name: Check if iTop is already installed
+  ansible.builtin.stat:
+    path: "{{ itop_root_dir }}/conf/{{ itop_config_mode }}/config-itop.php"
+  register: itop_installed
+
+- name: Check if iTop directory exists
+  ansible.builtin.stat:
+    path: "{{ itop_root_dir }}"
+  register: itop_directory_exists
+
+- name: Set installation facts
+  ansible.builtin.set_fact:
+    itop_needs_installation: "{{ not itop_installed.stat.exists }}"
+    itop_needs_download: "{{ not itop_directory_exists.stat.exists }}"
+
+- name: Display installation status
+  ansible.builtin.debug:
+    msg: |
+      iTop installation status:
+      - Needs download: {{ itop_needs_download }}
+      - Needs installation: {{ itop_needs_installation }}
+      - Directory exists: {{ itop_directory_exists.stat.exists }}
+      - Config exists: {{ itop_installed.stat.exists }}

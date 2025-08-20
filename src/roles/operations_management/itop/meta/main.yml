@@ -1,0 +1,31 @@
+---
+galaxy_info:
+  author: Ansible Automation
+  description: Enhanced iTop ITSM deployment with SSL, automated installation, and monitoring
+  company: Organization
+  license: MIT
+  min_ansible_version: 2.10
+  
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+
+  galaxy_tags:
+    - itop
+    - itsm
+    - cmdb
+    - monitoring
+    - ssl
+    - web
+
+dependencies: []
+
+collections:
+  - community.mysql
+  - community.general

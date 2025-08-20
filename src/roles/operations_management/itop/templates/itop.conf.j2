@@ -1,0 +1,46 @@
+<VirtualHost *:80>
+    ServerName {{ ansible_fqdn }}
+    DocumentRoot {{ itop_root_dir }}
+    
+    <Directory {{ itop_root_dir }}>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+{% if itop_enable_ssl and itop_ssl_redirect_http %}
+    # Redirect HTTP to HTTPS
+    RewriteEngine On
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+{% endif %}
+
+    ErrorLog ${APACHE_LOG_DIR}/itop_error.log
+    CustomLog ${APACHE_LOG_DIR}/itop_access.log combined
+</VirtualHost>
+
+{% if itop_enable_ssl %}
+<VirtualHost *:443>
+    ServerName {{ ansible_fqdn }}
+    DocumentRoot {{ itop_root_dir }}
+    
+    SSLEngine on
+    SSLCertificateFile {{ itop_ssl_cert_path }}
+    SSLCertificateKeyFile {{ itop_ssl_key_path }}
+    
+    # Modern SSL configuration
+    SSLProtocol all -SSLv3 -TLSv1 -TLSv1.1
+    SSLCipherSuite ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384
+    SSLHonorCipherOrder off
+    SSLSessionTickets off
+    
+    <Directory {{ itop_root_dir }}>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    ErrorLog ${APACHE_LOG_DIR}/itop_ssl_error.log
+    CustomLog ${APACHE_LOG_DIR}/itop_ssl_access.log combined
+</VirtualHost>
+{% endif %}

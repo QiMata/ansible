@@ -1,0 +1,62 @@
+---
+# Download and extract iTop (only if needed)
+- name: Download and unzip iTop
+  ansible.builtin.unarchive:
+    src: "https://sourceforge.net/projects/itop/files/itop/{{ itop_version }}/iTop-{{ itop_version }}-2633.zip"
+    dest: "/tmp"
+    remote_src: true
+    creates: "/tmp/web"
+  when: itop_needs_download
+
+- name: Ensure target directory exists
+  ansible.builtin.file:
+    path: "{{ itop_root_dir }}"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'
+  when: itop_needs_download
+
+- name: Move iTop files to Apache DocumentRoot
+  ansible.builtin.shell: |
+    if [ -d "/tmp/web" ]; then
+      rsync -a /tmp/web/ {{ itop_root_dir }}/
+      rm -rf /tmp/web
+    fi
+  args:
+    creates: "{{ itop_root_dir }}/index.php"
+  when: itop_needs_download
+
+- name: Change ownership of iTop directory
+  ansible.builtin.file:
+    path: "{{ itop_root_dir }}"
+    owner: www-data
+    group: www-data
+    recurse: true
+  when: itop_needs_download
+
+- name: Set proper permissions for iTop directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+    owner: www-data
+    group: www-data
+  loop:
+    - "{{ itop_root_dir }}/conf"
+    - "{{ itop_root_dir }}/data"
+    - "{{ itop_root_dir }}/log"
+  when: itop_needs_download
+
+- name: Set writable permissions for specific directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0775'
+    owner: www-data
+    group: www-data
+  loop:
+    - "{{ itop_root_dir }}/conf"
+    - "{{ itop_root_dir }}/data"
+    - "{{ itop_root_dir }}/log"
+  when: itop_needs_download

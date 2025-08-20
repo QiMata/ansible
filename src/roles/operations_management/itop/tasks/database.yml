@@ -1,0 +1,32 @@
+---
+# Database setup
+- name: Create iTop Database
+  community.mysql.mysql_db:
+    name: "{{ itop_db_name }}"
+    state: present
+    login_host: "{{ itop_db_host }}"
+    login_port: "{{ itop_db_port }}"
+
+- name: Create iTop DB User
+  community.mysql.mysql_user:
+    name: "{{ itop_db_user }}"
+    password: "{{ itop_db_password }}"
+    priv: "{{ itop_db_name }}.*:ALL"
+    host: "{{ itop_db_host if itop_db_host != 'localhost' else 'localhost' }}"
+    state: present
+    login_host: "{{ itop_db_host }}"
+    login_port: "{{ itop_db_port }}"
+
+- name: Test database connectivity
+  community.mysql.mysql_query:
+    login_db: "{{ itop_db_name }}"
+    login_user: "{{ itop_db_user }}"
+    login_password: "{{ itop_db_password }}"
+    login_host: "{{ itop_db_host }}"
+    login_port: "{{ itop_db_port }}"
+    query: "SELECT 1 as test_connection"
+  register: db_test_result
+
+- name: Display database test result
+  ansible.builtin.debug:
+    msg: "Database connectivity test: {{ 'SUCCESS' if db_test_result.rowcount is defined else 'FAILED' }}"

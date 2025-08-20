@@ -1,0 +1,104 @@
+---
+# Monitoring and health checks setup
+- name: Deploy health check script
+  ansible.builtin.template:
+    src: itop-health-check.sh.j2
+    dest: /usr/local/bin/itop-health-check.sh
+    owner: root
+    group: root
+    mode: '0755'
+  when: itop_enable_monitoring
+
+- name: Create health check log file
+  ansible.builtin.file:
+    path: /var/log/itop-health.log
+    state: touch
+    owner: www-data
+    group: www-data
+    mode: '0644'
+  when: itop_enable_monitoring
+
+- name: Setup health check cron job
+  ansible.builtin.cron:
+    name: "iTop Health Check"
+    minute: "*/5"
+    job: "/usr/local/bin/itop-health-check.sh"
+    user: root
+  when: itop_enable_monitoring
+
+- name: Setup log rotation for iTop
+  ansible.builtin.template:
+    src: itop-logrotate.j2
+    dest: /etc/logrotate.d/itop
+    owner: root
+    group: root
+    mode: '0644'
+  when: itop_log_rotation
+
+- name: Create monitoring endpoint
+  ansible.builtin.copy:
+    content: |
+      <?php
+      // iTop Monitoring Endpoint
+      header('Content-Type: application/json');
+      
+      $status = array(
+          'status' => 'ok',
+          'timestamp' => date('Y-m-d H:i:s'),
+          'checks' => array()
+      );
+      
+      // Check database connectivity
+      try {
+          $pdo = new PDO('mysql:host={{ itop_db_host }};dbname={{ itop_db_name }}', 
+                        '{{ itop_db_user }}', '{{ itop_db_password }}');
+          $status['checks']['database'] = 'ok';
+      } catch (Exception $e) {
+          $status['checks']['database'] = 'error';
+          $status['status'] = 'error';
+      }
+      
+      // Check config file
+      $config_file = __DIR__ . '/conf/{{ itop_config_mode }}/config-itop.php';
+      $status['checks']['config'] = file_exists($config_file) ? 'ok' : 'error';
+      if (!file_exists($config_file)) {
+          $status['status'] = 'error';
+      }
+      
+      // Check disk space
+      $free_space = disk_free_space(__DIR__);
+      $total_space = disk_total_space(__DIR__);
+      $usage_percent = (($total_space - $free_space) / $total_space) * 100;
+      $status['checks']['disk_usage'] = $usage_percent;
+      
+      if ($usage_percent > 90) {
+          $status['checks']['disk'] = 'warning';
+      } else {
+          $status['checks']['disk'] = 'ok';
+      }
+      
+      echo json_encode($status, JSON_PRETTY_PRINT);
+      ?>
+    dest: "{{ itop_root_dir }}/health.php"
+    owner: www-data
+    group: www-data
+    mode: '0644'
+  when: itop_enable_monitoring
+
+- name: Test health check endpoint
+  ansible.builtin.uri:
+    url: "http://{{ ansible_fqdn }}{{ itop_health_check_url | default('/itop/health.php') }}"
+    method: GET
+    status_code: 200
+  register: health_check_test
+  when: itop_enable_monitoring
+  ignore_errors: true
+
+- name: Display health check result
+  ansible.builtin.debug:
+    msg: |
+      Health check endpoint test: {{ 'PASSED' if health_check_test.status == 200 else 'FAILED' }}
+      {% if health_check_test.status == 200 %}
+      Response: {{ health_check_test.json | default('No JSON response') }}
+      {% endif %}
+  when: itop_enable_monitoring
