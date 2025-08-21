@@ -1,0 +1,69 @@
+---
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - letsencrypt_domains is defined
+      - letsencrypt_domains | length > 0
+      - letsencrypt_email is defined
+      - letsencrypt_email | length > 0
+    fail_msg: "letsencrypt_domains and letsencrypt_email are required"
+
+- name: Validate DNS challenge requirements
+  ansible.builtin.assert:
+    that:
+      - godaddy_api_key is defined
+      - godaddy_api_key | length > 0
+      - godaddy_api_secret is defined
+      - godaddy_api_secret | length > 0
+    fail_msg: "godaddy_api_key and godaddy_api_secret are required for DNS challenges"
+  when: letsencrypt_challenge_method == "dns"
+
+- name: Validate HTTP challenge requirements
+  ansible.builtin.assert:
+    that:
+      - letsencrypt_domains | length == 1
+    fail_msg: "HTTP challenges only support single domain certificates"
+  when: letsencrypt_challenge_method == "http"
+
+- name: Determine ACME client to use
+  ansible.builtin.set_fact:
+    _selected_client: >-
+      {%- if letsencrypt_client in ['certbot', 'acme.sh'] -%}
+        {{ letsencrypt_client }}
+      {%- elif letsencrypt_challenge_method == "http" -%}
+        certbot
+      {%- elif letsencrypt_domains | length == 1 -%}
+        certbot
+      {%- else -%}
+        acme.sh
+      {%- endif -%}
+
+- name: Show selected configuration
+  ansible.builtin.debug:
+    msg:
+      - "Selected ACME client: {{ _selected_client }}"
+      - "Challenge method: {{ letsencrypt_challenge_method }}"
+      - "Domains: {{ letsencrypt_domains }}"
+      - "Email: {{ letsencrypt_email }}"
+
+- name: Use letsencrypt_setup (Certbot) for certificates
+  ansible.builtin.include_role:
+    name: security_identity.letsencrypt.letsencrypt_setup
+  vars:
+    domain_name: "{{ letsencrypt_domains[0] }}"
+    email_address: "{{ letsencrypt_email }}"
+    use_godaddy: "{{ letsencrypt_challenge_method == 'dns' }}"
+    webroot_path: "{{ webroot_path | default('/var/www/html') }}"
+    godaddy_api_key: "{{ godaddy_api_key | default('') }}"
+    godaddy_api_secret: "{{ godaddy_api_secret | default('') }}"
+  when: _selected_client == "certbot"
+
+- name: Use letsencrypt_godaddy (acme.sh) for certificates
+  ansible.builtin.include_role:
+    name: security_identity.letsencrypt.letsencrypt_godaddy
+  vars:
+    cert_domains: "{{ letsencrypt_domains }}"
+    letsencrypt_account_email: "{{ letsencrypt_email }}"
+    godaddy_api_key: "{{ godaddy_api_key | default('') }}"
+    godaddy_api_secret: "{{ godaddy_api_secret | default('') }}"
+  when: _selected_client == "acme.sh"

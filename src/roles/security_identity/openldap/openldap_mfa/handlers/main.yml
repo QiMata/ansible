@@ -1,0 +1,28 @@
+---
+- name: restart slapd
+  service:
+    name: slapd
+    state: restarted
+  become: yes
+
+- name: restart pam
+  command: pam-auth-update --force
+  become: yes
+
+- name: reload pam configuration
+  command: systemctl restart systemd-logind
+  become: yes
+
+- name: restart saslauthd
+  service:
+    name: saslauthd
+    state: restarted
+  become: yes
+  when: openldap_mfa_sasl_enabled | default(false)
+
+- name: restart nginx
+  service:
+    name: nginx
+    state: restarted
+  become: yes
+  when: openldap_mfa_oauth2_enabled or openldap_mfa_saml_enabled

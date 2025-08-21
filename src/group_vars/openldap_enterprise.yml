@@ -1,0 +1,443 @@
+---
+# OpenLDAP Enterprise Configuration
+# This file demonstrates all available configuration options for the enhanced OpenLDAP roles
+
+# =============================================================================
+# CORE OPENLDAP SERVER CONFIGURATION
+# =============================================================================
+openldap_server_domain: "example.com"
+openldap_server_base_dn: "dc=example,dc=com"
+openldap_server_organization: "Example Corporation"
+openldap_server_admin_password: "{{ vault_ldap_admin_password }}"
+openldap_server_use_tls: true
+openldap_server_tls_cert: "/etc/ldap/ssl/ldap.crt"
+openldap_server_tls_key: "/etc/ldap/ssl/ldap.key"
+openldap_server_tls_ca: "/etc/ldap/ssl/ca.crt"
+openldap_server_log_level: 256  # stats
+
+# =============================================================================
+# MULTI-FACTOR AUTHENTICATION (MFA)
+# =============================================================================
+openldap_mfa_enabled: true
+
+# TOTP/OTP Configuration
+openldap_mfa_totp_enabled: true
+openldap_mfa_totp_issuer: "{{ openldap_server_organization }}"
+openldap_mfa_totp_window_size: 3
+openldap_mfa_totp_rate_limit: 3
+openldap_mfa_totp_secret_length: 16
+openldap_mfa_totp_time_step: 30
+
+# Smart Card Authentication
+openldap_mfa_smartcard_enabled: true
+openldap_mfa_pkcs11_module: "/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so"
+openldap_mfa_ca_certificates:
+  - name: "company_ca"
+    content: |
+      -----BEGIN CERTIFICATE-----
+      # Your CA certificate content here
+      -----END CERTIFICATE-----
+openldap_mfa_cert_validation: "strict"
+
+# External Authentication Providers
+openldap_mfa_oauth2_enabled: true
+openldap_mfa_oauth2_providers:
+  - name: "google"
+    client_id: "{{ vault_google_oauth_client_id }}"
+    client_secret: "{{ vault_google_oauth_client_secret }}"
+    authorization_url: "https://accounts.google.com/o/oauth2/auth"
+    token_url: "https://oauth2.googleapis.com/token"
+    userinfo_url: "https://www.googleapis.com/oauth2/v1/userinfo"
+    scope: "openid email profile"
+  - name: "azure_ad"
+    client_id: "{{ vault_azure_client_id }}"
+    client_secret: "{{ vault_azure_client_secret }}"
+    authorization_url: "https://login.microsoftonline.com/{{ azure_tenant_id }}/oauth2/v2.0/authorize"
+    token_url: "https://login.microsoftonline.com/{{ azure_tenant_id }}/oauth2/v2.0/token"
+    userinfo_url: "https://graph.microsoft.com/v1.0/me"
+    scope: "openid email profile"
+
+openldap_mfa_saml_enabled: true
+openldap_mfa_saml_providers:
+  - name: "azure_ad_saml"
+    metadata_url: "https://login.microsoftonline.com/{{ azure_tenant_id }}/federationmetadata/2007-06/federationmetadata.xml"
+    entity_id: "https://ldap.{{ openldap_server_domain }}"
+    assertion_consumer_service: "https://ldap.{{ openldap_server_domain }}/saml/acs"
+
+# MFA Policy Configuration
+openldap_mfa_required_groups:
+  - "cn=admins,{{ openldap_server_base_dn }}"
+  - "cn=privileged_users,{{ openldap_server_base_dn }}"
+openldap_mfa_optional_groups:
+  - "cn=users,{{ openldap_server_base_dn }}"
+openldap_mfa_bypass_groups:
+  - "cn=service_accounts,{{ openldap_server_base_dn }}"
+
+# =============================================================================
+# PASSWORD POLICIES
+# =============================================================================
+openldap_password_policies_enabled: true
+
+# Basic Password Requirements
+openldap_password_min_length: 12
+openldap_password_max_length: 128
+openldap_password_min_classes: 3
+openldap_password_require_uppercase: true
+openldap_password_require_lowercase: true
+openldap_password_require_digits: true
+openldap_password_require_special: true
+openldap_password_allowed_special: "!@#$%^&*()_+-=[]{}|;:,.<>?"
+
+# Password Quality Checks
+openldap_password_dictionary_check: true
+openldap_password_quality_check: true
+openldap_password_reject_common: true
+openldap_password_reject_palindromes: true
+openldap_password_reject_sequences: true
+
+# Password Expiration
+openldap_password_max_age: 90
+openldap_password_min_age: 1
+openldap_password_warning: 7
+openldap_password_grace_logins: 3
+
+# Account Lockout Policy
+openldap_lockout_enabled: true
+openldap_lockout_threshold: 5
+openldap_lockout_duration: 1800
+openldap_lockout_observation_window: 900
+openldap_lockout_reset_on_success: true
+
+# Password History
+openldap_password_history_enabled: true
+openldap_password_history_count: 12
+
+# Custom Password Policies
+openldap_custom_password_policies:
+  - name: "admin_policy"
+    min_length: 16
+    max_age: 30
+    lockout_threshold: 3
+    history_count: 24
+    apply_to_groups:
+      - "cn=admins,{{ openldap_server_base_dn }}"
+  - name: "service_policy"
+    min_length: 20
+    max_age: 365
+    lockout_threshold: 10
+    history_count: 5
+    apply_to_groups:
+      - "cn=services,{{ openldap_server_base_dn }}"
+  - name: "contractor_policy"
+    min_length: 14
+    max_age: 60
+    lockout_threshold: 3
+    history_count: 8
+    apply_to_groups:
+      - "cn=contractors,{{ openldap_server_base_dn }}"
+
+# =============================================================================
+# HIGH AVAILABILITY - HAPROXY LOAD BALANCING
+# =============================================================================
+openldap_haproxy_enabled: true
+openldap_haproxy_bind_address: "0.0.0.0"
+openldap_haproxy_ldap_port: 389
+openldap_haproxy_ldaps_port: 636
+openldap_haproxy_stats_port: 8080
+openldap_haproxy_stats_user: "admin"
+openldap_haproxy_stats_password: "{{ vault_haproxy_stats_password }}"
+
+# Load Balancing Configuration
+openldap_haproxy_balance_method: "roundrobin"
+openldap_haproxy_max_connections: 2000
+openldap_haproxy_connection_timeout: 30
+openldap_haproxy_server_timeout: 30
+openldap_haproxy_client_timeout: 60
+
+# Backend LDAP Servers
+openldap_haproxy_servers:
+  - name: "ldap-primary"
+    address: "10.0.1.10"
+    port: 389
+    weight: 200
+    maxconn: 200
+    check: true
+    backup: false
+  - name: "ldap-secondary"
+    address: "10.0.1.11"
+    port: 389
+    weight: 150
+    maxconn: 150
+    check: true
+    backup: false
+  - name: "ldap-tertiary"
+    address: "10.0.1.12"
+    port: 389
+    weight: 100
+    maxconn: 100
+    check: true
+    backup: true
+
+# Health Check Configuration
+openldap_haproxy_health_check_enabled: true
+openldap_haproxy_health_check_interval: "10s"
+openldap_haproxy_health_check_timeout: "5s"
+openldap_haproxy_health_check_retries: 3
+
+# SSL/TLS Configuration
+openldap_haproxy_ssl_enabled: true
+openldap_haproxy_ssl_certificate: "/etc/ssl/certs/ldap.pem"
+openldap_haproxy_ssl_redirect: true
+
+# =============================================================================
+# PERFORMANCE MONITORING
+# =============================================================================
+openldap_monitoring_enabled: true
+
+# Prometheus Integration
+openldap_monitoring_prometheus: true
+openldap_prometheus_port: 9330
+openldap_prometheus_endpoint: "/metrics"
+openldap_prometheus_job_name: "openldap"
+
+# Grafana Integration
+openldap_monitoring_grafana: true
+openldap_grafana_dashboard_enabled: true
+
+# Health Checks
+openldap_health_checks_enabled: true
+openldap_health_check_interval: 60
+openldap_health_check_timeout: 10
+
+# Performance Metrics
+openldap_metrics_enabled: true
+openldap_collect_connection_metrics: true
+openldap_collect_operation_metrics: true
+openldap_collect_replication_metrics: true
+openldap_collect_cache_metrics: true
+openldap_collect_database_metrics: true
+
+# Query Performance Monitoring
+openldap_slow_query_monitoring: true
+openldap_slow_query_threshold: 5000
+
+# Capacity Planning
+openldap_capacity_monitoring: true
+openldap_capacity_disk_threshold: 80
+openldap_capacity_memory_threshold: 85
+openldap_capacity_connection_threshold: 80
+
+# Alerting Configuration
+openldap_alerting_enabled: true
+openldap_alert_email: "ldap-admin@{{ openldap_server_domain }}"
+openldap_alert_slack_webhook: "{{ vault_slack_webhook }}"
+openldap_alert_high_cpu: 80
+openldap_alert_high_memory: 85
+openldap_alert_disk_usage: 90
+openldap_alert_replication_lag: 300
+
+# =============================================================================
+# DATA MANAGEMENT
+# =============================================================================
+openldap_schema_management_enabled: true
+openldap_schema_auto_migration: true
+openldap_schema_validation: true
+openldap_schema_backup_before_migration: true
+
+# Data Validation
+openldap_data_validation_enabled: true
+openldap_validation_schedule: "0 2 * * *"
+
+# Bulk Operations
+openldap_bulk_operations_enabled: true
+openldap_bulk_import_batch_size: 1000
+openldap_bulk_export_format: "ldif"
+openldap_bulk_parallel_workers: 4
+
+# Data Archiving
+openldap_data_archiving_enabled: true
+openldap_archive_retention_days: 365
+openldap_archive_storage_path: "/var/lib/openldap/archive"
+openldap_archive_compression: true
+
+# =============================================================================
+# INTEGRATION CAPABILITIES
+# =============================================================================
+# Directory Synchronization
+openldap_sync_enabled: true
+openldap_sync_ad_enabled: true
+openldap_sync_interval: 3600
+openldap_sync_bidirectional: false
+
+# REST API Configuration
+openldap_rest_api_enabled: true
+openldap_rest_api_port: 8389
+openldap_rest_api_ssl: true
+openldap_rest_api_auth_method: "oauth2"
+
+# Webhook Configuration
+openldap_webhooks_enabled: true
+openldap_webhook_events: ["add", "modify", "delete", "bind"]
+openldap_webhook_endpoints:
+  - url: "https://api.{{ openldap_server_domain }}/ldap/notifications"
+    events: ["add", "modify", "delete"]
+    auth_token: "{{ vault_webhook_token }}"
+    timeout: 30
+    retry_count: 3
+  - url: "https://security.{{ openldap_server_domain }}/ldap/audit"
+    events: ["bind", "unbind", "failed_auth"]
+    auth_token: "{{ vault_security_webhook_token }}"
+    timeout: 15
+    retry_count: 5
+
+# Custom Schemas
+openldap_custom_schemas_enabled: true
+openldap_custom_schemas:
+  - name: "company_schema"
+    file: "company.schema"
+    attributes:
+      - "employeeID"
+      - "department"
+      - "costCenter"
+      - "manager"
+  - name: "application_schema"
+    file: "applications.schema"
+    attributes:
+      - "applicationAccess"
+      - "applicationRole"
+      - "licenseType"
+
+# =============================================================================
+# COMPLIANCE & GOVERNANCE
+# =============================================================================
+# GDPR Compliance
+openldap_gdpr_enabled: true
+openldap_gdpr_retention_policy: true
+openldap_gdpr_right_to_deletion: true
+openldap_gdpr_data_portability: true
+openldap_gdpr_consent_management: true
+
+# Data Retention Policies
+openldap_retention_policies:
+  - name: "employee_records"
+    retention_days: 2555  # 7 years
+    apply_to: "ou=employees,{{ openldap_server_base_dn }}"
+    auto_delete: true
+    notification_before_deletion: 30
+  - name: "contractor_records"
+    retention_days: 1825  # 5 years
+    apply_to: "ou=contractors,{{ openldap_server_base_dn }}"
+    auto_delete: true
+    notification_before_deletion: 60
+  - name: "service_accounts"
+    retention_days: 1095  # 3 years
+    apply_to: "ou=services,{{ openldap_server_base_dn }}"
+    auto_delete: false
+    notification_before_deletion: 90
+
+# Audit Configuration
+openldap_compliance_audit_enabled: true
+openldap_audit_retention_years: 7
+openldap_audit_encryption: true
+openldap_audit_immutable: true
+
+# Data Classification
+openldap_data_classification_enabled: true
+openldap_classify_pii: true
+openldap_classify_phi: true
+openldap_classify_financial: true
+
+# Classification Rules
+openldap_classification_rules:
+  - name: "PII"
+    attributes: ["cn", "mail", "telephoneNumber", "homePhone", "mobile"]
+    sensitivity: "high"
+    encryption_required: true
+  - name: "Financial"
+    attributes: ["salary", "bankAccount", "creditCard"]
+    sensitivity: "critical"
+    encryption_required: true
+    access_restricted: true
+  - name: "Health"
+    attributes: ["medicalInfo", "insurance"]
+    sensitivity: "critical"
+    encryption_required: true
+    access_restricted: true
+
+# =============================================================================
+# BACKUP AND DISASTER RECOVERY
+# =============================================================================
+openldap_backup_enabled: true
+openldap_backup_schedule: "0 3 * * *"  # Daily at 3 AM
+openldap_backup_retention_days: 30
+openldap_backup_encryption: true
+openldap_backup_compression: true
+openldap_backup_remote_storage: true
+openldap_backup_storage_path: "/backup/openldap"
+
+# Disaster Recovery
+openldap_dr_enabled: true
+openldap_dr_replication_interval: 900  # 15 minutes
+openldap_dr_automated_failover: false
+openldap_dr_health_check_interval: 300  # 5 minutes
+
+# =============================================================================
+# LOGGING AND AUDITING
+# =============================================================================
+openldap_logging_enabled: true
+openldap_log_level: "stats"
+openldap_access_log_enabled: true
+openldap_audit_log_enabled: true
+openldap_security_log_enabled: true
+
+# Log Retention
+openldap_log_retention_days: 90
+openldap_audit_log_retention_days: 2555  # 7 years
+openldap_log_compression: true
+openldap_log_encryption: true
+
+# External Log Shipping
+openldap_log_shipping_enabled: true
+openldap_syslog_server: "logs.{{ openldap_server_domain }}"
+openldap_elk_integration: true
+openldap_splunk_integration: false
+
+# =============================================================================
+# REPLICATION
+# =============================================================================
+openldap_replication_enabled: true
+openldap_replication_type: "syncrepl"
+openldap_replication_provider: "ldap://ldap-primary.{{ openldap_server_domain }}"
+openldap_replication_binddn: "cn=replicator,{{ openldap_server_base_dn }}"
+openldap_replication_credentials: "{{ vault_replication_password }}"
+openldap_replication_interval: "00:00:30:00"  # 30 seconds
+
+# Multi-Master Configuration
+openldap_multimaster_enabled: false
+openldap_server_id: 1
+openldap_multimaster_peers: []
+
+# =============================================================================
+# NETWORK AND SECURITY
+# =============================================================================
+# IP-based Access Controls
+openldap_ip_access_controls:
+  - network: "10.0.0.0/8"
+    access: "allow"
+    comment: "Internal network"
+  - network: "192.168.0.0/16"
+    access: "allow"
+    comment: "Private network"
+  - network: "0.0.0.0/0"
+    access: "deny"
+    comment: "Deny all other networks"
+
+# Geographic Restrictions
+openldap_geo_restrictions_enabled: false
+openldap_allowed_countries: ["US", "CA", "GB"]
+openldap_blocked_countries: ["CN", "RU"]
+
+# Rate Limiting
+openldap_rate_limiting_enabled: true
+openldap_rate_limit_bind_attempts: 10  # per minute
+openldap_rate_limit_search_operations: 100  # per minute

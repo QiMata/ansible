@@ -1,0 +1,81 @@
+---
+- name: Install Smart Card authentication packages
+  package:
+    name:
+      - opensc
+      - libpam-pkcs11
+      - openssl
+      - pcscd
+      - libccid
+    state: present
+  become: true
+
+- name: Start and enable PC/SC daemon
+  service:
+    name: pcscd
+    state: started
+    enabled: true
+  become: true
+
+- name: Configure PKCS#11 PAM module
+  template:
+    src: pkcs11.conf.j2
+    dest: /etc/security/pkcs11.conf
+    mode: '0644'
+  become: true
+  notify: restart pam
+
+- name: Create certificate directory
+  file:
+    path: /etc/openldap/certs
+    state: directory
+    owner: openldap
+    group: openldap
+    mode: '0750'
+  become: true
+
+- name: Install CA certificates
+  copy:
+    content: "{{ item.content }}"
+    dest: "/etc/openldap/certs/{{ item.name }}.crt"
+    owner: openldap
+    group: openldap
+    mode: '0644'
+  become: true
+  loop: "{{ openldap_mfa_ca_certificates }}"
+  when: openldap_mfa_ca_certificates | length > 0
+  notify: restart slapd
+
+- name: Configure certificate validation
+  template:
+    src: cert_validation.conf.j2
+    dest: /etc/openldap/mfa/cert_validation.conf
+    owner: openldap
+    group: openldap
+    mode: '0640'
+  become: true
+
+- name: Create certificate mapping script
+  template:
+    src: cert_mapping.py.j2
+    dest: /usr/local/bin/ldap-cert-mapping
+    mode: '0755'
+  become: true
+
+- name: Configure Smart Card overlay for OpenLDAP
+  template:
+    src: smartcard_overlay.ldif.j2
+    dest: /etc/openldap/mfa/smartcard_overlay.ldif
+    owner: openldap
+    group: openldap
+    mode: '0640'
+  become: true
+
+- name: Apply Smart Card overlay configuration
+  command: >
+    ldapmodify -Y EXTERNAL -H ldapi:/// -f /etc/openldap/mfa/smartcard_overlay.ldif
+  become: true
+  become_user: openldap
+  register: smartcard_overlay_result
+  failed_when: smartcard_overlay_result.rc != 0 and 'already exists' not in smartcard_overlay_result.stderr
+  changed_when: smartcard_overlay_result.rc == 0

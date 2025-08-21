@@ -1,0 +1,40 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: openldap-password-policies-test
+    image: quay.io/ansible/molecule-ubuntu:20.04
+    pre_build_image: true
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    command: "/lib/systemd/systemd"
+    capabilities:
+      - SYS_ADMIN
+    tmpfs:
+      - /run
+      - /tmp
+    published_ports:
+      - "389:389/tcp"
+    groups:
+      - ldap_servers
+provisioner:
+  name: ansible
+  inventory:
+    host_vars:
+      openldap-password-policies-test:
+        openldap_server_domain: "test.local"
+        openldap_server_base_dn: "dc=test,dc=local"
+        openldap_server_organization: "Test Organization"
+        openldap_password_policies_enabled: true
+        openldap_password_min_length: 12
+        openldap_lockout_threshold: 3
+        openldap_password_max_age: 60
+  config_options:
+    defaults:
+      stdout_callback: yaml
+      bin_ansible_callbacks: true
+verifier:
+  name: ansible

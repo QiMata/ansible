@@ -1,0 +1,56 @@
+---
+- name: Install MFA dependencies
+  package:
+    name:
+      - libpam-google-authenticator
+      - opensc
+      - libpam-pkcs11
+      - python3-oauthlib
+      - python3-saml2
+      - qrencode
+      - libpam-modules
+    state: present
+  become: yes
+  when: openldap_mfa_enabled
+
+- name: Create MFA directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: openldap
+    group: openldap
+    mode: '0750'
+  become: yes
+  loop:
+    - /etc/openldap/mfa
+    - /var/lib/openldap/mfa
+    - /var/log/openldap
+  when: openldap_mfa_enabled
+
+- name: Configure TOTP/OTP authentication
+  include_tasks: totp.yml
+  when: openldap_mfa_totp_enabled
+
+- name: Configure Smart Card authentication
+  include_tasks: smartcard.yml
+  when: openldap_mfa_smartcard_enabled
+
+- name: Configure OAuth2 authentication
+  include_tasks: oauth2.yml
+  when: openldap_mfa_oauth2_enabled
+
+- name: Configure SAML authentication
+  include_tasks: saml.yml
+  when: openldap_mfa_saml_enabled
+
+- name: Configure PAM for MFA
+  include_tasks: pam.yml
+  when: openldap_mfa_enabled
+
+- name: Configure MFA policies
+  include_tasks: policies.yml
+  when: openldap_mfa_enabled
+
+- name: Setup MFA audit logging
+  include_tasks: audit.yml
+  when: openldap_mfa_audit_enabled

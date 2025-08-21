@@ -1,4 +1,36 @@
-# Ansible Role: Letsencrypt GoDaddy
+# Ansible Role:## Overview
+
+The **letsencrypt_godaddy** role automates obtaining and renewing SSL/TLS certificates from **Let's Encrypt** using the DNS-01 challenge method with **GoDaddy** as the DNS provider. It installs the lightweight **acme.sh** client on your server to handle ACME interactions, leverages GoDaddy's API to create the necessary DNS verification records, and deploys the resulting certificate and key to your system. This allows you to secure your websites or services with trusted certificates without manual steps. Key features include:
+
+## When to Use This Role vs. Alternative
+
+This repository contains two Let's Encrypt roles for different use cases. Choose the appropriate one based on your requirements:
+
+| Feature | letsencrypt_setup | letsencrypt_godaddy (This Role) |
+|---------|-------------------|-------------------------------|
+| **ACME Client** | Certbot (official) | acme.sh (lightweight) |
+| **Domain Support** | Single domain | Multiple domains/SAN certificates |
+| **Challenge Methods** | HTTP-01 (webroot), DNS-01 (GoDaddy) | DNS-01 only (GoDaddy) |
+| **DNS Providers** | GoDaddy (extensible to others) | GoDaddy only |
+| **Dependencies** | Ubuntu PPA packages | Git clone only |
+| **Complexity** | Simple configuration | Advanced features |
+| **Wildcard Certificates** | Yes (DNS-01 only) | Yes |
+| **Installation Method** | APT packages via PPA | Direct script installation |
+| **Best For** | Simple single-domain setups, users preferring official tools | Multi-domain certificates, minimal dependencies |
+
+**Use letsencrypt_setup when:**
+- You need a single domain certificate
+- You prefer the official Certbot client
+- You want HTTP-01 challenge support (port 80 accessible)
+- You plan to extend to other DNS providers later
+
+**Use this role when:**
+- You need multiple domains on one certificate
+- You require wildcard certificates
+- You prefer lightweight installations without PPAs
+- HTTP challenge is not possible (firewall restrictions)
+
+## Key Featurestsencrypt GoDaddy
 
 **Table of Contents**
 
@@ -253,3 +285,24 @@ This repository contains other roles and components that can be relevant to or u
 * **Cloudflare & Let’s Encrypt Integration:** While this role is GoDaddy-specific, it’s worth noting (as a broader point) that if in the future you move DNS providers or add others, the approach to Let’s Encrypt via DNS-01 will change. The Cloudflare role documentation (see Cross-Referencing in the Cloudflare README) discusses using DNS challenges with Cloudflare. In our context, if you ever needed to do something similar with Cloudflare, you could extend either this role or use the Certbot method. At present, if you primarily use GoDaddy, you’re covered by this role. Just remember that the concept of DNS challenges is transferable – the main difference is the API used. So, for completeness: **if you have domains not on GoDaddy, do not use this role for those** – use the appropriate method (the repository doesn’t have roles for all DNS providers, so you might use an official plugin or an external role).
 
 Each of the roles mentioned has its own documentation and purpose. **letsencrypt_godaddy** is often just one piece of a larger puzzle: it provides the certificates that another role (web server, proxy, etc.) will use, or it works alongside roles that manage DNS or security. By combining roles, you can automate a full scenario. For example, a play might: run the base role to harden the server, run an application role to deploy your app, run letsencrypt_godaddy to fetch certificates, and run a web server role to configure TLS (or use reload commands to refresh an existing web server config). Understanding what each role does will help you order them correctly and ensure they complement each other rather than conflict.
+
+## Variable Naming Considerations
+
+For consistency across both Let's Encrypt roles in this repository, consider these variable naming conventions when using both roles:
+
+**Current variables:**
+- letsencrypt_setup: `domain_name` (single), `email_address`
+- This role: `cert_domains` (list), `letsencrypt_account_email`
+
+**Standardized approach:**
+```yaml
+# For multiple domains (this role)
+letsencrypt_domains: ["example.com", "www.example.com"]  # Could replace cert_domains
+letsencrypt_email: "admin@example.com"  # Could replace letsencrypt_account_email
+
+# For single domain (letsencrypt_setup)
+letsencrypt_domains: ["example.com"]  # Could replace domain_name
+letsencrypt_email: "admin@example.com"  # Could replace email_address
+```
+
+This would make switching between roles easier and provide a more consistent user experience.

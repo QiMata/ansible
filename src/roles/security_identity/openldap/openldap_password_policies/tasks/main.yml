@@ -1,0 +1,47 @@
+---
+- name: Install password quality packages
+  package:
+    name:
+      - libpwquality-tools
+      - cracklib-runtime
+      - libpam-pwquality
+    state: present
+  become: true
+  when: openldap_password_policies_enabled
+
+- name: Create password policy directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: openldap
+    group: openldap
+    mode: '0750'
+  become: true
+  loop:
+    - /etc/openldap/policies
+    - /var/lib/openldap/policies
+  when: openldap_password_policies_enabled
+
+- name: Configure ppolicy overlay
+  include_tasks: ppolicy_overlay.yml
+  when: openldap_password_policies_enabled
+
+- name: Create default password policy
+  include_tasks: default_policy.yml
+  when: openldap_password_policies_enabled
+
+- name: Create custom password policies
+  include_tasks: custom_policies.yml
+  when: 
+    - openldap_password_policies_enabled
+    - openldap_custom_password_policies | length > 0
+
+- name: Configure password quality checks
+  include_tasks: quality_checks.yml
+  when: openldap_password_policies_enabled
+
+- name: Setup password policy monitoring
+  include_tasks: monitoring.yml
+  when: 
+    - openldap_password_policies_enabled
+    - openldap_password_policy_alerts

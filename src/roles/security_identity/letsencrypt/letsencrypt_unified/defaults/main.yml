@@ -1,0 +1,15 @@
+---
+# Required variables (no defaults)
+letsencrypt_domains: []
+letsencrypt_email: ""
+
+# Client and challenge configuration
+letsencrypt_client: "auto"  # auto, certbot, or acme.sh
+letsencrypt_challenge_method: "dns"  # dns or http
+
+# GoDaddy API credentials (required for DNS challenges)
+godaddy_api_key: ""
+godaddy_api_secret: ""
+
+# HTTP challenge configuration (certbot only)
+webroot_path: "/var/www/html"

@@ -1,0 +1,204 @@
+---
+# OpenLDAP Enterprise Deployment with Enhanced Security and Performance
+# This playbook demonstrates the comprehensive OpenLDAP roles with all new features
+
+- name: Deploy OpenLDAP Enterprise Infrastructure
+  hosts: ldap_servers
+  become: true
+  vars:
+    # Basic OpenLDAP Configuration
+    openldap_server_domain: "company.local"
+    openldap_server_base_dn: "dc=company,dc=local"
+    openldap_server_organization: "Company Inc"
+    openldap_server_admin_password: "{{ vault_ldap_admin_password }}"
+    openldap_server_use_tls: true
+
+    # Multi-Factor Authentication
+    openldap_mfa_enabled: true
+    openldap_mfa_totp_enabled: true
+    openldap_mfa_smartcard_enabled: true
+    openldap_mfa_oauth2_enabled: true
+    openldap_mfa_oauth2_providers:
+      - name: "google"
+        client_id: "{{ vault_google_oauth_client_id }}"
+        client_secret: "{{ vault_google_oauth_client_secret }}"
+        authorization_url: "https://accounts.google.com/o/oauth2/auth"
+        token_url: "https://oauth2.googleapis.com/token"
+        userinfo_url: "https://www.googleapis.com/oauth2/v1/userinfo"
+        scope: "openid email profile"
+
+    # Password Policies
+    openldap_password_policies_enabled: true
+    openldap_password_min_length: 12
+    openldap_password_max_age: 90
+    openldap_lockout_enabled: true
+    openldap_lockout_threshold: 5
+    openldap_password_history_enabled: true
+    openldap_password_history_count: 12
+    openldap_custom_password_policies:
+      - name: "admin_policy"
+        min_length: 16
+        max_age: 30
+        lockout_threshold: 3
+        history_count: 24
+        apply_to_groups:
+          - "cn=admins,{{ openldap_server_base_dn }}"
+      - name: "service_policy"
+        min_length: 20
+        max_age: 365
+        lockout_threshold: 10
+        history_count: 5
+        apply_to_groups:
+          - "cn=services,{{ openldap_server_base_dn }}"
+
+    # Compliance and Governance
+    openldap_gdpr_enabled: true
+    openldap_gdpr_retention_policy: true
+    openldap_gdpr_right_to_deletion: true
+    openldap_data_classification_enabled: true
+    openldap_compliance_audit_enabled: true
+    openldap_audit_retention_years: 7
+    openldap_retention_policies:
+      - name: "user_accounts"
+        retention_days: 2555  # 7 years
+        apply_to: "ou=people,{{ openldap_server_base_dn }}"
+      - name: "service_accounts"
+        retention_days: 1825  # 5 years
+        apply_to: "ou=services,{{ openldap_server_base_dn }}"
+
+    # Performance Monitoring
+    openldap_monitoring_enabled: true
+    openldap_monitoring_prometheus: true
+    openldap_monitoring_grafana: true
+    openldap_alerting_enabled: true
+    openldap_alert_email: "ldap-admin@company.local"
+    openldap_metrics_enabled: true
+    openldap_capacity_monitoring: true
+    openldap_slow_query_monitoring: true
+
+    # Integration Features
+    openldap_sync_enabled: true
+    openldap_sync_ad_enabled: true
+    openldap_sync_interval: 3600
+    openldap_rest_api_enabled: true
+    openldap_rest_api_port: 8389
+    openldap_rest_api_ssl: true
+    openldap_webhooks_enabled: true
+    openldap_webhook_endpoints:
+      - url: "https://api.company.local/ldap/notifications"
+        events: ["add", "modify", "delete"]
+        auth_token: "{{ vault_webhook_token }}"
+
+    # Data Management
+    openldap_schema_management_enabled: true
+    openldap_schema_auto_migration: true
+    openldap_data_validation_enabled: true
+    openldap_bulk_operations_enabled: true
+    openldap_data_archiving_enabled: true
+    openldap_archive_retention_days: 365
+
+  roles:
+    # Core OpenLDAP Server
+    - role: openldap_server
+
+    # Security and Authentication
+    - role: openldap_mfa
+    - role: openldap_password_policies
+
+    # High Availability and Performance
+    - role: openldap_replication
+    - role: openldap_monitoring
+
+    # Operational Features
+    - role: openldap_data_management
+    - role: openldap_integration
+    - role: openldap_backup
+
+    # Compliance and Governance
+    - role: openldap_compliance
+    - role: openldap_logging
+
+  post_tasks:
+    - name: Verify OpenLDAP deployment
+      command: >
+        ldapsearch -x -H ldap://localhost -b "{{ openldap_server_base_dn }}" 
+        -s base "(objectclass=*)" namingContexts
+      register: ldap_test
+      failed_when: ldap_test.rc != 0
+      changed_when: false
+
+    - name: Display deployment summary
+      debug:
+        msg: |
+          OpenLDAP Enterprise Deployment Complete!
+          
+          Features Enabled:
+          - Multi-Factor Authentication (TOTP, Smart Card, OAuth2)
+          - Advanced Password Policies with Custom Rules
+          - GDPR Compliance and Data Governance
+          - Performance Monitoring and Alerting
+          - Directory Synchronization and API Access
+          - Automated Data Management and Archiving
+          
+          Access Points:
+          - LDAP: ldap://{{ inventory_hostname }}:389
+          - LDAPS: ldaps://{{ inventory_hostname }}:636
+          - REST API: https://{{ inventory_hostname }}:8389
+          - Monitoring: http://{{ inventory_hostname }}:9330/metrics
+          
+          Admin Base DN: {{ openldap_server_base_dn }}
+          Organization: {{ openldap_server_organization }}
+
+- name: Deploy HAProxy Load Balancer
+  hosts: haproxy_servers
+  become: true
+  vars:
+    openldap_haproxy_enabled: true
+    openldap_haproxy_servers:
+      - name: "ldap-primary"
+        address: "{{ groups['ldap_servers'][0] }}"
+        port: 389
+        weight: 200
+        maxconn: 100
+        check: true
+        backup: false
+      - name: "ldap-secondary"
+        address: "{{ groups['ldap_servers'][1] if groups['ldap_servers']|length > 1 else groups['ldap_servers'][0] }}"
+        port: 389
+        weight: 100
+        maxconn: 100
+        check: true
+        backup: "{{ groups['ldap_servers']|length > 1 }}"
+    openldap_haproxy_ssl_enabled: true
+    openldap_haproxy_health_check_enabled: true
+    openldap_haproxy_prometheus_enabled: true
+    openldap_haproxy_logging_enabled: true
+
+  roles:
+    - role: openldap_haproxy
+
+  post_tasks:
+    - name: Verify HAProxy LDAP load balancing
+      uri:
+        url: "http://{{ inventory_hostname }}:8080/stats"
+        method: GET
+        status_code: 200
+      register: haproxy_stats
+      when: openldap_haproxy_enabled
+
+    - name: Display HAProxy summary
+      debug:
+        msg: |
+          HAProxy Load Balancer Configuration Complete!
+          
+          Features:
+          - LDAP Load Balancing across {{ groups['ldap_servers']|length }} servers
+          - Health Monitoring and Automatic Failover
+          - SSL/TLS Termination
+          - Connection Pooling and Performance Optimization
+          
+          Access:
+          - LDAP Load Balanced: ldap://{{ inventory_hostname }}:389
+          - LDAPS Load Balanced: ldaps://{{ inventory_hostname }}:636
+          - Statistics: http://{{ inventory_hostname }}:8080/stats
+          - Prometheus Metrics: http://{{ inventory_hostname }}:9101/metrics

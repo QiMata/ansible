@@ -1,0 +1,24 @@
+---
+- name: restart haproxy
+  service:
+    name: haproxy
+    state: restarted
+  become: true
+
+- name: reload haproxy
+  service:
+    name: haproxy
+    state: reloaded
+  become: true
+
+- name: restart rsyslog
+  service:
+    name: rsyslog
+    state: restarted
+  become: true
+
+- name: validate haproxy config
+  command: haproxy -c -f /etc/haproxy/haproxy.cfg
+  become: true
+  register: haproxy_validation
+  failed_when: haproxy_validation.rc != 0

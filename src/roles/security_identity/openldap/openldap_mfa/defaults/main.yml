@@ -1,0 +1,50 @@
+---
+# Multi-Factor Authentication Configuration
+openldap_mfa_enabled: true
+
+# TOTP/OTP Configuration
+openldap_mfa_totp_enabled: true
+openldap_mfa_totp_issuer: "{{ openldap_server_organization | default('LDAP Server') }}"
+openldap_mfa_totp_window_size: 3
+openldap_mfa_totp_rate_limit: 3
+openldap_mfa_totp_secret_length: 16
+openldap_mfa_totp_time_step: 30
+
+# Smart Card Authentication
+openldap_mfa_smartcard_enabled: false
+openldap_mfa_pkcs11_module: "/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so"
+openldap_mfa_ca_certificates: []
+openldap_mfa_cert_validation: "strict"
+
+# External Authentication Providers
+openldap_mfa_oauth2_enabled: false
+openldap_mfa_oauth2_providers: []
+#  - name: "google"
+#    client_id: "{{ vault_google_oauth_client_id }}"
+#    client_secret: "{{ vault_google_oauth_client_secret }}"
+#    authorization_url: "https://accounts.google.com/o/oauth2/auth"
+#    token_url: "https://oauth2.googleapis.com/token"
+#    userinfo_url: "https://www.googleapis.com/oauth2/v1/userinfo"
+#    scope: "openid email profile"
+
+openldap_mfa_saml_enabled: false
+openldap_mfa_saml_providers: []
+#  - name: "azure_ad"
+#    metadata_url: "https://login.microsoftonline.com/tenant-id/federationmetadata/2007-06/federationmetadata.xml"
+#    entity_id: "https://ldap.example.com"
+#    assertion_consumer_service: "https://ldap.example.com/saml/acs"
+
+# MFA Policy Configuration
+openldap_mfa_required_groups: []
+openldap_mfa_optional_groups: []
+openldap_mfa_bypass_groups: ["cn=admins,{{ openldap_server_base_dn }}"]
+
+# Fallback Authentication
+openldap_mfa_fallback_enabled: true
+openldap_mfa_emergency_codes_enabled: true
+openldap_mfa_emergency_codes_count: 10
+
+# Logging and Auditing
+openldap_mfa_audit_enabled: true
+openldap_mfa_audit_log: "/var/log/openldap/mfa-audit.log"
+openldap_mfa_session_timeout: 3600

@@ -1,0 +1,70 @@
+---
+# Password Policy Configuration
+openldap_password_policies_enabled: true
+
+# Basic Password Requirements
+openldap_password_min_length: 8
+openldap_password_max_length: 128
+openldap_password_min_classes: 3  # Minimum character classes (uppercase, lowercase, digits, special)
+openldap_password_require_uppercase: true
+openldap_password_require_lowercase: true
+openldap_password_require_digits: true
+openldap_password_require_special: true
+openldap_password_allowed_special: "!@#$%^&*()_+-=[]{}|;:,.<>?"
+
+# Dictionary and Quality Checks
+openldap_password_dictionary_check: true
+openldap_password_dictionary_file: "/usr/share/dict/words"
+openldap_password_quality_check: true
+openldap_password_reject_common: true
+openldap_password_reject_palindromes: true
+openldap_password_reject_sequences: true
+
+# Password Expiration
+openldap_password_max_age: 90        # Maximum password age in days
+openldap_password_min_age: 1         # Minimum password age in days
+openldap_password_warning: 7         # Warning period before expiration in days
+openldap_password_grace_logins: 3    # Number of grace logins after expiration
+openldap_password_expiry_warning: true
+
+# Account Lockout Policy
+openldap_lockout_enabled: true
+openldap_lockout_threshold: 5        # Failed attempts before lockout
+openldap_lockout_duration: 1800      # Lockout duration in seconds (30 minutes)
+openldap_lockout_observation_window: 900  # Time window for counting failures in seconds
+openldap_lockout_reset_on_success: true
+
+# Password History
+openldap_password_history_enabled: true
+openldap_password_history_count: 12  # Number of previous passwords to remember
+
+# Password Change Requirements
+openldap_password_must_change: true
+openldap_password_self_change: true
+openldap_password_admin_change: true
+
+# Default Password Policy Name
+openldap_default_password_policy: "default"
+
+# Custom Password Policies
+openldap_custom_password_policies: []
+#  - name: "admin_policy"
+#    min_length: 16
+#    max_age: 30
+#    lockout_threshold: 3
+#    history_count: 24
+#    apply_to_groups:
+#      - "cn=admins,{{ openldap_server_base_dn }}"
+#  - name: "service_policy"
+#    min_length: 20
+#    max_age: 365
+#    lockout_threshold: 10
+#    history_count: 5
+#    apply_to_groups:
+#      - "cn=services,{{ openldap_server_base_dn }}"
+
+# Monitoring and Alerting
+openldap_password_policy_alerts: true
+openldap_password_policy_alert_email: "admin@{{ openldap_server_domain }}"
+openldap_password_expiry_notification: true
+openldap_lockout_notification: true

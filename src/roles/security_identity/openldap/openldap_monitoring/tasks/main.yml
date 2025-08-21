@@ -1,0 +1,73 @@
+---
+- name: Install monitoring dependencies
+  package:
+    name:
+      - python3-prometheus-client
+      - python3-psutil
+      - python3-ldap3
+      - curl
+      - jq
+    state: present
+  become: true
+  when: openldap_monitoring_enabled
+
+- name: Create monitoring directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: openldap
+    group: openldap
+    mode: '0755'
+  become: true
+  loop:
+    - /etc/openldap/monitoring
+    - /var/lib/openldap/monitoring
+    - /var/log/openldap/monitoring
+    - /usr/local/bin/openldap-monitoring
+  when: openldap_monitoring_enabled
+
+- name: Setup Prometheus monitoring
+  include_tasks: prometheus.yml
+  when: 
+    - openldap_monitoring_enabled
+    - openldap_monitoring_prometheus
+
+- name: Configure health checks
+  include_tasks: health_checks.yml
+  when: 
+    - openldap_monitoring_enabled
+    - openldap_health_checks_enabled
+
+- name: Setup Grafana dashboards
+  include_tasks: grafana.yml
+  when: 
+    - openldap_monitoring_enabled
+    - openldap_monitoring_grafana
+
+- name: Configure alerting
+  include_tasks: alerting.yml
+  when: 
+    - openldap_monitoring_enabled
+    - openldap_alerting_enabled
+
+- name: Setup performance monitoring
+  include_tasks: performance.yml
+  when: 
+    - openldap_monitoring_enabled
+    - openldap_metrics_enabled
+
+- name: Configure capacity monitoring
+  include_tasks: capacity.yml
+  when: 
+    - openldap_monitoring_enabled
+    - openldap_capacity_monitoring
+
+- name: Setup custom monitoring scripts
+  include_tasks: custom_scripts.yml
+  when: 
+    - openldap_monitoring_enabled
+    - openldap_custom_monitoring_scripts | length > 0
+
+- name: Create monitoring service files
+  include_tasks: services.yml
+  when: openldap_monitoring_enabled

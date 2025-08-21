@@ -1,0 +1,33 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    openldap_server_domain: "test.local"
+    openldap_server_base_dn: "dc=test,dc=local"
+    openldap_server_organization: "Test Organization"
+    openldap_server_admin_password: "testpassword"
+  pre_tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: Install OpenLDAP server packages
+      package:
+        name:
+          - slapd
+          - ldap-utils
+          - python3-ldap3
+          - python3-pip
+        state: present
+
+    - name: Start slapd service
+      service:
+        name: slapd
+        state: started
+        enabled: true
+
+  roles:
+    - role: openldap_mfa

@@ -1,0 +1,66 @@
+---
+- name: Install Google Authenticator PAM module
+  package:
+    name: libpam-google-authenticator
+    state: present
+  become: true
+
+- name: Create TOTP configuration template
+  template:
+    src: totp_config.j2
+    dest: /etc/openldap/mfa/totp.conf
+    owner: openldap
+    group: openldap
+    mode: '0640'
+  become: true
+  notify: restart slapd
+
+- name: Configure TOTP overlay for OpenLDAP
+  template:
+    src: totp_overlay.ldif.j2
+    dest: /etc/openldap/mfa/totp_overlay.ldif
+    owner: openldap
+    group: openldap
+    mode: '0640'
+  become: true
+
+- name: Apply TOTP overlay configuration
+  command: >
+    ldapmodify -Y EXTERNAL -H ldapi:/// -f /etc/openldap/mfa/totp_overlay.ldif
+  become: true
+  become_user: openldap
+  register: totp_overlay_result
+  failed_when: totp_overlay_result.rc != 0 and 'already exists' not in totp_overlay_result.stderr
+  changed_when: totp_overlay_result.rc == 0
+
+- name: Create TOTP schema
+  template:
+    src: totp_schema.ldif.j2
+    dest: /etc/openldap/mfa/totp_schema.ldif
+    owner: openldap
+    group: openldap
+    mode: '0640'
+  become: true
+
+- name: Apply TOTP schema
+  command: >
+    ldapmodify -Y EXTERNAL -H ldapi:/// -f /etc/openldap/mfa/totp_schema.ldif
+  become: true
+  become_user: openldap
+  register: totp_schema_result
+  failed_when: totp_schema_result.rc != 0 and 'already exists' not in totp_schema_result.stderr
+  changed_when: totp_schema_result.rc == 0
+
+- name: Create TOTP user script
+  template:
+    src: totp_setup.sh.j2
+    dest: /usr/local/bin/ldap-totp-setup
+    mode: '0755'
+  become: true
+
+- name: Create TOTP verification script
+  template:
+    src: totp_verify.py.j2
+    dest: /usr/local/bin/ldap-totp-verify
+    mode: '0755'
+  become: true
