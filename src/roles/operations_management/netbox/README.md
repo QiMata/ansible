@@ -1,4 +1,4 @@
-# Ansible Role: NetBox
+# Ansible Role: N**NetBox** is an open-source IPAM/DCIM tool (Infrastructure Resource Modeling) used as a "Source of Truth" for networks and data centers. This Ansible role automates the installation and configuration of a production-ready NetBox deployment with comprehensive operational features. It handles installing required packages and Python modules, fetching NetBox's code from the official repository, configuring NetBox's settings, and running it as a systemd service with advanced monitoring, backup, and security features. Key features and tasks include:tBox
 
 **Table of Contents**
 
@@ -84,6 +84,60 @@ Below is a list of important variables for this role, along with their default v
 | **`postgres_password`**    | *Not set* (required)                                                        | Password for the above PostgreSQL user. **Must be provided** (no default for security). It is inserted into NetBox’s config, so ensure you supply it (preferably via Vault/encrypted vars). The role does **not** create the database or user, it just uses these credentials – you should set up the DB and user beforehand (see **Dependencies**).                    |
 | **`redis_host`**           | *Not set* (required) (usually `"localhost"` or a cache server)              | Hostname or address of the Redis server for NetBox caching and background tasks. **Must be provided.** In a simple install this is `"localhost"` (Redis on the same machine). If using an external Redis, provide its hostname. NetBox uses this for caching and job queue (RQ).                                                                                        |
 | **`redis_port`**           | *Not set* (required) (usually `6379`)                                       | Port for Redis connection. Default Redis listens on `6379`. If your Redis uses a different port, set this accordingly. (No password is assumed by default; the config template leaves the password blank.)                                                                                                                                                              |
+
+</details>
+
+<details>
+<summary>Enhanced Role Variables (NEW)</summary>
+
+| Variable                          | Default Value                     | Description                                                                                                                                                                                                                                                                                                                                                             |
+| --------------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **RQ Worker Settings**            |                                   |                                                                                                                                                                                                                                                                                                                                                                         |
+| **`netbox_rq_enabled`**           | `true`                            | Enable NetBox RQ (Redis Queue) worker service for background tasks. When enabled, creates a separate systemd service that processes webhooks, background jobs, and scheduled tasks.                                                                                                                                                                                   |
+| **`netbox_rq_workers`**           | `2`                               | Number of RQ worker processes to run. Increase for higher background task throughput.                                                                                                                                                                                                                                                                                  |
+| **`netbox_rq_queues`**            | `"default,high,low"`              | Comma-separated list of queue names for the RQ worker to process.                                                                                                                                                                                                                                                                                                      |
+| **Performance Settings**          |                                   |                                                                                                                                                                                                                                                                                                                                                                         |
+| **`netbox_gunicorn_workers`**     | `4`                               | Number of Gunicorn worker processes. Rule of thumb: 2 × CPU cores.                                                                                                                                                                                                                                                                                                     |
+| **`netbox_gunicorn_threads`**     | `1`                               | Number of threads per Gunicorn worker. Increase for I/O-bound workloads.                                                                                                                                                                                                                                                                                               |
+| **`netbox_gunicorn_timeout`**     | `120`                             | Request timeout in seconds for Gunicorn workers.                                                                                                                                                                                                                                                                                                                       |
+| **`netbox_gunicorn_keepalive`**   | `20`                              | Keep-alive timeout for Gunicorn connections.                                                                                                                                                                                                                                                                                                                           |
+| **Initial Admin User**            |                                   |                                                                                                                                                                                                                                                                                                                                                                         |
+| **`netbox_create_superuser`**     | `false`                           | Automatically create initial admin user during deployment.                                                                                                                                                                                                                                                                                                             |
+| **`netbox_superuser_username`**   | `"admin"`                         | Username for the initial admin user.                                                                                                                                                                                                                                                                                                                                   |
+| **`netbox_superuser_email`**      | `"admin@example.com"`             | Email for the initial admin user.                                                                                                                                                                                                                                                                                                                                      |
+| **`netbox_superuser_password`**   | *Not set* (required if enabled)   | Password for the initial admin user. **Must be provided** when `netbox_create_superuser` is `true`.                                                                                                                                                                                                                                                                   |
+| **Nginx Proxy Settings**         |                                   |                                                                                                                                                                                                                                                                                                                                                                         |
+| **`netbox_nginx_enabled`**        | `false`                           | Enable Nginx reverse proxy with optional SSL termination.                                                                                                                                                                                                                                                                                                              |
+| **`netbox_nginx_server_name`**    | `"{{ inventory_hostname }}"`      | Server name for Nginx virtual host configuration.                                                                                                                                                                                                                                                                                                                      |
+| **`netbox_nginx_ssl_enabled`**    | `false`                           | Enable SSL/TLS termination in Nginx.                                                                                                                                                                                                                                                                                                                                   |
+| **`netbox_nginx_ssl_cert_path`**  | `"/etc/ssl/certs/netbox.crt"`     | Path to SSL certificate file.                                                                                                                                                                                                                                                                                                                                          |
+| **`netbox_nginx_ssl_key_path`**   | `"/etc/ssl/private/netbox.key"`   | Path to SSL private key file.                                                                                                                                                                                                                                                                                                                                          |
+| **Email Settings**                |                                   |                                                                                                                                                                                                                                                                                                                                                                         |
+| **`netbox_email_enabled`**        | `false`                           | Enable email notifications (password resets, alerts, etc.).                                                                                                                                                                                                                                                                                                            |
+| **`netbox_email_server`**         | `"localhost"`                     | SMTP server hostname for email delivery.                                                                                                                                                                                                                                                                                                                               |
+| **`netbox_email_port`**           | `587`                             | SMTP server port (587 for TLS, 465 for SSL, 25 for plain).                                                                                                                                                                                                                                                                                                            |
+| **`netbox_email_use_tls`**        | `true`                            | Use TLS encryption for SMTP connection.                                                                                                                                                                                                                                                                                                                                |
+| **LDAP/SSO Settings**             |                                   |                                                                                                                                                                                                                                                                                                                                                                         |
+| **`netbox_ldap_enabled`**         | `false`                           | Enable LDAP authentication backend.                                                                                                                                                                                                                                                                                                                                    |
+| **`netbox_ldap_server_uri`**      | *Not set*                         | LDAP server URI (e.g., `"ldap://ldap.example.com"`).                                                                                                                                                                                                                                                                                                                   |
+| **`netbox_ldap_bind_dn`**         | *Not set*                         | DN for LDAP bind user.                                                                                                                                                                                                                                                                                                                                                 |
+| **Plugin and Custom Settings**    |                                   |                                                                                                                                                                                                                                                                                                                                                                         |
+| **`netbox_plugins`**              | `[]`                              | List of NetBox plugins to install and configure. Each item should have `name` and optional `config` dictionary.                                                                                                                                                                                                                                                       |
+| **`netbox_custom_fields`**        | `[]`                              | List of custom field configurations.                                                                                                                                                                                                                                                                                                                                   |
+| **Health Check Settings**         |                                   |                                                                                                                                                                                                                                                                                                                                                                         |
+| **`netbox_health_check_enabled`** | `true`                            | Enable health check script and monitoring endpoints.                                                                                                                                                                                                                                                                                                                   |
+| **`netbox_health_check_path`**    | `"/api/status/"`                  | URL path for health check endpoint.                                                                                                                                                                                                                                                                                                                                    |
+| **Backup Settings**               |                                   |                                                                                                                                                                                                                                                                                                                                                                         |
+| **`netbox_backup_enabled`**       | `false`                           | Enable automated backup functionality with cron scheduling.                                                                                                                                                                                                                                                                                                            |
+| **`netbox_backup_schedule`**      | `"0 2 * * *"`                     | Cron schedule for automated backups (default: daily at 2 AM).                                                                                                                                                                                                                                                                                                          |
+| **`netbox_backup_retention_days`**| `7`                               | Number of days to retain backup files.                                                                                                                                                                                                                                                                                                                                 |
+| **`netbox_backup_dir`**           | `"/opt/netbox/backups"`           | Directory for storing backup files.                                                                                                                                                                                                                                                                                                                                    |
+
+</details>
+
+<!-- markdownlint-enable MD033 -->
+
+**Notes:** Many of the above variables (especially database and secret settings) do not have defaults and **must** be defined by the user (e.g. in inventory or via extra-vars). The defaults that are provided assume a typical single-server deployment (NetBox, DB, and Redis all on one host with standard ports). The new enhanced variables provide comprehensive production-ready features including performance tuning, security hardening, monitoring, and operational automation. In this repository's production configuration, for example, these values are set in group variables for the NetBox hosts, and sensitive secrets are fetched from HashiCorp Vault rather than being in plain text. Adjust all variables as needed for your environment. Notably, **`netbox_branch`** should be set to a stable release tag to avoid accidentally tracking development changes, and you should ensure the **`postgres_*`** and **`redis_*`** variables point to the correct servers in your setup.
 
 </details>
 
@@ -293,3 +347,61 @@ This role is often used in conjunction with other roles and tools to build a ful
 * **Issue Tracking and Support:** If you encounter bugs with this role, refer to the repository’s issue tracker. There might already be issues or notes related to NetBox deployment. For example, if a particular NetBox version changed something that the role doesn’t yet accommodate, the maintainers or community might have documented a workaround in an issue or discussion.
 
 By combining the **NetBox** role with the above roles and tools, you can build a full-fledged NetBox deployment workflow. For instance, a site playbook might provision a database (with the Postgres role), provision a cache (Redis role), run this NetBox role, then configure a proxy (Nginx role) and set up backups (Backup NetBox role), resulting in a robust, production-ready setup. Each component is decoupled into separate roles, which keeps things modular and easier to manage.
+
+## Enhanced Features (NEW)
+
+This role has been significantly enhanced with production-ready features that address common operational requirements:
+
+### **RQ Worker Service**
+- Automatically sets up NetBox RQ (Redis Queue) worker as a separate systemd service
+- Processes background tasks, webhooks, and scheduled jobs
+- Configurable number of workers and queue prioritization
+- Essential for production deployments where background processing is critical
+
+### **Initial Admin User Creation**  
+- Automated superuser account creation during deployment
+- Eliminates manual post-deployment configuration steps
+- Secure credential handling via Ansible variables
+- Supports both username/password and email configuration
+
+### **Nginx Reverse Proxy Integration**
+- Optional Nginx configuration with SSL termination
+- Security headers, gzip compression, and optimized static file serving
+- Health check endpoint configuration
+- Production-ready SSL/TLS configuration with modern cipher suites
+
+### **Enhanced Configuration Management**
+- Comprehensive configuration template supporting:
+  - LDAP/SSO authentication backends
+  - Email/SMTP settings for notifications
+  - Plugin installation and configuration
+  - Custom field definitions
+  - Advanced logging and security settings
+  - Performance optimization parameters
+
+### **Performance Tuning**
+- Configurable Gunicorn worker processes and threading
+- Request timeout and connection management settings
+- Memory limits and resource constraints
+- Systemd security hardening features
+
+### **Health Monitoring & Checks**
+- Automated health check scripts with service validation
+- Database and Redis connectivity testing
+- Cron-based monitoring and alerting
+- Optional Prometheus metrics integration
+
+### **Backup & Recovery Automation**
+- Scheduled database backups with pg_dump
+- Media file archival and configuration backup
+- Configurable retention policies
+- Backup verification and logging
+- Automated cleanup of old backup files
+
+### **Security Enhancements**
+- systemd service isolation and security features
+- SSL/TLS configuration with security headers
+- CORS configuration for API access
+- Session and CSRF cookie security settings
+
+These enhancements make the role suitable for production deployments while maintaining backward compatibility with existing configurations.

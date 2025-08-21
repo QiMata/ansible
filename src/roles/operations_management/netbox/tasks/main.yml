@@ -1,9 +1,27 @@
 ---
 - name: Include install tasks
   ansible.builtin.include_tasks: install.yml
+
 - name: Include config tasks
   ansible.builtin.include_tasks: config.yml
+
 - name: Include migrate tasks
   ansible.builtin.include_tasks: migrate.yml
+
 - name: Include service tasks
   ansible.builtin.include_tasks: service.yml
+
+- name: Include RQ worker tasks
+  ansible.builtin.include_tasks: rq_worker.yml
+
+- name: Include superuser creation tasks
+  ansible.builtin.include_tasks: superuser.yml
+
+- name: Include Nginx configuration tasks
+  ansible.builtin.include_tasks: nginx.yml
+
+- name: Include monitoring tasks
+  ansible.builtin.include_tasks: monitoring.yml
+
+- name: Include backup tasks
+  ansible.builtin.include_tasks: backup.yml

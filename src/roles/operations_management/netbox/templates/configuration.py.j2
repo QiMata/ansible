@@ -1,49 +1,218 @@
+# NetBox Configuration
+import os
+
+# Basic Settings
 ALLOWED_HOSTS = {{ netbox_allowed_hosts | to_json }}
+DEBUG = {{ netbox_debug | lower }}
+
+# Database Configuration
 DATABASE = {
     'NAME': '{{ postgres_db }}',
     'USER': '{{ postgres_user }}',
     'PASSWORD': '{{ postgres_password }}',
     'HOST': '{{ postgres_host }}',
     'PORT': '{{ postgres_port }}',
+    'CONN_MAX_AGE': 300,
+    'OPTIONS': {
+        'sslmode': 'prefer',
+    },
 }
+
+# Redis Configuration
 REDIS = {
     'tasks': {
         'HOST': '{{ redis_host }}',
         'PORT': {{ redis_port }},
-        'PASSWORD': '',
+        'PASSWORD': '{{ redis_password | default("") }}',
         'DATABASE': 0,
+        'SSL': {{ redis_ssl | default(false) | lower }},
     },
     'caching': {
         'HOST': '{{ redis_host }}',
         'PORT': {{ redis_port }},
-        'PASSWORD': '',
+        'PASSWORD': '{{ redis_password | default("") }}',
         'DATABASE': 1,
+        'SSL': {{ redis_ssl | default(false) | lower }},
     }
 }
+
+# Security Settings
 SECRET_KEY = '{{ netbox_secret_key }}'
+SESSION_COOKIE_SECURE = {{ netbox_session_cookie_secure | lower }}
+CSRF_COOKIE_SECURE = {{ netbox_csrf_cookie_secure | lower }}
+{% if netbox_secure_ssl_redirect %}
+SECURE_SSL_REDIRECT = True
+{% endif %}
+
+# File Storage
 MEDIA_ROOT = '{{ netbox_media_root }}'
 STATIC_ROOT = '{{ netbox_static_root }}'
 
+# Time Zone and Localization
+TIME_ZONE = '{{ netbox_time_zone }}'
+DATE_FORMAT = '{{ netbox_date_format }}'
+SHORT_DATE_FORMAT = '{{ netbox_short_date_format }}'
+TIME_FORMAT = '{{ netbox_time_format }}'
+SHORT_TIME_FORMAT = '{{ netbox_short_time_format }}'
+DATETIME_FORMAT = '{{ netbox_datetime_format }}'
+SHORT_DATETIME_FORMAT = '{{ netbox_short_datetime_format }}'
+
+# Email Configuration
+{% if netbox_email_enabled %}
+EMAIL_HOST = '{{ netbox_email_server }}'
+EMAIL_PORT = {{ netbox_email_port }}
+EMAIL_HOST_USER = '{{ netbox_email_username }}'
+EMAIL_HOST_PASSWORD = '{{ netbox_email_password }}'
+EMAIL_USE_SSL = {{ netbox_email_use_ssl | lower }}
+EMAIL_USE_TLS = {{ netbox_email_use_tls | lower }}
+DEFAULT_FROM_EMAIL = '{{ netbox_email_from }}'
+SERVER_EMAIL = '{{ netbox_email_from }}'
+{% endif %}
+
+# LDAP Authentication
+{% if netbox_ldap_enabled %}
+import ldap
+from django_auth_ldap.config import LDAPSearch, GroupOfNamesType
+
+AUTH_LDAP_SERVER_URI = '{{ netbox_ldap_server_uri }}'
+AUTH_LDAP_BIND_DN = '{{ netbox_ldap_bind_dn }}'
+AUTH_LDAP_BIND_PASSWORD = '{{ netbox_ldap_bind_password }}'
+
+AUTH_LDAP_USER_SEARCH = LDAPSearch(
+    '{{ netbox_ldap_user_search_base }}',
+    ldap.SCOPE_SUBTREE,
+    '(uid=%(user)s)'
+)
+
+{% if netbox_ldap_group_search_base %}
+AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
+    '{{ netbox_ldap_group_search_base }}',
+    ldap.SCOPE_SUBTREE,
+    '(objectClass=groupOfNames)'
+)
+AUTH_LDAP_GROUP_TYPE = GroupOfNamesType()
+{% endif %}
+
+AUTH_LDAP_USER_ATTR_MAP = {
+    'first_name': 'givenName',
+    'last_name': 'sn',
+    'email': 'mail'
+}
+
+AUTHENTICATION_BACKENDS = [
+    'django_auth_ldap.backend.LDAPBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+{% endif %}
+
+# CORS Configuration
+{% if netbox_cors_enabled %}
+CORS_ALLOWED_ORIGINS = {{ netbox_cors_origins | to_json }}
+CORS_ALLOW_CREDENTIALS = True
+{% endif %}
+
+# Plugins
+{% if netbox_plugins %}
+PLUGINS = [
+{% for plugin in netbox_plugins %}
+    '{{ plugin.name }}',
+{% endfor %}
+]
+
+PLUGINS_CONFIG = {
+{% for plugin in netbox_plugins %}
+    '{{ plugin.name }}': {
+{% for key, value in plugin.config.items() %}
+        '{{ key }}': {{ value | to_json }},
+{% endfor %}
+    },
+{% endfor %}
+}
+{% endif %}
+
+# Webhooks
+{% if netbox_webhooks_enabled %}
+WEBHOOKS_ENABLED = True
+WEBHOOK_TIMEOUT = {{ netbox_webhook_timeout }}
+{% endif %}
+
+# Custom Fields
+{% if netbox_custom_fields %}
+CUSTOM_FIELDS = {
+{% for field in netbox_custom_fields %}
+    '{{ field.name }}': {
+{% for key, value in field.items() if key != 'name' %}
+        '{{ key }}': {{ value | to_json }},
+{% endfor %}
+    },
+{% endfor %}
+}
+{% endif %}
+
+# Monitoring and Health Checks
+{% if netbox_health_check_enabled %}
+HEALTH_CHECK_ENABLED = True
+{% endif %}
+
+# Logging Configuration
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        },
+    },
     'handlers': {
         'file': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': '/var/log/netbox/netbox.log',
-            'maxBytes': 10485760,
+            'maxBytes': 10485760,  # 10MB
             'backupCount': 5,
             'formatter': 'verbose',
         },
+        'console': {
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple' if DEBUG else 'verbose',
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'filters': ['require_debug_false'],
+            'class': 'django.utils.log.AdminEmailHandler',
+            'formatter': 'verbose',
+        },
     },
-    'formatters': {
-        'verbose': {
-            'format': '%(levelname)s %(asctime)s %(name)s %(message)s'
+    'loggers': {
+        'django': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'netbox': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+        'django.security': {
+            'handlers': ['file', 'console', 'mail_admins'],
+            'level': 'INFO',
+            'propagate': False,
         },
     },
     'root': {
-        'handlers': ['file'],
-        'level': 'INFO',
+        'handlers': ['file', 'console'],
+        'level': 'WARNING',
     },
 }

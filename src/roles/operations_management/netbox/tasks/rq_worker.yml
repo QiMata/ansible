@@ -1,0 +1,28 @@
+---
+- name: Create NetBox RQ systemd service file
+  ansible.builtin.template:
+    src: netbox-rq.service.j2
+    dest: "{{ netbox_rq_systemd_unit }}"
+    mode: '0644'
+  notify: restart netbox-rq
+  when: netbox_rq_enabled | bool
+
+- name: Reload systemd for RQ worker
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: netbox_rq_enabled | bool
+
+- name: Enable and start NetBox RQ worker
+  ansible.builtin.systemd:
+    name: netbox-rq
+    enabled: true
+    state: started
+  when: netbox_rq_enabled | bool
+
+- name: Stop and disable NetBox RQ worker
+  ansible.builtin.systemd:
+    name: netbox-rq
+    enabled: false
+    state: stopped
+  when: not (netbox_rq_enabled | bool)
+  failed_when: false

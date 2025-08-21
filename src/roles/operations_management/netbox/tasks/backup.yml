@@ -1,0 +1,50 @@
+---
+- name: Create backup directory
+  ansible.builtin.file:
+    path: "{{ netbox_backup_dir }}"
+    state: directory
+    owner: "{{ netbox_user }}"
+    group: "{{ netbox_user }}"
+    mode: '0750'
+  when: netbox_backup_enabled | bool
+
+- name: Install backup dependencies
+  ansible.builtin.apt:
+    name:
+      - postgresql-client
+    state: present
+  when: netbox_backup_enabled | bool
+
+- name: Create backup script
+  ansible.builtin.template:
+    src: netbox-backup.sh.j2
+    dest: /usr/local/bin/netbox-backup
+    mode: '0750'
+    owner: root
+    group: "{{ netbox_user }}"
+  when: netbox_backup_enabled | bool
+
+- name: Create backup cron job
+  ansible.builtin.cron:
+    name: "NetBox Automated Backup"
+    minute: "{{ netbox_backup_schedule.split()[0] }}"
+    hour: "{{ netbox_backup_schedule.split()[1] }}"
+    day: "{{ netbox_backup_schedule.split()[2] }}"
+    month: "{{ netbox_backup_schedule.split()[3] }}"
+    weekday: "{{ netbox_backup_schedule.split()[4] }}"
+    job: "/usr/local/bin/netbox-backup"
+    user: "{{ netbox_user }}"
+  when: netbox_backup_enabled | bool
+
+- name: Remove backup script
+  ansible.builtin.file:
+    path: /usr/local/bin/netbox-backup
+    state: absent
+  when: not (netbox_backup_enabled | bool)
+
+- name: Remove backup cron job
+  ansible.builtin.cron:
+    name: "NetBox Automated Backup"
+    state: absent
+    user: "{{ netbox_user }}"
+  when: not (netbox_backup_enabled | bool)

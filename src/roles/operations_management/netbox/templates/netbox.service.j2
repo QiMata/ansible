@@ -1,17 +1,45 @@
 [Unit]
 Description=NetBox WSGI Service
-After=network.target
+After=network.target postgresql.service redis.service
+Wants=postgresql.service redis.service
 
 [Service]
 Type=simple
 User={{ netbox_user }}
 Group={{ netbox_user }}
 WorkingDirectory={{ netbox_install_dir }}/netbox
-ExecStart={{ netbox_venv }}/bin/gunicorn --workers 4 --bind 0.0.0.0:8000 netbox.wsgi
+ExecStart={{ netbox_venv }}/bin/gunicorn \
+    --workers {{ netbox_gunicorn_workers }} \
+    --threads {{ netbox_gunicorn_threads }} \
+    --timeout {{ netbox_gunicorn_timeout }} \
+    --keepalive {{ netbox_gunicorn_keepalive }} \
+    --max-requests {{ netbox_gunicorn_max_requests }} \
+    --max-requests-jitter {{ netbox_gunicorn_max_requests_jitter }} \
+    --bind 0.0.0.0:8000 \
+    --access-logfile /var/log/netbox/access.log \
+    --error-logfile /var/log/netbox/error.log \
+    --capture-output \
+    --enable-stdio-inheritance \
+    netbox.wsgi
 Environment="DJANGO_SETTINGS_MODULE=netbox.settings"
 Environment="PYTHONPATH={{ netbox_install_dir }}/netbox"
 Restart=always
 RestartSec=5
+TimeoutStopSec=30
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ netbox_install_dir }} /var/log/netbox {{ netbox_media_root }}
+
+# Resource limits
+LimitNOFILE=65536
+MemoryAccounting=true
+{% if netbox_memory_limit is defined %}
+MemoryMax={{ netbox_memory_limit }}
+{% endif %}
 
 [Install]
 WantedBy=multi-user.target

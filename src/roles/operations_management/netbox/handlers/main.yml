@@ -1,11 +1,26 @@
 ---
-- name: Restart NetBox
+- name: restart netbox
   ansible.builtin.systemd:
     name: netbox
     state: restarted
     daemon_reload: true
 
-- name: Reload Nginx
-  ansible.builtin.service:
+- name: restart netbox-rq
+  ansible.builtin.systemd:
+    name: netbox-rq
+    state: restarted
+    daemon_reload: true
+
+- name: restart nginx
+  ansible.builtin.systemd:
+    name: nginx
+    state: restarted
+
+- name: reload nginx
+  ansible.builtin.systemd:
     name: nginx
     state: reloaded
+
+- name: reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true

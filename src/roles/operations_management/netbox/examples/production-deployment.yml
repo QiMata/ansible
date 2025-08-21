@@ -1,0 +1,139 @@
+---
+# Example playbook demonstrating the enhanced NetBox role features
+- name: Deploy Production NetBox with Enhanced Features
+  hosts: netbox_servers
+  become: true
+  vars:
+    # Required basic configuration
+    netbox_install_dir: "/opt/netbox"
+    netbox_user: "netbox"
+    netbox_allowed_hosts:
+      - "netbox.example.com"
+      - "{{ inventory_hostname }}"
+    netbox_secret_key: "{{ vault_netbox_secret_key }}"
+    
+    # Database configuration
+    postgres_host: "db.example.com"
+    postgres_port: 5432
+    postgres_db: "netbox"
+    postgres_user: "netbox"
+    postgres_password: "{{ vault_postgres_password }}"
+    
+    # Redis configuration
+    redis_host: "cache.example.com"
+    redis_port: 6379
+    redis_password: "{{ vault_redis_password }}"
+    
+    # Enhanced features configuration
+    netbox_branch: "v3.6.0"  # Use stable version
+    
+    # RQ Worker settings
+    netbox_rq_enabled: true
+    netbox_rq_workers: 3
+    netbox_rq_queues: "default,high,low,webhooks"
+    
+    # Performance tuning
+    netbox_gunicorn_workers: 8  # 2 × CPU cores
+    netbox_gunicorn_threads: 2
+    netbox_gunicorn_timeout: 180
+    netbox_gunicorn_keepalive: 30
+    
+    # Initial admin user
+    netbox_create_superuser: true
+    netbox_superuser_username: "admin"
+    netbox_superuser_email: "admin@example.com"
+    netbox_superuser_password: "{{ vault_netbox_admin_password }}"
+    
+    # Nginx reverse proxy with SSL
+    netbox_nginx_enabled: true
+    netbox_nginx_server_name: "netbox.example.com"
+    netbox_nginx_ssl_enabled: true
+    netbox_nginx_ssl_cert_path: "/etc/ssl/certs/netbox.example.com.crt"
+    netbox_nginx_ssl_key_path: "/etc/ssl/private/netbox.example.com.key"
+    netbox_nginx_client_max_body_size: "50m"
+    
+    # Email configuration
+    netbox_email_enabled: true
+    netbox_email_server: "smtp.example.com"
+    netbox_email_port: 587
+    netbox_email_use_tls: true
+    netbox_email_username: "netbox@example.com"
+    netbox_email_password: "{{ vault_email_password }}"
+    netbox_email_from: "netbox@example.com"
+    
+    # LDAP authentication
+    netbox_ldap_enabled: true
+    netbox_ldap_server_uri: "ldap://ldap.example.com"
+    netbox_ldap_bind_dn: "cn=netbox,ou=services,dc=example,dc=com"
+    netbox_ldap_bind_password: "{{ vault_ldap_password }}"
+    netbox_ldap_user_search_base: "ou=users,dc=example,dc=com"
+    netbox_ldap_group_search_base: "ou=groups,dc=example,dc=com"
+    
+    # Plugin configuration
+    netbox_plugins:
+      - name: "netbox-secrets"
+        config:
+          top_level_menu: true
+          enable_encryption: true
+      - name: "netbox-topology-views"
+        config:
+          device_ext_page: true
+          
+    # Security settings
+    netbox_debug: false
+    netbox_session_cookie_secure: true
+    netbox_csrf_cookie_secure: true
+    netbox_secure_ssl_redirect: true
+    
+    # Monitoring and health checks
+    netbox_health_check_enabled: true
+    netbox_prometheus_enabled: true
+    netbox_prometheus_port: 9000
+    
+    # Backup configuration
+    netbox_backup_enabled: true
+    netbox_backup_schedule: "0 3 * * *"  # Daily at 3 AM
+    netbox_backup_retention_days: 14
+    netbox_backup_dir: "/opt/netbox/backups"
+    
+    # Advanced settings
+    netbox_time_zone: "America/New_York"
+    netbox_webhooks_enabled: true
+    netbox_webhook_timeout: 60
+    
+  roles:
+    - role: operations_management.netbox
+      tags: ['netbox']
+      
+  post_tasks:
+    - name: Verify NetBox services are running
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - netbox
+        - netbox-rq
+        - nginx
+      tags: ['verify']
+      
+    - name: Wait for NetBox to be ready
+      ansible.builtin.uri:
+        url: "https://{{ netbox_nginx_server_name }}/api/status/"
+        method: GET
+        validate_certs: true
+        timeout: 30
+      retries: 10
+      delay: 5
+      tags: ['verify']
+      
+    - name: Run health check
+      ansible.builtin.command:
+        cmd: /usr/local/bin/netbox-healthcheck
+      register: health_check_result
+      tags: ['verify']
+      
+    - name: Display health check results
+      ansible.builtin.debug:
+        var: health_check_result.stdout_lines
+      tags: ['verify']

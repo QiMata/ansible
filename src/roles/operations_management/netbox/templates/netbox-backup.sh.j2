@@ -1,0 +1,128 @@
+#!/bin/bash
+# NetBox Backup Script
+
+BACKUP_DIR="{{ netbox_backup_dir }}"
+RETENTION_DAYS="{{ netbox_backup_retention_days }}"
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+BACKUP_NAME="netbox_backup_${TIMESTAMP}"
+LOG_FILE="/var/log/netbox/backup.log"
+
+# Database settings
+DB_HOST="{{ postgres_host }}"
+DB_PORT="{{ postgres_port }}"
+DB_NAME="{{ postgres_db }}"
+DB_USER="{{ postgres_user }}"
+PGPASSWORD="{{ postgres_password }}"
+export PGPASSWORD
+
+log_message() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
+}
+
+create_backup_dir() {
+    if [ ! -d "$BACKUP_DIR" ]; then
+        mkdir -p "$BACKUP_DIR"
+        chown {{ netbox_user }}:{{ netbox_user }} "$BACKUP_DIR"
+    fi
+}
+
+backup_database() {
+    log_message "Starting database backup..."
+    local db_backup_file="${BACKUP_DIR}/${BACKUP_NAME}_database.sql.gz"
+    
+    if pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" --no-password | gzip > "$db_backup_file"; then
+        log_message "Database backup completed: $db_backup_file"
+        return 0
+    else
+        log_message "Database backup failed"
+        return 1
+    fi
+}
+
+backup_media() {
+    log_message "Starting media files backup..."
+    local media_backup_file="${BACKUP_DIR}/${BACKUP_NAME}_media.tar.gz"
+    
+    if [ -d "{{ netbox_media_root }}" ] && [ "$(ls -A {{ netbox_media_root }})" ]; then
+        if tar -czf "$media_backup_file" -C "$(dirname {{ netbox_media_root }})" "$(basename {{ netbox_media_root }})"; then
+            log_message "Media backup completed: $media_backup_file"
+            return 0
+        else
+            log_message "Media backup failed"
+            return 1
+        fi
+    else
+        log_message "No media files to backup"
+        return 0
+    fi
+}
+
+backup_configuration() {
+    log_message "Starting configuration backup..."
+    local config_backup_file="${BACKUP_DIR}/${BACKUP_NAME}_config.tar.gz"
+    
+    if tar -czf "$config_backup_file" \
+        -C "{{ netbox_install_dir }}/netbox/netbox" configuration.py \
+        -C "/etc/systemd/system" netbox.service{% if netbox_rq_enabled %} netbox-rq.service{% endif %}{% if netbox_nginx_enabled %} \
+        -C "/etc/nginx/sites-available" netbox{% endif %}; then
+        log_message "Configuration backup completed: $config_backup_file"
+        return 0
+    else
+        log_message "Configuration backup failed"
+        return 1
+    fi
+}
+
+cleanup_old_backups() {
+    log_message "Cleaning up backups older than $RETENTION_DAYS days..."
+    find "$BACKUP_DIR" -name "netbox_backup_*" -type f -mtime +$RETENTION_DAYS -delete
+    local deleted_count=$(find "$BACKUP_DIR" -name "netbox_backup_*" -type f -mtime +$RETENTION_DAYS | wc -l)
+    log_message "Removed $deleted_count old backup files"
+}
+
+verify_backup() {
+    local backup_file="$1"
+    if [ -f "$backup_file" ] && [ -s "$backup_file" ]; then
+        log_message "Backup verification passed: $backup_file"
+        return 0
+    else
+        log_message "Backup verification failed: $backup_file"
+        return 1
+    fi
+}
+
+main() {
+    log_message "Starting NetBox backup process..."
+    
+    create_backup_dir
+    
+    local exit_code=0
+    
+    # Perform backups
+    backup_database || exit_code=1
+    backup_media || exit_code=1
+    backup_configuration || exit_code=1
+    
+    # Verify backups
+    for backup_file in "${BACKUP_DIR}/${BACKUP_NAME}"*; do
+        if [ -f "$backup_file" ]; then
+            verify_backup "$backup_file" || exit_code=1
+        fi
+    done
+    
+    # Cleanup old backups
+    cleanup_old_backups
+    
+    if [ $exit_code -eq 0 ]; then
+        log_message "NetBox backup completed successfully"
+    else
+        log_message "NetBox backup completed with errors"
+    fi
+    
+    # Set proper ownership
+    chown -R {{ netbox_user }}:{{ netbox_user }} "$BACKUP_DIR"
+    
+    return $exit_code
+}
+
+main "$@"

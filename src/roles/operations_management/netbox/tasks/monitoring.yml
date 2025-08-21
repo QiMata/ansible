@@ -1,0 +1,45 @@
+---
+- name: Create health check script
+  ansible.builtin.template:
+    src: netbox-healthcheck.sh.j2
+    dest: /usr/local/bin/netbox-healthcheck
+    mode: '0755'
+  when: netbox_health_check_enabled | bool
+
+- name: Install health check dependencies
+  ansible.builtin.apt:
+    name:
+      - curl
+    state: present
+  when: netbox_health_check_enabled | bool
+
+- name: Create health check cron job
+  ansible.builtin.cron:
+    name: "NetBox Health Check"
+    minute: "*/5"
+    job: "/usr/local/bin/netbox-healthcheck > /var/log/netbox/healthcheck.log 2>&1"
+    user: "{{ netbox_user }}"
+  when: netbox_health_check_enabled | bool
+
+- name: Install Prometheus monitoring dependencies
+  ansible.builtin.pip:
+    name:
+      - prometheus-client
+      - django-prometheus
+    virtualenv: "{{ netbox_venv }}"
+  become: true
+  become_user: "{{ netbox_user }}"
+  when: netbox_prometheus_enabled | bool
+
+- name: Remove health check script
+  ansible.builtin.file:
+    path: /usr/local/bin/netbox-healthcheck
+    state: absent
+  when: not (netbox_health_check_enabled | bool)
+
+- name: Remove health check cron job
+  ansible.builtin.cron:
+    name: "NetBox Health Check"
+    state: absent
+    user: "{{ netbox_user }}"
+  when: not (netbox_health_check_enabled | bool)

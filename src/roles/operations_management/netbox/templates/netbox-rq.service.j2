@@ -1,0 +1,33 @@
+[Unit]
+Description=NetBox Request Queue Worker
+After=network.target postgresql.service redis.service
+Wants=postgresql.service redis.service
+
+[Service]
+Type=simple
+User={{ netbox_user }}
+Group={{ netbox_user }}
+WorkingDirectory={{ netbox_install_dir }}/netbox
+ExecStart={{ netbox_venv }}/bin/python {{ netbox_install_dir }}/netbox/manage.py rqworker {{ netbox_rq_queues }}
+Environment="DJANGO_SETTINGS_MODULE=netbox.settings"
+Environment="PYTHONPATH={{ netbox_install_dir }}/netbox"
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ netbox_install_dir }} /var/log/netbox {{ netbox_media_root }}
+
+# Resource limits
+LimitNOFILE=65536
+MemoryAccounting=true
+{% if netbox_rq_memory_limit is defined %}
+MemoryMax={{ netbox_rq_memory_limit }}
+{% endif %}
+
+[Install]
+WantedBy=multi-user.target

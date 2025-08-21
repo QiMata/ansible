@@ -1,0 +1,57 @@
+---
+- name: Install Nginx
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+    update_cache: true
+  when: netbox_nginx_enabled | bool
+
+- name: Create NetBox Nginx configuration
+  ansible.builtin.template:
+    src: nginx-netbox.conf.j2
+    dest: /etc/nginx/sites-available/netbox
+    mode: '0644'
+  notify: restart nginx
+  when: netbox_nginx_enabled | bool
+
+- name: Enable NetBox Nginx site
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/netbox
+    dest: /etc/nginx/sites-enabled/netbox
+    state: link
+  notify: restart nginx
+  when: netbox_nginx_enabled | bool
+
+- name: Remove default Nginx site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: restart nginx
+  when: netbox_nginx_enabled | bool
+
+- name: Test Nginx configuration
+  ansible.builtin.command:
+    cmd: nginx -t
+  register: nginx_test
+  changed_when: false
+  when: netbox_nginx_enabled | bool
+
+- name: Enable and start Nginx
+  ansible.builtin.systemd:
+    name: nginx
+    enabled: true
+    state: started
+  when: netbox_nginx_enabled | bool
+
+- name: Disable NetBox Nginx site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/netbox
+    state: absent
+  notify: restart nginx
+  when: not (netbox_nginx_enabled | bool)
+
+- name: Remove NetBox Nginx configuration
+  ansible.builtin.file:
+    path: /etc/nginx/sites-available/netbox
+    state: absent
+  when: not (netbox_nginx_enabled | bool)

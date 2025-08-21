@@ -10,6 +10,11 @@
       - libffi-dev
       - libpq-dev
       - libssl-dev
+      - python3-pip
+      - python3-setuptools
+      - python3-wheel
+      - expect  # For automated superuser creation
+      - curl    # For health checks
     state: present
     update_cache: true
 
@@ -20,6 +25,18 @@
     create_home: false
     shell: /usr/sbin/nologin
 
+- name: Create NetBox directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ netbox_user }}"
+    group: "{{ netbox_user }}"
+    mode: '0755'
+  loop:
+    - "{{ netbox_install_dir | dirname }}"
+    - "/var/log/netbox"
+    - "/run/netbox"
+
 - name: Clone NetBox repository
   ansible.builtin.git:
     repo: "{{ netbox_git_repo }}"
@@ -28,12 +45,50 @@
     force: true
   notify: restart netbox
 
+- name: Set ownership of NetBox directory
+  ansible.builtin.file:
+    path: "{{ netbox_install_dir }}"
+    owner: "{{ netbox_user }}"
+    group: "{{ netbox_user }}"
+    recurse: true
+
 - name: Create virtualenv
   ansible.builtin.command: "{{ netbox_python }} -m venv {{ netbox_venv }}"
   args:
     creates: "{{ netbox_venv }}/bin/activate"
+  become: true
+  become_user: "{{ netbox_user }}"
+
+- name: Upgrade pip in virtualenv
+  ansible.builtin.pip:
+    name: pip
+    state: latest
+    virtualenv: "{{ netbox_venv }}"
+  become: true
+  become_user: "{{ netbox_user }}"
 
 - name: Install NetBox requirements
   ansible.builtin.pip:
     requirements: "{{ netbox_install_dir }}/requirements.txt"
     virtualenv: "{{ netbox_venv }}"
+  become: true
+  become_user: "{{ netbox_user }}"
+
+- name: Install additional Python packages
+  ansible.builtin.pip:
+    name:
+      - gunicorn
+      - django-auth-ldap  # For LDAP support
+      - redis
+    virtualenv: "{{ netbox_venv }}"
+  become: true
+  become_user: "{{ netbox_user }}"
+
+- name: Install plugin dependencies
+  ansible.builtin.pip:
+    name: "{{ item.name }}"
+    virtualenv: "{{ netbox_venv }}"
+  loop: "{{ netbox_plugins }}"
+  when: netbox_plugins | length > 0
+  become: true
+  become_user: "{{ netbox_user }}"
