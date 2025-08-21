@@ -7,6 +7,7 @@ vault_group: vault
 vault_config_dir: /etc/vault
 vault_data_dir: /opt/vault/data
 vault_tls_dir: "{{ vault_config_dir }}/tls"
+vault_log_dir: /var/log/vault
 vault_service_name: vault
 
 # Networking
@@ -18,7 +19,195 @@ vault_ui: true
 vault_tls_cert_src: ""
 vault_tls_key_src: ""
 
-# PKI integration
+# ========================================
+# STORAGE BACKENDS
+# ========================================
+vault_storage_backend: "file"  # Options: file, raft, consul, s3, azure, gcp, mysql, postgresql
+
+# File storage (default)
+vault_file_storage_path: "{{ vault_data_dir }}"
+
+# Raft storage (Integrated Storage for HA)
+vault_raft_node_id: "{{ ansible_hostname }}"
+vault_raft_path: "{{ vault_data_dir }}/raft"
+vault_raft_peers: []  # List of peer nodes for cluster join
+vault_raft_retry_join: []  # Auto-join configuration
+
+# Consul storage
+vault_consul_address: "127.0.0.1:8500"
+vault_consul_path: "vault/"
+vault_consul_scheme: "http"
+vault_consul_token: ""
+vault_consul_session_ttl: "15s"
+vault_consul_lock_wait_time: "15s"
+
+# Cloud storage backends
+vault_s3_bucket: ""
+vault_s3_region: ""
+vault_s3_access_key: ""
+vault_s3_secret_key: ""
+vault_s3_endpoint: ""
+vault_s3_force_path_style: false
+
+vault_azure_account_name: ""
+vault_azure_account_key: ""
+vault_azure_container: ""
+
+vault_gcp_bucket: ""
+vault_gcp_credentials_file: ""
+
+# Database storage
+vault_db_connection_url: ""
+vault_db_table: "vault_kv_store"
+vault_db_max_parallel: "128"
+
+# ========================================
+# AUTO-UNSEALING
+# ========================================
+vault_auto_unseal: false
+vault_auto_unseal_provider: ""  # Options: aws-kms, azure-keyvault, gcp-kms, transit
+
+# AWS KMS auto-unseal
+vault_aws_kms_region: ""
+vault_aws_kms_key_id: ""
+vault_aws_access_key: ""
+vault_aws_secret_key: ""
+
+# Azure Key Vault auto-unseal
+vault_azure_keyvault_name: ""
+vault_azure_key_name: ""
+vault_azure_tenant_id: ""
+vault_azure_client_id: ""
+vault_azure_client_secret: ""
+
+# GCP KMS auto-unseal
+vault_gcp_kms_project: ""
+vault_gcp_kms_region: ""
+vault_gcp_kms_key_ring: ""
+vault_gcp_kms_crypto_key: ""
+vault_gcp_credentials: ""
+
+# Transit auto-unseal (via another Vault)
+vault_transit_address: ""
+vault_transit_token: ""
+vault_transit_key_name: ""
+vault_transit_mount_path: "transit"
+
+# ========================================
+# AUTHENTICATION METHODS
+# ========================================
+vault_auth_methods: []
+# Example:
+# vault_auth_methods:
+#   - name: "ldap"
+#     type: "ldap"
+#     config:
+#       url: "ldap://ldap.example.com"
+#       userdn: "ou=Users,dc=example,dc=com"
+#       groupdn: "ou=Groups,dc=example,dc=com"
+#   - name: "oidc"
+#     type: "oidc"
+#     config:
+#       oidc_discovery_url: "https://auth.example.com"
+#       oidc_client_id: "vault"
+
+# ========================================
+# SECRETS ENGINES
+# ========================================
+vault_secrets_engines: []
+# Example:
+# vault_secrets_engines:
+#   - name: "kv"
+#     type: "kv-v2"
+#     path: "secret"
+#   - name: "database"
+#     type: "database"
+#     path: "database"
+
+# ========================================
+# POLICIES
+# ========================================
+vault_policies: []
+# Example:
+# vault_policies:
+#   - name: "admin"
+#     policy: |
+#       path "*" {
+#         capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+#       }
+
+# ========================================
+# MONITORING & TELEMETRY
+# ========================================
+vault_enable_telemetry: false
+vault_telemetry_prometheus_retention: "24h"
+vault_telemetry_statsd_address: ""
+vault_telemetry_statsite_address: ""
+vault_telemetry_dogstatsd_addr: ""
+vault_telemetry_circonus_api_token: ""
+
+# ========================================
+# AUDIT LOGGING
+# ========================================
+vault_audit_devices: []
+# Example:
+# vault_audit_devices:
+#   - name: "file"
+#     type: "file"
+#     path: "/var/log/vault/audit.log"
+#     format: "json"
+
+# ========================================
+# LOGGING
+# ========================================
+vault_log_level: "INFO"  # TRACE, DEBUG, INFO, WARN, ERROR
+vault_log_format: "standard"  # standard, json
+vault_log_file: "{{ vault_log_dir }}/vault.log"
+vault_log_rotate_duration: "24h"
+vault_log_rotate_max_files: 0
+vault_enable_syslog: false
+vault_syslog_facility: "AUTH"
+
+# ========================================
+# SECURITY ENHANCEMENTS
+# ========================================
+vault_disable_mlock: true
+vault_enable_raw_endpoint: false
+vault_default_lease_ttl: "768h"
+vault_max_lease_ttl: "8760h"
+vault_entropy_augmentation: false
+
+# Seal wrap configuration
+vault_seal_wrap: false
+
+# Enterprise features (requires Vault Enterprise)
+vault_enable_namespaces: false
+vault_license_path: ""
+
+# ========================================
+# HIGH AVAILABILITY
+# ========================================
+vault_enable_ha: false
+vault_ha_redirect_addr: ""
+vault_ha_cluster_addr: ""
+vault_api_addr: ""
+
+# ========================================
+# BACKUP & RECOVERY
+# ========================================
+vault_enable_backup: false
+vault_backup_schedule: "0 2 * * *"  # Daily at 2 AM
+vault_backup_retention_days: 30
+vault_backup_storage_path: "/opt/vault/backups"
+vault_backup_s3_bucket: ""
+vault_backup_s3_region: ""
+
+# ========================================
+# CUSTOM CONFIGURATION
+# ========================================
+vault_custom_config: ""  # Raw HCL configuration to append
+
+# PKI integration (legacy variables maintained for compatibility)
 vault_enable_pki: false           # true to configure Vault PKI
 vault_pki_mode: "ra"              # "ra" (Vault upstream), "intermediate" (Vault intermediate)
 vault_pki_common_name: "Vault Intermediate CA"

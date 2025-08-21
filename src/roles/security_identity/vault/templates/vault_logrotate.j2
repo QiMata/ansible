@@ -1,0 +1,12 @@
+{{ vault_log_file }} {
+    daily
+    rotate {{ vault_log_rotate_max_files | default(7) }}
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 640 {{ vault_user }} {{ vault_group }}
+    postrotate
+        systemctl reload {{ vault_service_name }} > /dev/null 2>&1 || true
+    endscript
+}

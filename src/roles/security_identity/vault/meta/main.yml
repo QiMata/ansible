@@ -1,7 +1,9 @@
 ---
 galaxy_info:
   author: Example Inc.
-  description: Install & configure HashiCorp Vault on Debian with optional step-ca integration.
+  description: |
+    Comprehensive HashiCorp Vault deployment with support for multiple storage backends,
+    authentication methods, secrets engines, monitoring, backup/recovery, and HA configurations.
   license: MIT
   min_ansible_version: "2.15"
   platforms:
@@ -9,4 +11,34 @@ galaxy_info:
       versions:
         - bullseye
         - bookworm
+    - name: Ubuntu
+      versions:
+        - "20.04"
+        - "22.04"
+        - "24.04"
+  galaxy_tags:
+    - vault
+    - security
+    - secrets
+    - pki
+    - authentication
+    - monitoring
+    - backup
+    - high-availability
+    - raft
+    - consul
+    - cloud
+    - aws
+    - azure
+    - gcp
+    - ldap
+    - oidc
+    - kubernetes
+
 dependencies: []
+
+collections:
+  - name: community.general
+    version: ">=6.0.0"
+  - name: ansible.posix
+    version: ">=1.3.0"

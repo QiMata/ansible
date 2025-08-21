@@ -1,10 +1,66 @@
 ---
 - name: Include install tasks
   ansible.builtin.import_tasks: install.yml
+  tags:
+    - install
+    - vault
 
 - name: Include configuration tasks
   ansible.builtin.import_tasks: config.yml
+  tags:
+    - config
+    - vault
+
+- name: Include storage backend tasks
+  ansible.builtin.import_tasks: storage.yml
+  tags:
+    - storage
+    - config
+    - vault
+
+- name: Include authentication tasks
+  ansible.builtin.import_tasks: auth.yml
+  when: vault_auth_methods | length > 0
+  tags:
+    - auth
+    - security
+    - vault
+
+- name: Include secrets engines tasks
+  ansible.builtin.import_tasks: secrets_engines.yml
+  when: vault_secrets_engines | length > 0
+  tags:
+    - secrets
+    - vault
+
+- name: Include policies tasks
+  ansible.builtin.import_tasks: policies.yml
+  when: vault_policies | length > 0
+  tags:
+    - policies
+    - security
+    - vault
+
+- name: Include monitoring tasks
+  ansible.builtin.import_tasks: monitoring.yml
+  when: vault_enable_telemetry or vault_audit_devices | length > 0
+  tags:
+    - monitoring
+    - observability
+    - vault
+
+- name: Include backup tasks
+  ansible.builtin.import_tasks: backup.yml
+  when: vault_enable_backup
+  tags:
+    - backup
+    - disaster-recovery
+    - vault
 
 - name: Include PKI tasks
   ansible.builtin.import_tasks: pki.yml
   when: vault_enable_pki | bool
+  tags:
+    - pki
+    - legacy
+    - vault

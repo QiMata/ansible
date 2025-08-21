@@ -1,0 +1,119 @@
+---
+# Monitoring and audit configuration
+
+- name: Wait for Vault to be ready
+  ansible.builtin.uri:
+    url: "http://{{ vault_addr }}:{{ vault_port }}/v1/sys/health"
+    method: GET
+    status_code: [200, 429, 501, 503]
+  register: vault_health_check
+  until: vault_health_check.status in [200, 429, 501, 503]
+  retries: 30
+  delay: 5
+
+- name: Check if Vault is initialized
+  ansible.builtin.uri:
+    url: "http://{{ vault_addr }}:{{ vault_port }}/v1/sys/init"
+    method: GET
+  register: vault_init_status
+  ignore_errors: true
+
+- name: Create audit log directories
+  ansible.builtin.file:
+    path: "{{ item.path | dirname }}"
+    state: directory
+    owner: "{{ vault_user }}"
+    group: "{{ vault_group }}"
+    mode: "0750"
+  loop: "{{ vault_audit_devices }}"
+  when: item.type == "file"
+
+- name: Enable audit devices
+  ansible.builtin.uri:
+    url: "http://{{ vault_addr }}:{{ vault_port }}/v1/sys/audit/{{ item.name }}"
+    method: PUT
+    headers:
+      X-Vault-Token: "{{ vault_root_token | default('') }}"
+    body_format: json
+    body:
+      type: "{{ item.type }}"
+      options:
+        file_path: "{{ item.path | default('') }}"
+        format: "{{ item.format | default('json') }}"
+        hmac_accessor: "{{ item.hmac_accessor | default(true) }}"
+        log_raw: "{{ item.log_raw | default(false) }}"
+    status_code: [200, 204, 400]
+  loop: "{{ vault_audit_devices }}"
+  when:
+    - vault_init_status.json.initialized | default(false)
+    - vault_root_token is defined
+  ignore_errors: true
+
+- name: Configure syslog audit device
+  ansible.builtin.uri:
+    url: "http://{{ vault_addr }}:{{ vault_port }}/v1/sys/audit/{{ item.name }}"
+    method: PUT
+    headers:
+      X-Vault-Token: "{{ vault_root_token | default('') }}"
+    body_format: json
+    body:
+      type: "syslog"
+      options:
+        facility: "{{ item.facility | default('AUTH') }}"
+        tag: "{{ item.tag | default('vault') }}"
+        format: "{{ item.format | default('json') }}"
+    status_code: [200, 204, 400]
+  loop: "{{ vault_audit_devices }}"
+  when:
+    - vault_init_status.json.initialized | default(false)
+    - vault_root_token is defined
+    - item.type == "syslog"
+  ignore_errors: true
+
+- name: Install monitoring tools
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - prometheus-node-exporter
+  when: vault_enable_telemetry and ansible_os_family == "Debian"
+  ignore_errors: true
+
+- name: Create Prometheus configuration for Vault metrics
+  ansible.builtin.template:
+    src: vault_prometheus.yml.j2
+    dest: /etc/prometheus/vault.yml
+    mode: "0644"
+  when: vault_enable_telemetry
+  ignore_errors: true
+
+- name: Setup log rotation for Vault logs
+  ansible.builtin.template:
+    src: vault_logrotate.j2
+    dest: /etc/logrotate.d/vault
+    mode: "0644"
+  when: vault_log_file is defined
+
+- name: Configure rsyslog for Vault (if using syslog)
+  ansible.builtin.lineinfile:
+    path: /etc/rsyslog.conf
+    line: "{{ vault_syslog_facility }}.* /var/log/vault/vault.log"
+    create: true
+  when: vault_enable_syslog
+  notify: restart rsyslog
+
+- name: Create Vault monitoring script
+  ansible.builtin.template:
+    src: vault_health_check.sh.j2
+    dest: /usr/local/bin/vault_health_check.sh
+    mode: "0755"
+    owner: root
+    group: root
+
+- name: Setup cron job for health monitoring
+  ansible.builtin.cron:
+    name: "Vault health check"
+    minute: "*/5"
+    job: "/usr/local/bin/vault_health_check.sh"
+    user: "{{ vault_user }}"
+  when: vault_enable_telemetry

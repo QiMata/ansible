@@ -1,4 +1,12 @@
 ---
+- name: Create log directory
+  ansible.builtin.file:
+    path: "{{ vault_log_dir }}"
+    state: directory
+    owner: "{{ vault_user }}"
+    group: "{{ vault_group }}"
+    mode: "0750"
+
 - name: Deploy TLS certificate
   ansible.builtin.copy:
     src: "{{ vault_tls_cert_src }}"
@@ -18,6 +26,24 @@
     mode: "0600"
   when: vault_tls_key_src | length > 0
   notify: restart vault
+
+- name: Create storage directory for file backend
+  ansible.builtin.file:
+    path: "{{ vault_file_storage_path }}"
+    state: directory
+    owner: "{{ vault_user }}"
+    group: "{{ vault_group }}"
+    mode: "0750"
+  when: vault_storage_backend == "file"
+
+- name: Create raft storage directory
+  ansible.builtin.file:
+    path: "{{ vault_raft_path }}"
+    state: directory
+    owner: "{{ vault_user }}"
+    group: "{{ vault_group }}"
+    mode: "0750"
+  when: vault_storage_backend == "raft"
 
 - name: Render Vault configuration
   ansible.builtin.template:

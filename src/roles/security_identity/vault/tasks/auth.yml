@@ -1,0 +1,144 @@
+---
+# Authentication methods configuration
+
+- name: Wait for Vault to be ready
+  ansible.builtin.uri:
+    url: "http://{{ vault_addr }}:{{ vault_port }}/v1/sys/health"
+    method: GET
+    status_code: [200, 429, 501, 503]
+  register: vault_health_check
+  until: vault_health_check.status in [200, 429, 501, 503]
+  retries: 30
+  delay: 5
+
+- name: Check if Vault is initialized
+  ansible.builtin.uri:
+    url: "http://{{ vault_addr }}:{{ vault_port }}/v1/sys/init"
+    method: GET
+  register: vault_init_status
+  ignore_errors: true
+
+- name: Configure authentication methods
+  ansible.builtin.uri:
+    url: "http://{{ vault_addr }}:{{ vault_port }}/v1/sys/auth/{{ item.name }}"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_root_token | default('') }}"
+    body_format: json
+    body:
+      type: "{{ item.type }}"
+      config: "{{ item.config | default({}) }}"
+    status_code: [200, 204, 400]
+  loop: "{{ vault_auth_methods }}"
+  when: 
+    - vault_init_status.json.initialized | default(false)
+    - vault_root_token is defined
+  ignore_errors: true
+
+- name: Configure LDAP authentication method
+  ansible.builtin.uri:
+    url: "http://{{ vault_addr }}:{{ vault_port }}/v1/auth/{{ item.name }}/config"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_root_token | default('') }}"
+    body_format: json
+    body: "{{ item.config }}"
+    status_code: [200, 204, 400]
+  loop: "{{ vault_auth_methods }}"
+  when:
+    - vault_init_status.json.initialized | default(false)
+    - vault_root_token is defined
+    - item.type == "ldap"
+  ignore_errors: true
+
+- name: Configure OIDC authentication method
+  ansible.builtin.uri:
+    url: "http://{{ vault_addr }}:{{ vault_port }}/v1/auth/{{ item.name }}/config"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_root_token | default('') }}"
+    body_format: json
+    body: "{{ item.config }}"
+    status_code: [200, 204, 400]
+  loop: "{{ vault_auth_methods }}"
+  when:
+    - vault_init_status.json.initialized | default(false)
+    - vault_root_token is defined
+    - item.type == "oidc"
+  ignore_errors: true
+
+- name: Configure Kubernetes authentication method
+  ansible.builtin.uri:
+    url: "http://{{ vault_addr }}:{{ vault_port }}/v1/auth/{{ item.name }}/config"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_root_token | default('') }}"
+    body_format: json
+    body: "{{ item.config }}"
+    status_code: [200, 204, 400]
+  loop: "{{ vault_auth_methods }}"
+  when:
+    - vault_init_status.json.initialized | default(false)
+    - vault_root_token is defined
+    - item.type == "kubernetes"
+  ignore_errors: true
+
+- name: Configure AWS IAM authentication method
+  ansible.builtin.uri:
+    url: "http://{{ vault_addr }}:{{ vault_port }}/v1/auth/{{ item.name }}/config/client"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_root_token | default('') }}"
+    body_format: json
+    body: "{{ item.config }}"
+    status_code: [200, 204, 400]
+  loop: "{{ vault_auth_methods }}"
+  when:
+    - vault_init_status.json.initialized | default(false)
+    - vault_root_token is defined
+    - item.type == "aws"
+  ignore_errors: true
+
+- name: Configure GitHub authentication method
+  ansible.builtin.uri:
+    url: "http://{{ vault_addr }}:{{ vault_port }}/v1/auth/{{ item.name }}/config"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_root_token | default('') }}"
+    body_format: json
+    body: "{{ item.config }}"
+    status_code: [200, 204, 400]
+  loop: "{{ vault_auth_methods }}"
+  when:
+    - vault_init_status.json.initialized | default(false)
+    - vault_root_token is defined
+    - item.type == "github"
+  ignore_errors: true
+
+- name: Configure username/password authentication method
+  ansible.builtin.uri:
+    url: "http://{{ vault_addr }}:{{ vault_port }}/v1/auth/{{ item.name }}/users/{{ user.username }}"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_root_token | default('') }}"
+    body_format: json
+    body:
+      password: "{{ user.password }}"
+      policies: "{{ user.policies | default([]) }}"
+    status_code: [200, 204, 400]
+  loop: "{{ vault_auth_methods }}"
+  loop_control:
+    loop_var: auth_method
+  when:
+    - vault_init_status.json.initialized | default(false)
+    - vault_root_token is defined
+    - auth_method.type == "userpass"
+    - auth_method.users is defined
+  vars:
+    item: "{{ auth_method }}"
+    user: "{{ item.1 }}"
+  with_subelements:
+    - "{{ vault_auth_methods | selectattr('type', 'equalto', 'userpass') | list }}"
+    - users
+    - skip_missing: true
+  ignore_errors: true

@@ -1,6 +1,444 @@
 # Ansible Role: Vault
 
-**Installs and configures [HashiCorp Vault](https://www.vaultproject.io/) on Debian Linux,** including setting up system service, storage, and optional PKI integration with Smallstep **step-ca**. This role ensures Vault is installed from official sources, creates a dedicated user, deploys configuration (with TLS support if certificates are provided), and can initialize Vault’s PKI secrets engine for certificate management.
+# Ansible Role: Vault
+
+**Comprehensive HashiCorp Vault deployment** supporting multiple storage backends, authentication methods, secrets engines, high availability, monitoring, backup/recovery, and security features. This enhanced role provides enterprise-ready Vault configurations for development, staging, and production environments.
+
+## Table of Contents
+
+* [Overview](#ansible-role-vault)
+* [Supported Platforms & Requirements](#supported-platforms--requirements)
+* [Role Variables](#role-variables)
+* [Storage Backends](#storage-backends)
+* [Authentication Methods](#authentication-methods)
+* [Secrets Engines](#secrets-engines)
+* [Monitoring & Observability](#monitoring--observability)
+* [Backup & Recovery](#backup--recovery)
+* [High Availability](#high-availability)
+* [Security Features](#security-features)
+* [Tags](#tags)
+* [Dependencies](#dependencies)
+* [Example Playbooks](#example-playbooks)
+* [Testing Instructions](#testing-instructions)
+* [Known Issues and Gotchas](#known-issues-and-gotchas)
+* [Security Implications](#security-implications)
+* [Related Roles](#related-roles)
+
+## Supported Platforms & Requirements
+
+* **Operating Systems:** Debian 11 "Bullseye", Debian 12 "Bookworm", Ubuntu 20.04+
+* **Ansible Version:** Requires Ansible **2.15** or higher
+* **Python Requirements:** None specific on managed nodes
+* **Ansible Collections:** 
+  - `community.general` (>=6.0.0)
+  - `ansible.posix` (>=1.3.0)
+* **System Requirements:** Internet access for package downloads
+
+## Role Variables
+
+### Core Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `vault_version` | `"latest"` | Vault package version |
+| `vault_user` | `vault` | System user for Vault |
+| `vault_group` | `vault` | System group for Vault |
+| `vault_addr` | `"0.0.0.0"` | Vault listen address |
+| `vault_port` | `8200` | Vault listen port |
+| `vault_ui` | `true` | Enable Vault Web UI |
+
+### Storage Backends
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `vault_storage_backend` | `"file"` | Storage backend (file, raft, consul, s3, azure, gcp, mysql, postgresql) |
+| `vault_file_storage_path` | `"{{ vault_data_dir }}"` | File storage path |
+| `vault_raft_node_id` | `"{{ ansible_hostname }}"` | Raft node identifier |
+| `vault_raft_retry_join` | `[]` | List of peers for auto-join |
+| `vault_consul_address` | `"127.0.0.1:8500"` | Consul address |
+| `vault_s3_bucket` | `""` | S3 bucket name |
+| `vault_azure_account_name` | `""` | Azure storage account |
+| `vault_gcp_bucket` | `""` | GCP storage bucket |
+
+### Auto-Unsealing
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `vault_auto_unseal` | `false` | Enable auto-unsealing |
+| `vault_auto_unseal_provider` | `""` | Provider (aws-kms, azure-keyvault, gcp-kms, transit) |
+| `vault_aws_kms_region` | `""` | AWS KMS region |
+| `vault_aws_kms_key_id` | `""` | AWS KMS key ID |
+| `vault_azure_keyvault_name` | `""` | Azure Key Vault name |
+| `vault_gcp_kms_project` | `""` | GCP KMS project |
+
+### Authentication & Authorization
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `vault_auth_methods` | `[]` | List of authentication methods to configure |
+| `vault_policies` | `[]` | List of policies to create |
+
+### Secrets Engines
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `vault_secrets_engines` | `[]` | List of secrets engines to enable |
+
+### Monitoring & Telemetry
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `vault_enable_telemetry` | `false` | Enable telemetry collection |
+| `vault_telemetry_prometheus_retention` | `"24h"` | Prometheus metrics retention |
+| `vault_audit_devices` | `[]` | List of audit devices |
+
+### Backup & Recovery
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `vault_enable_backup` | `false` | Enable automated backups |
+| `vault_backup_schedule` | `"0 2 * * *"` | Backup cron schedule |
+| `vault_backup_retention_days` | `30` | Backup retention period |
+| `vault_backup_s3_bucket` | `""` | S3 bucket for backup storage |
+
+### High Availability
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `vault_enable_ha` | `false` | Enable HA configuration |
+| `vault_api_addr` | `""` | API advertise address |
+| `vault_ha_cluster_addr` | `""` | Cluster advertise address |
+
+## Storage Backends
+
+### File Storage (Default)
+Simple single-node storage using local filesystem.
+
+```yaml
+vault_storage_backend: "file"
+vault_file_storage_path: "/opt/vault/data"
+```
+
+### Raft Storage (Recommended for HA)
+Integrated Storage providing high availability without external dependencies.
+
+```yaml
+vault_storage_backend: "raft"
+vault_raft_node_id: "vault-1"
+vault_raft_retry_join:
+  - "https://vault-2.example.com:8200"
+  - "https://vault-3.example.com:8200"
+```
+
+### Consul Storage
+External Consul cluster for storage backend.
+
+```yaml
+vault_storage_backend: "consul"
+vault_consul_address: "consul.example.com:8500"
+vault_consul_path: "vault/"
+vault_consul_token: "{{ consul_token }}"
+```
+
+### Cloud Storage
+Support for AWS S3, Azure Blob, and GCP Cloud Storage.
+
+```yaml
+# AWS S3
+vault_storage_backend: "s3"
+vault_s3_bucket: "my-vault-storage"
+vault_s3_region: "us-west-2"
+
+# Azure Blob
+vault_storage_backend: "azure"
+vault_azure_account_name: "vaultstorage"
+vault_azure_container: "vault"
+
+# GCP Cloud Storage
+vault_storage_backend: "gcp"
+vault_gcp_bucket: "vault-storage-bucket"
+```
+
+## Authentication Methods
+
+### LDAP/Active Directory
+```yaml
+vault_auth_methods:
+  - name: "ldap"
+    type: "ldap"
+    config:
+      url: "ldap://ldap.example.com"
+      userdn: "ou=Users,dc=example,dc=com"
+      groupdn: "ou=Groups,dc=example,dc=com"
+      binddn: "cn=vault,ou=Service Accounts,dc=example,dc=com"
+      bindpass: "{{ ldap_password }}"
+```
+
+### OIDC/JWT
+```yaml
+vault_auth_methods:
+  - name: "oidc"
+    type: "oidc"
+    config:
+      oidc_discovery_url: "https://auth.example.com/.well-known/openid_configuration"
+      oidc_client_id: "vault"
+      oidc_client_secret: "{{ oidc_secret }}"
+```
+
+### Kubernetes
+```yaml
+vault_auth_methods:
+  - name: "kubernetes"
+    type: "kubernetes"
+    config:
+      kubernetes_host: "https://kubernetes.default.svc.cluster.local"
+      kubernetes_ca_cert: "{{ k8s_ca_cert }}"
+```
+
+### AWS IAM
+```yaml
+vault_auth_methods:
+  - name: "aws"
+    type: "aws"
+    config:
+      access_key: "{{ aws_access_key }}"
+      secret_key: "{{ aws_secret_key }}"
+      region: "us-west-2"
+```
+
+## Secrets Engines
+
+### Key-Value v2
+```yaml
+vault_secrets_engines:
+  - name: "kv"
+    type: "kv-v2"
+    path: "secret"
+    max_versions: 10
+```
+
+### Database Secrets
+```yaml
+vault_secrets_engines:
+  - name: "database"
+    type: "database"
+    path: "database"
+    connections:
+      - name: "postgres"
+        plugin_name: "postgresql-database-plugin"
+        connection_url: "postgresql://vault:{{password}}@postgres:5432/mydb"
+```
+
+### AWS Secrets
+```yaml
+vault_secrets_engines:
+  - name: "aws"
+    type: "aws"
+    path: "aws"
+    access_key: "{{ aws_access_key }}"
+    secret_key: "{{ aws_secret_key }}"
+```
+
+### SSH Secrets
+```yaml
+vault_secrets_engines:
+  - name: "ssh"
+    type: "ssh"
+    path: "ssh"
+    generate_signing_key: true
+```
+
+### Transit Encryption
+```yaml
+vault_secrets_engines:
+  - name: "transit"
+    type: "transit"
+    path: "transit"
+    keys:
+      - name: "app-encryption"
+        type: "aes256-gcm96"
+```
+
+## Monitoring & Observability
+
+### Prometheus Metrics
+```yaml
+vault_enable_telemetry: true
+vault_telemetry_prometheus_retention: "24h"
+```
+
+### Audit Logging
+```yaml
+vault_audit_devices:
+  - name: "file"
+    type: "file"
+    path: "/var/log/vault/audit.log"
+    format: "json"
+  - name: "syslog"
+    type: "syslog"
+    facility: "AUTH"
+```
+
+### Health Monitoring
+The role creates health check scripts:
+- `/usr/local/bin/vault_health_check.sh` - Automated health checks
+- Cron job for continuous monitoring
+- Integration with Prometheus metrics
+
+## Backup & Recovery
+
+### Automated Backups
+```yaml
+vault_enable_backup: true
+vault_backup_schedule: "0 2 * * *"  # Daily at 2 AM
+vault_backup_retention_days: 30
+vault_backup_s3_bucket: "vault-backups"
+```
+
+### Backup Scripts
+- `/usr/local/bin/vault_backup.sh` - Create backups
+- `/usr/local/bin/vault_restore.sh` - Restore from backup
+- `/usr/local/bin/vault_backup_verify.sh` - Verify backup integrity
+
+### Disaster Recovery
+Complete disaster recovery documentation is automatically generated at `{{ vault_config_dir }}/disaster_recovery.md`.
+
+## High Availability
+
+### Raft Cluster Configuration
+```yaml
+vault_storage_backend: "raft"
+vault_enable_ha: true
+vault_api_addr: "https://{{ ansible_default_ipv4.address }}:8200"
+vault_ha_cluster_addr: "https://{{ ansible_default_ipv4.address }}:8201"
+vault_raft_retry_join:
+  - "https://vault-1.example.com:8200"
+  - "https://vault-2.example.com:8200"
+```
+
+### Auto-Unsealing
+```yaml
+vault_auto_unseal: true
+vault_auto_unseal_provider: "aws-kms"
+vault_aws_kms_key_id: "alias/vault-unseal"
+```
+
+## Security Features
+
+### TLS Configuration
+```yaml
+vault_tls_cert_src: "/path/to/vault.crt"
+vault_tls_key_src: "/path/to/vault.key"
+```
+
+### Advanced Security
+```yaml
+vault_disable_mlock: false          # Enable memory locking
+vault_entropy_augmentation: true    # Hardware entropy
+vault_seal_wrap: true              # Additional encryption
+```
+
+### Policy Management
+```yaml
+vault_policies:
+  - name: "admin"
+    policy: |
+      path "*" {
+        capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+      }
+```
+
+## Example Playbooks
+
+### Basic Single-Node Deployment
+```yaml
+- hosts: vault_server
+  become: true
+  roles:
+    - vault
+```
+
+### HA Cluster with Raft
+```yaml
+- hosts: vault_cluster
+  become: true
+  vars:
+    vault_storage_backend: "raft"
+    vault_enable_ha: true
+    vault_auto_unseal: true
+    vault_auto_unseal_provider: "aws-kms"
+    vault_aws_kms_key_id: "alias/vault-unseal"
+  roles:
+    - vault
+```
+
+### Enterprise Configuration
+See `examples/vault_enhanced.yml` for a comprehensive enterprise deployment example.
+
+## Testing Instructions
+
+### Molecule Testing
+```bash
+# Test with Docker
+molecule test
+
+# Test with Podman
+molecule test -s podman
+
+# Test specific scenario
+molecule test -s proxmox
+```
+
+### Manual Testing
+1. Verify installation: `vault version`
+2. Check health: `/usr/local/bin/vault_health_check.sh`
+3. Test backup: `/usr/local/bin/vault_backup.sh`
+4. Verify backup: `/usr/local/bin/vault_backup_verify.sh`
+
+## Known Issues and Gotchas
+
+### Storage Backend Considerations
+- **File Storage**: Not suitable for production HA
+- **Raft Storage**: Requires odd number of nodes (3 or 5 recommended)
+- **Consul Storage**: External dependency, ensure Consul HA
+- **Cloud Storage**: Requires proper IAM permissions
+
+### Auto-Unsealing
+- Requires proper cloud provider authentication
+- Test unsealing process thoroughly
+- Have manual unseal procedures as backup
+
+### Backup & Recovery
+- Test restore procedures regularly
+- Raft snapshots require Vault to be running
+- File-based backups can be taken with Vault stopped
+
+## Security Implications
+
+### Network Security
+- Use TLS for all communications
+- Restrict network access to Vault ports
+- Consider using reverse proxy for additional security
+
+### Authentication
+- Use strong authentication methods (not userpass for production)
+- Implement proper RBAC with policies
+- Regular rotation of credentials
+
+### Monitoring
+- Enable audit logging for compliance
+- Monitor for suspicious activities
+- Set up alerting for health check failures
+
+## Related Roles
+
+- `consul` - For Consul storage backend
+- `prometheus` - For metrics collection
+- `nginx` - For reverse proxy/load balancing
+
+---
+
+**Note**: This role provides extensive configuration options. Start with basic configuration and gradually enable advanced features as needed.
 
 ## Table of Contents
 

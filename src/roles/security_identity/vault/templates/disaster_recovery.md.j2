@@ -1,0 +1,163 @@
+# Vault Disaster Recovery Guide
+
+## Overview
+This document provides procedures for disaster recovery of the Vault deployment managed by Ansible.
+
+## Configuration Details
+- **Vault Version**: {{ vault_version }}
+- **Storage Backend**: {{ vault_storage_backend }}
+- **Data Directory**: {{ vault_data_dir }}
+- **Config Directory**: {{ vault_config_dir }}
+- **Backup Directory**: {{ vault_backup_storage_path }}
+
+## Recovery Procedures
+
+### 1. Complete System Recovery
+
+#### Prerequisites
+- Access to backup files
+- Ansible playbook access
+- Root/sudo access on target systems
+
+#### Steps
+1. **Deploy new Vault instance**:
+   ```bash
+   ansible-playbook -i inventory vault.yml
+   ```
+
+2. **Stop Vault service**:
+   ```bash
+   systemctl stop {{ vault_service_name }}
+   ```
+
+3. **Restore from backup**:
+   ```bash
+   /usr/local/bin/vault_restore.sh <backup_file>
+   ```
+
+4. **Verify restoration**:
+   ```bash
+   /usr/local/bin/vault_backup_verify.sh
+   ```
+
+### 2. Raft Cluster Recovery
+{% if vault_storage_backend == "raft" %}
+#### Single Node Failure
+1. Remove failed node from cluster
+2. Deploy replacement node with Ansible
+3. Join node to existing cluster
+
+#### Majority Node Failure
+1. Identify surviving node with latest data
+2. Stop all Vault services
+3. Restore from snapshot on leader node
+4. Restart cluster with force flag if necessary
+
+#### Complete Cluster Loss
+1. Restore from latest backup using restore script
+2. Redeploy cluster using Ansible
+3. Verify all nodes are synchronized
+{% else %}
+*Note: Raft-specific procedures not applicable for {{ vault_storage_backend }} backend*
+{% endif %}
+
+### 3. Configuration Recovery
+
+#### Restore Policies
+```bash
+# Policies are backed up in configuration backups
+# Extract and reapply using Vault CLI
+vault policy write <policy_name> <policy_file>
+```
+
+#### Restore Auth Methods
+```bash
+# Re-run Ansible playbook to restore auth methods
+ansible-playbook -i inventory vault.yml --tags auth
+```
+
+### 4. Secret Recovery
+
+#### KV Secrets
+- Secrets are included in Vault snapshots
+- No additional recovery needed if snapshot restore successful
+
+#### Dynamic Secrets
+- Reconfigure secret engines using Ansible
+- Update database connections and credentials
+
+### 5. Verification Procedures
+
+#### Health Checks
+```bash
+# Run health check script
+/usr/local/bin/vault_health_check.sh
+
+# Manual health check
+curl {{ vault_addr }}:{{ vault_port }}/v1/sys/health
+```
+
+#### Functionality Tests
+1. Authenticate with various auth methods
+2. Read/write test secrets
+3. Generate dynamic secrets
+4. Verify audit logging
+
+## Backup Information
+
+### Backup Schedule
+- **Frequency**: {{ vault_backup_schedule }}
+- **Retention**: {{ vault_backup_retention_days }} days
+- **Location**: {{ vault_backup_storage_path }}
+{% if vault_backup_s3_bucket %}
+- **S3 Sync**: s3://{{ vault_backup_s3_bucket }}/vault-backups/
+{% endif %}
+
+### Backup Types
+1. **Data Backups**: 
+{% if vault_storage_backend == "raft" %}
+   - Raft snapshots (`.snap` files)
+{% else %}
+   - Data directory archives (`.tar.gz` files)
+{% endif %}
+2. **Configuration Backups**: Vault configuration files
+
+### Recovery Time Objectives (RTO)
+- **Single Node**: < 30 minutes
+- **Complete Cluster**: < 2 hours
+- **Configuration Only**: < 15 minutes
+
+### Recovery Point Objectives (RPO)
+- **Data Loss Tolerance**: {{ vault_backup_schedule }} interval
+- **Maximum Data Loss**: 24 hours
+
+## Emergency Contacts
+
+### On-Call Information
+- **Primary**: [Add contact information]
+- **Secondary**: [Add contact information]
+- **Escalation**: [Add contact information]
+
+### Vendor Support
+- **HashiCorp Support**: [Add support contract details]
+
+## Testing
+
+### Regular DR Tests
+- **Frequency**: Quarterly
+- **Scope**: Full restoration test
+- **Documentation**: Update procedures based on test results
+
+### Backup Verification
+- **Frequency**: Daily (automated)
+- **Script**: `/usr/local/bin/vault_backup_verify.sh`
+
+## Notes
+
+- Always test restoration procedures in non-production environment first
+- Keep this document updated with any configuration changes
+- Ensure all team members have access to this documentation
+- Review and update emergency contacts regularly
+
+---
+*Document generated on {{ ansible_date_time.iso8601 }} by Ansible*

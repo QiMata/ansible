@@ -1,0 +1,199 @@
+---
+# Example playbook demonstrating Vault role enhanced features
+- name: Deploy Vault with Enhanced Features
+  hosts: vault_servers
+  become: true
+  vars:
+    # Storage Backend Configuration
+    vault_storage_backend: "raft"  # Options: file, raft, consul, s3, azure, gcp
+    vault_raft_node_id: "{{ ansible_hostname }}"
+    vault_raft_retry_join:
+      - "https://vault1.example.com:8200"
+      - "https://vault2.example.com:8200"
+
+    # High Availability
+    vault_enable_ha: true
+    vault_api_addr: "https://{{ ansible_default_ipv4.address }}:8200"
+    vault_ha_cluster_addr: "https://{{ ansible_default_ipv4.address }}:8201"
+
+    # Auto-unsealing with AWS KMS
+    vault_auto_unseal: true
+    vault_auto_unseal_provider: "aws-kms"
+    vault_aws_kms_region: "us-west-2"
+    vault_aws_kms_key_id: "alias/vault-unseal-key"
+
+    # TLS Configuration
+    vault_tls_cert_src: "/path/to/vault.crt"
+    vault_tls_key_src: "/path/to/vault.key"
+
+    # Authentication Methods
+    vault_auth_methods:
+      - name: "ldap"
+        type: "ldap"
+        config:
+          url: "ldap://ldap.example.com"
+          userdn: "ou=Users,dc=example,dc=com"
+          groupdn: "ou=Groups,dc=example,dc=com"
+          binddn: "cn=vault,ou=Service Accounts,dc=example,dc=com"
+          bindpass: "{{ vault_ldap_password }}"
+          userattr: "uid"
+          groupattr: "memberUid"
+          
+      - name: "oidc"
+        type: "oidc"
+        config:
+          oidc_discovery_url: "https://auth.example.com/.well-known/openid_configuration"
+          oidc_client_id: "vault"
+          oidc_client_secret: "{{ vault_oidc_secret }}"
+          default_role: "default"
+
+      - name: "kubernetes"
+        type: "kubernetes"
+        config:
+          kubernetes_host: "https://kubernetes.default.svc.cluster.local"
+          kubernetes_ca_cert: "{{ k8s_ca_cert }}"
+          token_reviewer_jwt: "{{ k8s_service_account_token }}"
+
+    # Secrets Engines
+    vault_secrets_engines:
+      - name: "kv"
+        type: "kv-v2"
+        path: "secret"
+        max_versions: 10
+        cas_required: false
+        
+      - name: "database"
+        type: "database"
+        path: "database"
+        connections:
+          - name: "postgres"
+            plugin_name: "postgresql-database-plugin"
+            connection_url: "postgresql://{{username}}:{{password}}@postgres:5432/mydb?sslmode=disable"
+            allowed_roles: ["readonly", "readwrite"]
+            username: "vault"
+            password: "{{ vault_db_password }}"
+            
+      - name: "aws"
+        type: "aws"
+        path: "aws"
+        access_key: "{{ vault_aws_access_key }}"
+        secret_key: "{{ vault_aws_secret_key }}"
+        region: "us-west-2"
+        
+      - name: "pki"
+        type: "pki"
+        path: "pki"
+        
+      - name: "ssh"
+        type: "ssh"
+        path: "ssh"
+        generate_signing_key: true
+        
+      - name: "transit"
+        type: "transit"
+        path: "transit"
+        keys:
+          - name: "app-encryption"
+            type: "aes256-gcm96"
+          - name: "user-data"
+            type: "chacha20-poly1305"
+
+    # Policies
+    vault_policies:
+      - name: "admin"
+        policy: |
+          # Admin policy - full access
+          path "*" {
+            capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+          }
+          
+      - name: "app-dev"
+        policy: |
+          # Development application policy
+          path "secret/data/dev/*" {
+            capabilities = ["create", "read", "update", "delete", "list"]
+          }
+          path "secret/metadata/dev/*" {
+            capabilities = ["read", "list"]
+          }
+          path "transit/encrypt/app-encryption" {
+            capabilities = ["update"]
+          }
+          path "transit/decrypt/app-encryption" {
+            capabilities = ["update"]
+          }
+          
+      - name: "app-prod"
+        policy: |
+          # Production application policy
+          path "secret/data/prod/*" {
+            capabilities = ["read"]
+          }
+          path "database/creds/readonly" {
+            capabilities = ["read"]
+          }
+          path "transit/encrypt/app-encryption" {
+            capabilities = ["update"]
+          }
+          path "transit/decrypt/app-encryption" {
+            capabilities = ["update"]
+          }
+
+    # Monitoring & Telemetry
+    vault_enable_telemetry: true
+    vault_telemetry_prometheus_retention: "24h"
+    
+    # Audit Logging
+    vault_audit_devices:
+      - name: "file"
+        type: "file"
+        path: "/var/log/vault/audit.log"
+        format: "json"
+      - name: "syslog"
+        type: "syslog"
+        facility: "AUTH"
+        tag: "vault"
+
+    # Logging Configuration
+    vault_log_level: "INFO"
+    vault_log_format: "json"
+    vault_log_rotate_duration: "24h"
+    vault_log_rotate_max_files: 7
+
+    # Backup & Recovery
+    vault_enable_backup: true
+    vault_backup_schedule: "0 2 * * *"  # Daily at 2 AM
+    vault_backup_retention_days: 30
+    vault_backup_s3_bucket: "my-vault-backups"
+    vault_backup_s3_region: "us-west-2"
+
+    # Security Enhancements
+    vault_disable_mlock: false  # Enable mlock for production
+    vault_default_lease_ttl: "768h"  # 32 days
+    vault_max_lease_ttl: "8760h"    # 1 year
+
+  roles:
+    - vault
+
+  post_tasks:
+    - name: Display important information
+      debug:
+        msg: |
+          Vault deployment completed!
+          
+          Next steps:
+          1. Initialize Vault: vault operator init
+          2. Unseal Vault (if not using auto-unseal): vault operator unseal
+          3. Configure authentication methods and policies
+          4. Test backup and restore procedures
+          
+          Useful commands:
+          - Health check: /usr/local/bin/vault_health_check.sh
+          - Create backup: /usr/local/bin/vault_backup.sh
+          - Verify backups: /usr/local/bin/vault_backup_verify.sh
+          - Restore: /usr/local/bin/vault_restore.sh <backup_file>
+          
+          Monitoring:
+          - Prometheus metrics: http://{{ ansible_default_ipv4.address }}:8200/v1/sys/metrics?format=prometheus
+          - Audit logs: /var/log/vault/audit.log
+          - Application logs: /var/log/vault/vault.log

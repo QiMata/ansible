@@ -1,0 +1,14 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'vault'
+    static_configs:
+      - targets: ['{{ vault_addr }}:{{ vault_port }}']
+    metrics_path: '/v1/sys/metrics'
+    params:
+      format: ['prometheus']
+    scheme: {% if vault_tls_cert_src and vault_tls_key_src %}https{% else %}http{% endif %}
+
+    scrape_interval: 30s
+    scrape_timeout: 10s

@@ -1,0 +1,35 @@
+---
+# Storage backend specific tasks
+
+- name: Install Consul (when using Consul storage backend)
+  ansible.builtin.package:
+    name: consul
+    state: present
+  when: vault_storage_backend == "consul" and ansible_os_family == "Debian"
+
+- name: Install cloud provider CLI tools
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - awscli
+  when: vault_storage_backend == "s3" and ansible_os_family == "Debian"
+  ignore_errors: true
+
+- name: Create backup storage directory
+  ansible.builtin.file:
+    path: "{{ vault_backup_storage_path }}"
+    state: directory
+    owner: "{{ vault_user }}"
+    group: "{{ vault_group }}"
+    mode: "0750"
+  when: vault_enable_backup
+
+- name: Verify storage backend requirements
+  ansible.builtin.debug:
+    msg: "Using {{ vault_storage_backend }} storage backend"
+
+- name: Check Raft cluster join requirements
+  ansible.builtin.debug:
+    msg: "Node {{ vault_raft_node_id }} will join cluster with peers: {{ vault_raft_retry_join }}"
+  when: vault_storage_backend == "raft" and vault_raft_retry_join | length > 0

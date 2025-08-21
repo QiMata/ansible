@@ -1,0 +1,83 @@
+---
+# Backup and recovery configuration
+
+- name: Create backup directory
+  ansible.builtin.file:
+    path: "{{ vault_backup_storage_path }}"
+    state: directory
+    owner: "{{ vault_user }}"
+    group: "{{ vault_group }}"
+    mode: "0750"
+
+- name: Install backup dependencies
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - curl
+    - jq
+    - awscli
+  when: ansible_os_family == "Debian"
+  ignore_errors: true
+
+- name: Create backup script
+  ansible.builtin.template:
+    src: vault_backup.sh.j2
+    dest: /usr/local/bin/vault_backup.sh
+    mode: "0755"
+    owner: root
+    group: root
+
+- name: Create restore script
+  ansible.builtin.template:
+    src: vault_restore.sh.j2
+    dest: /usr/local/bin/vault_restore.sh
+    mode: "0755"
+    owner: root
+    group: root
+
+- name: Setup backup cron job
+  ansible.builtin.cron:
+    name: "Vault backup"
+    minute: "{{ vault_backup_schedule.split()[0] }}"
+    hour: "{{ vault_backup_schedule.split()[1] }}"
+    day: "{{ vault_backup_schedule.split()[2] }}"
+    month: "{{ vault_backup_schedule.split()[3] }}"
+    weekday: "{{ vault_backup_schedule.split()[4] }}"
+    job: "/usr/local/bin/vault_backup.sh"
+    user: "{{ vault_user }}"
+
+- name: Setup backup cleanup cron job
+  ansible.builtin.cron:
+    name: "Vault backup cleanup"
+    minute: "0"
+    hour: "3"
+    job: "find {{ vault_backup_storage_path }} -name '*.snap' -mtime +{{ vault_backup_retention_days }} -delete"
+    user: "{{ vault_user }}"
+
+- name: Create backup verification script
+  ansible.builtin.template:
+    src: vault_backup_verify.sh.j2
+    dest: /usr/local/bin/vault_backup_verify.sh
+    mode: "0755"
+    owner: root
+    group: root
+
+- name: Setup S3 backup sync (if configured)
+  ansible.builtin.cron:
+    name: "Vault S3 backup sync"
+    minute: "30"
+    hour: "{{ vault_backup_schedule.split()[1] }}"
+    job: "aws s3 sync {{ vault_backup_storage_path }} s3://{{ vault_backup_s3_bucket }}/vault-backups/ --region {{ vault_backup_s3_region }}"
+    user: "{{ vault_user }}"
+  when: 
+    - vault_backup_s3_bucket | length > 0
+    - vault_backup_s3_region | length > 0
+
+- name: Create disaster recovery documentation
+  ansible.builtin.template:
+    src: disaster_recovery.md.j2
+    dest: "{{ vault_config_dir }}/disaster_recovery.md"
+    owner: "{{ vault_user }}"
+    group: "{{ vault_group }}"
+    mode: "0644"
