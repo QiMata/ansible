@@ -1,0 +1,27 @@
+---
+# tasks file for snapca_client
+
+- name: Include installation tasks
+  ansible.builtin.include_tasks: install.yml
+  tags: 
+    - snapca_install
+    - snapca_client
+
+- name: Include bootstrap tasks
+  ansible.builtin.include_tasks: bootstrap.yml
+  tags:
+    - snapca_bootstrap
+    - snapca_client
+
+- name: Include certificate tasks
+  ansible.builtin.include_tasks: certificate.yml
+  tags:
+    - snapca_certificate
+    - snapca_client
+
+- name: Include renewal tasks
+  ansible.builtin.include_tasks: renewal.yml
+  tags:
+    - snapca_renewal
+    - snapca_client
+  when: snapca_client_enable_renewal

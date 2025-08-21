@@ -1,0 +1,28 @@
+---
+galaxy_info:
+  author: Your Organization
+  description: Ansible role for obtaining and managing certificates from Smallstep Step CA
+  company: Your Company
+  license: MIT
+  min_ansible_version: 2.9
+  platforms:
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+        - noble
+  galaxy_tags:
+    - certificates
+    - ssl
+    - tls
+    - pki
+    - step-ca
+    - smallstep
+    - security
+    - crypto
+
+dependencies: []

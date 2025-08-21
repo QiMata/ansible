@@ -1,0 +1,49 @@
+---
+# defaults file for snapca_client
+
+# Step CA Configuration
+snapca_client_ca_url: ""
+snapca_client_ca_fingerprint: ""
+snapca_client_provisioner: "admin"
+snapca_client_provisioner_type: "jwk"  # jwk, oidc, acme, password
+
+# Certificate Configuration
+snapca_client_domains: []
+snapca_client_san: []
+snapca_client_certificate_path: "/etc/ssl/certs"
+snapca_client_private_key_path: "/etc/ssl/private"
+snapca_client_certificate_name: "{{ snapca_client_domains[0] if snapca_client_domains else 'default' }}"
+snapca_client_key_size: 2048
+snapca_client_key_type: "rsa"  # rsa, ecdsa
+
+# Authentication
+snapca_client_token: ""
+snapca_client_password: ""
+snapca_client_oidc_client_id: ""
+snapca_client_oidc_client_secret: ""
+
+# Renewal Configuration
+snapca_client_enable_renewal: true
+snapca_client_renewal_threshold: "30d"
+snapca_client_renewal_cron_hour: "2"
+snapca_client_renewal_cron_minute: "30"
+
+# Service Integration
+snapca_client_reload_services: []
+snapca_client_post_renewal_commands: []
+
+# Installation Configuration
+snapca_client_step_version: "latest"
+snapca_client_step_user: "root"
+snapca_client_step_config_dir: "/root/.step"
+
+# Advanced Configuration
+snapca_client_force_renewal: false
+snapca_client_verify_ca: true
+snapca_client_insecure: false
+snapca_client_timeout: "30s"
+
+# Certificate Validity
+snapca_client_validity_duration: "24h"
+snapca_client_not_before: ""
+snapca_client_not_after: ""

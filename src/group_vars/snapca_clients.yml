@@ -1,0 +1,51 @@
+---
+# Group variables for SnapCA certificate management
+# Configure these variables according to your Step CA setup
+
+# Step CA Server Configuration
+snapca_ca_url: "https://ca.internal.example.com:8443"
+snapca_ca_fingerprint: ""  # Optional: CA root certificate fingerprint for verification
+snapca_provisioner: "default"
+
+# Default Certificate Configuration
+snapca_domains:
+  - "{{ inventory_hostname }}"
+  - "{{ inventory_hostname }}.internal.example.com"
+
+snapca_certificate_path: "/etc/ssl/certs"
+snapca_certificate_name: "{{ inventory_hostname }}"
+snapca_validity: "720h"  # 30 days
+
+# Authentication Configuration
+# Use Ansible Vault to encrypt sensitive values
+snapca_auth_method: "auto"  # auto, token, password, oidc, acme
+snapca_token: "{{ vault_step_ca_token | default('') }}"
+snapca_password: "{{ vault_step_ca_password | default('') }}"
+
+# OIDC Configuration (if using OIDC authentication)
+snapca_oidc_client_id: "{{ vault_oidc_client_id | default('') }}"
+snapca_oidc_client_secret: "{{ vault_oidc_client_secret | default('') }}"
+
+# Renewal Configuration
+snapca_enable_renewal: true
+snapca_renewal_time: "03:30"  # 3:30 AM
+snapca_renewal_threshold: "168h"  # Renew when certificate expires within 7 days
+
+# Service Integration
+snapca_reload_services: []  # Override in host/group specific vars
+snapca_post_renewal_commands: []
+
+# Advanced Configuration
+snapca_force_renewal: false
+snapca_insecure: false
+snapca_verify_ca: true
+
+# File Permissions
+cert_file_owner: "root"
+cert_file_group: "root"
+cert_file_mode: "0644"
+key_file_mode: "0600"
+
+# Logging
+snapca_log_level: "info"
+snapca_log_file: "/var/log/snapca-renewal.log"

@@ -1,0 +1,97 @@
+---
+# tasks file for snapca_unified
+
+- name: Validate required variables
+  ansible.builtin.fail:
+    msg: "{{ item }} is required"
+  when: vars[item] == ""
+  loop:
+    - snapca_ca_url
+    - snapca_domains
+
+- name: Validate domains list
+  ansible.builtin.fail:
+    msg: "snapca_domains must contain at least one domain"
+  when: snapca_domains | length == 0
+
+- name: Determine authentication method
+  ansible.builtin.set_fact:
+    _snapca_auth_method: >-
+      {%- if snapca_auth_method != "auto" -%}
+        {{ snapca_auth_method }}
+      {%- elif snapca_token != "" -%}
+        token
+      {%- elif snapca_password != "" -%}
+        password
+      {%- elif snapca_oidc_client_id != "" -%}
+        oidc
+      {%- else -%}
+        acme
+      {%- endif -%}
+
+- name: Set provisioner type based on auth method
+  ansible.builtin.set_fact:
+    _snapca_provisioner_type: >-
+      {%- if _snapca_auth_method == "token" -%}
+        jwk
+      {%- elif _snapca_auth_method == "password" -%}
+        password
+      {%- elif _snapca_auth_method == "oidc" -%}
+        oidc
+      {%- elif _snapca_auth_method == "acme" -%}
+        acme
+      {%- else -%}
+        jwk
+      {%- endif -%}
+
+- name: Parse renewal time
+  ansible.builtin.set_fact:
+    _snapca_renewal_hour: "{{ snapca_renewal_time.split(':')[0] }}"
+    _snapca_renewal_minute: "{{ snapca_renewal_time.split(':')[1] }}"
+
+- name: Display configuration summary
+  ansible.builtin.debug:
+    msg:
+      - "SnapCA Configuration Summary:"
+      - "  CA URL: {{ snapca_ca_url }}"
+      - "  Domains: {{ snapca_domains | join(', ') }}"
+      - "  Provisioner: {{ snapca_provisioner }}"
+      - "  Auth Method: {{ _snapca_auth_method }}"
+      - "  Provisioner Type: {{ _snapca_provisioner_type }}"
+      - "  Certificate Path: {{ snapca_certificate_path }}"
+      - "  Certificate Name: {{ snapca_certificate_name }}"
+
+- name: Include snapca_client role
+  ansible.builtin.include_role:
+    name: security_identity.snapca.snapca_client
+  vars:
+    # CA Configuration
+    snapca_client_ca_url: "{{ snapca_ca_url }}"
+    snapca_client_ca_fingerprint: "{{ snapca_ca_fingerprint }}"
+    snapca_client_provisioner: "{{ snapca_provisioner }}"
+    snapca_client_provisioner_type: "{{ _snapca_provisioner_type }}"
+    
+    # Certificate Configuration
+    snapca_client_domains: "{{ snapca_domains }}"
+    snapca_client_san: "{{ snapca_san }}"
+    snapca_client_certificate_path: "{{ snapca_certificate_path }}"
+    snapca_client_certificate_name: "{{ snapca_certificate_name }}"
+    snapca_client_validity_duration: "{{ snapca_validity }}"
+    
+    # Authentication
+    snapca_client_token: "{{ snapca_token }}"
+    snapca_client_password: "{{ snapca_password }}"
+    snapca_client_oidc_client_id: "{{ snapca_oidc_client_id }}"
+    snapca_client_oidc_client_secret: "{{ snapca_oidc_client_secret }}"
+    
+    # Renewal Configuration
+    snapca_client_enable_renewal: "{{ snapca_enable_renewal }}"
+    snapca_client_renewal_cron_hour: "{{ _snapca_renewal_hour }}"
+    snapca_client_renewal_cron_minute: "{{ _snapca_renewal_minute }}"
+    
+    # Service Integration
+    snapca_client_reload_services: "{{ snapca_reload_services }}"
+    
+    # Advanced Options
+    snapca_client_force_renewal: "{{ snapca_force_renewal }}"
+    snapca_client_insecure: "{{ snapca_insecure }}"

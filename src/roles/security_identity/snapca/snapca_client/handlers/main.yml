@@ -1,0 +1,16 @@
+---
+# handlers file for snapca_client
+
+- name: restart services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: restarted
+  loop: "{{ snapca_client_reload_services }}"
+  when: snapca_client_reload_services is defined and snapca_client_reload_services | length > 0
+
+- name: reload services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: reloaded
+  loop: "{{ snapca_client_reload_services }}"
+  when: snapca_client_reload_services is defined and snapca_client_reload_services | length > 0

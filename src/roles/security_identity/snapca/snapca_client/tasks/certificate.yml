@@ -1,0 +1,169 @@
+---
+# Certificate tasks for snapca_client
+
+- name: Set certificate file paths
+  ansible.builtin.set_fact:
+    _cert_name: "{{ snapca_client_certificate_name }}"
+    _cert_file: "{{ snapca_client_certificate_path }}/{{ snapca_client_certificate_name }}.crt"
+    _key_file: "{{ snapca_client_private_key_path }}/{{ snapca_client_certificate_name }}.key"
+    _fullchain_file: "{{ snapca_client_certificate_path }}/{{ snapca_client_certificate_name }}-fullchain.crt"
+
+- name: Check if certificate exists and is valid
+  ansible.builtin.shell: |
+    if [ -f "{{ _cert_file }}" ]; then
+      step certificate verify {{ _cert_file }} --roots {{ snapca_client_step_config_dir }}/certs/root_ca.crt
+      if [ $? -eq 0 ]; then
+        # Check if certificate expires within renewal threshold
+        step certificate inspect {{ _cert_file }} --format json | jq -r '.validity.end' | xargs -I {} step certificate verify {{ _cert_file }} --roots {{ snapca_client_step_config_dir }}/certs/root_ca.crt --not-after $(date -d "{{ snapca_client_renewal_threshold }}" +%Y-%m-%dT%H:%M:%SZ) 2>/dev/null
+        echo $?
+      else
+        echo "1"
+      fi
+    else
+      echo "1"
+    fi
+  environment:
+    STEPPATH: "{{ snapca_client_step_config_dir }}"
+  register: cert_check
+  changed_when: false
+  failed_when: false
+
+- name: Generate private key if needed
+  ansible.builtin.command:
+    cmd: >-
+      step crypto key generate {{ _key_file }}
+      --kty {{ snapca_client_key_type | upper }}
+      {% if snapca_client_key_type == 'rsa' %}--size {{ snapca_client_key_size }}{% endif %}
+      --no-password
+  creates: "{{ _key_file }}"
+  when: cert_check.stdout != "0" or snapca_client_force_renewal
+
+- name: Set private key permissions
+  ansible.builtin.file:
+    path: "{{ _key_file }}"
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Build domain arguments
+  ansible.builtin.set_fact:
+    _domain_args: "{{ snapca_client_domains | map('regex_replace', '^(.*)$', '--san \\1') | join(' ') }}"
+    _san_args: "{{ snapca_client_san | map('regex_replace', '^(.*)$', '--san \\1') | join(' ') }}"
+
+- name: Request certificate with JWK token
+  ansible.builtin.command:
+    cmd: >-
+      step ca certificate {{ snapca_client_domains[0] }} {{ _cert_file }}
+      --key {{ _key_file }}
+      --provisioner {{ snapca_client_provisioner }}
+      --token {{ snapca_client_token }}
+      {{ _domain_args }}
+      {% if _san_args %}{{ _san_args }}{% endif %}
+      {% if snapca_client_validity_duration %}--lifetime {{ snapca_client_validity_duration }}{% endif %}
+      {% if snapca_client_not_before %}--not-before {{ snapca_client_not_before }}{% endif %}
+      {% if snapca_client_not_after %}--not-after {{ snapca_client_not_after }}{% endif %}
+      --force
+  environment:
+    STEPPATH: "{{ snapca_client_step_config_dir }}"
+  become_user: "{{ snapca_client_step_user }}"
+  when: 
+    - snapca_client_provisioner_type == "jwk"
+    - cert_check.stdout != "0" or snapca_client_force_renewal
+    - snapca_client_token != ""
+
+- name: Request certificate with password provisioner
+  ansible.builtin.expect:
+    command: >-
+      step ca certificate {{ snapca_client_domains[0] }} {{ _cert_file }}
+      --key {{ _key_file }}
+      --provisioner {{ snapca_client_provisioner }}
+      {{ _domain_args }}
+      {% if _san_args %}{{ _san_args }}{% endif %}
+      {% if snapca_client_validity_duration %}--lifetime {{ snapca_client_validity_duration }}{% endif %}
+      --force
+    responses:
+      'Please enter the password to decrypt the provisioner key:': "{{ snapca_client_password }}"
+  environment:
+    STEPPATH: "{{ snapca_client_step_config_dir }}"
+  become_user: "{{ snapca_client_step_user }}"
+  when: 
+    - snapca_client_provisioner_type == "password"
+    - cert_check.stdout != "0" or snapca_client_force_renewal
+    - snapca_client_password != ""
+
+- name: Request certificate with OIDC provisioner
+  ansible.builtin.command:
+    cmd: >-
+      step ca certificate {{ snapca_client_domains[0] }} {{ _cert_file }}
+      --key {{ _key_file }}
+      --provisioner {{ snapca_client_provisioner }}
+      --oidc-client-id {{ snapca_client_oidc_client_id }}
+      --oidc-client-secret {{ snapca_client_oidc_client_secret }}
+      {{ _domain_args }}
+      {% if _san_args %}{{ _san_args }}{% endif %}
+      {% if snapca_client_validity_duration %}--lifetime {{ snapca_client_validity_duration }}{% endif %}
+      --force
+  environment:
+    STEPPATH: "{{ snapca_client_step_config_dir }}"
+  become_user: "{{ snapca_client_step_user }}"
+  when: 
+    - snapca_client_provisioner_type == "oidc"
+    - cert_check.stdout != "0" or snapca_client_force_renewal
+    - snapca_client_oidc_client_id != ""
+
+- name: Request certificate with ACME provisioner
+  ansible.builtin.command:
+    cmd: >-
+      step ca certificate {{ snapca_client_domains[0] }} {{ _cert_file }}
+      --key {{ _key_file }}
+      --provisioner {{ snapca_client_provisioner }}
+      {{ _domain_args }}
+      {% if _san_args %}{{ _san_args }}{% endif %}
+      {% if snapca_client_validity_duration %}--lifetime {{ snapca_client_validity_duration }}{% endif %}
+      --acme
+      --force
+  environment:
+    STEPPATH: "{{ snapca_client_step_config_dir }}"
+  become_user: "{{ snapca_client_step_user }}"
+  when: 
+    - snapca_client_provisioner_type == "acme"
+    - cert_check.stdout != "0" or snapca_client_force_renewal
+
+- name: Set certificate permissions
+  ansible.builtin.file:
+    path: "{{ _cert_file }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Create full chain certificate
+  ansible.builtin.shell: |
+    cat {{ _cert_file }} {{ snapca_client_step_config_dir }}/certs/root_ca.crt > {{ _fullchain_file }}
+  when: cert_check.stdout != "0" or snapca_client_force_renewal
+
+- name: Set full chain certificate permissions
+  ansible.builtin.file:
+    path: "{{ _fullchain_file }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Verify certificate
+  ansible.builtin.command:
+    cmd: step certificate verify {{ _cert_file }} --roots {{ snapca_client_step_config_dir }}/certs/root_ca.crt
+  environment:
+    STEPPATH: "{{ snapca_client_step_config_dir }}"
+  register: cert_verify
+  changed_when: false
+
+- name: Display certificate information
+  ansible.builtin.command:
+    cmd: step certificate inspect {{ _cert_file }} --short
+  environment:
+    STEPPATH: "{{ snapca_client_step_config_dir }}"
+  register: cert_info
+  changed_when: false
+
+- name: Show certificate details
+  ansible.builtin.debug:
+    msg: "{{ cert_info.stdout_lines }}"

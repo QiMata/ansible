@@ -1,0 +1,51 @@
+---
+# Example playbook for deploying Step CA certificates
+# This playbook demonstrates basic usage of the SnapCA roles
+
+- name: Deploy Step CA certificates
+  hosts: step_ca_clients
+  become: true
+  vars:
+    # Step CA server configuration
+    step_ca_url: "https://ca.internal.example.com:8443"
+    
+    # Certificate domains (customize for your environment)
+    cert_domains:
+      - "{{ inventory_hostname }}"
+      - "{{ inventory_hostname }}.internal.example.com"
+    
+    # Services to reload after certificate renewal
+    services_to_reload:
+      - nginx
+      - apache2
+
+  roles:
+    - role: security_identity.snapca.snapca_unified
+      vars:
+        snapca_ca_url: "{{ step_ca_url }}"
+        snapca_domains: "{{ cert_domains }}"
+        snapca_token: "{{ vault_step_ca_token }}"  # Store in Ansible Vault
+        snapca_reload_services: "{{ services_to_reload }}"
+        snapca_certificate_name: "{{ inventory_hostname }}"
+        snapca_validity: "720h"  # 30 days
+        snapca_enable_renewal: true
+        snapca_renewal_time: "03:15"  # 3:15 AM
+
+  post_tasks:
+    - name: Verify certificate was created
+      ansible.builtin.stat:
+        path: "/etc/ssl/certs/{{ inventory_hostname }}.crt"
+      register: cert_file
+
+    - name: Display certificate information
+      ansible.builtin.command:
+        cmd: "step certificate inspect /etc/ssl/certs/{{ inventory_hostname }}.crt --short"
+      environment:
+        STEPPATH: "/root/.step"
+      register: cert_info
+      when: cert_file.stat.exists
+
+    - name: Show certificate details
+      ansible.builtin.debug:
+        msg: "{{ cert_info.stdout_lines }}"
+      when: cert_file.stat.exists

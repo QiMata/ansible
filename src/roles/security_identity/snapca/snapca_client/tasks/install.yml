@@ -1,0 +1,47 @@
+---
+# Installation tasks for snapca_client
+
+- name: Ensure required packages are installed
+  ansible.builtin.apt:
+    name:
+      - curl
+      - ca-certificates
+      - gnupg
+    state: present
+    update_cache: true
+
+- name: Add Smallstep APT key
+  ansible.builtin.apt_key:
+    url: https://dl.smallstep.com/gh-release/cli/docs/smallstep-cli-archive-keyring.asc
+    state: present
+
+- name: Add Smallstep APT repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/smallstep-cli-archive-keyring.gpg] https://dl.smallstep.com/gh-release/cli/docs/{{ ansible_distribution_release }} stable main"
+    state: present
+    filename: smallstep-cli
+
+- name: Install Step CLI
+  ansible.builtin.apt:
+    name: "step-cli{% if snapca_client_step_version != 'latest' %}={{ snapca_client_step_version }}{% endif %}"
+    state: present
+    update_cache: true
+
+- name: Ensure Step configuration directory exists
+  ansible.builtin.file:
+    path: "{{ snapca_client_step_config_dir }}"
+    state: directory
+    owner: "{{ snapca_client_step_user }}"
+    group: "{{ snapca_client_step_user }}"
+    mode: '0700'
+
+- name: Ensure certificate directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - "{{ snapca_client_certificate_path }}"
+    - "{{ snapca_client_private_key_path }}"

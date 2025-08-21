@@ -1,0 +1,44 @@
+---
+# Bootstrap tasks for snapca_client
+
+- name: Validate required variables
+  ansible.builtin.fail:
+    msg: "snapca_client_ca_url is required"
+  when: snapca_client_ca_url == ""
+
+- name: Validate domains are specified
+  ansible.builtin.fail:
+    msg: "snapca_client_domains must contain at least one domain"
+  when: snapca_client_domains | length == 0
+
+- name: Check if CA is already bootstrapped
+  ansible.builtin.stat:
+    path: "{{ snapca_client_step_config_dir }}/certs/root_ca.crt"
+  register: ca_cert_stat
+
+- name: Bootstrap Step CA connection
+  ansible.builtin.command:
+    cmd: >-
+      step ca bootstrap 
+      --ca-url {{ snapca_client_ca_url }} 
+      --root {{ snapca_client_step_config_dir }}/certs/root_ca.crt
+      {% if snapca_client_ca_fingerprint %}--fingerprint {{ snapca_client_ca_fingerprint }}{% endif %}
+      {% if snapca_client_insecure %}--insecure{% endif %}
+      --force
+  environment:
+    STEPPATH: "{{ snapca_client_step_config_dir }}"
+  become_user: "{{ snapca_client_step_user }}"
+  when: not ca_cert_stat.stat.exists or snapca_client_force_renewal
+
+- name: Verify CA connection
+  ansible.builtin.command:
+    cmd: step ca health
+  environment:
+    STEPPATH: "{{ snapca_client_step_config_dir }}"
+  become_user: "{{ snapca_client_step_user }}"
+  register: ca_health_check
+  changed_when: false
+
+- name: Display CA health status
+  ansible.builtin.debug:
+    msg: "Step CA health check: {{ ca_health_check.stdout }}"

@@ -1,0 +1,49 @@
+---
+dependency:
+  name: galaxy
+
+driver:
+  name: docker
+
+platforms:
+  - name: snapca-client-test
+    image: debian:bookworm
+    command: /sbin/init
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    privileged: true
+
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      callbacks_enabled: timer, profile_tasks
+      stdout_callback: community.general.yaml
+  inventory:
+    host_vars:
+      snapca-client-test:
+        snapca_client_ca_url: "https://ca.test.internal:8443"
+        snapca_client_domains:
+          - "test.example.com"
+        snapca_client_token: "test-token"
+        snapca_client_provisioner: "test-provisioner"
+
+verifier:
+  name: ansible
+
+scenario:
+  test_sequence:
+    - dependency
+    - lint
+    - cleanup
+    - destroy
+    - syntax
+    - create
+    - prepare
+    - converge
+    - idempotence
+    - side_effect
+    - verify
+    - cleanup
+    - destroy

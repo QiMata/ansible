@@ -1,0 +1,38 @@
+---
+# Renewal tasks for snapca_client
+
+- name: Create renewal script
+  ansible.builtin.template:
+    src: snapca-renew.sh.j2
+    dest: /usr/local/bin/snapca-renew.sh
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create renewal cron job
+  ansible.builtin.cron:
+    name: "SnapCA certificate renewal for {{ snapca_client_certificate_name }}"
+    job: "/usr/local/bin/snapca-renew.sh"
+    minute: "{{ snapca_client_renewal_cron_minute }}"
+    hour: "{{ snapca_client_renewal_cron_hour }}"
+    day: "*"
+    month: "*"
+    weekday: "*"
+    user: root
+
+- name: Create logrotate configuration for renewal logs
+  ansible.builtin.copy:
+    content: |
+      /var/log/snapca-renewal.log {
+          weekly
+          rotate 4
+          compress
+          delaycompress
+          missingok
+          notifempty
+          create 0644 root root
+      }
+    dest: /etc/logrotate.d/snapca-renewal
+    owner: root
+    group: root
+    mode: '0644'

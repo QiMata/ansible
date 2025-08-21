@@ -1,0 +1,68 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  tasks:
+    - name: Check if Step CLI is installed
+      ansible.builtin.command:
+        cmd: step version
+      register: step_version
+      changed_when: false
+
+    - name: Verify Step CLI installation
+      ansible.builtin.assert:
+        that:
+          - step_version.rc == 0
+        fail_msg: "Step CLI is not properly installed"
+
+    - name: Check if configuration directory exists
+      ansible.builtin.stat:
+        path: "/root/.step"
+      register: step_config_dir
+
+    - name: Verify configuration directory
+      ansible.builtin.assert:
+        that:
+          - step_config_dir.stat.exists
+          - step_config_dir.stat.isdir
+        fail_msg: "Step configuration directory does not exist"
+
+    - name: Check if certificate directories exist
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      register: cert_dirs
+      loop:
+        - "/etc/ssl/certs"
+        - "/etc/ssl/private"
+
+    - name: Verify certificate directories
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.isdir
+        fail_msg: "Certificate directory {{ item.item }} does not exist"
+      loop: "{{ cert_dirs.results }}"
+
+    - name: Check if renewal script exists
+      ansible.builtin.stat:
+        path: "/usr/local/bin/snapca-renew.sh"
+      register: renewal_script
+
+    - name: Verify renewal script
+      ansible.builtin.assert:
+        that:
+          - renewal_script.stat.exists
+          - renewal_script.stat.executable
+        fail_msg: "Renewal script is not properly installed"
+
+    - name: Check if cron job exists
+      ansible.builtin.shell: crontab -l | grep -q snapca-renew
+      register: cron_check
+      changed_when: false
+      failed_when: false
+
+    - name: Verify cron job
+      ansible.builtin.assert:
+        that:
+          - cron_check.rc == 0
+        fail_msg: "Renewal cron job is not installed"

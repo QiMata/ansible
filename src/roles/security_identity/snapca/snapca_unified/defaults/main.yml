@@ -1,0 +1,30 @@
+---
+# defaults file for snapca_unified
+
+# Basic Configuration
+snapca_ca_url: ""
+snapca_domains: []
+snapca_provisioner: "admin"
+snapca_auth_method: "auto"  # auto, token, password, oidc, acme
+
+# Authentication
+snapca_token: ""
+snapca_password: ""
+snapca_oidc_client_id: ""
+snapca_oidc_client_secret: ""
+
+# Certificate Options
+snapca_certificate_path: "/etc/ssl/certs"
+snapca_certificate_name: "{{ snapca_domains[0] if snapca_domains else 'default' }}"
+snapca_san: []
+snapca_validity: "24h"
+
+# Service Integration
+snapca_reload_services: []
+snapca_enable_renewal: true
+snapca_renewal_time: "02:30"
+
+# Advanced Options
+snapca_ca_fingerprint: ""
+snapca_force_renewal: false
+snapca_insecure: false
