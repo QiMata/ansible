@@ -1,0 +1,54 @@
+---
+# Pre-flight checks and validation
+- name: Validate required variables are set
+  ansible.builtin.assert:
+    that:
+      - keycloak_db_host is defined and keycloak_db_host != ""
+      - keycloak_db_password is defined and keycloak_db_password != ""
+      - keycloak_admin_password is defined and keycloak_admin_password != "" or not keycloak_create_admin
+    fail_msg: "Required variables are not set. Please check keycloak_db_host, keycloak_db_password, and keycloak_admin_password"
+
+- name: Validate TLS configuration
+  ansible.builtin.assert:
+    that:
+      - keycloak_cert_file != "" and keycloak_key_file != ""
+    fail_msg: "TLS is enabled but certificate files are not specified"
+  when: keycloak_enable_https | bool
+
+- name: Check if target OS is supported
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family == "Debian"
+    fail_msg: "This role currently only supports Debian-based systems"
+
+- name: Check Java version availability
+  ansible.builtin.command:
+    cmd: apt-cache show openjdk-17-jre-headless
+  register: java_check
+  failed_when: false
+  changed_when: false
+
+- name: Validate Java availability
+  ansible.builtin.assert:
+    that:
+      - java_check.rc == 0
+    fail_msg: "OpenJDK 17 is not available in the package repositories"
+
+- name: Test database connectivity
+  ansible.builtin.wait_for:
+    host: "{{ keycloak_db_host }}"
+    port: "{{ keycloak_db_port }}"
+    timeout: 10
+  when: keycloak_validate_config | bool
+
+- name: Check for existing Keycloak installations
+  ansible.builtin.find:
+    paths: "{{ keycloak_home }}"
+    patterns: "keycloak-*"
+    file_type: directory
+  register: existing_installations
+
+- name: Display existing installations
+  ansible.builtin.debug:
+    msg: "Found existing Keycloak installations: {{ existing_installations.files | map(attribute='path') | list }}"
+  when: existing_installations.files | length > 0

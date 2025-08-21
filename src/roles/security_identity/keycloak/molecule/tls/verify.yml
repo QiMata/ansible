@@ -1,0 +1,68 @@
+---
+- name: Verify TLS
+  hosts: all
+  gather_facts: false
+  tasks:
+    # TLS configuration verification
+    - name: Check keystore exists
+      ansible.builtin.stat:
+        path: /var/lib/keycloak/keycloak-24.0.1/conf/server.keystore
+      register: keystore
+
+    - name: Assert keystore exists
+      ansible.builtin.assert:
+        that: keystore.stat.exists
+
+    - name: Check truststore exists
+      ansible.builtin.stat:
+        path: /var/lib/keycloak/keycloak-24.0.1/conf/server.truststore
+      register: truststore
+
+    - name: Assert truststore exists
+      ansible.builtin.assert:
+        that: truststore.stat.exists
+
+    # Service verification
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Assert service running
+      ansible.builtin.assert:
+        that:
+          - "'keycloak.service' in ansible_facts.services"
+          - ansible_facts.services['keycloak.service'].state == 'running'
+
+    # HTTPS health check verification
+    - name: Wait for Keycloak HTTPS to be ready
+      ansible.builtin.uri:
+        url: "https://keycloak-tls:8443/health/ready"
+        method: GET
+        validate_certs: false
+      register: https_health_check
+      until: https_health_check.status == 200
+      retries: 10
+      delay: 30
+
+    - name: Check HTTPS health endpoint
+      ansible.builtin.uri:
+        url: "https://keycloak-tls:8443/health"
+        method: GET
+        validate_certs: false
+      register: https_health_status
+
+    - name: Assert HTTPS health endpoint is working
+      ansible.builtin.assert:
+        that: https_health_status.status == 200
+
+    # HTTPS admin console verification
+    - name: Check HTTPS admin console accessibility
+      ansible.builtin.uri:
+        url: "https://keycloak-tls:8443/admin"
+        method: GET
+        follow_redirects: safe
+        validate_certs: false
+      register: https_admin_console
+
+    - name: Assert HTTPS admin console is accessible
+      ansible.builtin.assert:
+        that: https_admin_console.status == 200

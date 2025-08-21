@@ -1,0 +1,64 @@
+---
+# Firewall configuration tasks
+- name: Configure UFW firewall
+  community.general.ufw:
+    rule: allow
+    port: "{{ keycloak_http_port }}"
+    proto: tcp
+    comment: "Keycloak HTTP"
+  when: keycloak_firewall_backend == "ufw"
+
+- name: Configure UFW for HTTPS
+  community.general.ufw:
+    rule: allow
+    port: "{{ keycloak_https_port }}"
+    proto: tcp
+    comment: "Keycloak HTTPS"
+  when: 
+    - keycloak_firewall_backend == "ufw"
+    - keycloak_enable_https | bool
+
+- name: Configure firewalld
+  ansible.posix.firewalld:
+    port: "{{ keycloak_http_port }}/tcp"
+    permanent: true
+    state: enabled
+    immediate: true
+  when: keycloak_firewall_backend == "firewalld"
+
+- name: Configure firewalld for HTTPS
+  ansible.posix.firewalld:
+    port: "{{ keycloak_https_port }}/tcp"
+    permanent: true
+    state: enabled
+    immediate: true
+  when: 
+    - keycloak_firewall_backend == "firewalld"
+    - keycloak_enable_https | bool
+
+- name: Configure iptables rules
+  ansible.builtin.iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: "{{ keycloak_http_port }}"
+    jump: ACCEPT
+    comment: "Keycloak HTTP"
+  when: keycloak_firewall_backend == "iptables"
+
+- name: Configure iptables for HTTPS
+  ansible.builtin.iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: "{{ keycloak_https_port }}"
+    jump: ACCEPT
+    comment: "Keycloak HTTPS"
+  when: 
+    - keycloak_firewall_backend == "iptables"
+    - keycloak_enable_https | bool
+
+- name: Save iptables rules
+  ansible.builtin.command:
+    cmd: iptables-save
+  when: keycloak_firewall_backend == "iptables"
+  register: iptables_save
+  changed_when: false

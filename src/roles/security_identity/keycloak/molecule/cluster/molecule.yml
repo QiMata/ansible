@@ -1,0 +1,32 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: keycloak-cluster-1
+    image: geerlingguy/docker-debian12-ansible:latest
+    command: /lib/systemd/systemd
+    privileged: true
+    pre_build_image: true
+    networks:
+      - name: keycloak-cluster
+  - name: keycloak-cluster-2
+    image: geerlingguy/docker-debian12-ansible:latest
+    command: /lib/systemd/systemd
+    privileged: true
+    pre_build_image: true
+    networks:
+      - name: keycloak-cluster
+  - name: postgres-cluster
+    image: postgres:15
+    env:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+    networks:
+      - name: keycloak-cluster
+provisioner:
+  name: ansible
+verifier:
+  name: ansible

@@ -1,0 +1,61 @@
+---
+# Realm import tasks
+- name: Create realm import directory
+  ansible.builtin.file:
+    path: "{{ keycloak_home }}/imports"
+    state: directory
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0755'
+
+- name: Copy realm import files
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ keycloak_home }}/imports/{{ item.name }}"
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0644'
+  loop: "{{ keycloak_realm_imports }}"
+
+- name: Wait for Keycloak to be ready for realm import
+  ansible.builtin.uri:
+    url: "http://{{ keycloak_hostname }}:{{ keycloak_http_port }}/health/ready"
+    method: GET
+  register: keycloak_health
+  until: keycloak_health.status == 200
+  retries: 30
+  delay: 10
+
+- name: Import realms
+  ansible.builtin.command:
+    cmd: >
+      {{ keycloak_install_dir }}/bin/kcadm.sh create realms
+      --server http://{{ keycloak_hostname }}:{{ keycloak_http_port }}
+      --realm master
+      --user {{ keycloak_admin_user }}
+      --password {{ keycloak_admin_password }}
+      -f {{ keycloak_home }}/imports/{{ item.name }}
+  loop: "{{ keycloak_realm_imports }}"
+  become_user: "{{ keycloak_user }}"
+  register: realm_import_result
+  failed_when: 
+    - realm_import_result.rc != 0
+    - "'already exists' not in realm_import_result.stderr"
+
+- name: Create test realm
+  ansible.builtin.command:
+    cmd: >
+      {{ keycloak_install_dir }}/bin/kcadm.sh create realms
+      --server http://{{ keycloak_hostname }}:{{ keycloak_http_port }}
+      --realm master
+      --user {{ keycloak_admin_user }}
+      --password {{ keycloak_admin_password }}
+      -s realm={{ keycloak_test_realm_name }}
+      -s enabled=true
+      -s displayName="Test Realm"
+  become_user: "{{ keycloak_user }}"
+  when: keycloak_create_test_realm | bool
+  register: test_realm_result
+  failed_when: 
+    - test_realm_result.rc != 0
+    - "'already exists' not in test_realm_result.stderr"

@@ -1,0 +1,19 @@
+#!/bin/bash
+# Keycloak Backup Cleanup Script
+
+BACKUP_DIR="{{ keycloak_backup_dir }}"
+RETENTION_DAYS="{{ keycloak_backup_retention_days }}"
+
+echo "Cleaning up backups older than ${RETENTION_DAYS} days..."
+
+# Find and remove old backups
+find "${BACKUP_DIR}" -name "keycloak_backup_*.tar.gz" -type f -mtime +${RETENTION_DAYS} -print0 | while IFS= read -r -d '' file; do
+    echo "Removing old backup: ${file}"
+    rm -f "${file}"
+done
+
+# Calculate disk usage
+DISK_USAGE=$(du -sh "${BACKUP_DIR}" | cut -f1)
+echo "Total backup disk usage: ${DISK_USAGE}"
+
+echo "Backup cleanup completed"

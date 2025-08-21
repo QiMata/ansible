@@ -1,0 +1,74 @@
+---
+- name: Verify Database Creation
+  hosts: keycloak-db-test
+  gather_facts: false
+  tasks:
+    # Database creation verification
+    - name: Test database connection with custom credentials
+      ansible.builtin.command: >
+        psql -h postgres-db-test -U keycloak_user -d keycloak_test -c "SELECT 1"
+      environment:
+        PGPASSWORD: keycloak_pass
+      register: custom_db_test
+      changed_when: false
+
+    - name: Assert custom database connection works
+      ansible.builtin.assert:
+        that: custom_db_test.rc == 0
+
+    - name: Check database tables were created
+      ansible.builtin.command: >
+        psql -h postgres-db-test -U keycloak_user -d keycloak_test 
+        -c "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
+      environment:
+        PGPASSWORD: keycloak_pass
+      register: db_tables
+      changed_when: false
+
+    - name: Assert Keycloak tables exist
+      ansible.builtin.assert:
+        that: "'admin_event_entity' in db_tables.stdout"
+
+    # Service verification
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Assert service running
+      ansible.builtin.assert:
+        that:
+          - "'keycloak.service' in ansible_facts.services"
+          - ansible_facts.services['keycloak.service'].state == 'running'
+
+    # Health check verification
+    - name: Wait for Keycloak to be ready
+      ansible.builtin.uri:
+        url: "http://keycloak-db-test:8080/health/ready"
+        method: GET
+      register: health_check
+      until: health_check.status == 200
+      retries: 15
+      delay: 30
+
+    - name: Check health endpoint
+      ansible.builtin.uri:
+        url: "http://keycloak-db-test:8080/health"
+        method: GET
+      register: health_status
+
+    - name: Assert health endpoint is working
+      ansible.builtin.assert:
+        that: health_status.status == 200
+
+    # Admin user verification
+    - name: Test admin login
+      ansible.builtin.uri:
+        url: "http://keycloak-db-test:8080/realms/master/protocol/openid-connect/token"
+        method: POST
+        headers:
+          Content-Type: application/x-www-form-urlencoded
+        body: "grant_type=password&client_id=admin-cli&username=admin&password=admin123"
+      register: admin_login
+
+    - name: Assert admin login successful
+      ansible.builtin.assert:
+        that: admin_login.status == 200

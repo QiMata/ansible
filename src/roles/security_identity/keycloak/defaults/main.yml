@@ -1,11 +1,95 @@
 ---
+# Basic Keycloak configuration
 keycloak_version: "24.0.1"
 keycloak_user: "keycloak"
 keycloak_home: "/var/lib/keycloak"
 keycloak_install_dir: "{{ keycloak_home }}/keycloak-{{ keycloak_version }}"
 keycloak_download_url: "https://github.com/keycloak/keycloak/releases/download/{{ keycloak_version }}/keycloak-{{ keycloak_version }}.tar.gz"
 keycloak_http_port: 8080
+keycloak_hostname: "{{ inventory_hostname }}"
+
+# Package management
 keycloak_packages:
   - unzip
   - curl
   - openjdk-17-jre-headless
+
+# Database configuration
+keycloak_db_host: ""  # Required - PostgreSQL host
+keycloak_db_port: 5432
+keycloak_db_name: "keycloak"
+keycloak_db_user: "keycloak"
+keycloak_db_password: ""  # Required - Database password
+keycloak_db_create: false  # Whether to create database and user
+keycloak_db_admin_user: "postgres"  # Admin user for DB creation
+keycloak_db_admin_password: ""  # Admin password for DB creation
+
+# Initial admin user configuration
+keycloak_admin_user: "admin"
+keycloak_admin_password: ""  # Required if keycloak_create_admin is true
+keycloak_create_admin: true
+
+# TLS/HTTPS configuration
+keycloak_enable_https: false
+keycloak_https_port: 8443
+keycloak_cert_file: ""  # Path to certificate file
+keycloak_key_file: ""   # Path to private key file
+keycloak_keystore_path: "{{ keycloak_install_dir }}/conf/server.keystore"
+keycloak_keystore_password: "changeit"
+keycloak_truststore_path: "{{ keycloak_install_dir }}/conf/server.truststore"
+keycloak_truststore_password: "changeit"
+
+# Clustering configuration
+keycloak_cluster_enabled: false
+keycloak_cluster_name: "keycloak"
+keycloak_cache_stack: "tcp"
+keycloak_cluster_discovery: "static"  # static, dns, kubernetes
+keycloak_cluster_members: []  # List of cluster member IPs
+keycloak_jgroups_bind_addr: "{{ ansible_default_ipv4.address }}"
+
+# Firewall configuration
+keycloak_configure_firewall: true
+keycloak_firewall_backend: "ufw"  # ufw, firewalld, iptables
+
+# Backup configuration
+keycloak_backup_enabled: false
+keycloak_backup_schedule: "0 2 * * *"  # Daily at 2 AM
+keycloak_backup_retention_days: 7
+keycloak_backup_dir: "{{ keycloak_home }}/backups"
+
+# Monitoring and logging
+keycloak_monitoring_enabled: false
+keycloak_metrics_enabled: false
+keycloak_log_level: "INFO"
+keycloak_log_format: "JSON"
+keycloak_centralized_logging: false
+keycloak_syslog_server: ""
+
+# Theme and customization
+keycloak_custom_themes: []
+keycloak_custom_providers: []
+keycloak_realm_imports: []
+
+# Resource management
+keycloak_jvm_heap_min: "512m"
+keycloak_jvm_heap_max: "2g"
+keycloak_jvm_opts: []
+keycloak_systemd_limits: {}
+
+# Version management
+keycloak_cleanup_old_versions: false
+keycloak_max_versions_to_keep: 2
+
+# Configuration validation
+keycloak_validate_config: true
+keycloak_preflight_checks: true
+
+# External integration
+keycloak_ldap_enabled: false
+keycloak_vault_enabled: false
+keycloak_vault_provider: "hashicorp"  # hashicorp, kubernetes
+
+# Development support
+keycloak_dev_mode: false
+keycloak_create_test_realm: false
+keycloak_test_realm_name: "test"

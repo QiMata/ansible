@@ -1,0 +1,57 @@
+---
+# Database setup tasks
+- name: Install PostgreSQL client packages
+  ansible.builtin.apt:
+    name:
+      - postgresql-client
+      - python3-psycopg2
+    state: present
+
+- name: Create Keycloak database
+  community.postgresql.postgresql_db:
+    name: "{{ keycloak_db_name }}"
+    login_host: "{{ keycloak_db_host }}"
+    login_port: "{{ keycloak_db_port }}"
+    login_user: "{{ keycloak_db_admin_user }}"
+    login_password: "{{ keycloak_db_admin_password }}"
+    state: present
+  delegate_to: localhost
+
+- name: Create Keycloak database user
+  community.postgresql.postgresql_user:
+    name: "{{ keycloak_db_user }}"
+    password: "{{ keycloak_db_password }}"
+    login_host: "{{ keycloak_db_host }}"
+    login_port: "{{ keycloak_db_port }}"
+    login_user: "{{ keycloak_db_admin_user }}"
+    login_password: "{{ keycloak_db_admin_password }}"
+    state: present
+  delegate_to: localhost
+
+- name: Grant privileges to Keycloak user
+  community.postgresql.postgresql_privs:
+    database: "{{ keycloak_db_name }}"
+    roles: "{{ keycloak_db_user }}"
+    privs: ALL
+    type: database
+    login_host: "{{ keycloak_db_host }}"
+    login_port: "{{ keycloak_db_port }}"
+    login_user: "{{ keycloak_db_admin_user }}"
+    login_password: "{{ keycloak_db_admin_password }}"
+  delegate_to: localhost
+
+- name: Test database connection
+  community.postgresql.postgresql_query:
+    login_host: "{{ keycloak_db_host }}"
+    login_port: "{{ keycloak_db_port }}"
+    login_user: "{{ keycloak_db_user }}"
+    login_password: "{{ keycloak_db_password }}"
+    db: "{{ keycloak_db_name }}"
+    query: "SELECT 1"
+  delegate_to: localhost
+  register: db_test
+
+- name: Display database connection result
+  ansible.builtin.debug:
+    msg: "Database connection successful"
+  when: db_test is succeeded

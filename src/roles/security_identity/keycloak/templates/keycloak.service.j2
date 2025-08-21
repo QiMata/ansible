@@ -1,15 +1,48 @@
 [Unit]
 Description=Keycloak Identity & Access Management
 After=network.target
+{% if keycloak_db_create %}
+Wants=postgresql.service
+After=postgresql.service
+{% endif %}
 
 [Service]
 Type=simple
 User={{ keycloak_user }}
 Group={{ keycloak_user }}
+WorkingDirectory={{ keycloak_install_dir }}
 EnvironmentFile={{ keycloak_install_dir }}/conf/keycloak.conf
+{% if keycloak_jvm_opts | length > 0 %}
+Environment=JAVA_OPTS="{{ keycloak_jvm_opts | join(' ') }}"
+{% endif %}
+Environment=JAVA_OPTS_APPEND="-Xms{{ keycloak_jvm_heap_min }} -Xmx{{ keycloak_jvm_heap_max }}"
 ExecStart={{ keycloak_install_dir }}/bin/kc.sh start --optimized
 Restart=on-failure
+RestartSec=10
+TimeoutStartSec=300
+TimeoutStopSec=60
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ keycloak_home }}
+ReadWritePaths=/var/log/keycloak
+
+# Resource limits
 LimitNOFILE=65536
+{% if keycloak_systemd_limits.memory_max is defined %}
+MemoryMax={{ keycloak_systemd_limits.memory_max }}
+{% endif %}
+{% if keycloak_systemd_limits.cpu_quota is defined %}
+CPUQuota={{ keycloak_systemd_limits.cpu_quota }}
+{% endif %}
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=keycloak
 
 [Install]
 WantedBy=multi-user.target

@@ -1,0 +1,40 @@
+---
+# System setup tasks
+- name: Ensure required apt packages are present
+  ansible.builtin.apt:
+    name: "{{ keycloak_packages + (['postgresql-client'] if keycloak_db_create else []) }}"
+    state: present
+    update_cache: true
+
+- name: Create keycloak system user
+  ansible.builtin.user:
+    name: "{{ keycloak_user }}"
+    system: true
+    home: "{{ keycloak_home }}"
+    shell: /usr/sbin/nologin
+    create_home: true
+
+- name: Ensure keycloak home directory exists
+  ansible.builtin.file:
+    path: "{{ keycloak_home }}"
+    state: directory
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0755'
+
+- name: Create keycloak log directory
+  ansible.builtin.file:
+    path: "/var/log/keycloak"
+    state: directory
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0755'
+
+- name: Create keycloak conf directory
+  ansible.builtin.file:
+    path: "{{ keycloak_install_dir }}/conf"
+    state: directory
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0755'
+  when: not ansible_check_mode

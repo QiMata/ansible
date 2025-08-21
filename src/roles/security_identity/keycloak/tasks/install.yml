@@ -1,0 +1,50 @@
+---
+# Keycloak installation tasks
+- name: Download Keycloak archive
+  ansible.builtin.get_url:
+    url: "{{ keycloak_download_url }}"
+    dest: "/tmp/keycloak-{{ keycloak_version }}.tar.gz"
+    mode: '0644'
+    force: false
+
+- name: Create versioned install directory
+  ansible.builtin.file:
+    path: "{{ keycloak_install_dir }}"
+    state: directory
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0755'
+
+- name: Unpack Keycloak to install dir
+  ansible.builtin.unarchive:
+    src: "/tmp/keycloak-{{ keycloak_version }}.tar.gz"
+    dest: "{{ keycloak_home }}"
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    remote_src: true
+    creates: "{{ keycloak_install_dir }}/bin/kc.sh"
+    extra_opts:
+      - --strip-components=1
+      - --directory={{ keycloak_install_dir }}
+
+- name: Set executable permissions on Keycloak scripts
+  ansible.builtin.file:
+    path: "{{ keycloak_install_dir }}/bin/{{ item }}"
+    mode: '0755'
+  loop:
+    - kc.sh
+    - kcadm.sh
+    - kcreg.sh
+
+- name: Create current version symlink
+  ansible.builtin.file:
+    src: "{{ keycloak_install_dir }}"
+    dest: "{{ keycloak_home }}/current"
+    state: link
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+
+- name: Clean up downloaded archive
+  ansible.builtin.file:
+    path: "/tmp/keycloak-{{ keycloak_version }}.tar.gz"
+    state: absent

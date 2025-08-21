@@ -1,0 +1,37 @@
+#!/bin/bash
+# Keycloak Metrics Collection Script
+
+KEYCLOAK_URL="http://{{ keycloak_hostname }}:{{ keycloak_http_port }}"
+METRICS_ENDPOINT="${KEYCLOAK_URL}/metrics"
+TIMESTAMP=$(date +%Y-%m-%d_%H:%M:%S)
+
+# Collect metrics
+echo "$(date): Collecting Keycloak metrics..."
+
+# Get basic metrics
+METRICS_DATA=$(curl -s "${METRICS_ENDPOINT}" 2>/dev/null)
+
+if [ $? -eq 0 ]; then
+    # Extract key metrics
+    ACTIVE_SESSIONS=$(echo "${METRICS_DATA}" | grep "keycloak_user_sessions_total" | head -1 | awk '{print $2}')
+    TOTAL_USERS=$(echo "${METRICS_DATA}" | grep "keycloak_users_total" | head -1 | awk '{print $2}')
+    UPTIME=$(echo "${METRICS_DATA}" | grep "process_uptime_seconds" | head -1 | awk '{print $2}')
+    
+    # Log metrics
+    echo "${TIMESTAMP},active_sessions,${ACTIVE_SESSIONS:-0}"
+    echo "${TIMESTAMP},total_users,${TOTAL_USERS:-0}"
+    echo "${TIMESTAMP},uptime_seconds,${UPTIME:-0}"
+    
+    # System metrics
+    MEMORY_USAGE=$(free -m | awk 'NR==2{printf "%.1f", $3*100/$2}')
+    CPU_USAGE=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | sed 's/%us,//')
+    DISK_USAGE=$(df {{ keycloak_home }} | awk 'NR==2 {print $5}' | sed 's/%//')
+    
+    echo "${TIMESTAMP},memory_usage_percent,${MEMORY_USAGE}"
+    echo "${TIMESTAMP},cpu_usage_percent,${CPU_USAGE}"
+    echo "${TIMESTAMP},disk_usage_percent,${DISK_USAGE}"
+    
+else
+    echo "$(date): Failed to collect metrics from ${METRICS_ENDPOINT}"
+    exit 1
+fi

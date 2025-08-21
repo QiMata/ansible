@@ -1,0 +1,66 @@
+---
+# Monitoring setup tasks
+- name: Install monitoring dependencies
+  ansible.builtin.apt:
+    name:
+      - curl
+      - jq
+    state: present
+
+- name: Create monitoring script directory
+  ansible.builtin.file:
+    path: "{{ keycloak_home }}/monitoring"
+    state: directory
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0755'
+
+- name: Deploy health check script
+  ansible.builtin.template:
+    src: health-check.sh.j2
+    dest: "{{ keycloak_home }}/monitoring/health-check.sh"
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0755'
+
+- name: Deploy metrics collection script
+  ansible.builtin.template:
+    src: collect-metrics.sh.j2
+    dest: "{{ keycloak_home }}/monitoring/collect-metrics.sh"
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0755'
+  when: keycloak_metrics_enabled | bool
+
+- name: Create health check cron job
+  ansible.builtin.cron:
+    name: "Keycloak health check"
+    minute: "*/5"
+    job: "{{ keycloak_home }}/monitoring/health-check.sh >> /var/log/keycloak/health.log 2>&1"
+    user: "{{ keycloak_user }}"
+
+- name: Create metrics collection cron job
+  ansible.builtin.cron:
+    name: "Keycloak metrics collection"
+    minute: "*/10"
+    job: "{{ keycloak_home }}/monitoring/collect-metrics.sh >> /var/log/keycloak/metrics.log 2>&1"
+    user: "{{ keycloak_user }}"
+  when: keycloak_metrics_enabled | bool
+
+- name: Configure rsyslog for centralized logging
+  ansible.builtin.template:
+    src: rsyslog-keycloak.conf.j2
+    dest: /etc/rsyslog.d/10-keycloak.conf
+    owner: root
+    group: root
+    mode: '0644'
+  when: keycloak_centralized_logging | bool
+  notify: Restart rsyslog
+
+- name: Create log rotation configuration
+  ansible.builtin.template:
+    src: logrotate-keycloak.j2
+    dest: /etc/logrotate.d/keycloak
+    owner: root
+    group: root
+    mode: '0644'

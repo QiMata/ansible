@@ -1,53 +1,67 @@
 ---
-- name: Ensure required apt packages are present
-  ansible.builtin.apt:
-    name: "{{ keycloak_packages }}"
-    state: present
-    update_cache: true
+# Pre-flight checks and validation
+- name: Include pre-flight checks
+  ansible.builtin.include_tasks: preflight.yml
+  when: keycloak_preflight_checks | bool
 
-- name: Create keycloak system user
-  ansible.builtin.user:
-    name: "{{ keycloak_user }}"
-    system: true
-    home: "{{ keycloak_home }}"
-    shell: /usr/sbin/nologin
+# System setup
+- name: Include system setup tasks
+  ansible.builtin.include_tasks: system.yml
 
-- name: Download Keycloak archive
-  ansible.builtin.get_url:
-    url: "{{ keycloak_download_url }}"
-    dest: "/tmp/keycloak-{{ keycloak_version }}.tar.gz"
-    mode: '0644'
-    force: false
+# Database setup
+- name: Include database setup tasks
+  ansible.builtin.include_tasks: database.yml
+  when: keycloak_db_create | bool
 
-- name: Unpack Keycloak to install dir
-  ansible.builtin.unarchive:
-    src: "/tmp/keycloak-{{ keycloak_version }}.tar.gz"
-    dest: "{{ keycloak_install_dir }}"
-    owner: "{{ keycloak_user }}"
-    group: "{{ keycloak_user }}"
-    remote_src: true
-    creates: "{{ keycloak_install_dir }}/bin/kc.sh"
+# Keycloak installation
+- name: Include installation tasks
+  ansible.builtin.include_tasks: install.yml
 
-- name: Deploy systemd unit file
-  ansible.builtin.template:
-    src: keycloak.service.j2
-    dest: /etc/systemd/system/keycloak.service
-    owner: root
-    group: root
-    mode: '0644'
-  notify: Reload systemd
+# TLS/HTTPS configuration
+- name: Include TLS configuration tasks
+  ansible.builtin.include_tasks: tls.yml
+  when: keycloak_enable_https | bool
 
-- name: Deploy Keycloak configuration
-  ansible.builtin.template:
-    src: keycloak.conf.j2
-    dest: "{{ keycloak_install_dir }}/conf/keycloak.conf"
-    owner: "{{ keycloak_user }}"
-    group: "{{ keycloak_user }}"
-    mode: '0640'
-  notify: Restart Keycloak
+# Clustering configuration
+- name: Include clustering configuration tasks
+  ansible.builtin.include_tasks: cluster.yml
+  when: keycloak_cluster_enabled | bool
 
-- name: Ensure Keycloak is enabled and started
-  ansible.builtin.systemd:
-    name: keycloak
-    enabled: true
-    state: started
+# Configuration and service setup
+- name: Include configuration tasks
+  ansible.builtin.include_tasks: configure.yml
+
+# Admin user creation
+- name: Include admin user creation tasks
+  ansible.builtin.include_tasks: admin.yml
+  when: keycloak_create_admin | bool
+
+# Theme and customization
+- name: Include theme and customization tasks
+  ansible.builtin.include_tasks: themes.yml
+  when: keycloak_custom_themes | length > 0 or keycloak_custom_providers | length > 0
+
+# Realm imports
+- name: Include realm import tasks
+  ansible.builtin.include_tasks: realms.yml
+  when: keycloak_realm_imports | length > 0
+
+# Firewall configuration
+- name: Include firewall configuration tasks
+  ansible.builtin.include_tasks: firewall.yml
+  when: keycloak_configure_firewall | bool
+
+# Backup configuration
+- name: Include backup configuration tasks
+  ansible.builtin.include_tasks: backup.yml
+  when: keycloak_backup_enabled | bool
+
+# Monitoring setup
+- name: Include monitoring setup tasks
+  ansible.builtin.include_tasks: monitoring.yml
+  when: keycloak_monitoring_enabled | bool
+
+# Version cleanup
+- name: Include version cleanup tasks
+  ansible.builtin.include_tasks: cleanup.yml
+  when: keycloak_cleanup_old_versions | bool

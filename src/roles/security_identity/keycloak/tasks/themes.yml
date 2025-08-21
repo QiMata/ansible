@@ -1,0 +1,45 @@
+---
+# Theme and customization tasks
+- name: Create themes directory
+  ansible.builtin.file:
+    path: "{{ keycloak_install_dir }}/themes"
+    state: directory
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0755'
+
+- name: Deploy custom themes
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ keycloak_install_dir }}/themes/{{ item.name }}"
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0644'
+  loop: "{{ keycloak_custom_themes }}"
+  notify: Restart Keycloak
+
+- name: Create providers directory
+  ansible.builtin.file:
+    path: "{{ keycloak_install_dir }}/providers"
+    state: directory
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0755'
+
+- name: Deploy custom providers
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ keycloak_install_dir }}/providers/{{ item.name }}"
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0644'
+  loop: "{{ keycloak_custom_providers }}"
+  notify: Restart Keycloak
+
+- name: Rebuild Keycloak after provider changes
+  ansible.builtin.command:
+    cmd: "{{ keycloak_install_dir }}/bin/kc.sh build"
+    chdir: "{{ keycloak_install_dir }}"
+  become_user: "{{ keycloak_user }}"
+  when: keycloak_custom_providers | length > 0
+  notify: Restart Keycloak

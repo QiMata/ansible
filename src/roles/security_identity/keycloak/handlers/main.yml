@@ -7,3 +7,14 @@
   ansible.builtin.systemd:
     name: keycloak
     state: restarted
+
+- name: Restart rsyslog
+  ansible.builtin.systemd:
+    name: rsyslog
+    state: restarted
+
+- name: Rebuild Keycloak
+  ansible.builtin.command:
+    cmd: "{{ keycloak_install_dir }}/bin/kc.sh build"
+    chdir: "{{ keycloak_install_dir }}"
+  become_user: "{{ keycloak_user }}"

@@ -1,0 +1,49 @@
+---
+- name: Converge
+  hosts: keycloak-cluster-1,keycloak-cluster-2
+  become: true
+  pre_tasks:
+    - name: Install PostgreSQL client and dependencies
+      ansible.builtin.apt:
+        name:
+          - postgresql-client
+          - python3-psycopg2
+        state: present
+        update_cache: true
+
+    - name: Wait for PostgreSQL to be ready
+      ansible.builtin.wait_for:
+        host: postgres-cluster
+        port: 5432
+        timeout: 60
+
+  roles:
+    - role: keycloak
+      vars:
+        # Basic configuration
+        keycloak_db_host: postgres-cluster
+        keycloak_db_name: keycloak
+        keycloak_db_user: keycloak
+        keycloak_db_password: keycloak
+        keycloak_hostname: "{{ inventory_hostname }}"
+        
+        # Clustering configuration
+        keycloak_cluster_enabled: true
+        keycloak_cluster_name: test-cluster
+        keycloak_cache_stack: tcp
+        keycloak_cluster_discovery: static
+        keycloak_cluster_members:
+          - keycloak-cluster-1
+          - keycloak-cluster-2
+        
+        # Admin user
+        keycloak_create_admin: true
+        keycloak_admin_user: admin
+        keycloak_admin_password: admin123
+        
+        # Disable firewall for testing
+        keycloak_configure_firewall: false
+        
+        # Resource settings for testing
+        keycloak_jvm_heap_min: "256m"
+        keycloak_jvm_heap_max: "512m"

@@ -1,0 +1,81 @@
+---
+# TLS/HTTPS configuration tasks
+- name: Install SSL certificate tools
+  ansible.builtin.apt:
+    name:
+      - openssl
+      - ca-certificates
+    state: present
+
+- name: Ensure certificate files exist
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  register: cert_files
+  loop:
+    - "{{ keycloak_cert_file }}"
+    - "{{ keycloak_key_file }}"
+
+- name: Validate certificate files exist
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+    fail_msg: "Certificate file {{ item.item }} does not exist"
+  loop: "{{ cert_files.results }}"
+
+- name: Create keystore directory
+  ansible.builtin.file:
+    path: "{{ keycloak_install_dir }}/conf"
+    state: directory
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0700'
+
+- name: Convert certificate to PKCS12 format
+  ansible.builtin.command:
+    cmd: >
+      openssl pkcs12 -export
+      -in {{ keycloak_cert_file }}
+      -inkey {{ keycloak_key_file }}
+      -out {{ keycloak_install_dir }}/conf/server.p12
+      -name server
+      -passout pass:{{ keycloak_keystore_password }}
+  args:
+    creates: "{{ keycloak_install_dir }}/conf/server.p12"
+  become_user: "{{ keycloak_user }}"
+
+- name: Import PKCS12 into Java keystore
+  ansible.builtin.command:
+    cmd: >
+      keytool -importkeystore
+      -deststorepass {{ keycloak_keystore_password }}
+      -destkeystore {{ keycloak_keystore_path }}
+      -srckeystore {{ keycloak_install_dir }}/conf/server.p12
+      -srcstoretype PKCS12
+      -srcstorepass {{ keycloak_keystore_password }}
+      -alias server
+      -noprompt
+  args:
+    creates: "{{ keycloak_keystore_path }}"
+  become_user: "{{ keycloak_user }}"
+
+- name: Set keystore file permissions
+  ansible.builtin.file:
+    path: "{{ keycloak_keystore_path }}"
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0600'
+
+- name: Create truststore for CA certificates
+  ansible.builtin.command:
+    cmd: >
+      keytool -import
+      -trustcacerts
+      -keystore {{ keycloak_truststore_path }}
+      -storepass {{ keycloak_truststore_password }}
+      -alias ca-cert
+      -file {{ keycloak_cert_file }}
+      -noprompt
+  args:
+    creates: "{{ keycloak_truststore_path }}"
+  become_user: "{{ keycloak_user }}"
+  when: keycloak_cert_file != ""

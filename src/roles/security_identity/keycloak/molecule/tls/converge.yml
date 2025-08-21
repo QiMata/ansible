@@ -1,0 +1,86 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  pre_tasks:
+    - name: Install PostgreSQL and dependencies
+      ansible.builtin.apt:
+        name:
+          - postgresql
+          - postgresql-client
+          - python3-psycopg2
+          - openssl
+        state: present
+        update_cache: true
+
+    - name: Start PostgreSQL
+      ansible.builtin.service:
+        name: postgresql
+        state: started
+        enabled: true
+
+    - name: Create database
+      become_user: postgres
+      community.postgresql.postgresql_db:
+        name: keycloak
+
+    - name: Create user
+      become_user: postgres
+      community.postgresql.postgresql_user:
+        name: keycloak
+        password: keycloak
+        priv: ALL
+
+    # Create self-signed certificates for testing
+    - name: Create certificate directory
+      ansible.builtin.file:
+        path: /etc/ssl/keycloak
+        state: directory
+        mode: '0755'
+
+    - name: Generate private key
+      ansible.builtin.command:
+        cmd: openssl genrsa -out /etc/ssl/keycloak/server.key 2048
+        creates: /etc/ssl/keycloak/server.key
+
+    - name: Generate certificate signing request
+      ansible.builtin.command:
+        cmd: >
+          openssl req -new -key /etc/ssl/keycloak/server.key
+          -out /etc/ssl/keycloak/server.csr
+          -subj "/C=US/ST=Test/L=Test/O=Test/OU=Test/CN=keycloak-tls"
+        creates: /etc/ssl/keycloak/server.csr
+
+    - name: Generate self-signed certificate
+      ansible.builtin.command:
+        cmd: >
+          openssl x509 -req -days 365
+          -in /etc/ssl/keycloak/server.csr
+          -signkey /etc/ssl/keycloak/server.key
+          -out /etc/ssl/keycloak/server.crt
+        creates: /etc/ssl/keycloak/server.crt
+
+  roles:
+    - role: keycloak
+      vars:
+        # Basic configuration
+        keycloak_db_host: localhost
+        keycloak_db_name: keycloak
+        keycloak_db_user: keycloak
+        keycloak_db_password: keycloak
+        keycloak_hostname: keycloak-tls
+        
+        # TLS configuration
+        keycloak_enable_https: true
+        keycloak_https_port: 8443
+        keycloak_cert_file: /etc/ssl/keycloak/server.crt
+        keycloak_key_file: /etc/ssl/keycloak/server.key
+        keycloak_keystore_password: testpassword
+        
+        # Admin user
+        keycloak_create_admin: true
+        keycloak_admin_user: admin
+        keycloak_admin_password: admin123
+        
+        # Disable firewall for testing
+        keycloak_configure_firewall: false

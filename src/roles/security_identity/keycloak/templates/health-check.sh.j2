@@ -1,0 +1,41 @@
+#!/bin/bash
+# Keycloak Health Check Script
+
+KEYCLOAK_URL="http://{{ keycloak_hostname }}:{{ keycloak_http_port }}"
+HEALTH_ENDPOINT="${KEYCLOAK_URL}/health"
+READY_ENDPOINT="${KEYCLOAK_URL}/health/ready"
+LIVE_ENDPOINT="${KEYCLOAK_URL}/health/live"
+
+# Function to check endpoint
+check_endpoint() {
+    local endpoint=$1
+    local name=$2
+    
+    response=$(curl -s -o /dev/null -w "%{http_code}" "${endpoint}" 2>/dev/null)
+    
+    if [ "${response}" = "200" ]; then
+        echo "$(date): ${name} - OK (${response})"
+        return 0
+    else
+        echo "$(date): ${name} - FAILED (${response})"
+        return 1
+    fi
+}
+
+# Check all health endpoints
+health_ok=0
+ready_ok=0
+live_ok=0
+
+check_endpoint "${HEALTH_ENDPOINT}" "Health" && health_ok=1
+check_endpoint "${READY_ENDPOINT}" "Ready" && ready_ok=1
+check_endpoint "${LIVE_ENDPOINT}" "Live" && live_ok=1
+
+# Overall status
+if [ $health_ok -eq 1 ] && [ $ready_ok -eq 1 ] && [ $live_ok -eq 1 ]; then
+    echo "$(date): Keycloak is healthy"
+    exit 0
+else
+    echo "$(date): Keycloak health check failed"
+    exit 1
+fi

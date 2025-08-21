@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <Console name="CONSOLE" target="SYSTEM_OUT">
+            {% if keycloak_log_format == 'JSON' %}
+            <JsonLayout compact="true" eventEol="true"/>
+            {% else %}
+            <PatternLayout pattern="%d{HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n"/>
+            {% endif %}
+        </Console>
+        
+        <RollingFile name="FILE" fileName="/var/log/keycloak/keycloak.log"
+                     filePattern="/var/log/keycloak/keycloak-%i.log.gz">
+            {% if keycloak_log_format == 'JSON' %}
+            <JsonLayout compact="true" eventEol="true"/>
+            {% else %}
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n"/>
+            {% endif %}
+            <Policies>
+                <SizeBasedTriggeringPolicy size="100 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="10"/>
+        </RollingFile>
+        
+        {% if keycloak_centralized_logging and keycloak_syslog_server %}
+        <Syslog name="SYSLOG" host="{{ keycloak_syslog_server }}" port="514" protocol="UDP">
+            <PatternLayout pattern="keycloak: %d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] %s%e%n"/>
+        </Syslog>
+        {% endif %}
+    </Appenders>
+    
+    <Loggers>
+        <Logger name="org.keycloak" level="{{ keycloak_log_level }}" additivity="false">
+            <AppenderRef ref="CONSOLE"/>
+            <AppenderRef ref="FILE"/>
+            {% if keycloak_centralized_logging and keycloak_syslog_server %}
+            <AppenderRef ref="SYSLOG"/>
+            {% endif %}
+        </Logger>
+        
+        <Logger name="org.infinispan" level="WARN" additivity="false">
+            <AppenderRef ref="CONSOLE"/>
+            <AppenderRef ref="FILE"/>
+        </Logger>
+        
+        <Root level="{{ keycloak_log_level }}">
+            <AppenderRef ref="CONSOLE"/>
+            <AppenderRef ref="FILE"/>
+            {% if keycloak_centralized_logging and keycloak_syslog_server %}
+            <AppenderRef ref="SYSLOG"/>
+            {% endif %}
+        </Root>
+    </Loggers>
+</Configuration>

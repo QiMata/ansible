@@ -1,7 +1,52 @@
+# Database configuration
 KC_DB=postgres
-KC_DB_URL=jdbc:postgresql://{{ keycloak_db_host }}:5432/{{ keycloak_db_name }}
+KC_DB_URL=jdbc:postgresql://{{ keycloak_db_host }}:{{ keycloak_db_port }}/{{ keycloak_db_name }}
 KC_DB_USERNAME={{ keycloak_db_user }}
 KC_DB_PASSWORD={{ keycloak_db_password }}
-KC_HOSTNAME={{ keycloak_hostname | default(inventory_hostname) }}
+
+# Network configuration
+KC_HOSTNAME={{ keycloak_hostname }}
+{% if keycloak_enable_https %}
+KC_HTTPS_PORT={{ keycloak_https_port }}
+KC_HTTPS_KEYSTORE={{ keycloak_keystore_path }}
+KC_HTTPS_KEYSTORE_PASSWORD={{ keycloak_keystore_password }}
+KC_HTTPS_TRUSTSTORE={{ keycloak_truststore_path }}
+KC_HTTPS_TRUSTSTORE_PASSWORD={{ keycloak_truststore_password }}
+{% else %}
 KC_HTTP_PORT={{ keycloak_http_port }}
+{% endif %}
+
+# Proxy configuration
 KC_PROXY=edge
+
+# Admin user configuration
+{% if keycloak_create_admin %}
+KEYCLOAK_ADMIN={{ keycloak_admin_user }}
+KEYCLOAK_ADMIN_PASSWORD={{ keycloak_admin_password }}
+{% endif %}
+
+# Development mode
+{% if keycloak_dev_mode %}
+KC_DEV=true
+{% endif %}
+
+# Clustering configuration
+{% if keycloak_cluster_enabled %}
+KC_CACHE=ispn
+KC_CACHE_STACK={{ keycloak_cache_stack }}
+KC_CACHE_CONFIG_FILE=cache-ispn.xml
+{% endif %}
+
+# Logging configuration
+KC_LOG_LEVEL={{ keycloak_log_level }}
+{% if keycloak_log_format == 'JSON' %}
+KC_LOG_FORMAT=json
+{% endif %}
+
+# Metrics
+{% if keycloak_metrics_enabled %}
+KC_METRICS_ENABLED=true
+{% endif %}
+
+# Health checks
+KC_HEALTH_ENABLED=true

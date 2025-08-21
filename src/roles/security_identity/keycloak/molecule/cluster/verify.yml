@@ -1,0 +1,95 @@
+---
+- name: Verify Cluster
+  hosts: keycloak-cluster-1,keycloak-cluster-2
+  gather_facts: false
+  tasks:
+    # Clustering configuration verification
+    - name: Check JGroups configuration exists
+      ansible.builtin.stat:
+        path: /var/lib/keycloak/keycloak-24.0.1/conf/cluster/jgroups-tcp.xml
+      register: jgroups_config
+
+    - name: Assert JGroups config exists
+      ansible.builtin.assert:
+        that: jgroups_config.stat.exists
+
+    - name: Check Infinispan configuration exists
+      ansible.builtin.stat:
+        path: /var/lib/keycloak/keycloak-24.0.1/conf/cache-ispn.xml
+      register: infinispan_config
+
+    - name: Assert Infinispan config exists
+      ansible.builtin.assert:
+        that: infinispan_config.stat.exists
+
+    # Service verification
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Assert service running
+      ansible.builtin.assert:
+        that:
+          - "'keycloak.service' in ansible_facts.services"
+          - ansible_facts.services['keycloak.service'].state == 'running'
+
+    # Health check verification
+    - name: Wait for Keycloak to be ready
+      ansible.builtin.uri:
+        url: "http://{{ inventory_hostname }}:8080/health/ready"
+        method: GET
+      register: health_check
+      until: health_check.status == 200
+      retries: 15
+      delay: 30
+
+    - name: Check health endpoint
+      ansible.builtin.uri:
+        url: "http://{{ inventory_hostname }}:8080/health"
+        method: GET
+      register: health_status
+
+    - name: Assert health endpoint is working
+      ansible.builtin.assert:
+        that: health_status.status == 200
+
+# Test cluster functionality
+- name: Test Cluster Functionality
+  hosts: keycloak-cluster-1
+  gather_facts: false
+  tasks:
+    - name: Create test realm on first node
+      ansible.builtin.uri:
+        url: "http://keycloak-cluster-1:8080/admin/realms"
+        method: POST
+        headers:
+          Content-Type: application/json
+          Authorization: "Bearer {{ admin_token.json.access_token }}"
+        body_format: json
+        body:
+          realm: test-cluster-realm
+          enabled: true
+          displayName: "Test Cluster Realm"
+      vars:
+        admin_token: "{{ keycloak_admin_token }}"
+
+- name: Verify Cluster Replication
+  hosts: keycloak-cluster-2
+  gather_facts: false
+  tasks:
+    - name: Wait for realm replication
+      ansible.builtin.pause:
+        seconds: 10
+
+    - name: Check if realm exists on second node
+      ansible.builtin.uri:
+        url: "http://keycloak-cluster-2:8080/admin/realms/test-cluster-realm"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ admin_token.json.access_token }}"
+      register: realm_check
+      vars:
+        admin_token: "{{ keycloak_admin_token }}"
+
+    - name: Assert realm was replicated
+      ansible.builtin.assert:
+        that: realm_check.status == 200

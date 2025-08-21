@@ -1,0 +1,10 @@
+# Keycloak rsyslog configuration
+$template KeycloakFormat,"<%PRI%>%timestamp% %hostname% keycloak: %msg%\n"
+
+# Send Keycloak logs to remote syslog server
+if $programname == 'keycloak' then @@{{ keycloak_syslog_server }}:514;KeycloakFormat
+& stop
+
+# Local file logging for Keycloak
+if $programname == 'keycloak' then /var/log/keycloak/syslog.log
+& stop

@@ -1,0 +1,55 @@
+---
+# Clustering configuration tasks
+- name: Create JGroups configuration directory
+  ansible.builtin.file:
+    path: "{{ keycloak_install_dir }}/conf/cluster"
+    state: directory
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0755'
+
+- name: Deploy JGroups configuration
+  ansible.builtin.template:
+    src: jgroups-tcp.xml.j2
+    dest: "{{ keycloak_install_dir }}/conf/cluster/jgroups-tcp.xml"
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0644'
+  when: keycloak_cache_stack == "tcp"
+  notify: Restart Keycloak
+
+- name: Deploy UDP JGroups configuration
+  ansible.builtin.template:
+    src: jgroups-udp.xml.j2
+    dest: "{{ keycloak_install_dir }}/conf/cluster/jgroups-udp.xml"
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0644'
+  when: keycloak_cache_stack == "udp"
+  notify: Restart Keycloak
+
+- name: Deploy Kubernetes JGroups configuration
+  ansible.builtin.template:
+    src: jgroups-kubernetes.xml.j2
+    dest: "{{ keycloak_install_dir }}/conf/cluster/jgroups-kubernetes.xml"
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0644'
+  when: keycloak_cache_stack == "kubernetes"
+  notify: Restart Keycloak
+
+- name: Configure Infinispan clustering
+  ansible.builtin.template:
+    src: infinispan.xml.j2
+    dest: "{{ keycloak_install_dir }}/conf/cache-ispn.xml"
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0644'
+  notify: Restart Keycloak
+
+- name: Validate cluster member configuration
+  ansible.builtin.assert:
+    that:
+      - keycloak_cluster_members | length > 0
+    fail_msg: "Cluster members must be specified when clustering is enabled"
+  when: keycloak_cluster_discovery == "static"

@@ -1,0 +1,41 @@
+---
+# Version cleanup tasks
+- name: Find old Keycloak installations
+  ansible.builtin.find:
+    paths: "{{ keycloak_home }}"
+    patterns: "keycloak-*"
+    file_type: directory
+  register: keycloak_versions
+
+- name: Sort versions by modification time
+  ansible.builtin.set_fact:
+    sorted_versions: "{{ keycloak_versions.files | sort(attribute='mtime', reverse=true) }}"
+
+- name: Identify versions to remove
+  ansible.builtin.set_fact:
+    versions_to_remove: "{{ sorted_versions[keycloak_max_versions_to_keep:] }}"
+
+- name: Remove old Keycloak versions
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ versions_to_remove }}"
+  when: versions_to_remove | length > 0
+
+- name: Log cleanup activity
+  ansible.builtin.debug:
+    msg: "Removed {{ versions_to_remove | length }} old Keycloak installations"
+  when: versions_to_remove | length > 0
+
+- name: Clean up temporary files
+  ansible.builtin.find:
+    paths: "/tmp"
+    patterns: "keycloak-*.tar.gz"
+    age: "1d"
+  register: temp_files
+
+- name: Remove old temporary files
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ temp_files.files }}"

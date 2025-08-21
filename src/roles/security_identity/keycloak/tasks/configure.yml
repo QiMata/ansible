@@ -1,0 +1,52 @@
+---
+# Configuration tasks
+- name: Deploy Keycloak configuration
+  ansible.builtin.template:
+    src: keycloak.conf.j2
+    dest: "{{ keycloak_install_dir }}/conf/keycloak.conf"
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0640'
+  notify: Restart Keycloak
+
+- name: Deploy systemd unit file
+  ansible.builtin.template:
+    src: keycloak.service.j2
+    dest: /etc/systemd/system/keycloak.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload systemd
+
+- name: Deploy JVM options file
+  ansible.builtin.template:
+    src: jvm.options.j2
+    dest: "{{ keycloak_install_dir }}/conf/jvm.options"
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0644'
+  notify: Restart Keycloak
+
+- name: Deploy logging configuration
+  ansible.builtin.template:
+    src: log4j2.xml.j2
+    dest: "{{ keycloak_install_dir }}/conf/log4j2.xml"
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0644'
+  notify: Restart Keycloak
+
+- name: Build Keycloak with current configuration
+  ansible.builtin.command:
+    cmd: "{{ keycloak_install_dir }}/bin/kc.sh build"
+    chdir: "{{ keycloak_install_dir }}"
+  become_user: "{{ keycloak_user }}"
+  register: keycloak_build
+  changed_when: "'Updated' in keycloak_build.stdout"
+
+- name: Ensure Keycloak is enabled and started
+  ansible.builtin.systemd:
+    name: keycloak
+    enabled: true
+    state: started
+    daemon_reload: true

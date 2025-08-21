@@ -1,0 +1,52 @@
+---
+# Backup configuration tasks
+- name: Create backup directory
+  ansible.builtin.file:
+    path: "{{ keycloak_backup_dir }}"
+    state: directory
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0755'
+
+- name: Create backup script
+  ansible.builtin.template:
+    src: backup.sh.j2
+    dest: "{{ keycloak_home }}/backup.sh"
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0755'
+
+- name: Install backup dependencies
+  ansible.builtin.apt:
+    name:
+      - postgresql-client
+      - gzip
+      - tar
+    state: present
+
+- name: Create backup cron job
+  ansible.builtin.cron:
+    name: "Keycloak backup"
+    minute: "{{ keycloak_backup_schedule.split()[0] }}"
+    hour: "{{ keycloak_backup_schedule.split()[1] }}"
+    day: "{{ keycloak_backup_schedule.split()[2] }}"
+    month: "{{ keycloak_backup_schedule.split()[3] }}"
+    weekday: "{{ keycloak_backup_schedule.split()[4] }}"
+    job: "{{ keycloak_home }}/backup.sh >> /var/log/keycloak/backup.log 2>&1"
+    user: "{{ keycloak_user }}"
+
+- name: Create backup cleanup script
+  ansible.builtin.template:
+    src: cleanup-backups.sh.j2
+    dest: "{{ keycloak_home }}/cleanup-backups.sh"
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0755'
+
+- name: Create backup cleanup cron job
+  ansible.builtin.cron:
+    name: "Keycloak backup cleanup"
+    minute: "0"
+    hour: "3"
+    job: "{{ keycloak_home }}/cleanup-backups.sh >> /var/log/keycloak/backup.log 2>&1"
+    user: "{{ keycloak_user }}"

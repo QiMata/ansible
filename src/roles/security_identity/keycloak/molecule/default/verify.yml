@@ -3,6 +3,7 @@
   hosts: all
   gather_facts: false
   tasks:
+    # Basic installation verification
     - name: Check Java installed
       ansible.builtin.command: java -version
       register: java_ver
@@ -19,6 +20,7 @@
       ansible.builtin.assert:
         that: kc_user.found
 
+    # Configuration verification
     - name: Check configuration file
       ansible.builtin.stat:
         path: /var/lib/keycloak/keycloak-24.0.1/conf/keycloak.conf
@@ -28,6 +30,25 @@
       ansible.builtin.assert:
         that: conf.stat.exists
 
+    - name: Check JVM options file
+      ansible.builtin.stat:
+        path: /var/lib/keycloak/keycloak-24.0.1/conf/jvm.options
+      register: jvm_opts
+
+    - name: Assert JVM options exists
+      ansible.builtin.assert:
+        that: jvm_opts.stat.exists
+
+    - name: Check logging configuration
+      ansible.builtin.stat:
+        path: /var/lib/keycloak/keycloak-24.0.1/conf/log4j2.xml
+      register: log_config
+
+    - name: Assert logging config exists
+      ansible.builtin.assert:
+        that: log_config.stat.exists
+
+    # Service verification
     - name: Gather service facts
       ansible.builtin.service_facts:
 
@@ -36,3 +57,118 @@
         that:
           - "'keycloak.service' in ansible_facts.services"
           - ansible_facts.services['keycloak.service'].state == 'running'
+
+    # Health check verification
+    - name: Wait for Keycloak to be ready
+      ansible.builtin.uri:
+        url: "http://localhost:8080/health/ready"
+        method: GET
+      register: health_check
+      until: health_check.status == 200
+      retries: 10
+      delay: 30
+
+    - name: Check health endpoint
+      ansible.builtin.uri:
+        url: "http://localhost:8080/health"
+        method: GET
+      register: health_status
+
+    - name: Assert health endpoint is working
+      ansible.builtin.assert:
+        that: health_status.status == 200
+
+    # Admin console verification
+    - name: Check admin console accessibility
+      ansible.builtin.uri:
+        url: "http://localhost:8080/admin"
+        method: GET
+        follow_redirects: safe
+      register: admin_console
+
+    - name: Assert admin console is accessible
+      ansible.builtin.assert:
+        that: admin_console.status == 200
+
+    # Database connectivity verification
+    - name: Test database connection
+      ansible.builtin.command: >
+        psql -h localhost -U keycloak -d keycloak -c "SELECT 1"
+      environment:
+        PGPASSWORD: keycloak
+      register: db_test
+      changed_when: false
+
+    - name: Assert database connection works
+      ansible.builtin.assert:
+        that: db_test.rc == 0
+
+    # Monitoring verification
+    - name: Check health check script
+      ansible.builtin.stat:
+        path: /var/lib/keycloak/monitoring/health-check.sh
+      register: health_script
+
+    - name: Assert health check script exists
+      ansible.builtin.assert:
+        that: health_script.stat.exists
+
+    - name: Check metrics script
+      ansible.builtin.stat:
+        path: /var/lib/keycloak/monitoring/collect-metrics.sh
+      register: metrics_script
+
+    - name: Assert metrics script exists
+      ansible.builtin.assert:
+        that: metrics_script.stat.exists
+
+    # Backup verification
+    - name: Check backup script
+      ansible.builtin.stat:
+        path: /var/lib/keycloak/backup.sh
+      register: backup_script
+
+    - name: Assert backup script exists
+      ansible.builtin.assert:
+        that: backup_script.stat.exists
+
+    - name: Check backup directory
+      ansible.builtin.stat:
+        path: /var/lib/keycloak/backups
+      register: backup_dir
+
+    - name: Assert backup directory exists
+      ansible.builtin.assert:
+        that: backup_dir.stat.exists
+
+    # Log directory verification
+    - name: Check log directory
+      ansible.builtin.stat:
+        path: /var/log/keycloak
+      register: log_dir
+
+    - name: Assert log directory exists
+      ansible.builtin.assert:
+        that: log_dir.stat.exists
+
+    # Symlink verification
+    - name: Check current version symlink
+      ansible.builtin.stat:
+        path: /var/lib/keycloak/current
+      register: current_link
+
+    - name: Assert current symlink exists and is a link
+      ansible.builtin.assert:
+        that: 
+          - current_link.stat.exists
+          - current_link.stat.islnk
+
+    # File permissions verification
+    - name: Check keycloak config file permissions
+      ansible.builtin.stat:
+        path: /var/lib/keycloak/keycloak-24.0.1/conf/keycloak.conf
+      register: config_perms
+
+    - name: Assert config file has correct permissions
+      ansible.builtin.assert:
+        that: config_perms.stat.mode == '0640'

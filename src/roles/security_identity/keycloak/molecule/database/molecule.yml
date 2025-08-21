@@ -1,0 +1,25 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: keycloak-db-test
+    image: geerlingguy/docker-debian12-ansible:latest
+    command: /lib/systemd/systemd
+    privileged: true
+    pre_build_image: true
+    networks:
+      - name: keycloak-db
+  - name: postgres-db-test
+    image: postgres:15
+    env:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    networks:
+      - name: keycloak-db
+provisioner:
+  name: ansible
+verifier:
+  name: ansible

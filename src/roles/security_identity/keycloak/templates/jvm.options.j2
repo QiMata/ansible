@@ -1,0 +1,24 @@
+# JVM Options for Keycloak
+{{ keycloak_jvm_opts | join('\n') }}
+
+# Memory settings
+-Xms{{ keycloak_jvm_heap_min }}
+-Xmx{{ keycloak_jvm_heap_max }}
+
+# GC settings
+-XX:+UseG1GC
+-XX:MaxGCPauseMillis=200
+-XX:+UnlockExperimentalVMOptions
+-XX:+UseCGroupMemoryLimitForHeap
+
+# JVM security settings
+-Djava.security.egd=file:/dev/urandom
+
+# Keycloak specific settings
+-Dkeycloak.profile.feature.uploads=enabled
+{% if keycloak_cluster_enabled %}
+-Djgroups.bind_addr={{ keycloak_jgroups_bind_addr }}
+{% endif %}
+
+# Logging
+-Dlog4j.configurationFile={{ keycloak_install_dir }}/conf/log4j2.xml
