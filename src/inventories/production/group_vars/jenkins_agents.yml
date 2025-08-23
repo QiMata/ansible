@@ -1,6 +1,0 @@
----
-jenkins_agent_user: jenkins
-jenkins_agent_home: /home/jenkins
-jenkins_controller_url: "http://jenkins-controller-01:8080"
-jenkins_agent_ssh_private_key: "{{ vault_jenkins_agent_private_key }}"
-jenkins_agent_ssh_public_key: "{{ vault_jenkins_agent_public_key }}"

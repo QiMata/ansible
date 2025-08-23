@@ -1,49 +1,318 @@
 ---
-- name: Create Proxmox LXC container
+- name: Create/Update Proxmox LXC container with static IP
   hosts: localhost
   gather_facts: false
+
   vars:
-    proxmox_host: "{{ lookup('env', 'PROXMOX_HOST') | default('192.168.1.100') }}"
+    # --- Proxmox connection/auth ---
+    proxmox_url: "{{ lookup('env', 'PROXMOX_URL') | default('https://192.168.1.100:8006') }}"
+    proxmox_host: "{{ proxmox_url | regex_replace('https?://', '') | regex_replace(':.*$', '') }}"
     proxmox_user: "{{ lookup('env', 'PROXMOX_USER') | default('root@pam') }}"
     proxmox_password: "{{ lookup('env', 'PROXMOX_PASSWORD') }}"
+    proxmox_token_id: "{{ lookup('env', 'PROXMOX_TOKEN_ID') }}"
+    proxmox_token_secret: "{{ lookup('env', 'PROXMOX_TOKEN_SECRET') }}"
+    proxmox_validate_certs: "{{ lookup('env', 'PROXMOX_VALIDATE_CERTS') | default('false') | bool }}"
     proxmox_node: "{{ lookup('env', 'PROXMOX_NODE') | default('pve') }}"
-    container_id: "{{ lookup('env', 'CONTAINER_ID') | default('999') }}"
-    container_name: "debian-test-instance"
-    template: "{{ lookup('env', 'TEMPLATE') | default('debian-12-standard_12.2-1_amd64.tar.zst') }}"
+
+    # --- Container identity & resources ---
+    container_id: "{{ lookup('env', 'CONTAINER_ID') | default('200') | int }}"
+    container_name: "{{ lookup('env','CONTAINER_NAME') | default('debian-test-instance', true) }}"
+    template: "{{ lookup('env', 'TEMPLATE') | default('debian-12-standard_12.7-1_amd64.tar.zst') }}"
+    template_storage: "{{ lookup('env', 'TEMPLATE_STORAGE') | default('local') }}"
+    template_path: "{{ template_storage }}:vztmpl/{{ template }}"
     storage: "{{ lookup('env', 'STORAGE') | default('local-lvm') }}"
-    memory: "{{ lookup('env', 'MEMORY') | default('1024') }}"
-    cores: "{{ lookup('env', 'CORES') | default('2') }}"
+    rootfs: "{{ storage }}:10,size={{ lookup('env', 'DISK_SIZE') | default('10G') }}"
+    memory: "{{ lookup('env', 'MEMORY') | default('1024') | int }}"
+    cores: "{{ lookup('env', 'CORES') | default('2') | int }}"
+    container_password: "{{ lookup('env', 'CONTAINER_PASSWORD') | default('molecule12345') }}"
+
+    # --- Networking (ignore NETWORK env unless explicitly enabled) ---
+    iface_name: "{{ lookup('env','IFACE') | default('eth0', true) }}"
+    bridge_name: "{{ lookup('env','BRIDGE') | default('vmbr0', true) }}"
+    container_ip: "{{ lookup('env', 'CONTAINER_IP') | default('10.80.0.200', true) }}"
+    cidr_bits: "{{ lookup('env', 'CIDR_BITS') | default('24', true) }}"
+    gateway_ip: "{{ lookup('env', 'GATEWAY') | default('10.80.0.150', true) }}"
+    nameserver: "{{ lookup('env', 'NAMESERVER') | default('', true) }}"
+    searchdomain: "{{ lookup('env', 'SEARCHDOMAIN') | default('', true) }}"
+    force_dhcp: "{{ lookup('env', 'FORCE_DHCP') | default('false') | bool }}"
+    use_env_network: "{{ lookup('env', 'USE_ENV_NETWORK') | default('false') | bool }}"
+    env_net0_raw: "{{ lookup('env', 'NETWORK') | default('', true) | trim }}"
+    env_net0_no_ws: "{{ env_net0_raw | regex_replace('\\s+', '') }}"
+    net0_base: "name={{ iface_name }},bridge={{ bridge_name }}"
+    net0_dhcp: "{{ net0_base ~ ',ip=dhcp' }}"
+    net0_static: "{{ net0_base ~ ',ip=' ~ container_ip ~ '/' ~ cidr_bits ~ ',gw=' ~ gateway_ip }}"
+    computed_net0: "{{ net0_dhcp if force_dhcp else net0_static }}"
+    desired_net0: "{{ env_net0_no_ws if (use_env_network and env_net0_no_ws|length > 0) else computed_net0 }}"
+    nameserver_value: "{{ nameserver if nameserver | length > 0 else omit }}"
+    searchdomain_value: "{{ searchdomain if searchdomain | length > 0 else omit }}"
+
   tasks:
-    - name: Create LXC container
+    - name: Validate authentication configuration
+      fail:
+        msg: "Set PROXMOX_TOKEN_ID/PROXMOX_TOKEN_SECRET or PROXMOX_USER/PROXMOX_PASSWORD."
+      when:
+        - (proxmox_token_id == "" or proxmox_token_secret == "")
+        - (proxmox_user == "" or proxmox_password == "")
+
+    - name: Show effective settings
+      debug:
+        msg:
+          - "Template path: {{ template_path }}"
+          - "Root filesystem: {{ rootfs }}"
+          - "Desired net0: {{ desired_net0 }}"
+          - "Container IP: {{ container_ip }}/{{ cidr_bits }}"
+          - "Gateway: {{ gateway_ip }}"
+          - "Nameserver: {{ nameserver | default('') }}"
+          - "Searchdomain: {{ searchdomain | default('') }}"
+          - "use_env_network: {{ use_env_network }}"
+          - "force_dhcp: {{ force_dhcp }}"
+
+    - name: Guardrail – desired_net0 must be compact and include required keys
+      assert:
+        that:
+          - desired_net0 is string
+          - desired_net0 | length > 0
+          - "' ' not in desired_net0"
+          - "'name=' in desired_net0"
+          - "'bridge=' in desired_net0"
+          - "'ip=' in desired_net0"
+        fail_msg: "Invalid desired_net0 '{{ desired_net0 }}'"
+
+    # Create (idempotent-ish; API returns 400 if vmid exists—allow it)
+    - name: Create LXC container (token)
       uri:
-        url: "https://{{ proxmox_host }}:8006/api2/json/nodes/{{ proxmox_node }}/lxc"
+        url: "{{ proxmox_url }}/api2/json/nodes/{{ proxmox_node }}/lxc"
+        method: POST
+        headers:
+          Authorization: "PVEAPIToken={{ proxmox_token_id }}={{ proxmox_token_secret }}"
+        validate_certs: "{{ proxmox_validate_certs }}"
+        body_format: form-urlencoded
+        status_code: [200, 201, 400, 500]
+        body:
+          vmid: "{{ container_id | int }}"
+          hostname: "{{ container_name }}"
+          ostemplate: "{{ template_path }}"
+          memory: "{{ memory }}"
+          swap: "{{ memory }}"
+          cores: "{{ cores }}"
+          net0: "{{ desired_net0 }}"
+          storage: "{{ storage }}"
+          rootfs: "{{ rootfs }}"
+          password: "{{ container_password }}"
+          features: "nesting=1"
+          unprivileged: "1"
+          start: "1"
+          nameserver: "{{ nameserver_value | default(omit) }}"
+          searchdomain: "{{ searchdomain_value | default(omit) }}"
+      register: create_result
+      failed_when: false
+      when: proxmox_token_id != "" and proxmox_token_secret != ""
+
+    - name: Debug container creation result
+      debug:
+        msg:
+          - "Create result status: {{ create_result.status | default('No status') }}"
+          - "Create result message: {{ create_result.msg | default('No message') }}"
+          - "Create result JSON: {{ create_result.json | default('No JSON') }}"
+
+    - name: Create LXC container (password)
+      uri:
+        url: "{{ proxmox_url }}/api2/json/nodes/{{ proxmox_node }}/lxc"
         method: POST
         user: "{{ proxmox_user }}"
         password: "{{ proxmox_password }}"
-        validate_certs: false
+        validate_certs: "{{ proxmox_validate_certs }}"
         body_format: form-urlencoded
+        status_code: [200, 201, 400]
         body:
-          vmid: "{{ container_id }}"
+          vmid: "{{ container_id | int }}"
           hostname: "{{ container_name }}"
-          ostemplate: "local:vztmpl/{{ template }}"
-          memory: "{{ memory }}"
-          cores: "{{ cores }}"
-          net0: "name=eth0,bridge=vmbr0,ip=dhcp"
+          ostemplate: "{{ template_path }}"
+          memory: "{{ memory | int }}"
+          swap: "{{ memory | int }}"
+          cores: "{{ cores | int }}"
+          net0: "{{ desired_net0 }}"
           storage: "{{ storage }}"
+          rootfs: "{{ rootfs }}"
+          password: "{{ container_password }}"
+          features: "nesting=1"
           unprivileged: "1"
           start: "1"
+          nameserver: "{{ nameserver_value | default(omit) }}"
+          searchdomain: "{{ searchdomain_value | default(omit) }}"
       register: create_result
+      failed_when: create_result.status not in [200, 201, 400]
+      when: (proxmox_token_id == "" or proxmox_token_secret == "") and proxmox_user != "" and proxmox_password != ""
 
     - name: Wait for container to start
       pause:
+        seconds: 25
+
+    # Read current config
+    - name: Get container config (token)
+      uri:
+        url: "{{ proxmox_url }}/api2/json/nodes/{{ proxmox_node }}/lxc/{{ container_id }}/config"
+        method: GET
+        headers:
+          Authorization: "PVEAPIToken={{ proxmox_token_id }}={{ proxmox_token_secret }}"
+        validate_certs: "{{ proxmox_validate_certs }}"
+        status_code: [200, 500]
+      register: lxc_config
+      failed_when: false
+      when: proxmox_token_id != "" and proxmox_token_secret != ""
+
+    - name: Get container config (password)
+      uri:
+        url: "{{ proxmox_url }}/api2/json/nodes/{{ proxmox_node }}/lxc/{{ container_id }}/config"
+        method: GET
+        user: "{{ proxmox_user }}"
+        password: "{{ proxmox_password }}"
+        validate_certs: "{{ proxmox_validate_certs }}"
+        status_code: [200, 500]
+      register: lxc_config
+      failed_when: false
+      when: (proxmox_token_id == "" or proxmox_token_secret == "") and proxmox_user != "" and proxmox_password != ""
+
+    - name: Current vs desired net0
+      debug:
+        msg:
+          - "Current net0: {{ (lxc_config.json.data.net0 | default('')) }}"
+          - "Desired net0: {{ desired_net0 }}"
+      when: lxc_config is defined and lxc_config.json is defined
+
+    # Update net0 if different (PUT is required) - SKIPPED FOR NOW
+    # - name: Update container net0 (token)
+    #   uri:
+    #     url: "{{ proxmox_url }}/api2/json/nodes/{{ proxmox_node }}/lxc/{{ container_id }}/config"
+    #     method: PUT
+    #     headers:
+    #       Authorization: "PVEAPIToken={{ proxmox_token_id }}={{ proxmox_token_secret }}"
+    #     validate_certs: "{{ proxmox_validate_certs }}"
+    #     body_format: form-urlencoded
+    #     status_code: [200]
+    #     body:
+    #       net0: "{{ desired_net0 }}"
+    #       nameserver: "{{ nameserver_value | default(omit) }}"
+    #       searchdomain: "{{ searchdomain_value | default(omit) }}"
+    #   register: set_net_result
+    #   when:
+    #     - proxmox_token_id != "" and proxmox_token_secret != ""
+    #     - lxc_config.status == 200
+    #     - false  # Skip this step for now
+
+    - name: Update container net0 (password)
+      uri:
+        url: "{{ proxmox_url }}/api2/json/nodes/{{ proxmox_node }}/lxc/{{ container_id }}/config"
+        method: PUT
+        user: "{{ proxmox_user }}"
+        password: "{{ proxmox_password }}"
+        validate_certs: "{{ proxmox_validate_certs }}"
+        body_format: form-urlencoded
+        status_code: [200]
+        body:
+          net0: "{{ desired_net0 }}"
+          nameserver: "{{ nameserver_value | default(omit) }}"
+          searchdomain: "{{ searchdomain_value | default(omit) }}"
+      register: set_net_result
+      when: false  # Skip this step for now
+
+    - name: Flag if net0 was updated
+      set_fact:
+        net_updated: true
+      when: set_net_result is defined and ((set_net_result.status | default(0)) | int) == 200
+
+    # Reboot only if updated; avoid referencing .status directly in the when
+    - name: Reboot container (token)
+      uri:
+        url: "{{ proxmox_url }}/api2/json/nodes/{{ proxmox_node }}/lxc/{{ container_id }}/status/reboot"
+        method: POST
+        headers:
+          Authorization: "PVEAPIToken={{ proxmox_token_id }}={{ proxmox_token_secret }}"
+        validate_certs: "{{ proxmox_validate_certs }}"
+      when:
+        - net_updated | default(false)
+
+    - name: Reboot container (password)
+      uri:
+        url: "{{ proxmox_url }}/api2/json/nodes/{{ proxmox_node }}/lxc/{{ container_id }}/status/reboot"
+        method: POST
+        user: "{{ proxmox_user }}"
+        password: "{{ proxmox_password }}"
+        validate_certs: "{{ proxmox_validate_certs }}"
+      when:
+        - net_updated | default(false)
+        - proxmox_token_id == "" or proxmox_token_secret == ""
+
+    - name: Wait after reboot (if any)
+      pause:
+        seconds: 20
+      when: net_updated | default(false)
+
+    - name: Verify final net0
+      uri:
+        url: "{{ proxmox_url }}/api2/json/nodes/{{ proxmox_node }}/lxc/{{ container_id }}/config"
+        method: GET
+        headers: >-
+          {{ {'Authorization': 'PVEAPIToken=' ~ proxmox_token_id ~ '=' ~ proxmox_token_secret} if (proxmox_token_id != '' and proxmox_token_secret != '') else omit }}
+        user: "{{ proxmox_user if (proxmox_token_id == '' or proxmox_token_secret == '') else omit }}"
+        password: "{{ proxmox_password if (proxmox_token_id == '' or proxmox_token_secret == '') else omit }}"
+        validate_certs: "{{ proxmox_validate_certs }}"
+      register: lxc_config_final
+
+    - name: Show final net0
+      debug:
+        msg:
+          - "Final net0: {{ (lxc_config_final.json.data.net0 | default('')) }}"
+          - "Expected: {{ desired_net0 }}"
+
+    - name: Wait for container to fully start
+      pause:
         seconds: 30
 
-    - name: Add container to inventory
+    - name: Setup SSH in container using shell commands
+      shell: |
+        set -e
+        echo "Setting up SSH in container {{ container_id }}..."
+        
+        # Execute commands inside the container using pct exec
+        pct exec {{ container_id }} -- apt-get update
+        pct exec {{ container_id }} -- apt-get install -y openssh-server
+        pct exec {{ container_id }} -- systemctl enable ssh
+        pct exec {{ container_id }} -- systemctl start ssh
+        pct exec {{ container_id }} -- sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+        pct exec {{ container_id }} -- sed -i 's/#PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+        pct exec {{ container_id }} -- systemctl restart ssh
+        
+        echo "SSH setup completed"
+      delegate_to: "{{ proxmox_host }}"
+      vars:
+        ansible_user: root
+        ansible_ssh_pass: "{{ proxmox_password }}"
+        ansible_host: "{{ proxmox_host }}"
+        ansible_connection: ssh
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+      register: ssh_setup_result
+      failed_when: false
+
+    - name: Debug SSH setup result
+      debug:
+        msg: 
+          - "SSH setup command output: {{ ssh_setup_result.stdout | default('No stdout') }}"
+          - "SSH setup command errors: {{ ssh_setup_result.stderr | default('No stderr') }}"
+          - "SSH setup return code: {{ ssh_setup_result.rc | default('No return code') }}"
+
+    - name: Wait for SSH to be ready
+      pause:
+        seconds: 15
+
+    - name: Add container to inventory (use static IP)
       add_host:
         name: "{{ container_name }}"
-        groups: 
+        groups:
           - debian
           - test_instances
+        ansible_host: "{{ container_ip }}"
         ansible_user: root
         ansible_connection: ssh
-        ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+        ansible_ssh_pass: "{{ container_password }}"

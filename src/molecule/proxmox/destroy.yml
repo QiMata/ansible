@@ -3,30 +3,134 @@
   hosts: localhost
   gather_facts: false
   vars:
-    proxmox_host: "{{ lookup('env', 'PROXMOX_HOST') | default('192.168.1.100') }}"
+    proxmox_url: "{{ lookup('env', 'PROXMOX_URL') | default('https://192.168.1.100:8006') }}"
+    proxmox_host: "{{ proxmox_url | regex_replace('https?://', '') | regex_replace(':.*$', '') }}"
     proxmox_user: "{{ lookup('env', 'PROXMOX_USER') | default('root@pam') }}"
     proxmox_password: "{{ lookup('env', 'PROXMOX_PASSWORD') }}"
+    proxmox_token_id: "{{ lookup('env', 'PROXMOX_TOKEN_ID') }}"
+    proxmox_token_secret: "{{ lookup('env', 'PROXMOX_TOKEN_SECRET') }}"
+    proxmox_validate_certs: "{{ lookup('env', 'PROXMOX_VALIDATE_CERTS') | default('false') | bool }}"
     proxmox_node: "{{ lookup('env', 'PROXMOX_NODE') | default('pve') }}"
     container_id: "{{ lookup('env', 'CONTAINER_ID') | default('999') }}"
   tasks:
-    - name: Stop LXC container
+    - name: Validate authentication configuration
+      fail:
+        msg: "No valid authentication method configured. Please set either PROXMOX_TOKEN_ID and PROXMOX_TOKEN_SECRET, or PROXMOX_USER and PROXMOX_PASSWORD"
+      when: 
+        - (proxmox_token_id == "" or proxmox_token_secret == "")
+        - (proxmox_user == "" or proxmox_password == "")
+
+    - name: Display authentication method being used
+      debug:
+        msg: "{{ 'Using API token authentication' if (proxmox_token_id != '' and proxmox_token_secret != '') else 'Using username/password authentication' }}"
+
+    - name: List all LXC containers on node
       uri:
-        url: "https://{{ proxmox_host }}:8006/api2/json/nodes/{{ proxmox_node }}/lxc/{{ container_id }}/status/stop"
+        url: "{{ proxmox_url }}/api2/json/nodes/{{ proxmox_node }}/lxc"
+        method: GET
+        headers:
+          Authorization: "PVEAPIToken={{ proxmox_token_id }}={{ proxmox_token_secret }}"
+        validate_certs: "{{ proxmox_validate_certs }}"
+      register: container_list_token
+      ignore_errors: true
+      when: proxmox_token_id != "" and proxmox_token_secret != ""
+
+    - name: Check if our container exists in the list
+      set_fact:
+        container_exists: "{{ container_list_token.json.data | selectattr('vmid', 'equalto', container_id | int) | list | length > 0 }}"
+      when: container_list_token is defined and container_list_token.json is defined
+
+    - name: Check if LXC container exists using API token
+      uri:
+        url: "{{ proxmox_url }}/api2/json/nodes/{{ proxmox_node }}/lxc/{{ container_id }}/status/current"
+        method: GET
+        headers:
+          Authorization: "PVEAPIToken={{ proxmox_token_id }}={{ proxmox_token_secret }}"
+        validate_certs: "{{ proxmox_validate_certs }}"
+        status_code: [200, 404, 403, 500]
+      register: container_check_token
+      ignore_errors: true
+      when: 
+        - proxmox_token_id != "" and proxmox_token_secret != ""
+        - container_exists | default(true) # Only check if container might exist
+
+    - name: Check if LXC container exists using username/password
+      uri:
+        url: "{{ proxmox_url }}/api2/json/nodes/{{ proxmox_node }}/lxc/{{ container_id }}/status/current"
+        method: GET
+        user: "{{ proxmox_user }}"
+        password: "{{ proxmox_password }}"
+        validate_certs: "{{ proxmox_validate_certs }}"
+        status_code: [200, 404, 403, 500]
+      register: container_check_password
+      ignore_errors: true
+      when: (proxmox_token_id == "" or proxmox_token_secret == "") and proxmox_user != "" and proxmox_password != ""
+
+    - name: Display container existence status
+      debug:
+        msg: |
+          Container {{ container_id }} existence check:
+          - Container found in list: {{ container_exists | default('unknown') }}
+          - Token check status: {{ container_check_token.status | default('not performed') }}
+          - Password check status: {{ container_check_password.status | default('not performed') }}
+          - Container exists: {{ container_exists | default(false) or (container_check_token is defined and container_check_token.status is defined and container_check_token.status == 200) or (container_check_password is defined and container_check_password.status is defined and container_check_password.status == 200) }}
+      
+    - name: Skip destruction if container doesn't exist
+      debug:
+        msg: "Container {{ container_id }} doesn't exist or is not accessible. Skipping destruction."
+      when: 
+        - not (container_exists | default(false) or (container_check_token is defined and container_check_token.status is defined and container_check_token.status == 200) or (container_check_password is defined and container_check_password.status is defined and container_check_password.status == 200))
+
+    - name: Stop LXC container using API token (if available)
+      uri:
+        url: "{{ proxmox_url }}/api2/json/nodes/{{ proxmox_node }}/lxc/{{ container_id }}/status/stop"
+        method: POST
+        headers:
+          Authorization: "PVEAPIToken={{ proxmox_token_id }}={{ proxmox_token_secret }}"
+        validate_certs: "{{ proxmox_validate_certs }}"
+      ignore_errors: true
+      when: 
+        - proxmox_token_id != "" and proxmox_token_secret != ""
+        - container_exists | default(false) or (container_check_token is defined and container_check_token.status is defined and container_check_token.status == 200)
+
+    - name: Stop LXC container using username/password (fallback)
+      uri:
+        url: "{{ proxmox_url }}/api2/json/nodes/{{ proxmox_node }}/lxc/{{ container_id }}/status/stop"
         method: POST
         user: "{{ proxmox_user }}"
         password: "{{ proxmox_password }}"
-        validate_certs: false
+        validate_certs: "{{ proxmox_validate_certs }}"
       ignore_errors: true
+      when: 
+        - (proxmox_token_id == "" or proxmox_token_secret == "") and proxmox_user != "" and proxmox_password != ""
+        - container_exists | default(false) or (container_check_password is defined and container_check_password.status is defined and container_check_password.status == 200)
 
     - name: Wait for container to stop
       pause:
         seconds: 10
+      when: 
+        - container_exists | default(false) or (container_check_token is defined and container_check_token.status is defined and container_check_token.status == 200) or (container_check_password is defined and container_check_password.status is defined and container_check_password.status == 200)
 
-    - name: Destroy LXC container
+    - name: Destroy LXC container using API token (if available)
       uri:
-        url: "https://{{ proxmox_host }}:8006/api2/json/nodes/{{ proxmox_node }}/lxc/{{ container_id }}"
+        url: "{{ proxmox_url }}/api2/json/nodes/{{ proxmox_node }}/lxc/{{ container_id }}"
+        method: DELETE
+        headers:
+          Authorization: "PVEAPIToken={{ proxmox_token_id }}={{ proxmox_token_secret }}"
+        validate_certs: "{{ proxmox_validate_certs }}"
+      ignore_errors: true
+      when: 
+        - proxmox_token_id != "" and proxmox_token_secret != ""
+        - container_exists | default(false) or (container_check_token is defined and container_check_token.status is defined and container_check_token.status == 200)
+
+    - name: Destroy LXC container using username/password (fallback)
+      uri:
+        url: "{{ proxmox_url }}/api2/json/nodes/{{ proxmox_node }}/lxc/{{ container_id }}"
         method: DELETE
         user: "{{ proxmox_user }}"
         password: "{{ proxmox_password }}"
-        validate_certs: false
+        validate_certs: "{{ proxmox_validate_certs }}"
       ignore_errors: true
+      when: 
+        - (proxmox_token_id == "" or proxmox_token_secret == "") and proxmox_user != "" and proxmox_password != ""
+        - container_exists | default(false) or (container_check_password is defined and container_check_password.status is defined and container_check_password.status == 200)

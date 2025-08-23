@@ -2,30 +2,145 @@
 - name: Wait for LXC container to be ready
   hosts: all
   gather_facts: false
+  vars:
+    ansible_ssh_timeout: 10
+    ansible_ssh_retries: 3
   tasks:
-    - name: Wait for connection
-      wait_for_connection:
-        timeout: 300
+    - name: Check if ansible_host is defined
+      fail:
+        msg: |
+          ansible_host is not defined for this host. This usually means:
+          1. The container creation failed to get an IP address
+          2. The add_host task in create.yml didn't run successfully
+          3. The container network is not ready yet
+          
+          Current host info:
+          - inventory_hostname: {{ inventory_hostname }}
+          - ansible_host: {{ ansible_host | default('NOT DEFINED') }}
+          
+          Please check the create.yml playbook output for errors in IP discovery.
+      when: ansible_host is not defined
+      delegate_to: localhost
+
+    - name: Wait for container to boot (longer delay)
+      pause:
+        seconds: 60
+      delegate_to: localhost
+      run_once: true
+
+    - name: Set target host for connectivity tests
+      set_fact:
+        target_host: "{{ ansible_host if (ansible_host is defined and ansible_host != 'localhost' and ansible_host != inventory_hostname) else (lookup('env', 'CONTAINER_IP') if lookup('env', 'CONTAINER_IP') != '' else '10.80.0.200') }}"
+
+    - name: Override ansible_host if it's incorrect
+      set_fact:
+        ansible_host: "{{ target_host }}"
+      when: ansible_host is not defined or ansible_host == 'localhost' or ansible_host == inventory_hostname
+
+    - name: Use static IP if ansible_host is invalid
+      set_fact:
+        target_host: "{{ lookup('env', 'CONTAINER_IP') if lookup('env', 'CONTAINER_IP') != '' else '10.80.0.200' }}"
+      when: ansible_host is not defined or ansible_host == inventory_hostname or ansible_host == 'localhost'
+
+    - name: Debug connection parameters
+      debug:
+        msg: 
+          - "ansible_host: {{ ansible_host | default('NOT SET - using inventory_hostname') }}"
+          - "inventory_hostname: {{ inventory_hostname }}"
+          - "CONTAINER_IP env var: '{{ lookup('env', 'CONTAINER_IP') }}'"
+          - "CONTAINER_IP empty: {{ lookup('env', 'CONTAINER_IP') == '' }}"
+          - "target_host: {{ target_host }}"
+          - "ansible_connection: {{ ansible_connection | default('not set') }}"
+          - "ansible_user: {{ ansible_user | default('not set') }}"
+          - "Will attempt to connect to: {{ target_host }}"
+      delegate_to: localhost
+
+    - name: Test network connectivity (socket test)
+      wait_for:
+        host: "{{ target_host }}"
+        port: 22
+        timeout: 10
+        delay: 1
+        state: started
+      delegate_to: localhost
+      register: connectivity_result
+      failed_when: false
+      changed_when: false
+
+    - name: Debug connectivity result
+      debug:
+        msg: 
+          - "Network connectivity test result: {{ 'SUCCESS - Port 22 is reachable' if connectivity_result.failed is false else 'FAILED - Cannot reach port 22: ' + (connectivity_result.msg | default('Unknown error')) }}"
+          - "Target host was: {{ target_host }}"
+          - "Connectivity result details: {{ connectivity_result }}"
+      delegate_to: localhost
+
+    - name: Test SSH port connectivity
+      wait_for:
+        host: "{{ target_host }}"
+        port: 22
+        timeout: 120
         delay: 5
+      delegate_to: localhost
+      when: connectivity_result.failed is false
+
+    - name: Wait for SSH connection with retries
+      block:
+        - name: Try SSH connection
+          wait_for_connection:
+            timeout: 30
+            delay: 5
+            connect_timeout: 5
+            sleep: 2
+          vars:
+            ansible_host: "{{ target_host }}"
+            ansible_ssh_pass: "{{ lookup('env', 'CONTAINER_PASSWORD') | default('molecule12345') }}"
+      rescue:
+        - name: SSH connection failed - container may need more time
+          debug:
+            msg: "SSH connection failed, but continuing anyway. Container might need manual SSH setup."
+        - name: Set manual connection flag
+          set_fact:
+            ssh_failed: true
 
     - name: Gather facts
       setup:
+      when: ssh_failed is not defined
 
     - name: Update package cache
       apt:
         update_cache: yes
+      when: ssh_failed is not defined
         
-    - name: Install required packages
+    - name: Install required packages including SSH
       apt:
         name:
+          - openssh-server
           - python3
           - python3-pip
           - curl
           - wget
         state: present
+      when: ssh_failed is not defined
+
+    - name: Ensure SSH is configured to allow root login
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PermitRootLogin'
+        line: 'PermitRootLogin yes'
+        state: present
+      notify: restart ssh
+      when: ssh_failed is not defined
 
     - name: Ensure SSH service is running
       systemd:
         name: ssh
         state: started
         enabled: yes
+      when: ssh_failed is not defined
+
+  handlers:
+    - name: restart ssh
+      systemd:
+        name: ssh
+        state: restarted

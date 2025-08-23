@@ -1,8 +1,12 @@
 ---
 dependency:
   name: galaxy
+  enabled: false
+  options:
+    requirements-file: src/molecule/proxmox/requirements.yml
+    force: false
 driver:
-  name: delegated
+  name: default
   options:
     managed: false
     ansible_connection_options:
@@ -23,9 +27,11 @@ provisioner:
   inventory:
     host_vars:
       debian-test-instance:
+        ansible_host: "{{ lookup('env', 'CONTAINER_IP') | default('10.80.0.200') }}"
         ansible_user: root
         ansible_connection: ssh
-        ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+        ansible_ssh_pass: "{{ lookup('env', 'CONTAINER_PASSWORD') | default('molecule12345') }}"
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
   config_options:
     defaults:
       host_key_checking: false

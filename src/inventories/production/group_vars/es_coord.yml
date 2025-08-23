@@ -1,5 +1,0 @@
----
-node_roles:
-  - remote_cluster_client
-  - ingest
-elasticsearch_config_heap_size: "4g"

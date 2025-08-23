@@ -1,0 +1,95 @@
+# Example GitHub Actions workflow for Molecule Proxmox testing
+# Save this as .github/workflows/molecule-test.yml
+
+name: Molecule CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'src/**'
+      - '.github/workflows/molecule-test.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+
+jobs:
+  molecule-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        scenario: [proxmox, default]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build molecule Docker image
+      run: |
+        cd src/docker
+        docker build -f Dockerfile.molecule-proxmox -t ansible-molecule-proxmox:latest ../..
+
+    - name: Create environment file
+      run: |
+        cp src/molecule/proxmox/.env.example src/molecule/proxmox/.env
+        # Update with actual values from secrets
+        sed -i "s/your-proxmox-server.local/${{ secrets.PROXMOX_HOST }}/g" src/molecule/proxmox/.env
+        sed -i "s/root@pam/${{ secrets.PROXMOX_USER }}/g" src/molecule/proxmox/.env
+        sed -i "s/your-password/${{ secrets.PROXMOX_PASSWORD }}/g" src/molecule/proxmox/.env
+
+    - name: Start molecule environment
+      run: |
+        cd src/docker
+        docker-compose -f docker-compose.molecule.yml up -d
+      env:
+        PROXMOX_HOST: ${{ secrets.PROXMOX_HOST }}
+        PROXMOX_USER: ${{ secrets.PROXMOX_USER }}
+        PROXMOX_PASSWORD: ${{ secrets.PROXMOX_PASSWORD }}
+        PROXMOX_NODE: ${{ secrets.PROXMOX_NODE }}
+
+    - name: Run molecule test
+      run: |
+        cd src/docker
+        docker-compose -f docker-compose.molecule.yml exec -T molecule-proxmox \
+          bash -c "cd /ansible/src && molecule test -s ${{ matrix.scenario }}"
+      env:
+        PROXMOX_HOST: ${{ secrets.PROXMOX_HOST }}
+        PROXMOX_USER: ${{ secrets.PROXMOX_USER }}
+        PROXMOX_PASSWORD: ${{ secrets.PROXMOX_PASSWORD }}
+
+    - name: Upload molecule logs
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: molecule-logs-${{ matrix.scenario }}
+        path: src/molecule/${{ matrix.scenario }}/.molecule/
+
+    - name: Cleanup
+      if: always()
+      run: |
+        cd src/docker
+        docker-compose -f docker-compose.molecule.yml down --volumes --remove-orphans
+
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: molecule-test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'ansible-molecule-proxmox:latest'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results.sarif'

@@ -2,12 +2,12 @@
 plugin: community.general.proxmox
 
 # Proxmox connection details
-url: https://your-proxmox-server:8006
-user: ansible@pve  # or ansible@pam for local users
-password: your-password
+url: https://10.80.0.1:8006
+# user: ansible@pve  # or ansible@pam for local users
+# password: your-password
 # Alternatively, use token authentication (recommended):
-# token_id: ansible@pve!ansible-token
-# token_secret: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+vault_proxmox_token_id: ""
+vault_proxmox_token_secret: ""
 
 # SSL verification (set to false if using self-signed certificates)
 validate_certs: false

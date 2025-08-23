@@ -1,0 +1,65 @@
+# Docker Compose for Molecule Proxmox Testing
+
+services:
+  molecule-proxmox:
+    build:
+      context: ../..
+      dockerfile: src/docker/Dockerfile.molecule-proxmox
+    image: ansible-molecule-proxmox:latest
+    container_name: molecule-proxmox-runner
+    user: "1000:1000"  # Run as ansible user
+    environment:
+      # Fix HOME directory
+      - HOME=/home/ansible
+      
+      # Proxmox connection details (override via .env file)
+      - PROXMOX_URL=${PROXMOX_URL:-https://192.168.1.100:8006}
+      - PROXMOX_USER=${PROXMOX_USER:-root@pam}
+      - PROXMOX_PASSWORD=${PROXMOX_PASSWORD}
+      - PROXMOX_TOKEN_ID=${PROXMOX_TOKEN_ID}
+      - PROXMOX_TOKEN_SECRET=${PROXMOX_TOKEN_SECRET}
+      - PROXMOX_VALIDATE_CERTS=${PROXMOX_VALIDATE_CERTS:-false}
+      - PROXMOX_NODE=${PROXMOX_NODE:-pve}
+      
+      # Container configuration
+      - CONTAINER_ID=${CONTAINER_ID:-999}
+      - TEMPLATE=${TEMPLATE:-debian-12-standard_12.2-1_amd64.tar.zst}
+      - STORAGE=${STORAGE:-local-lvm}
+      - TEMPLATE_STORAGE=${TEMPLATE_STORAGE:-local}
+      - MEMORY=${MEMORY:-1024}
+      - CORES=${CORES:-2}
+      - DISK_SIZE=${DISK_SIZE:-10G}
+      - CONTAINER_PASSWORD=${CONTAINER_PASSWORD:-molecule12345}
+      - NETWORK=${NETWORK:-name=eth0,bridge=vmbr0,ip=dhcp}
+      - CONTAINER_IP=${CONTAINER_IP:-10.80.0.200}
+      
+      # Molecule configuration
+      - MOLECULE_EPHEMERAL_DIRECTORY=/home/ansible/.molecule
+      - ANSIBLE_HOST_KEY_CHECKING=False
+      - ANSIBLE_STDOUT_CALLBACK=yaml
+      - ANSIBLE_FORCE_COLOR=1
+      - ANSIBLE_CONFIG=/ansible/src/ansible.cfg
+      
+    volumes:
+      # Mount the entire Ansible project
+      - ../..:/ansible:rw
+      
+      # Persist molecule cache in user home directory
+      - molecule_cache:/home/ansible/.molecule
+      
+    working_dir: /ansible
+    networks:
+      - molecule-network
+    tty: true
+    stdin_open: true
+    
+    # Override command for interactive use
+    command: /bin/bash
+
+volumes:
+  molecule_cache:
+    driver: local
+
+networks:
+  molecule-network:
+    driver: bridge

@@ -1,0 +1,82 @@
+# Dockerfile for Molecule Testing with Proxmox Support
+FROM python:3.11-slim
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV MOLECULE_NO_LOG=false
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    openssh-client \
+    git \
+    curl \
+    wget \
+    jq \
+    vim \
+    ca-certificates \
+    gnupg \
+    lsb-release \
+    sshpass \
+    rsync \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create ansible user with proper UID/GID for compatibility
+RUN groupadd -g 1000 ansible && \
+    useradd -d /home/ansible -u 1000 -g 1000 -m -s /bin/bash ansible
+
+# Create directories with proper permissions
+RUN mkdir -p /ansible /home/ansible/.molecule /home/ansible/.cache && \
+    chown -R ansible:ansible /ansible /home/ansible
+
+# Set working directory
+WORKDIR /ansible
+
+# Copy requirements files
+COPY src/molecule/proxmox/requirements.txt /tmp/molecule-requirements.txt
+COPY src/molecule/proxmox/requirements.yml /tmp/molecule-ansible-requirements.yml
+
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir \
+    molecule[docker] \
+    molecule-plugins \
+    ansible-core>=2.14 \
+    requests \
+    urllib3 \
+    paramiko \
+    pytest \
+    testinfra \
+    yamllint \
+    ansible-lint \
+    jmespath \
+    netaddr \
+    && pip install --no-cache-dir -r /tmp/molecule-requirements.txt
+
+# Install Ansible collections
+COPY src/molecule/proxmox/requirements.yml /tmp/requirements.yml
+RUN ansible-galaxy collection install -r /tmp/requirements.yml || true
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /ansible/{playbooks,roles,inventories,group_vars,host_vars} && \
+    mkdir -p /home/ansible/.ssh && \
+    mkdir -p /home/ansible/.cache/ansible && \
+    mkdir -p /home/ansible/.molecule && \
+    chmod 755 /home/ansible/.molecule && \
+    chown -R ansible:ansible /ansible /home/ansible
+
+# Switch to ansible user
+USER ansible
+
+# Create SSH config with relaxed host checking
+RUN echo "Host *" > /home/ansible/.ssh/config && \
+    echo "    StrictHostKeyChecking no" >> /home/ansible/.ssh/config && \
+    echo "    UserKnownHostsFile=/dev/null" >> /home/ansible/.ssh/config && \
+    chmod 600 /home/ansible/.ssh/config
+
+# Set default command
+CMD ["/bin/bash"]
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python --version && ansible --version && molecule --version

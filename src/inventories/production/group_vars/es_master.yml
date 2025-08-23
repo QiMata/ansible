@@ -1,4 +1,0 @@
----
-node_roles:
-  - master
-elasticsearch_config_heap_size: "2g"

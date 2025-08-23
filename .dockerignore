@@ -1,0 +1,70 @@
+# Docker ignore file for Molecule Proxmox build
+# Exclude unnecessary files to speed up Docker build
+
+# Git files
+.git/
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.pytest_cache/
+.coverage
+
+# Ansible files that aren't needed in container
+*.retry
+.ansible/
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+
+# Node modules (if any)
+node_modules/
+
+# Build artifacts
+build/
+dist/
+target/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# Molecule cache (will be mounted as volume)
+.molecule/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Docker files we don't need to copy
+docker-compose*.yml
+Dockerfile*
+!Dockerfile.molecule-proxmox
