@@ -1,0 +1,9 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: "Include python_git_repo_service_install role"
+      ansible.builtin.include_role:
+        name: python_git_repo_service_install

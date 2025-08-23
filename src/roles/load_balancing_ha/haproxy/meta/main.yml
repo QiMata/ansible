@@ -1,5 +1,7 @@
 ---
 galaxy_info:
+  role_name: haproxy
+  namespace: load_balancing_ha
   author: Example Inc.
   description: HAProxy role
   license: MIT

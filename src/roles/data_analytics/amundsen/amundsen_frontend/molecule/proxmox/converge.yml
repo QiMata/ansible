@@ -1,0 +1,9 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: "Include amundsen_frontend role"
+      ansible.builtin.include_role:
+        name: amundsen_frontend

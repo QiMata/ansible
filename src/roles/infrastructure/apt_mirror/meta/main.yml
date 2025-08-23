@@ -1,6 +1,7 @@
 ---
 galaxy_info:
   role_name: apt_mirror
+  namespace: infrastructure
   author: Example Inc.
   description: "Enterprise-grade apt-mirror with health monitoring, performance metrics, alerting, bandwidth control, selective mirroring, client discovery, and analytics."
   license: MIT

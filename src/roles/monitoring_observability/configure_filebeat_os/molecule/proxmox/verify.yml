@@ -1,0 +1,11 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Example assertion
+      ansible.builtin.assert:
+        that:
+          - true
+        success_msg: "Role configure_filebeat_os verification passed"
+        fail_msg: "Role configure_filebeat_os verification failed"

@@ -1,5 +1,7 @@
 ---
 galaxy_info:
+  role_name: airflow_connector
+  namespace: data_analytics
   author: "Ansible Automation"
   description: "Ansible role for managing Apache Airflow connections"
   company: "QiMata Technologies"

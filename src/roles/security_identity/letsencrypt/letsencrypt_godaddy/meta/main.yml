@@ -1,6 +1,7 @@
 ---
 galaxy_info:
   role_name: letsencrypt_godaddy
+  namespace: security_identity
   author: Example Inc.
   description: Obtain and renew Let's Encrypt certificates using GoDaddy DNS API via acme.sh
   license: MIT

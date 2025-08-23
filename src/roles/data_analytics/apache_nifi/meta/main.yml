@@ -1,6 +1,7 @@
 ---
 galaxy_info:
   role_name: apache_nifi
+  namespace: data_analytics
   author: Example Inc.
   description: Install & configure Apache NiFi with enhanced security, monitoring, backup, and management features
   license: MIT

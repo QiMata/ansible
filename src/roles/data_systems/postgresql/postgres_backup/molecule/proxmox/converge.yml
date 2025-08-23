@@ -1,0 +1,9 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: "Include postgres_backup role"
+      ansible.builtin.include_role:
+        name: postgres_backup

@@ -1,5 +1,7 @@
 ---
 galaxy_info:
+  role_name: keepalived
+  namespace: load_balancing_ha
   author: Example Inc.
   description: Keepalived role
   license: MIT

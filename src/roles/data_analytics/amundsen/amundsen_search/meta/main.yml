@@ -1,5 +1,7 @@
 ---
 galaxy_info:
+  role_name: amundsen_search
+  namespace: data_analytics
   author: Amundsen Team
   description: Enhanced Amundsen Search service with authentication, TLS, monitoring, and more
   company: 

@@ -11,5 +11,8 @@ platforms:
     pre_build_image: true
 provisioner:
   name: ansible
+  config_options:
+    defaults:
+      role_name_check: False
 verifier:
   name: ansible

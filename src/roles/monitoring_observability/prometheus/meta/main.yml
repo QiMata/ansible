@@ -1,5 +1,7 @@
 ---
 galaxy_info:
+  role_name: prometheus
+  namespace: monitoring_observability
   author: Example Inc.
   description: Install and configure Prometheus on Debian-based systems
   company: Example Inc.

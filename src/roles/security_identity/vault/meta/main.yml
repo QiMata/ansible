@@ -1,5 +1,7 @@
 ---
 galaxy_info:
+  role_name: vault
+  namespace: security_identity
   author: Example Inc.
   description: |
     Comprehensive HashiCorp Vault deployment with support for multiple storage backends,

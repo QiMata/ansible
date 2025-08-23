@@ -1,6 +1,7 @@
 ---
 galaxy_info:
   role_name: elasticsearch_snapshot
+  namespace: data_systems
   author: Example Inc.
   description: Configure Elasticsearch snapshot management
   license: MIT

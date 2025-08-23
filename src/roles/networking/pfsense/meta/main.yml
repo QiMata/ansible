@@ -1,5 +1,7 @@
 ---
 galaxy_info:
+  role_name: pfsense
+  namespace: networking
   author: Systems Admin Team
   description: Comprehensive pfSense firewall configuration role
   company: Your Organization

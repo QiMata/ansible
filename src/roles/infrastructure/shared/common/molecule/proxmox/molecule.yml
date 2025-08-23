@@ -1,0 +1,42 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: community.general.proxmox
+platforms:
+  - name: common-test
+    template: debian-12-template
+    node: proxmox-node1
+    vmid: auto
+    memory: 1024
+    cores: 1
+    disk_size: 8
+    network_bridge: vmbr0
+    ssh_user: ansible
+    ssh_public_key_file: ~/.ssh/id_rsa.pub
+    ssh_private_key_file: ~/.ssh/id_rsa
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      role_name_check: False
+      host_key_checking: False
+    ssh_connection:
+      ssh_args: -o ControlMaster=auto -o ControlPersist=60s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no
+verifier:
+  name: ansible
+scenario:
+  name: proxmox
+  test_sequence:
+    - dependency
+    - cleanup
+    - destroy
+    - syntax
+    - create
+    - prepare
+    - converge
+    - idempotence
+    - side_effect
+    - verify
+    - cleanup
+    - destroy

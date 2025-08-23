@@ -1,0 +1,54 @@
+---
+dependency:
+  name: galaxy
+  enabled: false
+driver:
+  name: default
+  options:
+    managed: false
+    ansible_connection_options:
+      ansible_connection: ssh
+platforms:
+  - name: jenkins_backup-test-instance
+    groups:
+      - test_instances
+      - jenkins_backup_test
+provisioner:
+  name: ansible
+  playbooks:
+    create: ../../proxmox/create.yml
+    prepare: prepare.yml
+    converge: converge.yml
+    verify: verify.yml
+    destroy: ../../proxmox/destroy.yml
+  inventory:
+    host_vars:
+      jenkins_backup-test-instance:
+        ansible_host: "{{ lookup('env', 'CONTAINER_IP') | default('10.80.0.200') }}"
+        ansible_user: root
+        ansible_connection: ssh
+        ansible_ssh_pass: "{{ lookup('env', 'CONTAINER_PASSWORD') | default('molecule12345') }}"
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+  config_options:
+    defaults:
+      host_key_checking: false
+      stdout_callback: yaml
+      bin_ansible_callbacks: true
+      role_name_check: False
+verifier:
+  name: ansible
+scenario:
+  name: proxmox
+  test_sequence:
+    - dependency
+    - cleanup
+    - destroy
+    - syntax
+    - create
+    - prepare
+    - converge
+    - idempotence
+    - side_effect
+    - verify
+    - cleanup
+    - destroy

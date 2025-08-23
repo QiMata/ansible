@@ -1,5 +1,7 @@
 ---
 galaxy_info:
+  role_name: grafana
+  namespace: monitoring_observability
   author: YourName
   description: Ansible role to deploy Grafana with comprehensive features including HA, LDAP, OAuth, alerting, monitoring, and advanced management
   license: MIT

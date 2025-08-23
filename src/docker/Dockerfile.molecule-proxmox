@@ -55,18 +55,21 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Install Ansible collections
 COPY src/molecule/proxmox/requirements.yml /tmp/requirements.yml
-RUN ansible-galaxy collection install -r /tmp/requirements.yml || true
 
-# Create necessary directories with proper permissions
+# Create necessary directories with proper permissions first
 RUN mkdir -p /ansible/{playbooks,roles,inventories,group_vars,host_vars} && \
     mkdir -p /home/ansible/.ssh && \
     mkdir -p /home/ansible/.cache/ansible && \
     mkdir -p /home/ansible/.molecule && \
+    mkdir -p /home/ansible/.ansible/collections && \
     chmod 755 /home/ansible/.molecule && \
     chown -R ansible:ansible /ansible /home/ansible
 
-# Switch to ansible user
+# Switch to ansible user before installing collections
 USER ansible
+
+# Install collections as ansible user
+RUN ansible-galaxy collection install -r /tmp/requirements.yml --force
 
 # Create SSH config with relaxed host checking
 RUN echo "Host *" > /home/ansible/.ssh/config && \

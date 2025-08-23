@@ -1,6 +1,7 @@
 ---
 galaxy_info:
   role_name: netbox
+  namespace: operations_management
   author: Example Inc.
   description: Deploy NetBox network inventory
   license: MIT

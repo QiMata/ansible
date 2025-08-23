@@ -1,0 +1,9 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: "Include apache_superset role"
+      ansible.builtin.include_role:
+        name: apache_superset

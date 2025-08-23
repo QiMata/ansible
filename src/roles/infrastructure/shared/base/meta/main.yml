@@ -1,6 +1,7 @@
 ---
 galaxy_info:
   role_name: base
+  namespace: infrastructure
   author: Example Inc.
   description: Base system configuration
   license: MIT

@@ -1,6 +1,7 @@
 ---
 galaxy_info:
   role_name: elasticsearch_security
+  namespace: data_systems
   author: Example Inc.
   description: Manage Elasticsearch security configuration
   license: MIT

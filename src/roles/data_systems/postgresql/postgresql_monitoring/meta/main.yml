@@ -2,6 +2,8 @@
 dependencies: []
 
 galaxy_info:
+  role_name: postgresql_monitoring
+  namespace: data_systems
   author: "Systems Admin Team"
   description: "PostgreSQL monitoring and observability extension"
   company: "Your Organization"

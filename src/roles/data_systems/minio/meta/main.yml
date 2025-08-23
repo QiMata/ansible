@@ -1,6 +1,7 @@
 ---
 galaxy_info:
-  role_name: minio_systemd
+  role_name: minio
+  namespace: data_systems
   description: Install and configure MinIO object storage with clustering, security, monitoring, and backup features
   author: Example Inc.
   license: MIT

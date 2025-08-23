@@ -1,0 +1,9 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: "Include spark_role role"
+      ansible.builtin.include_role:
+        name: spark_role

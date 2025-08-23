@@ -1,6 +1,7 @@
 ---
 galaxy_info:
   role_name: keycloak
+  namespace: security_identity
   author: Example Inc.
   description: Install and configure Keycloak
   license: MIT

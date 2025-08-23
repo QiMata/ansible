@@ -1,6 +1,7 @@
 ---
 galaxy_info:
   role_name: apache_airflow
+  namespace: example_inc
   author: Example Inc.
   description: Install and manage Apache Airflow on Debian/Ubuntu using systemd (supports single-node and multi-node HA setups)
   license: MIT

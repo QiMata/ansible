@@ -1,5 +1,7 @@
 ---
 galaxy_info:
+  role_name: snapca_client
+  namespace: security_identity
   author: Your Organization
   description: Ansible role for obtaining and managing certificates from Smallstep Step CA
   company: Your Company

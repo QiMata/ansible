@@ -1,6 +1,7 @@
 ---
 galaxy_info:
   role_name: bind9
+  namespace: networking
   author: Example Inc.
   description: Manage BIND9 DNS servers
   license: MIT

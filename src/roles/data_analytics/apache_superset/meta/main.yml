@@ -1,6 +1,7 @@
 ---
 galaxy_info:
   role_name: apache_superset
+  namespace: data_analytics
   author: Example Inc.
   description: "Deploy Apache Superset on Debian-based systems with enhanced features"
   license: "MIT"
