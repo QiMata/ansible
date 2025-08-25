@@ -134,6 +134,7 @@ function Start-ContainerIfNeeded {
         Write-Info "Ensuring Docker container is ready..."
         & "$ScriptDir\run-molecule-tests.ps1" "build"
         & "$ScriptDir\run-molecule-tests.ps1" "start"
+        & "$ScriptDir\run-molecule-tests.ps1" "create"
     }
 }
 

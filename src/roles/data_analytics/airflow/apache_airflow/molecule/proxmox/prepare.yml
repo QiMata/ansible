@@ -1,9 +1,36 @@
 ---
 - name: Prepare
   hosts: all
-  become: true
-  gather_facts: true
+  become: false  # We're already running as root in the container
+  gather_facts: false
   tasks:
+    - name: Debug connection parameters
+      debug:
+        msg:
+          - "ansible_host: {{ ansible_host | default('not set') }}"
+          - "inventory_hostname: {{ inventory_hostname }}"
+          - "ansible_user: {{ ansible_user | default('not set') }}"
+          - "ansible_connection: {{ ansible_connection | default('not set') }}"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Wait for container to be ready (extended)
+      wait_for:
+        host: "{{ ansible_host }}"
+        port: 22
+        delay: 10
+        timeout: 120
+        state: started
+      delegate_to: localhost
+      run_once: true
+
+    - name: Test SSH connectivity
+      ping:
+        data: "Test from apache_airflow prepare"
+
+    - name: Gather facts
+      setup:
+
     - name: Update package cache
       ansible.builtin.apt:
         update_cache: true

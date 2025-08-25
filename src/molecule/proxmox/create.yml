@@ -276,11 +276,21 @@
         
         # Execute commands inside the container using pct exec
         pct exec {{ container_id }} -- apt-get update
-        pct exec {{ container_id }} -- apt-get install -y openssh-server
+        pct exec {{ container_id }} -- apt-get install -y openssh-server sudo
+        
+        # Create molecule user with sudo permissions
+        pct exec {{ container_id }} -- useradd -m -s /bin/bash -G sudo molecule
+        pct exec {{ container_id }} -- bash -c "echo 'molecule:molecule123' | chpasswd"
+        pct exec {{ container_id }} -- bash -c "echo 'molecule ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers"
+        
+        # Configure SSH to disable root login and enable password authentication
+        pct exec {{ container_id }} -- sed -i 's/#PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+        pct exec {{ container_id }} -- sed -i 's/#PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+        pct exec {{ container_id }} -- sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+        
+        # Enable and start SSH service
         pct exec {{ container_id }} -- systemctl enable ssh
         pct exec {{ container_id }} -- systemctl start ssh
-        pct exec {{ container_id }} -- sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
-        pct exec {{ container_id }} -- sed -i 's/#PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
         pct exec {{ container_id }} -- systemctl restart ssh
         
         echo "SSH setup completed"
@@ -312,7 +322,9 @@
           - debian
           - test_instances
         ansible_host: "{{ container_ip }}"
-        ansible_user: root
+        ansible_user: molecule
         ansible_connection: ssh
         ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
-        ansible_ssh_pass: "{{ container_password }}"
+        ansible_ssh_pass: molecule123
+        ansible_become: yes
+        ansible_become_method: sudo

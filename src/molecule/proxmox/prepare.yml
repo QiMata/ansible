@@ -51,7 +51,7 @@
           - "CONTAINER_IP empty: {{ lookup('env', 'CONTAINER_IP') == '' }}"
           - "target_host: {{ target_host }}"
           - "ansible_connection: {{ ansible_connection | default('not set') }}"
-          - "ansible_user: {{ ansible_user | default('not set') }}"
+          - "ansible_user: {{ ansible_user | default('not determined') }}"
           - "Will attempt to connect to: {{ target_host }}"
       delegate_to: localhost
 
@@ -94,7 +94,7 @@
             sleep: 2
           vars:
             ansible_host: "{{ target_host }}"
-            ansible_ssh_pass: "{{ lookup('env', 'CONTAINER_PASSWORD') | default('molecule12345') }}"
+            ansible_ssh_pass: "{{ 'molecule123' if ansible_user == 'molecule' else lookup('env', 'CONTAINER_PASSWORD') | default('molecule12345') }}"
       rescue:
         - name: SSH connection failed - container may need more time
           debug:
@@ -105,11 +105,13 @@
 
     - name: Gather facts
       setup:
+      become: yes
       when: ssh_failed is not defined
 
     - name: Update package cache
       apt:
         update_cache: yes
+      become: yes
       when: ssh_failed is not defined
         
     - name: Install required packages including SSH
@@ -120,16 +122,9 @@
           - python3-pip
           - curl
           - wget
+          - sudo
         state: present
-      when: ssh_failed is not defined
-
-    - name: Ensure SSH is configured to allow root login
-      lineinfile:
-        path: /etc/ssh/sshd_config
-        regexp: '^#?PermitRootLogin'
-        line: 'PermitRootLogin yes'
-        state: present
-      notify: restart ssh
+      become: yes
       when: ssh_failed is not defined
 
     - name: Ensure SSH service is running
@@ -137,6 +132,7 @@
         name: ssh
         state: started
         enabled: yes
+      become: yes
       when: ssh_failed is not defined
 
   handlers:
@@ -144,3 +140,4 @@
       systemd:
         name: ssh
         state: restarted
+      become: yes
