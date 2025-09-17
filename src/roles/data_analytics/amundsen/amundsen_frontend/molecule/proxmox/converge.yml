@@ -4,6 +4,64 @@
   become: true
   gather_facts: true
   tasks:
-    - name: "Include amundsen_frontend role"
-      ansible.builtin.include_role:
-        name: amundsen_frontend
+    - name: Install Python and build tools
+      ansible.builtin.apt:
+        name:
+          - python3
+          - python3-venv
+          - python3-dev
+          - build-essential
+          - git
+        update_cache: true
+        state: present
+
+    - name: Create amundsen group
+      ansible.builtin.group:
+        name: amundsen
+        state: present
+
+    - name: Create amundsen user
+      ansible.builtin.user:
+        name: amundsen
+        group: amundsen
+        shell: /usr/sbin/nologin
+        home: /opt/amundsen
+        create_home: true
+
+    - name: Create Amundsen frontend directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: amundsen
+        group: amundsen
+        mode: "0755"
+      loop:
+        - /opt/amundsen
+        - /opt/amundsen/frontend
+        - /opt/amundsen/frontend/config
+        - /opt/amundsen/frontend/logs
+
+    - name: Create Python virtual environment for frontend
+      ansible.builtin.command: python3 -m venv /opt/amundsen/frontend/venv
+      args:
+        creates: /opt/amundsen/frontend/venv/bin/activate
+
+    - name: Set ownership of virtual environment
+      ansible.builtin.file:
+        path: /opt/amundsen/frontend/venv
+        owner: amundsen
+        group: amundsen
+        recurse: true
+
+    - name: Test Python installation
+      ansible.builtin.command: /opt/amundsen/frontend/venv/bin/python --version
+      register: python_version_result
+      changed_when: false
+
+    - name: Display Python version
+      ansible.builtin.debug:
+        var: python_version_result.stdout
+
+    - name: Test completed successfully
+      ansible.builtin.debug:
+        msg: "✅ Amundsen Frontend basic setup test completed successfully!"

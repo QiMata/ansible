@@ -1,0 +1,19 @@
+---
+# ============================================================================
+# MARIADB REPLICATION TASKS (Placeholder)
+# ============================================================================
+
+- name: Configure replication user
+  community.mysql.mysql_user:
+    name: "{{ mariadb_replication_user }}"
+    password: "{{ mariadb_replication_password }}"
+    priv: "*.*:REPLICATION SLAVE"
+    state: present
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    login_host: localhost
+  when: mariadb_replication_role == "master"
+
+- name: Configure binary logging
+  ansible.builtin.debug:
+    msg: "Binary logging configuration handled in main config template"

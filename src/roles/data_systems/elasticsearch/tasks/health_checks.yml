@@ -24,6 +24,7 @@
     url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cluster/health"
     method: GET
     timeout: "{{ es_cluster_health_timeout | regex_replace('s', '') | int }}"
+    return_content: yes
   register: cluster_health
   when: es_validate_cluster_health
 
@@ -59,6 +60,7 @@
   ansible.builtin.uri:
     url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_nodes/_local"
     method: GET
+    return_content: yes
   register: node_info
 
 - name: Display node information
@@ -77,11 +79,12 @@
   ansible.builtin.uri:
     url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cat/indices?v&h=index,health,status,pri,rep,docs.count,store.size"
     method: GET
+    return_content: yes
   register: indices_health
 
 - name: Display indices information
   ansible.builtin.debug:
-    msg: "{{ indices_health.content }}"
+    msg: "{{ indices_health }}"
   when: indices_health is defined
 
 - name: Check for red indices
@@ -89,6 +92,9 @@
     msg: "Found indices in RED status: {{ indices_health.content }}"
   when: 
     - indices_health is defined
+    - indices_health.status == 200
+    - indices_health.content is defined
+    - indices_health.content != ""
     - "'red' in indices_health.content"
     - es_validate_cluster_health
 
@@ -96,6 +102,7 @@
   ansible.builtin.uri:
     url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cat/allocation?v&h=node,disk.indices,disk.used,disk.avail,disk.total,disk.percent"
     method: GET
+    return_content: yes
   register: disk_allocation
 
 - name: Display disk allocation
@@ -114,6 +121,7 @@
   ansible.builtin.uri:
     url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cat/pending_tasks?v"
     method: GET
+    return_content: yes
   register: pending_tasks
 
 - name: Display pending tasks
@@ -125,6 +133,7 @@
   ansible.builtin.uri:
     url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cat/thread_pool?v&h=node_name,name,active,queue,rejected,completed"
     method: GET
+    return_content: yes
   register: thread_pools
 
 - name: Display thread pool status
@@ -152,6 +161,7 @@
   ansible.builtin.uri:
     url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_nodes/stats/jvm"
     method: GET
+    return_content: yes
   register: jvm_stats
 
 - name: Display JVM heap usage

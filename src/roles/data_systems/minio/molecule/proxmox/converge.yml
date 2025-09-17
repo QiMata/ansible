@@ -3,7 +3,66 @@
   hosts: all
   become: true
   gather_facts: true
+  vars:
+    # Override defaults for testing environment
+    minio_root_user: "{{ minio_root_user | default('minioadmin') }}"
+    minio_root_password: "{{ minio_root_password | default('minioadmin123') }}"
+    minio_console_port: "{{ minio_console_port | default(9001) }}"
+    minio_server_port: "{{ minio_server_port | default(9000) }}"
+    minio_environment: "{{ minio_environment | default('test') }}"
+    
+    # Container-aware network settings
+    minio_server_address: "{{ minio_server_address | default('0.0.0.0:9000') }}"
+    minio_console_address: "{{ minio_console_address | default('0.0.0.0:9001') }}"
+    minio_data_dir: "{{ minio_data_dir | default('/opt/minio/data') }}"
+    
+    # Security settings for testing
+    minio_enable_tls: "{{ minio_enable_tls | default(false) }}"
+    minio_enable_monitoring: "{{ minio_enable_monitoring | default(false) }}"
+    
+    # Test bucket configuration
+    minio_create_test_bucket: "{{ minio_create_test_bucket | default(true) }}"
+    minio_test_bucket_name: "{{ minio_test_bucket_name | default('test-bucket') }}"
+    
+    # Health check configuration
+    minio_health_check_enabled: "{{ minio_health_check_enabled | default(true) }}"
+    minio_health_check_retries: "{{ minio_health_check_retries | default(30) }}"
+    minio_health_check_delay: "{{ minio_health_check_delay | default(5) }}"
+
+  pre_tasks:
+    # Container-specific preparations
+    - name: Update package cache
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: Install required packages for testing
+      ansible.builtin.package:
+        name:
+          - curl
+          - wget
+          - unzip
+        state: present
+
   tasks:
     - name: "Include minio role"
       ansible.builtin.include_role:
+        name: "{{ playbook_dir }}/../.."
+
+  handlers:
+    - name: restart minio
+      ansible.builtin.service:
         name: minio
+        state: restarted
+        enabled: true
+
+    - name: wait for minio
+      ansible.builtin.uri:
+        url: "http://{{ minio_server_address.split(':')[0] }}:{{ minio_server_port }}/minio/health/live"
+        method: GET
+        status_code: [200]
+      retries: 30
+      delay: 5
+      until: minio_health_check.status == 200
+      register: minio_health_check

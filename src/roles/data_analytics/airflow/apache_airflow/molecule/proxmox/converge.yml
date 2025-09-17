@@ -26,15 +26,6 @@
         update_cache: yes
       become: yes
 
-    - name: "Create Airflow home directory"
-      ansible.builtin.file:
-        path: "{{ apache_airflow_home }}"
-        state: directory
-        owner: root
-        group: root
-        mode: '0755'
-      become: yes
-
     - name: "Create airflow group for testing"
       ansible.builtin.group:
         name: "{{ apache_airflow_group }}"
@@ -51,12 +42,13 @@
         createhome: yes
       become: yes
 
-    - name: "Set ownership of Airflow home"
+    - name: "Create Airflow home directory with correct ownership"
       ansible.builtin.file:
         path: "{{ apache_airflow_home }}"
+        state: directory
         owner: "{{ apache_airflow_user }}"
         group: "{{ apache_airflow_group }}"
-        recurse: yes
+        mode: '0755'
       become: yes
 
     - name: "Install sudo package"
@@ -95,6 +87,7 @@
       become_user: "{{ apache_airflow_user }}"
       become_method: sudo
       become_flags: "--set-home"
+      changed_when: false
 
     - name: "Show Airflow version"
       ansible.builtin.debug:

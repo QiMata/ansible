@@ -47,7 +47,7 @@ Below is a list of variables configurable for this role, along with their defaul
 </details>
 
 ## Tags
-
+The **Jenkins Agent** role prepares a target server to act as a Jenkins build agent (also known as a Jenkins node). It ensures that a dedicated system user account for Jenkins is present, that Java is installed via the distribution’s default JDK package, and that the Jenkins Controller’s SSH public key is deployed to the agent for authentication. After running this role, the target host will be ready to be connected to a Jenkins Controller (master) as an agent for running build jobs.
 This role does not define any intrinsic Ansible task tags. All tasks will run whenever the role is invoked. There are no "required" tags that must be set for the role to function.
 
 You can apply your own tags to this role when including it in a play if desired. For example, you might tag the role as `jenkins_agent` in your playbook to allow running or skipping it with `--tags`/`--skip-tags`. But by default, there are no internal tags within the role.
@@ -59,21 +59,63 @@ You can apply your own tags to this role when including it in a play if desired.
 * **Collections:** No additional Ansible collections are required. All modules used are part of the built-in ansible-core. (For example, the apt module used for package installation is included in ansible.builtin.)
 
 * **Root/Privilege Requirements:** The tasks in this role must run with **root** privileges, since they create a system user and install packages. Ensure your play or inventory uses `become: yes` for the hosts that apply this role.
-
+* **Ansible Version:** This role requires Ansible **2.14** or higher. It relies on standard modules available in ansible-core 2.14+ (e.g. `ansible.builtin.user`, `ansible.builtin.apt`, `ansible.builtin.authorized_key`). Make sure your Ansible installation meets this version requirement.
 * **External Packages:** The role will install **OpenJDK 11** on the target system via the OS package manager. An active internet connection or access to an internal package mirror is needed for the package installation (unless the package is already present). If your environment restricts external access, ensure that the appropriate package repository (or offline package) for OpenJDK 11 is available to the target host.
 
-## Example Playbook
+* **External Packages:** The role will install Java using the distribution’s default JDK meta-package (e.g., `default-jdk`). An active internet connection or access to an internal package mirror is needed for the package installation (unless the package is already present). If your environment restricts external access, ensure that the appropriate package repository is available to the target host.
 
 Here is an example of how to use the `jenkins_agent` role in a playbook, preparing a group of hosts as Jenkins agents. This example assumes you have the Jenkins controller’s public SSH key ready to deploy:
 
 ```yaml
-- hosts: jenkins_agents
+
+This repository includes a Dockerized Molecule harness and a Proxmox-backed scenario that provisions a real Debian LXC for validation. Prefer this path for reliable, CI-friendly tests across platforms (including Windows hosts).
+
+1) Configure Proxmox scenario environment
+- Copy `src/molecule/proxmox/.env.example` to `src/molecule/proxmox/.env` and fill in your Proxmox API details (host, token/credentials, node, storage, template, container ID/IP, etc.). See `src/molecule/proxmox/README.md` for field descriptions.
+
+2) Run tests via the provided scripts
+- Windows PowerShell:
+
+```powershell
+# Validate local prerequisites
+src\docker\test-setup.ps1
+
+# Build the Molecule tools image (one time or after updates)
+src\docker\run-molecule-tests.ps1 build
+
+# Start the tools container
+a src\docker\run-molecule-tests.ps1 start
+
+# Run this role's Proxmox scenario end-to-end
+src\docker\run-role-tests.ps1 test jenkins_agent proxmox
+```
+
+- Linux/macOS:
+
+```bash
+# Validate local prerequisites
+src/docker/test-setup.sh
+
+# Build the Molecule tools image
+src/docker/run-molecule-tests.sh build
+
+# Start the tools container
+src/docker/run-molecule-tests.sh start
+
+# Run this role's Proxmox scenario end-to-end
+src/docker/run-role-tests.sh test jenkins_agent proxmox
+```
+
+3) Notes
+- The scenario’s `converge.yml` sets a dummy public key; replace as needed or supply via inventory/vars. The role requires `jenkins_agent_ssh_public_key`.
+- Idempotence and verify are part of `molecule test`; logs are available via the orchestrator scripts.
+- A local Docker driver scenario may exist, but on Windows hosts the Docker daemon is exposed via a named pipe, not a Unix socket; running the Docker driver inside the tools container can fail without additional setup. Prefer the Proxmox scenario on Windows.
   become: yes
   vars:
-    jenkins_agent_ssh_public_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC3examplekey... jenkins-controller"
+* **No SSH Daemon Restart:** Adding an authorized key does not restart `sshd` in this role. The key is effective immediately without a service restart, avoiding disruption of existing SSH sessions.
     # Optional overrides (if defaults need to be changed):
     # jenkins_agent_user: jenkins   # default "jenkins"
-    # jenkins_agent_executors: 2    # default 2
+* **Java Package Selection:** The role installs Java via the distro’s default JDK meta-package (e.g., `default-jdk`). There is no built-in variable to select a specific JDK version. If you must pin to a specific Java (e.g., OpenJDK 17), adapt the task or introduce your own variable/override to change the package name. Ensure your Jenkins controller and plugins support the chosen Java version.
     # jenkins_agent_labels: "linux" # default "linux"
   roles:
     - jenkins_agent

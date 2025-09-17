@@ -7,7 +7,8 @@ Type=oneshot
 User=apt-mirror
 Group=apt-mirror
 WorkingDirectory=/opt/apt-mirror-alerts
-ExecStart=/usr/bin/python3 /opt/apt-mirror-alerts/alert_manager.py
+ExecStart=/opt/apt-mirror-alerts/run_alert_manager.sh service_start "Alert manager start" "Service triggered"
+RemainAfterExit=yes
 Environment=PYTHONPATH=/opt/apt-mirror-alerts
 
 # Security settings

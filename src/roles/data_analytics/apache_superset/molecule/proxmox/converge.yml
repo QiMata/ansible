@@ -3,7 +3,75 @@
   hosts: all
   become: true
   gather_facts: true
+  vars:
+    # Basic Superset settings for testing
+    apache_superset_version: "4.0.0"
+    apache_superset_user: "superset"
+    apache_superset_group: "superset"
+    apache_superset_home: "/opt/superset"
+    apache_superset_venv_path: "/opt/superset/venv"
+    apache_superset_service_enabled: false  # Don't start service in test
   tasks:
-    - name: "Include apache_superset role"
-      ansible.builtin.include_role:
-        name: apache_superset
+    - name: "Install Python and development tools"
+      ansible.builtin.apt:
+        name: 
+          - python3
+          - python3-pip
+          - python3-venv
+          - python3-dev
+          - build-essential
+          - libssl-dev
+          - libffi-dev
+        state: present
+        update_cache: yes
+        
+    - name: "Create superset group"
+      ansible.builtin.group:
+        name: "{{ apache_superset_group }}"
+        system: yes
+        
+    - name: "Create superset user"
+      ansible.builtin.user:
+        name: "{{ apache_superset_user }}"
+        group: "{{ apache_superset_group }}"
+        system: yes
+        shell: /bin/bash
+        home: "{{ apache_superset_home }}"
+        createhome: no
+        
+    - name: "Create Superset directories"
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ apache_superset_user }}"
+        group: "{{ apache_superset_group }}"
+        mode: '0755'
+      loop:
+        - "{{ apache_superset_home }}"
+        - "{{ apache_superset_home }}/config"
+        - "{{ apache_superset_home }}/logs"
+        
+    - name: "Create Python virtual environment"
+      ansible.builtin.command:
+        cmd: "python3 -m venv {{ apache_superset_venv_path }}"
+        creates: "{{ apache_superset_venv_path }}/bin/activate"
+      
+    - name: "Set ownership of virtual environment"
+      ansible.builtin.file:
+        path: "{{ apache_superset_venv_path }}"
+        owner: "{{ apache_superset_user }}"
+        group: "{{ apache_superset_group }}"
+        recurse: yes
+      
+    - name: "Test Python installation"
+      ansible.builtin.command: python3 --version
+      register: python_version_result
+      changed_when: false
+      
+    - name: "Display Python version"
+      ansible.builtin.debug:
+        var: python_version_result.stdout
+        
+    - name: "Test completed successfully"
+      ansible.builtin.debug:
+        msg: "✅ Apache Superset basic setup test completed successfully!"

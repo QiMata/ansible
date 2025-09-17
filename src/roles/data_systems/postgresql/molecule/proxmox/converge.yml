@@ -3,7 +3,49 @@
   hosts: all
   become: true
   gather_facts: true
+  vars:
+    # Override defaults for testing
+    postgresql_version: 15
+    postgresql_env: "dev"
+    postgresql_listen_addresses: "0.0.0.0"
+    postgresql_max_connections: 50
+    postgresql_shared_buffers: "256MB"
+    postgresql_effective_cache_size: "768MB"
+    postgresql_port: 5432
+    # Enable testing features
+    postgresql_validate_config: true
+    postgresql_health_check_enabled: true
+    postgresql_health_check_retries: 6
+    postgresql_health_check_delay: 10
+    # Test database setup
+    postgresql_databases:
+      - name: test_db
+        owner: test_user
+    postgresql_users:
+      - name: test_user
+        password: test_password
+        priv: "test_db:ALL"
+    # Container-aware settings
+    postgresql_configure_firewall: false
+    postgresql_use_official_repo: true
   tasks:
     - name: "Include postgresql role"
       ansible.builtin.include_role:
-        name: ../../
+        name: "{{ playbook_dir }}/../.."
+  handlers:
+    - name: update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: restart postgresql
+      ansible.builtin.service:
+        name: "postgresql@{{ postgresql_version }}-main"
+        state: restarted
+        enabled: true
+
+    - name: wait for postgresql
+      ansible.builtin.wait_for:
+        port: "{{ postgresql_port }}"
+        host: "{{ postgresql_listen_addresses }}"
+        timeout: 30
+        delay: 5

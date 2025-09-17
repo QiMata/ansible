@@ -3,7 +3,64 @@
   hosts: all
   become: true
   gather_facts: true
+  vars:
+    # Override defaults for testing environment
+    neo4j_initial_password: "{{ neo4j_initial_password | default('test_password_123') }}"
+    neo4j_server_memory_heap_initial_size: "{{ neo4j_server_memory_heap_initial_size | default('256m') }}"
+    neo4j_server_memory_heap_max_size: "{{ neo4j_server_memory_heap_max_size | default('512m') }}"
+    neo4j_server_memory_pagecache_size: "{{ neo4j_server_memory_pagecache_size | default('256m') }}"
+    neo4j_environment: "{{ neo4j_environment | default('test') }}"
+    neo4j_edition: "{{ neo4j_edition | default('community') }}"
+    
+    # Container-aware network settings
+    neo4j_server_default_listen_address: "{{ neo4j_server_default_listen_address | default('0.0.0.0') }}"
+    neo4j_server_bolt_listen_address: "{{ neo4j_server_bolt_listen_address | default('0.0.0.0:7687') }}"
+    neo4j_server_http_listen_address: "{{ neo4j_server_http_listen_address | default('0.0.0.0:7474') }}"
+    
+    # Security settings for testing
+    neo4j_enable_security: "{{ neo4j_enable_security | default(false) }}"
+    neo4j_server_auth_enabled: false
+    
+    # Health check configuration
+    neo4j_health_check_enabled: "{{ neo4j_health_check_enabled | default(true) }}"
+    neo4j_health_check_retries: "{{ neo4j_health_check_retries | default(30) }}"
+    neo4j_health_check_delay: "{{ neo4j_health_check_delay | default(5) }}"
+
+  pre_tasks:
+    # Container-specific preparations
+    - name: Update package cache
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: Install required packages for testing
+      ansible.builtin.package:
+        name:
+          - curl
+          - wget
+          - gnupg
+          - apt-transport-https
+        state: present
+
   tasks:
     - name: "Include neo4j role"
       ansible.builtin.include_role:
+        name: "{{ playbook_dir }}/../.."
+
+  handlers:
+    - name: restart neo4j
+      ansible.builtin.service:
         name: neo4j
+        state: restarted
+        enabled: true
+
+    - name: wait for neo4j
+      ansible.builtin.uri:
+        url: "http://{{ neo4j_server_default_listen_address }}:7474"
+        method: GET
+        status_code: [200, 401]
+      retries: 30
+      delay: 5
+      until: neo4j_health_check.status in [200, 401]
+      register: neo4j_health_check

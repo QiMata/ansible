@@ -1,0 +1,279 @@
+---
+# ============================================================================
+# POSTGRESQL HEALTH CHECKS AND VALIDATION TASKS
+# ============================================================================
+
+- name: Wait for PostgreSQL service to start
+  ansible.builtin.service:
+    name: "postgresql@{{ postgresql_version }}-main"
+    state: started
+  register: pg_service_status
+
+- name: Wait for PostgreSQL to be responsive
+  ansible.builtin.wait_for:
+    port: "{{ postgresql_port }}"
+    host: "{{ postgresql_listen_addresses }}"
+    timeout: "{{ postgresql_health_check_timeout }}"
+    delay: "{{ postgresql_health_check_delay }}"
+  register: pg_port_check
+  retries: "{{ postgresql_health_check_retries }}"
+
+- name: Test PostgreSQL connection
+  ansible.builtin.shell: |
+    sudo -u postgres psql -c "SELECT version();"
+  register: pg_version_check
+  retries: "{{ postgresql_health_check_retries }}"
+  delay: "{{ postgresql_health_check_delay }}"
+  until: pg_version_check is succeeded
+  become: true
+
+- name: Display PostgreSQL version
+  ansible.builtin.debug:
+    msg: |
+      PostgreSQL Version Information:
+      - Version: {{ pg_version_check.stdout }}
+      - Service Status: {{ pg_service_status.status.ActiveState | default('Unknown') }}
+      - Port: {{ postgresql_port }}
+      - Listen Addresses: {{ postgresql_listen_addresses }}
+
+- name: Check PostgreSQL cluster health
+  ansible.builtin.shell: |
+    sudo -u postgres psql -c "
+    SELECT 
+      current_database() as database_name,
+      pg_postmaster_start_time() as start_time,
+      pg_is_in_recovery() as is_replica,
+      CASE 
+        WHEN pg_is_in_recovery() THEN 'Secondary'
+        ELSE 'Primary'
+      END as role_status,
+      pg_size_pretty(pg_database_size(current_database())) as database_size;
+    "
+  become: true
+  register: cluster_health_result
+  when: postgresql_validate_config
+  environment:
+    ANSIBLE_PIPELINING: "false"
+
+- name: Display cluster health status
+  ansible.builtin.debug:
+    msg: |
+      Cluster Health Status:
+      {{ cluster_health_result.stdout }}
+  when: 
+    - postgresql_validate_config
+    - cluster_health_result is defined
+
+- name: Verify cluster is in expected state
+  ansible.builtin.assert:
+    that:
+      - cluster_health_result.rc == 0
+      - cluster_health_result.stdout is defined
+    fail_msg: "Cluster health check failed - unable to retrieve basic information"
+    success_msg: "PostgreSQL cluster health check passed"
+  when: postgresql_validate_config
+
+- name: Check database connections and activity
+  ansible.builtin.shell: |
+    sudo -u postgres psql -c "
+    SELECT 
+      datname,
+      numbackends as active_connections,
+      xact_commit as transactions_committed,
+      xact_rollback as transactions_rolled_back,
+      blks_read,
+      blks_hit,
+      ROUND(CAST((blks_hit::float / NULLIF(blks_hit + blks_read, 0)) * 100 AS numeric), 2) as cache_hit_ratio
+    FROM pg_stat_database 
+    WHERE datname NOT IN ('template0', 'template1');
+    "
+  become: true
+  register: db_activity_result
+  environment:
+    ANSIBLE_PIPELINING: "false"
+
+- name: Display connection statistics
+  ansible.builtin.debug:
+    msg: |
+      Connection Statistics:
+      {{ db_activity_result.stdout }}
+  when: 
+    - postgresql_validate_config
+    - db_activity_result is defined
+
+- name: Check for high connection usage
+  ansible.builtin.debug:
+    msg: "WARNING: High connection usage detected - check database activity"
+  when: 
+    - postgresql_validate_config
+    - db_activity_result is defined
+    - db_activity_result.rc == 0
+
+- name: Check PostgreSQL configuration settings
+  ansible.builtin.shell: |
+    sudo -u postgres psql -c "
+    SELECT name, setting, unit, context, source
+    FROM pg_settings 
+    WHERE name IN (
+      'max_connections', 'shared_buffers', 'effective_cache_size',
+      'work_mem', 'maintenance_work_mem', 'listen_addresses',
+      'port', 'log_destination', 'logging_collector'
+    )
+    ORDER BY name;
+    "
+  become: true
+  register: config_check_result
+
+- name: Display configuration settings
+  ansible.builtin.debug:
+    msg: |
+      PostgreSQL Configuration:
+      {{ config_check_result.stdout }}
+  when:
+    - postgresql_validate_config
+    - config_check_result is defined
+
+- name: Check replication status (if enabled)
+  ansible.builtin.shell: |
+    sudo -u postgres psql -c "
+    SELECT 
+      client_addr,
+      state,
+      sent_lsn,
+      write_lsn,
+      flush_lsn,
+      replay_lsn,
+      sync_state
+    FROM pg_stat_replication;
+    "
+  become: true
+  register: replication_status_result
+  when: postgresql_enable_replication | default(false)
+
+- name: Display replication status
+  ansible.builtin.debug:
+    msg: |
+      Replication Status:
+      {% for replica in replication_status.query_result %}
+      - Client: {{ replica.client_addr }}
+        State: {{ replica.state }}
+        Sync State: {{ replica.sync_state }}
+      {% endfor %}
+  when: 
+    - postgresql_enable_replication
+    - replication_status is defined
+    - replication_status.query_result is defined
+
+- name: Check disk space usage on data directory
+  ansible.builtin.shell: |
+    df -h {{ postgresql_data_dir }} | tail -1 | awk '{print $5}' | sed 's/%//'
+  register: data_disk_usage
+
+- name: Display disk usage
+  ansible.builtin.debug:
+    msg: "PostgreSQL data directory disk usage: {{ data_disk_usage.stdout }}%"
+
+- name: Warning for high disk usage
+  ansible.builtin.debug:
+    msg: "WARNING: High disk usage detected on data directory (>85%)"
+  when: data_disk_usage.stdout | int > 85
+
+- name: Check for locks and blocking queries
+  ansible.builtin.shell: |
+    sudo -u postgres psql -c "
+    SELECT 
+      blocked_locks.pid AS blocked_pid,
+      blocked_activity.usename AS blocked_user,
+      blocking_locks.pid AS blocking_pid,
+      blocking_activity.usename AS blocking_user,
+      blocked_activity.query AS blocked_statement,
+      blocking_activity.query AS current_statement_in_blocking_process
+    FROM pg_catalog.pg_locks blocked_locks
+    JOIN pg_catalog.pg_stat_activity blocked_activity ON blocked_activity.pid = blocked_locks.pid
+    JOIN pg_catalog.pg_locks blocking_locks 
+      ON blocking_locks.locktype = blocked_locks.locktype
+        AND blocking_locks.database IS NOT DISTINCT FROM blocked_locks.database
+        AND blocking_locks.relation IS NOT DISTINCT FROM blocked_locks.relation
+        AND blocking_locks.page IS NOT DISTINCT FROM blocked_locks.page
+        AND blocking_locks.tuple IS NOT DISTINCT FROM blocked_locks.tuple
+        AND blocking_locks.virtualxid IS NOT DISTINCT FROM blocked_locks.virtualxid
+        AND blocking_locks.transactionid IS NOT DISTINCT FROM blocked_locks.transactionid
+        AND blocking_locks.classid IS NOT DISTINCT FROM blocked_locks.classid
+        AND blocking_locks.objid IS NOT DISTINCT FROM blocked_locks.objid
+        AND blocking_locks.objsubid IS NOT DISTINCT FROM blocked_locks.objsubid
+        AND blocking_locks.pid != blocked_locks.pid
+    JOIN pg_catalog.pg_stat_activity blocking_activity ON blocking_activity.pid = blocking_locks.pid
+    WHERE NOT blocked_locks.granted;
+    "
+  become: true
+  register: blocking_queries_result
+
+- name: Display blocking queries
+  ansible.builtin.debug:
+    msg: |
+      Blocking Queries:
+      {{ blocking_queries_result.stdout }}
+  when: 
+    - postgresql_validate_config
+    - blocking_queries_result is defined
+
+- name: Warning for blocking queries
+  ansible.builtin.debug:
+    msg: "WARNING: Blocking queries detected - performance may be impacted"
+  when: 
+    - postgresql_validate_config
+    - blocking_queries_result is defined
+    - blocking_queries_result.rc == 0
+    - '"blocked_pid" in blocking_queries_result.stdout' 
+    - blocking_queries is defined
+    - blocking_queries.query_result | length > 0
+
+- name: Create health check script
+  ansible.builtin.template:
+    src: health-check.sh.j2
+    dest: /usr/local/bin/postgresql-health-check.sh
+    owner: root
+    group: root
+    mode: '0755'
+  when: postgresql_health_check_enabled
+
+- name: Create health monitoring cron job
+  ansible.builtin.cron:
+    name: "PostgreSQL health check"
+    minute: "*/5"
+    job: "/usr/local/bin/postgresql-health-check.sh"
+    user: root
+  when: postgresql_health_check_enabled
+
+- name: Check log file for errors
+  ansible.builtin.shell: |
+    find /var/log/postgresql -name "*.log" -mtime -1 -exec grep -l "ERROR\|FATAL\|PANIC" {} \; | head -5
+  register: error_logs
+  ignore_errors: true
+
+- name: Display recent errors
+  ansible.builtin.debug:
+    msg: |
+      Recent Error Logs:
+      {% if error_logs.stdout_lines | length > 0 %}
+      {% for log in error_logs.stdout_lines %}
+      - {{ log }}
+      {% endfor %}
+      {% else %}
+      No recent error logs found
+      {% endif %}
+
+- name: Final health summary
+  ansible.builtin.debug:
+    msg: |
+      PostgreSQL Health Summary:
+      ================================
+      ✓ Service Status: {{ 'Running' if pg_service_status.status.ActiveState == 'active' else 'Not Running' }}
+      ✓ Port Access: {{ 'OK' if pg_port_check is succeeded else 'Failed' }}
+      ✓ Database Connection: {{ 'OK' if pg_version_check is succeeded else 'Failed' }}
+      ✓ Cluster Health: {{ 'OK' if cluster_health_result is defined and cluster_health_result.rc == 0 else 'Unknown' }}
+      ✓ Database Activity: {{ 'OK' if db_activity_result is defined and db_activity_result.rc == 0 else 'Unknown' }}
+      ✓ Disk Usage: {{ data_disk_usage.stdout if data_disk_usage is defined else 'Unknown' }}%
+      ✓ Blocking Queries: {{ 'None detected' if blocking_queries_result is defined and blocking_queries_result.rc == 0 else 'Unknown' }}
+      ✓ Health Check: COMPLETED
+  when: postgresql_validate_config

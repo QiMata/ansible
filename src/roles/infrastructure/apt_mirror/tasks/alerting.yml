@@ -3,8 +3,9 @@
 - name: Install alerting dependencies
   ansible.builtin.package:
     name:
+      - python3
       - python3-requests
-      - python3-smtplib
+      - python3-yaml
       - mailutils
     state: present
 
@@ -28,6 +29,14 @@
   ansible.builtin.template:
     src: alert_manager.py.j2
     dest: /opt/apt-mirror-alerts/alert_manager.py
+    owner: apt-mirror
+    group: apt-mirror
+    mode: '0755'
+
+- name: Create alert manager wrapper script
+  ansible.builtin.template:
+    src: run_alert_manager.sh.j2
+    dest: /opt/apt-mirror-alerts/run_alert_manager.sh
     owner: apt-mirror
     group: apt-mirror
     mode: '0755'
@@ -91,9 +100,9 @@
     - reload systemd
     - restart apt-mirror-alerts
 
-- name: Enable and start alert manager service
+- name: Enable alert manager service (do not start during converge)
   ansible.builtin.systemd:
     name: apt-mirror-alerts
-    state: started
     enabled: true
+    state: stopped
     daemon_reload: true

@@ -1,0 +1,51 @@
+---
+# ============================================================================
+# MARIADB SECURITY TASKS
+# ============================================================================
+
+- name: Set MariaDB root password
+  community.mysql.mysql_user:
+    name: root
+    password: "{{ mariadb_root_password }}"
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    check_implicit_admin: yes
+    login_host: localhost
+  register: mariadb_root_password_update
+
+- name: Remove anonymous users
+  community.mysql.mysql_user:
+    name: ''
+    host_all: yes
+    state: absent
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    login_host: localhost
+  when: mariadb_remove_anonymous_users
+
+- name: Remove test database
+  community.mysql.mysql_db:
+    name: test
+    state: absent
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    login_host: localhost
+  when: mariadb_remove_test_database
+
+- name: Disallow root login remotely
+  community.mysql.mysql_query:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    login_host: localhost
+    query: "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1')"
+  when: mariadb_disallow_root_login_remotely
+
+- name: Flush privileges
+  community.mysql.mysql_query:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    login_host: localhost
+    query: "FLUSH PRIVILEGES"
+  notify:
+    - restart mariadb
+    - wait for mariadb

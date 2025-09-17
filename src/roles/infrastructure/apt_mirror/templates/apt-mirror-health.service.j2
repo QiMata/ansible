@@ -12,10 +12,13 @@ ExecStart=/usr/bin/python3 /opt/apt-mirror-health/health_service.py
 Restart=always
 RestartSec=10
 Environment=PYTHONPATH=/opt/apt-mirror-health
+Environment=HEALTH_SERVICE_PORT={{ apt_mirror_health_service_port }}
+ # Optional environment override file if present
+ EnvironmentFile=-/etc/default/apt-mirror-health
 
 # Security settings
 NoNewPrivileges=true
-ProtectSystem=strict
+ProtectSystem=full
 ProtectHome=true
 ReadWritePaths={{ apt_mirror_base_path }} /opt/apt-mirror-health /var/log
 PrivateTmp=true

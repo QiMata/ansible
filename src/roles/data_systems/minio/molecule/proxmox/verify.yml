@@ -1,11 +1,299 @@
 ---
-- name: Verify
+- name: Verify MinIO Installation and Health
   hosts: all
   gather_facts: false
+  vars:
+    minio_root_user: "{{ minio_root_user | default('minioadmin') }}"
+    minio_root_password: "{{ minio_root_password | default('minioadmin123') }}"
+    minio_server_port: "{{ minio_server_port | default(9000) }}"
+    minio_console_port: "{{ minio_console_port | default(9001) }}"
+    minio_test_bucket_name: "{{ minio_test_bucket_name | default('test-bucket') }}"
+    minio_health_check_retries: "{{ minio_health_check_retries | default(30) }}"
+    minio_health_check_delay: "{{ minio_health_check_delay | default(5) }}"
+
   tasks:
-    - name: Example assertion
+    # ============================================================================
+    # PHASE 1: SERVICE VALIDATION
+    # ============================================================================
+    
+    - name: Check MinIO service status
+      ansible.builtin.service:
+        name: minio
+        state: started
+      register: minio_service_status
+
+    - name: Verify MinIO service is active
       ansible.builtin.assert:
         that:
-          - true
-        success_msg: "Role minio verification passed"
-        fail_msg: "Role minio verification failed"
+          - minio_service_status.status.ActiveState == "active"
+        success_msg: "✓ MinIO service is active and running"
+        fail_msg: "✗ MinIO service is not active"
+
+    - name: Check MinIO service is enabled
+      ansible.builtin.systemd:
+        name: minio
+      register: minio_service_info
+
+    - name: Verify MinIO service is enabled for boot
+      ansible.builtin.assert:
+        that:
+          - minio_service_info.status.UnitFileState == "enabled"
+        success_msg: "✓ MinIO service is enabled for boot"
+        fail_msg: "✗ MinIO service is not enabled for boot"
+
+    # ============================================================================
+    # PHASE 2: PORT AND CONNECTIVITY VALIDATION
+    # ============================================================================
+    
+    - name: Wait for MinIO server port to be accessible
+      ansible.builtin.wait_for:
+        port: "{{ minio_server_port }}"
+        host: "0.0.0.0"
+        delay: 2
+        timeout: 60
+      register: server_port_check
+
+    - name: Wait for MinIO console port to be accessible
+      ansible.builtin.wait_for:
+        port: "{{ minio_console_port }}"
+        host: "0.0.0.0"
+        delay: 2
+        timeout: 60
+      register: console_port_check
+
+    - name: Verify MinIO ports are accessible
+      ansible.builtin.assert:
+        that:
+          - server_port_check is succeeded
+          - console_port_check is succeeded
+        success_msg: "✓ MinIO is listening on server port {{ minio_server_port }} and console port {{ minio_console_port }}"
+        fail_msg: "✗ MinIO ports are not accessible"
+
+    # ============================================================================
+    # PHASE 3: HEALTH ENDPOINT VALIDATION
+    # ============================================================================
+    
+    - name: Test MinIO health endpoint
+      ansible.builtin.uri:
+        url: "http://localhost:{{ minio_server_port }}/minio/health/live"
+        method: GET
+        status_code: [200]
+        return_content: yes
+      register: health_endpoint_test
+      retries: "{{ minio_health_check_retries }}"
+      delay: "{{ minio_health_check_delay }}"
+      until: health_endpoint_test.status == 200
+
+    - name: Verify health endpoint is responding
+      ansible.builtin.assert:
+        that:
+          - health_endpoint_test.status == 200
+        success_msg: "✓ MinIO health endpoint is responding"
+        fail_msg: "✗ MinIO health endpoint is not responding"
+
+    - name: Test MinIO readiness endpoint
+      ansible.builtin.uri:
+        url: "http://localhost:{{ minio_server_port }}/minio/health/ready"
+        method: GET
+        status_code: [200]
+        return_content: yes
+      register: readiness_test
+
+    - name: Verify MinIO is ready
+      ansible.builtin.assert:
+        that:
+          - readiness_test.status == 200
+        success_msg: "✓ MinIO is ready to serve requests"
+        fail_msg: "✗ MinIO is not ready"
+
+    # ============================================================================
+    # PHASE 4: S3 API VALIDATION
+    # ============================================================================
+    
+    - name: Test S3 API root endpoint
+      ansible.builtin.uri:
+        url: "http://localhost:{{ minio_server_port }}/"
+        method: GET
+        status_code: [403, 404]  # Expected for unauthenticated request
+        return_content: yes
+      register: s3_api_test
+
+    - name: Verify S3 API is responding
+      ansible.builtin.assert:
+        that:
+          - s3_api_test.status in [403, 404]
+        success_msg: "✓ S3 API is responding (authentication required)"
+        fail_msg: "✗ S3 API is not responding"
+
+    # ============================================================================
+    # PHASE 5: BUCKET OPERATIONS TESTING (using mc client if available)
+    # ============================================================================
+    
+    - name: Check if mc (MinIO client) is available
+      ansible.builtin.command: which mc
+      register: mc_check
+      failed_when: false
+      changed_when: false
+
+    - name: Download and install mc client
+      ansible.builtin.get_url:
+        url: "https://dl.min.io/client/mc/release/linux-amd64/mc"
+        dest: "/usr/local/bin/mc"
+        mode: '0755'
+      when: mc_check.rc != 0
+
+    - name: Configure mc client alias
+      ansible.builtin.command: >
+        mc alias set local 
+        http://localhost:{{ minio_server_port }} 
+        {{ minio_root_user }} 
+        {{ minio_root_password }}
+      register: mc_alias_result
+      changed_when: false
+
+    - name: Test bucket listing
+      ansible.builtin.command: mc ls local
+      register: bucket_list_test
+      failed_when: false
+      changed_when: false
+
+    - name: Verify mc client can connect
+      ansible.builtin.assert:
+        that:
+          - mc_alias_result.rc == 0
+          - bucket_list_test.rc == 0
+        success_msg: "✓ MinIO S3 API is accessible via mc client"
+        fail_msg: "✗ MinIO S3 API connectivity failed"
+
+    # ============================================================================
+    # PHASE 6: BUCKET CRUD OPERATIONS
+    # ============================================================================
+    
+    - name: Create test bucket
+      ansible.builtin.command: mc mb local/{{ minio_test_bucket_name }}
+      register: create_bucket_result
+      failed_when: false
+      changed_when: create_bucket_result.rc == 0
+
+    - name: List buckets to verify creation
+      ansible.builtin.command: mc ls local
+      register: list_buckets_result
+      changed_when: false
+
+    - name: Verify test bucket exists
+      ansible.builtin.assert:
+        that:
+          - "minio_test_bucket_name in list_buckets_result.stdout"
+        success_msg: "✓ Test bucket created and listed successfully"
+        fail_msg: "✗ Test bucket creation or listing failed"
+
+    - name: Upload test file to bucket
+      ansible.builtin.copy:
+        content: "MinIO health check test file - {{ ansible_date_time.iso8601 }}"
+        dest: "/tmp/test_file.txt"
+
+    - name: Upload file to MinIO
+      ansible.builtin.command: mc cp /tmp/test_file.txt local/{{ minio_test_bucket_name }}/
+      register: upload_result
+      changed_when: upload_result.rc == 0
+
+    - name: List objects in bucket
+      ansible.builtin.command: mc ls local/{{ minio_test_bucket_name }}
+      register: list_objects_result
+      changed_when: false
+
+    - name: Verify file upload
+      ansible.builtin.assert:
+        that:
+          - upload_result.rc == 0
+          - "'test_file.txt' in list_objects_result.stdout"
+        success_msg: "✓ File upload and listing successful"
+        fail_msg: "✗ File upload or listing failed"
+
+    # ============================================================================
+    # PHASE 7: PERFORMANCE AND METRICS
+    # ============================================================================
+    
+    - name: Get MinIO admin info
+      ansible.builtin.command: mc admin info local
+      register: admin_info_result
+      failed_when: false
+      changed_when: false
+
+    - name: Display MinIO cluster information
+      ansible.builtin.debug:
+        msg: |
+          MinIO Cluster Information:
+          ==========================
+          {{ admin_info_result.stdout if admin_info_result.rc == 0 else 'Admin info not available' }}
+
+    - name: Get MinIO server metrics (Prometheus endpoint)
+      ansible.builtin.uri:
+        url: "http://localhost:{{ minio_server_port }}/minio/v2/metrics/cluster"
+        method: GET
+        status_code: [200, 403]
+        return_content: yes
+      register: metrics_test
+      failed_when: false
+
+    - name: Display metrics availability
+      ansible.builtin.debug:
+        msg: |
+          MinIO Metrics:
+          ==============
+          - Prometheus endpoint status: {{ metrics_test.status if metrics_test is defined else 'N/A' }}
+          - Metrics available: {{ 'Yes' if (metrics_test is defined and metrics_test.status == 200) else 'No (may require authentication)' }}
+
+    # ============================================================================
+    # PHASE 8: CLEANUP TEST DATA
+    # ============================================================================
+    
+    - name: Remove test file
+      ansible.builtin.command: mc rm local/{{ minio_test_bucket_name }}/test_file.txt
+      register: remove_file_result
+      failed_when: false
+      changed_when: remove_file_result.rc == 0
+
+    - name: Remove test bucket
+      ansible.builtin.command: mc rb local/{{ minio_test_bucket_name }}
+      register: remove_bucket_result
+      failed_when: false
+      changed_when: remove_bucket_result.rc == 0
+
+    - name: Cleanup temp file
+      ansible.builtin.file:
+        path: /tmp/test_file.txt
+        state: absent
+
+    # ============================================================================
+    # PHASE 9: FINAL HEALTH SUMMARY
+    # ============================================================================
+    
+    - name: Final MinIO health summary
+      ansible.builtin.debug:
+        msg: |
+          MinIO Health Summary:
+          =====================
+          ✓ Service Status: {{ 'Running' if minio_service_status.status.ActiveState == 'active' else 'Not Running' }}
+          ✓ Server Port Access: {{ 'OK' if server_port_check is succeeded else 'Failed' }}
+          ✓ Console Port Access: {{ 'OK' if console_port_check is succeeded else 'Failed' }}
+          ✓ Health Endpoint: {{ 'OK' if health_endpoint_test.status == 200 else 'Failed' }}
+          ✓ Readiness Check: {{ 'OK' if readiness_test.status == 200 else 'Failed' }}
+          ✓ S3 API: {{ 'OK' if s3_api_test.status in [403, 404] else 'Failed' }}
+          ✓ MC Client: {{ 'OK' if mc_alias_result.rc == 0 else 'Failed' }}
+          ✓ Bucket Operations: {{ 'OK' if (create_bucket_result.rc in [0, 1] and upload_result.rc == 0) else 'Failed' }}
+          ✓ Cleanup: {{ 'OK' if (remove_file_result.rc in [0, 1] and remove_bucket_result.rc in [0, 1]) else 'Failed' }}
+          ✓ Health Check: COMPLETED SUCCESSFULLY
+
+    - name: Verify overall health check success
+      ansible.builtin.assert:
+        that:
+          - minio_service_status.status.ActiveState == "active"
+          - server_port_check is succeeded
+          - console_port_check is succeeded
+          - health_endpoint_test.status == 200
+          - readiness_test.status == 200
+          - s3_api_test.status in [403, 404]
+          - mc_alias_result.rc == 0
+        success_msg: "🎉 MinIO comprehensive health check PASSED"
+        fail_msg: "❌ MinIO health check FAILED - check individual test results above"

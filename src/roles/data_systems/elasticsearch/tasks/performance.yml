@@ -73,6 +73,10 @@
     value: '262144'
     state: present
     reload: true
+  when: >
+    ansible_virtualization_type is not defined or
+    ansible_virtualization_type not in ['lxc', 'docker', 'container']
+  ignore_errors: true
 
 - name: Set vm.swappiness
   ansible.posix.sysctl:
@@ -80,6 +84,10 @@
     value: '1'
     state: present
     reload: true
+  when: >
+    ansible_virtualization_type is not defined or
+    ansible_virtualization_type not in ['lxc', 'docker', 'container']
+  ignore_errors: true
 
 - name: Configure file descriptor limits
   ansible.builtin.lineinfile:
@@ -111,8 +119,8 @@
     create: true
   when: es_bootstrap_memory_lock
   notify: 
-    - reload systemd
-    - restart elasticsearch
+    - Reload systemd
+    - Restart elasticsearch
 
 - name: Create systemd override directory
   ansible.builtin.file:

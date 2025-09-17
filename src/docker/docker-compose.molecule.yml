@@ -1,4 +1,4 @@
-# Docker Compose for Molecule Proxmox Testing
+version: "3.8"
 
 services:
   molecule-proxmox:
@@ -7,11 +7,11 @@ services:
       dockerfile: src/docker/Dockerfile.molecule-proxmox
     image: ansible-molecule-proxmox:latest
     container_name: molecule-proxmox-runner
-    user: "1000:1000"  # Run as ansible user
+    user: "root"  # Run as root to access Docker socket
     environment:
       # Fix HOME directory
       - HOME=/home/ansible
-      
+
       # Proxmox connection details (override via .env file)
       - PROXMOX_URL=${PROXMOX_URL:-https://192.168.1.100:8006}
       - PROXMOX_USER=${PROXMOX_USER:-root@pam}
@@ -20,7 +20,7 @@ services:
       - PROXMOX_TOKEN_SECRET=${PROXMOX_TOKEN_SECRET}
       - PROXMOX_VALIDATE_CERTS=${PROXMOX_VALIDATE_CERTS:-false}
       - PROXMOX_NODE=${PROXMOX_NODE:-pve}
-      
+
       # Container configuration
       - CONTAINER_ID=${CONTAINER_ID:-999}
       - TEMPLATE=${TEMPLATE:-debian-12-standard_12.2-1_amd64.tar.zst}
@@ -32,27 +32,28 @@ services:
       - CONTAINER_PASSWORD=${CONTAINER_PASSWORD:-molecule12345}
       - NETWORK=${NETWORK:-name=eth0,bridge=vmbr0,ip=dhcp}
       - CONTAINER_IP=${CONTAINER_IP:-10.80.0.200}
-      
+
       # Molecule configuration
       - MOLECULE_EPHEMERAL_DIRECTORY=/home/ansible/.molecule
       - ANSIBLE_HOST_KEY_CHECKING=False
       - ANSIBLE_STDOUT_CALLBACK=yaml
       - ANSIBLE_FORCE_COLOR=1
       - ANSIBLE_CONFIG=/ansible/src/ansible.cfg
-      
+
     volumes:
       # Mount the entire Ansible project
       - ../..:/ansible:rw
-      
       # Persist molecule cache in user home directory
       - molecule_cache:/home/ansible/.molecule
-      
+      # Allow Molecule Docker driver to talk to host Docker
+      - /var/run/docker.sock:/var/run/docker.sock
+
     working_dir: /ansible
     networks:
       - molecule-network
     tty: true
     stdin_open: true
-    
+
     # Override command for interactive use
     command: /bin/bash
 

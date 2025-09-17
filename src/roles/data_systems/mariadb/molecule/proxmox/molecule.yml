@@ -1,0 +1,72 @@
+---
+dependency:
+  name: galaxy
+  enabled: false
+driver:
+  name: default
+  options:
+    managed: false
+    ansible_connection_options:
+      ansible_connection: ssh
+platforms:
+  - name: mariadb-test-instance
+    groups:
+      - test_instances
+      - mariadb_test
+provisioner:
+  name: ansible
+  playbooks:
+    create: ../../../../../molecule/proxmox/create.yml
+    prepare: ../../../../../molecule/proxmox/prepare.yml
+    converge: converge.yml
+    verify: verify.yml
+    destroy: ../../../../../molecule/proxmox/destroy.yml
+  inventory:
+    host_vars:
+      mariadb-test-instance:
+        ansible_host: "{{ lookup('env', 'CONTAINER_IP') | default('10.80.0.200') }}"
+        ansible_user: molecule
+        ansible_connection: ssh
+        ansible_ssh_pass: molecule123
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+        ansible_become: yes
+        ansible_become_method: sudo
+        # MariaDB-specific testing configuration
+        mariadb_root_password: "test_password_123"
+        mariadb_bind_address: "0.0.0.0"
+        mariadb_port: 3306
+        mariadb_environment: "test"
+        mariadb_enable_security: false
+        mariadb_create_test_db: true
+        mariadb_test_db_name: "test_database"
+        mariadb_test_user: "test_user"
+        mariadb_test_password: "test_user_pass"
+        # Container-aware settings
+        mariadb_max_connections: 50
+        mariadb_innodb_buffer_pool_size: "128M"
+        mariadb_query_cache_size: "32M"
+        mariadb_health_check_enabled: true
+        mariadb_health_check_retries: 30
+        mariadb_health_check_delay: 5
+  config_options:
+    defaults:
+      host_key_checking: false
+      stdout_callback: yaml
+      bin_ansible_callbacks: true
+      role_name_check: False
+verifier:
+  name: ansible
+scenario:
+  name: proxmox
+  test_sequence:
+    - dependency
+    - cleanup
+    - destroy
+    - syntax
+    - create
+    - prepare
+    - converge
+    - idempotence
+    - verify
+    - cleanup
+    - destroy

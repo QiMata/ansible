@@ -1,0 +1,63 @@
+---
+# ============================================================================
+# MARIADB CONFIGURATION TASKS
+# ============================================================================
+
+- name: Generate MariaDB configuration file
+  ansible.builtin.template:
+    src: my.cnf.j2
+    dest: /etc/mysql/conf.d/mariadb.cnf
+    owner: root
+    group: root
+    mode: '0644'
+    backup: yes
+  notify:
+    - restart mariadb
+    - wait for mariadb
+
+- name: Configure MariaDB error log
+  ansible.builtin.file:
+    path: "{{ mariadb_log_error }}"
+    state: touch
+    owner: mysql
+    group: mysql
+    mode: '0640'
+
+- name: Configure MariaDB slow query log
+  ansible.builtin.file:
+    path: "{{ mariadb_slow_query_log_file }}"
+    state: touch
+    owner: mysql
+    group: mysql
+    mode: '0640'
+  when: mariadb_slow_query_log
+
+- name: Set up SSL certificates directory
+  ansible.builtin.file:
+    path: /etc/mysql/ssl
+    state: directory
+    owner: mysql
+    group: mysql
+    mode: '0755'
+  when: mariadb_enable_ssl
+
+- name: Configure MariaDB for container environments
+  ansible.builtin.lineinfile:
+    path: /etc/mysql/conf.d/mariadb.cnf
+    line: "{{ item }}"
+    create: yes
+  loop:
+    - "# Container-aware settings"
+    - "innodb_use_native_aio = 0"
+    - "innodb_flush_method = fsync"
+  when: ansible_virtualization_type in ['docker', 'container', 'lxc']
+  notify:
+    - restart mariadb
+    - wait for mariadb
+
+- name: Ensure MariaDB configuration is valid
+  ansible.builtin.command: mysqld --help --verbose
+  register: mariadb_config_check
+  failed_when: mariadb_config_check.rc != 0
+  changed_when: false
+  check_mode: no

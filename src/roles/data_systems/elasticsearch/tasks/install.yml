@@ -6,9 +6,16 @@
     update_cache: true
 
 - name: Add Elasticsearch GPG key
-  ansible.builtin.apt_key:
+  ansible.builtin.get_url:
     url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
-    state: present
+    dest: /tmp/elasticsearch-key.asc
+    mode: '0644'
+
+- name: Install Elasticsearch GPG key
+  ansible.builtin.shell: |
+    gpg --dearmor < /tmp/elasticsearch-key.asc > /usr/share/keyrings/elasticsearch-keyring.gpg
+  args:
+    creates: /usr/share/keyrings/elasticsearch-keyring.gpg
 
 - name: Add Elasticsearch repository
   ansible.builtin.template:
@@ -19,7 +26,9 @@
 
 - name: Install OpenJDK
   ansible.builtin.apt:
-    name: openjdk-11-jdk
+    name: 
+      - openjdk-17-jdk
+      - ca-certificates-java
     state: present
   when: es_install_java
 
@@ -30,8 +39,7 @@
     update_cache: true
   notify: restart elasticsearch
 
-- name: Ensure Elasticsearch service enabled and started
+- name: Ensure Elasticsearch service is enabled (but not started yet)
   ansible.builtin.service:
     name: elasticsearch
-    state: started
     enabled: true

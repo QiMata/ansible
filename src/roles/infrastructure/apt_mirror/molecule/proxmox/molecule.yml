@@ -37,6 +37,7 @@ provisioner:
       stdout_callback: yaml
       bin_ansible_callbacks: true
       role_name_check: False
+  roles_path: /ansible/src/roles/infrastructure:/ansible/src/roles
 verifier:
   name: ansible
 scenario:

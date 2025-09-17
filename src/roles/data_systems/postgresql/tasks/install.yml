@@ -2,43 +2,180 @@
 
 - name: Ensure prerequisites are installed
   ansible.builtin.apt:
-    name: [gnupg, ca-certificates, python3-psycopg2]
+    name: 
+      - gnupg
+      - ca-certificates
+      - python3-psycopg2
+      - netcat-openbsd
+      - curl
+      - lsb-release
     state: present
     update_cache: true
   become: true
+  register: prerequisites_result
+  retries: 3
+  delay: 10
+  until: prerequisites_result is succeeded
 
-- name: Add PostgreSQL APT key
+- name: Create keyrings directory
+  ansible.builtin.file:
+    path: /usr/share/keyrings
+    state: directory
+    mode: '0755'
+  become: true
+  when: postgresql_use_official_repo
+
+- name: Add PostgreSQL APT key (modern method)
   ansible.builtin.get_url:
     url: "{{ postgresql_apt_repo_key_url }}"
-    dest: /usr/share/keyrings/postgresql.gpg
+    dest: /usr/share/keyrings/postgresql.asc
     mode: '0644'
   when: postgresql_use_official_repo
   become: true
+  register: gpg_key_result
+  retries: 3
+  delay: 10
+  until: gpg_key_result is succeeded
 
-- name: Add PostgreSQL repository
+- name: Convert ASCII key to GPG format
+  ansible.builtin.shell: |
+    gpg --dearmor < /usr/share/keyrings/postgresql.asc > /usr/share/keyrings/postgresql.gpg
+  become: true
+  when: 
+    - postgresql_use_official_repo
+    - gpg_key_result is succeeded
+  changed_when: true
+
+- name: Add PostgreSQL repository with proper signed-by
   ansible.builtin.apt_repository:
-    repo: "{{ postgresql_apt_repo_url }}"
+    repo: "deb [signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main"
     filename: postgresql
     state: present
+    update_cache: true
   when: postgresql_use_official_repo
   become: true
+  register: repo_result
+  retries: 3
+  delay: 10
+  until: repo_result is succeeded
+
+- name: Update package cache after repository addition
+  ansible.builtin.apt:
+    update_cache: true
+  become: true
+  when: postgresql_use_official_repo
 
 - name: Install PostgreSQL packages
   ansible.builtin.apt:
-    name: >-
-      {{ ['postgresql-{{ postgresql_version }}',
-          'postgresql-client-{{ postgresql_version }}',
-          'postgresql-contrib-{{ postgresql_version }}']
-          if postgresql_use_official_repo else
-          ['postgresql', 'postgresql-contrib'] }}
+    name: "{{ postgresql_packages }}"
     state: present
     update_cache: true
   become: true
+  register: postgresql_install_result
+  retries: 3
+  delay: 10
+  until: postgresql_install_result is succeeded
+  vars:
+    postgresql_packages: >-
+      {{ ['postgresql-' + postgresql_version|string,
+          'postgresql-client-' + postgresql_version|string,
+          'postgresql-contrib-' + postgresql_version|string]
+          if postgresql_use_official_repo else
+          ['postgresql', 'postgresql-contrib'] }}
+
+- name: Verify PostgreSQL installation
+  ansible.builtin.command: 
+    cmd: "psql --version"
+  register: psql_version_check
+  changed_when: false
+
+- name: Display installed PostgreSQL version
+  ansible.builtin.debug:
+    msg: "Installed PostgreSQL: {{ psql_version_check.stdout }}"
+
+- name: Ensure PostgreSQL data directory exists
+  ansible.builtin.file:
+    path: "{{ postgresql_data_dir }}"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: '0700'
+  become: true
+
+- name: Check if PostgreSQL cluster is initialized
+  ansible.builtin.stat:
+    path: "{{ postgresql_data_dir }}/PG_VERSION"
+  register: pg_initialized
+
+- name: Ensure postgres user exists  
+  ansible.builtin.user:
+    name: postgres
+    system: yes
+    shell: /bin/bash
+    home: /var/lib/postgresql
+    create_home: false
+  become: true
+
+- name: Initialize PostgreSQL cluster if not exists
+  ansible.builtin.shell: |
+    sudo -u postgres /usr/lib/postgresql/{{ postgresql_version }}/bin/initdb -D {{ postgresql_data_dir }}
+  become: true
+  when: not pg_initialized.stat.exists
+  register: initdb_result
+
+- name: Display initdb result
+  ansible.builtin.debug:
+    msg: "PostgreSQL cluster initialization: {{ 'completed' if initdb_result is changed else 'already initialized' }}"
 
 - name: Ensure PostgreSQL service is enabled and started
   ansible.builtin.service:
-    name: "{{ postgresql_service_name }}"
+    name: "postgresql@{{ postgresql_version }}-main"
     state: started
     enabled: true
   when: not postgresql_use_patroni
   become: true
+  register: service_start_result
+
+- name: Wait for PostgreSQL to be ready
+  ansible.builtin.wait_for:
+    port: "{{ postgresql_port }}"
+    timeout: 60
+    delay: 5
+  when: 
+    - not postgresql_use_patroni
+    - service_start_result is succeeded
+
+- name: Create users if specified
+  ansible.builtin.shell: |
+    sudo -u postgres psql -c "
+    SELECT 1 FROM pg_user WHERE usename = '{{ item.name }}';
+    " | grep -q 1 || sudo -u postgres psql -c "
+    CREATE USER {{ item.name }}{% if item.password is defined %} WITH PASSWORD '{{ item.password }}'{% endif %}{% if item.role_attr_flags is defined %} {{ item.role_attr_flags | default([]) | join(' ') }}{% endif %};
+    "
+  loop: "{{ postgresql_users }}"
+  when: postgresql_users | length > 0
+  become: true
+  register: user_creation_result
+  changed_when: "'CREATE ROLE' in user_creation_result.stdout or user_creation_result.rc == 0"
+
+- name: Create databases if specified
+  ansible.builtin.shell: |
+    sudo -u postgres psql -c "
+    SELECT 1 FROM pg_database WHERE datname = '{{ item.name }}';
+    " | grep -q 1 || sudo -u postgres createdb {% if item.owner is defined %}-O {{ item.owner }}{% endif %} {% if item.encoding is defined %}-E {{ item.encoding }}{% else %}-E UTF8{% endif %} -T template0 {{ item.name }}
+  loop: "{{ postgresql_databases }}"
+  when: postgresql_databases | length > 0
+  become: true
+  register: db_creation_result
+  changed_when: "'CREATE DATABASE' in db_creation_result.stdout or db_creation_result.rc == 0"
+
+- name: Grant database privileges to users
+  ansible.builtin.shell: |
+    sudo -u postgres psql -c "GRANT {{ item.priv.split(':')[1] }} ON DATABASE {{ item.priv.split(':')[0] }} TO {{ item.name }};"
+  loop: "{{ postgresql_users }}"
+  when: 
+    - postgresql_users | length > 0
+    - item.priv is defined
+  become: true
+  register: grant_result
+  changed_when: "'GRANT' in grant_result.stdout or grant_result.rc == 0"

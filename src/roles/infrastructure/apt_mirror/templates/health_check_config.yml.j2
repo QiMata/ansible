@@ -8,7 +8,7 @@ service:
   debug: false
 
 monitoring:
-  interval: {{ apt_mirror_health_check_interval }}
+  interval: "{{ apt_mirror_health_check_interval }}"
   
 checks:
   disk_space:

@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+INTERVAL="${1:-60}"
+LOG_DIR="/var/log/apt-mirror-metrics"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/bandwidth.log"
+
+while true; do
+  RX=$(cat /sys/class/net/eth0/statistics/rx_bytes 2>/dev/null || echo 0)
+  TX=$(cat /sys/class/net/eth0/statistics/tx_bytes 2>/dev/null || echo 0)
+  TS=$(date +%s)
+  echo "$TS rx_bytes=$RX tx_bytes=$TX" >> "$LOG_FILE"
+  sleep "$INTERVAL"
+done

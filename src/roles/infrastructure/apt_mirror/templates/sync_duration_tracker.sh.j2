@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+LOG_DIR="/var/log/apt-mirror-metrics"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/sync_duration.log"
+
+START_TS=$(date +%s)
+/var/spool/apt-mirror/var/cron.sh || true
+END_TS=$(date +%s)
+DUR=$((END_TS-START_TS))
+
+echo "[$(date -Is)] duration_seconds=$DUR" >> "$LOG_FILE"

@@ -28,6 +28,13 @@ postgresql_log_directory: 'log'
 postgresql_log_min_duration_statement: -1
 postgresql_password_encryption: scram-sha-256
 
+# Health Check Configuration
+postgresql_validate_config: true
+postgresql_health_check_enabled: false
+postgresql_health_check_retries: 6
+postgresql_health_check_delay: 10
+postgresql_health_check_timeout: 30
+
 # Authentication
 postgresql_hba_entries:
   - { type: 'local', database: 'all', user: 'postgres', address: '', auth_method: 'peer' }
@@ -58,3 +65,7 @@ postgresql_ssl_key_file: ""
 postgresql_configure_firewall: false
 postgresql_firewall_use_ufw: true
 postgresql_allowed_hosts: []
+
+# Database and User Management
+postgresql_databases: []
+postgresql_users: []

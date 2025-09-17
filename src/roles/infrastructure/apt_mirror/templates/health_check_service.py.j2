@@ -15,9 +15,23 @@ import yaml
 
 app = Flask(__name__)
 
-# Load configuration
-with open('/opt/apt-mirror-health/config.yml', 'r') as f:
-    config = yaml.safe_load(f)
+# Load configuration with safe defaults
+config = {
+    "service": {
+        "port": int(os.environ.get("HEALTH_SERVICE_PORT", {{ apt_mirror_health_service_port }})),
+        "host": "0.0.0.0",
+        "debug": False,
+    }
+}
+try:
+    with open('/opt/apt-mirror-health/config.yml', 'r') as f:
+        loaded = yaml.safe_load(f) or {}
+        if isinstance(loaded, dict):
+            # shallow merge for known keys
+            config.update(loaded)
+except Exception as e:
+    # Fall back to defaults; log to stdout so systemd/journal captures it
+    print(f"[health-service] Warning: failed to load config.yml: {e}")
 
 class HealthChecker:
     def __init__(self):
@@ -174,4 +188,7 @@ def health_mirror():
     return jsonify(health_checker.check_mirror_completeness())
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port={{ apt_mirror_health_check_port }}, debug=False)
+    bind_host = config.get("service", {}).get("host", "0.0.0.0")
+    bind_port = int(os.environ.get("HEALTH_SERVICE_PORT", config.get("service", {}).get("port", {{ apt_mirror_health_service_port }})))
+    print(f"[health-service] Starting on {bind_host}:{bind_port}")
+    app.run(host=bind_host, port=bind_port, debug=config.get("service", {}).get("debug", False))

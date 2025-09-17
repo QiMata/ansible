@@ -1,0 +1,40 @@
+---
+# ============================================================================
+# MARIADB ROLE METADATA
+# ============================================================================
+
+galaxy_info:
+  author: "Ansible Infrastructure Team"
+  description: "Comprehensive MariaDB database server installation and configuration with container support"
+  company: "Enterprise Infrastructure"
+  license: "MIT"
+  min_ansible_version: "2.9"
+  
+  platforms:
+    - name: Ubuntu
+      versions:
+        - "20.04"
+        - "22.04"
+    - name: Debian
+      versions:
+        - "10"
+        - "11"
+  
+  galaxy_tags:
+    - mariadb
+    - mysql
+    - database
+    - galera
+    - replication
+    - backup
+    - monitoring
+    - container
+    - docker
+    - lxc
+
+dependencies:
+  - role: community.mysql
+    when: false  # We install this via requirements
+
+collections:
+  - community.mysql

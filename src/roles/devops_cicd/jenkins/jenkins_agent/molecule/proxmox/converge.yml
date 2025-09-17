@@ -7,3 +7,5 @@
     - name: "Include jenkins_agent role"
       ansible.builtin.include_role:
         name: jenkins_agent
+      vars:
+        jenkins_agent_ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICZq8j6i0kL8c1B9c0xH9J7mV3k7e0x8k1a2b3c4d5e6 test@example"

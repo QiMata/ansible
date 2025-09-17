@@ -7,12 +7,16 @@
     state: present
     update_cache: true
 
-- name: Add Jenkins apt key
+- name: Download Jenkins apt key (ASCII armored)
   ansible.builtin.get_url:
     url: "{{ jenkins_controller_repo_key_url }}"
-    dest: /usr/share/keyrings/jenkins.gpg
+    dest: /usr/share/keyrings/jenkins.asc
     mode: "0644"
-    force: true
+
+- name: Convert Jenkins apt key to GPG keyring
+  ansible.builtin.command: "gpg --dearmor -o /usr/share/keyrings/jenkins.gpg /usr/share/keyrings/jenkins.asc"
+  args:
+    creates: /usr/share/keyrings/jenkins.gpg
 
 - name: Add Jenkins apt repository
   ansible.builtin.apt_repository:
@@ -23,7 +27,7 @@
 - name: Install Jenkins and Java
   ansible.builtin.apt:
     name:
-      - openjdk-11-jdk
+      - "openjdk-{{ jenkins_java_version }}-jdk"
       - "jenkins={{ jenkins_version }}*"
     state: present
     update_cache: true
@@ -35,6 +39,14 @@
     regexp: '^JENKINS_ARGS='
     line: 'JENKINS_ARGS="--webroot=/var/cache/$NAME/war --httpPort={{ jenkins_http_port }} -Djenkins.install.runSetupWizard=false {{ jenkins_java_opts }}"'
   notify: restart jenkins
+
+- name: Ensure init.groovy.d directory exists
+  ansible.builtin.file:
+    path: "{{ jenkins_controller_home }}/init.groovy.d"
+    state: directory
+    owner: jenkins
+    group: jenkins
+    mode: "0755"
 
 - name: Deploy admin groovy init
   ansible.builtin.template:
@@ -51,14 +63,45 @@
     dest: /opt/jenkins_plugins.txt
     mode: "0644"
 
-- name: Install required plugins offline
+- name: Ensure plugins directory exists
+  ansible.builtin.file:
+    path: "{{ jenkins_controller_home }}/plugins"
+    state: directory
+    owner: jenkins
+    group: jenkins
+    mode: "0755"
+
+- name: Check jenkins-plugin-cli availability
+  ansible.builtin.stat:
+    path: /usr/bin/jenkins-plugin-cli
+  register: plugin_cli_stat
+
+- name: Install plugins using jenkins-plugin-cli (preferred)
   ansible.builtin.command: >
-    java -jar /usr/share/jenkins/jenkins-plugin-manager.jar
+    jenkins-plugin-cli --war /usr/share/jenkins/jenkins.war --plugin-file /opt/jenkins_plugins.txt
+  args:
+    creates: "{{ jenkins_controller_home }}/plugins/{{ jenkins_plugins[0] }}.jpi"
+  register: plugin_cli_res
+  changed_when: plugin_cli_res.rc == 0
+  when: plugin_cli_stat.stat.exists
+  notify: restart jenkins
+
+- name: Download Jenkins Plugin Manager jar (fallback)
+  ansible.builtin.get_url:
+    url: https://github.com/jenkinsci/plugin-installation-manager-tool/releases/download/2.13.0/jenkins-plugin-manager-2.13.0.jar
+    dest: /usr/local/share/jenkins-plugin-manager.jar
+    mode: "0755"
+  when: not plugin_cli_stat.stat.exists
+
+- name: Install plugins using plugin manager jar (fallback)
+  ansible.builtin.command: >
+    java -jar /usr/local/share/jenkins-plugin-manager.jar
     --war /usr/share/jenkins/jenkins.war
     --plugin-file /opt/jenkins_plugins.txt
     --plugin-download-directory {{ jenkins_controller_home }}/plugins
   args:
     creates: "{{ jenkins_controller_home }}/plugins/{{ jenkins_plugins[0] }}.jpi"
+  when: not plugin_cli_stat.stat.exists
   notify: restart jenkins
 
 - name: Ensure Jenkins service enabled and started
@@ -66,3 +109,10 @@
     name: jenkins
     state: started
     enabled: true
+
+- name: Wait for Jenkins to listen on port {{ jenkins_http_port }}
+  ansible.builtin.wait_for:
+    port: "{{ jenkins_http_port | int }}"
+    host: 127.0.0.1
+    delay: 2
+    timeout: 120

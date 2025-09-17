@@ -8,7 +8,7 @@ es_version: "8.x"
 
 # Cluster configuration
 es_cluster_name: "elasticsearch-cluster"
-es_node_roles: []
+es_node_roles: ["master", "data", "ingest"]
 es_network_host: "{{ ansible_default_ipv4.address }}"
 
 # JVM heap size
@@ -286,6 +286,8 @@ es_dev_settings:
   discovery.type: "single-node"
   cluster.routing.allocation.disk.threshold_enabled: false
   action.auto_create_index: true
+  xpack.security.enabled: false
+  xpack.security.enrollment.enabled: false
 
 # Production environment defaults
 es_prod_settings:

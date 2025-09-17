@@ -3,9 +3,152 @@
   hosts: all
   gather_facts: false
   tasks:
-    - name: Example assertion
+    - name: Set verification defaults
+      ansible.builtin.set_fact:
+        verify_health_port: "{{ hostvars[inventory_hostname].apt_mirror_health_check_port | default(8080) }}"
+        verify_health_endpoint: "{{ hostvars[inventory_hostname].apt_mirror_health_check_endpoint | default('/health') }}"
+        verify_health_service_port: "{{ hostvars[inventory_hostname].apt_mirror_health_service_port | default(5000) }}"
+
+    - name: Collect service facts
+      ansible.builtin.service_facts:
+
+    - name: Assert apache2 service is running
       ansible.builtin.assert:
         that:
-          - true
-        success_msg: "Role apt_mirror verification passed"
-        fail_msg: "Role apt_mirror verification failed"
+          - "ansible_facts.services is defined"
+          - "'apache2' in ansible_facts.services"
+          - "ansible_facts.services['apache2'].state == 'running'"
+        fail_msg: "Apache2 service is not running"
+        success_msg: "Apache2 service is running"
+
+    - name: Check apt-mirror Apache config is enabled
+      ansible.builtin.stat:
+        path: /etc/apache2/conf-enabled/apt-mirror.conf
+      register: apache_conf_enabled
+
+    - name: Assert apt-mirror Apache config symlink exists
+      ansible.builtin.assert:
+        that:
+          - apache_conf_enabled.stat.exists
+        fail_msg: "Apache config apt-mirror.conf is not enabled"
+        success_msg: "Apache config apt-mirror.conf is enabled"
+
+    - name: Check health site is enabled
+      ansible.builtin.stat:
+        path: /etc/apache2/sites-enabled/apt-mirror-health.conf
+      register: apache_health_site_enabled
+
+    - name: Assert health site symlink exists
+      ansible.builtin.assert:
+        that:
+          - apache_health_site_enabled.stat.exists
+        fail_msg: "Apache site apt-mirror-health is not enabled"
+        success_msg: "Apache site apt-mirror-health is enabled"
+
+    - name: Check apt-mirror-health is enabled
+      ansible.builtin.command: systemctl is-enabled apt-mirror-health
+      register: health_enabled
+      changed_when: false
+      failed_when: false
+
+    - name: Assert apt-mirror-health unit is enabled
+      ansible.builtin.assert:
+        that:
+          - health_enabled.rc == 0
+          - health_enabled.stdout is search('enabled')
+        fail_msg: "apt-mirror-health service is not enabled"
+        success_msg: "apt-mirror-health service is enabled"
+
+    - name: Check apt-mirror-metrics is enabled
+      ansible.builtin.command: systemctl is-enabled apt-mirror-metrics
+      register: metrics_enabled
+      changed_when: false
+      failed_when: false
+
+    - name: Assert apt-mirror-metrics unit is enabled
+      ansible.builtin.assert:
+        that:
+          - metrics_enabled.rc == 0
+          - metrics_enabled.stdout is search('enabled')
+        fail_msg: "apt-mirror-metrics service is not enabled"
+        success_msg: "apt-mirror-metrics service is enabled"
+
+    - name: Check apt-mirror-alerts is enabled (may be inactive by design)
+      ansible.builtin.command: systemctl is-enabled apt-mirror-alerts
+      register: alerts_enabled
+      changed_when: false
+      failed_when: false
+
+    - name: Assert apt-mirror-alerts unit is enabled
+      ansible.builtin.assert:
+        that:
+          - alerts_enabled.rc == 0
+          - alerts_enabled.stdout is search('enabled')
+        fail_msg: "apt-mirror-alerts service is not enabled"
+        success_msg: "apt-mirror-alerts service is enabled"
+
+    - name: Wait for Apache health port to be listening
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ verify_health_port | int }}"
+        timeout: 10
+        state: started
+
+    - name: Query health endpoint via Apache
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ verify_health_port }}{{ verify_health_endpoint }}"
+        return_content: true
+        status_code: 200
+        timeout: 10
+      register: health_resp
+      failed_when: false
+
+    - name: Debug Apache health response status
+      ansible.builtin.debug:
+        msg: "Apache health status: {{ health_resp.status | default('undefined') }}"
+
+    - name: Fallback - wait for internal health service port
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ verify_health_service_port | int }}"
+        timeout: 40
+        state: started
+      when: (health_resp.status | default(-1) | int) != 200
+
+    - name: Diagnostics - show health service status if Apache is not OK
+      ansible.builtin.command: systemctl --no-pager --full status apt-mirror-health
+      register: health_service_status
+      changed_when: false
+      failed_when: false
+      when: (health_resp.status | default(-1) | int) != 200
+
+    - name: Diagnostics - show last 50 journal lines for health service if Apache is not OK
+      ansible.builtin.command: journalctl -u apt-mirror-health -n 50 --no-pager
+      register: health_service_journal
+      changed_when: false
+      failed_when: false
+      when: (health_resp.status | default(-1) | int) != 200
+
+    - name: Diagnostics - print health service diagnostics
+      ansible.builtin.debug:
+        msg:
+          - "systemctl status:\n{{ health_service_status.stdout | default('') }}"
+          - "journalctl:\n{{ health_service_journal.stdout | default('') }}"
+      when: (health_resp.status | default(-1) | int) != 200
+
+    - name: Fallback - query internal health service endpoint
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ verify_health_service_port }}{{ verify_health_endpoint }}"
+        return_content: true
+        status_code: 200
+        timeout: 10
+      register: health_resp_internal
+      when: (health_resp.status | default(-1) | int) != 200
+
+    - name: Assert health endpoint returned JSON
+      ansible.builtin.assert:
+        that:
+          - (health_resp.json is defined or health_resp_internal.json is defined)
+          - ((health_resp.json is defined and health_resp.json.overall_status is defined) or (health_resp_internal.json is defined and health_resp_internal.json.overall_status is defined))
+        fail_msg: "Health endpoint did not return expected JSON"
+        success_msg: "Health endpoint reachable and returned JSON"

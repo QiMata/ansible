@@ -1,0 +1,47 @@
+---
+# ============================================================================
+# MAIN TASK ORCHESTRATION FOR MARIADB
+# ============================================================================
+
+- name: Include validation tasks
+  ansible.builtin.import_tasks: validation.yml
+  when: mariadb_validate_config
+  tags: [validation, always]
+
+- name: Include installation tasks
+  ansible.builtin.import_tasks: install.yml
+  tags: install
+
+- name: Include configuration tasks
+  ansible.builtin.import_tasks: config.yml
+  tags: config
+
+- name: Include security tasks
+  ansible.builtin.import_tasks: security.yml
+  when: mariadb_enable_security
+  tags: security
+
+- name: Include database management tasks
+  ansible.builtin.import_tasks: databases.yml
+  when: mariadb_databases | length > 0 or mariadb_users | length > 0
+  tags: databases
+
+- name: Include replication tasks
+  ansible.builtin.import_tasks: replication.yml
+  when: mariadb_enable_replication
+  tags: replication
+
+- name: Include backup tasks
+  ansible.builtin.import_tasks: backup.yml
+  when: mariadb_enable_backup
+  tags: backup
+
+- name: Include monitoring tasks
+  ansible.builtin.import_tasks: monitoring.yml
+  when: mariadb_enable_monitoring
+  tags: monitoring
+
+- name: Include health check tasks
+  ansible.builtin.import_tasks: health_checks.yml
+  when: mariadb_health_check_enabled
+  tags: [health, validation]

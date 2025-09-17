@@ -6,4 +6,4 @@
   tasks:
     - name: "Include apt_mirror role"
       ansible.builtin.include_role:
-        name: apt_mirror
+        name: /ansible/src/roles/infrastructure/apt_mirror

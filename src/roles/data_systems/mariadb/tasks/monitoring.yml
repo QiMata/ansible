@@ -1,0 +1,12 @@
+---
+# ============================================================================
+# MARIADB MONITORING TASKS (Placeholder)
+# ============================================================================
+
+- name: Configure slow query log
+  ansible.builtin.debug:
+    msg: "Slow query log configuration handled in main config"
+
+- name: Configure performance schema
+  ansible.builtin.debug:
+    msg: "Performance schema configuration handled in main config"

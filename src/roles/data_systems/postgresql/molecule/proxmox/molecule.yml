@@ -37,7 +37,6 @@ provisioner:
       stdout_callback: yaml
       bin_ansible_callbacks: true
       role_name_check: False
-      roles_path: "../../../../.."
 verifier:
   name: ansible
 scenario:

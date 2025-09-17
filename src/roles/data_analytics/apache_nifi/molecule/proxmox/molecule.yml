@@ -33,6 +33,7 @@ provisioner:
         ansible_become_method: sudo
   config_options:
     defaults:
+      roles_path: ../../../../../../../src/roles
       host_key_checking: false
       stdout_callback: yaml
       bin_ansible_callbacks: true

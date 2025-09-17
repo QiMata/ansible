@@ -4,8 +4,11 @@
     name: "{{ item }}"
     state: present
   loop:
-    - alias
-    - autoindex
+  - alias
+  - autoindex
+  - headers
+  - proxy
+  - proxy_http
 
 - name: Template apache config for apt-mirror
   ansible.builtin.template:

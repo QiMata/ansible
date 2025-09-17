@@ -1,11 +1,267 @@
 ---
-- name: Verify
+- name: Verify Neo4j Installation and Health
   hosts: all
   gather_facts: false
+  vars:
+    neo4j_initial_password: "{{ neo4j_initial_password | default('test_password_123') }}"
+    neo4j_http_port: 7474
+    neo4j_bolt_port: 7687
+    neo4j_health_check_retries: "{{ neo4j_health_check_retries | default(30) }}"
+    neo4j_health_check_delay: "{{ neo4j_health_check_delay | default(5) }}"
+
   tasks:
-    - name: Example assertion
+    # ============================================================================
+    # PHASE 1: SERVICE VALIDATION
+    # ============================================================================
+    
+    - name: Check Neo4j service status
+      ansible.builtin.service:
+        name: neo4j
+        state: started
+      register: neo4j_service_status
+
+    - name: Verify Neo4j service is active
       ansible.builtin.assert:
         that:
-          - true
-        success_msg: "Role neo4j verification passed"
-        fail_msg: "Role neo4j verification failed"
+          - neo4j_service_status.status.ActiveState == "active"
+        success_msg: "✓ Neo4j service is active and running"
+        fail_msg: "✗ Neo4j service is not active"
+
+    - name: Check Neo4j service is enabled
+      ansible.builtin.systemd:
+        name: neo4j
+      register: neo4j_service_info
+
+    - name: Verify Neo4j service is enabled for boot
+      ansible.builtin.assert:
+        that:
+          - neo4j_service_info.status.UnitFileState == "enabled"
+        success_msg: "✓ Neo4j service is enabled for boot"
+        fail_msg: "✗ Neo4j service is not enabled for boot"
+
+    # ============================================================================
+    # PHASE 2: PORT AND CONNECTIVITY VALIDATION
+    # ============================================================================
+    
+    - name: Wait for Neo4j HTTP port to be accessible
+      ansible.builtin.wait_for:
+        port: "{{ neo4j_http_port }}"
+        host: "0.0.0.0"
+        delay: 2
+        timeout: 60
+      register: http_port_check
+
+    - name: Wait for Neo4j Bolt port to be accessible
+      ansible.builtin.wait_for:
+        port: "{{ neo4j_bolt_port }}"
+        host: "0.0.0.0"
+        delay: 2
+        timeout: 60
+      register: bolt_port_check
+
+    - name: Verify Neo4j ports are accessible
+      ansible.builtin.assert:
+        that:
+          - http_port_check is succeeded
+          - bolt_port_check is succeeded
+        success_msg: "✓ Neo4j is listening on HTTP port {{ neo4j_http_port }} and Bolt port {{ neo4j_bolt_port }}"
+        fail_msg: "✗ Neo4j ports are not accessible"
+
+    # ============================================================================
+    # PHASE 3: HTTP API VALIDATION
+    # ============================================================================
+    
+    - name: Test Neo4j HTTP API connectivity
+      ansible.builtin.uri:
+        url: "http://localhost:{{ neo4j_http_port }}"
+        method: GET
+        status_code: [200, 401]
+        return_content: yes
+      register: http_api_test
+      retries: "{{ neo4j_health_check_retries }}"
+      delay: "{{ neo4j_health_check_delay }}"
+      until: http_api_test.status in [200, 401]
+
+    - name: Verify HTTP API is responding
+      ansible.builtin.assert:
+        that:
+          - http_api_test.status in [200, 401]
+        success_msg: "✓ Neo4j HTTP API is responding"
+        fail_msg: "✗ Neo4j HTTP API is not responding"
+
+    - name: Test Neo4j database API endpoint
+      ansible.builtin.uri:
+        url: "http://localhost:{{ neo4j_http_port }}/db/data/"
+        method: GET
+        status_code: [200, 401]
+        return_content: yes
+      register: db_api_test
+
+    - name: Verify database API endpoint
+      ansible.builtin.assert:
+        that:
+          - db_api_test.status in [200, 401]
+        success_msg: "✓ Neo4j database API endpoint is accessible"
+        fail_msg: "✗ Neo4j database API endpoint is not accessible"
+
+    # ============================================================================
+    # PHASE 4: CYPHER QUERY TESTING (if authentication disabled)
+    # ============================================================================
+    
+    - name: Test basic Cypher query via HTTP API
+      ansible.builtin.uri:
+        url: "http://localhost:{{ neo4j_http_port }}/db/data/transaction/commit"
+        method: POST
+        body_format: json
+        body:
+          statements:
+            - statement: "RETURN 1 as test_value"
+        status_code: [200, 401]
+        return_content: yes
+      register: cypher_test
+      when: not (neo4j_enable_security | default(false))
+
+    - name: Verify Cypher query execution
+      ansible.builtin.assert:
+        that:
+          - cypher_test.status == 200
+          - cypher_test.json.results[0].data[0].row[0] == 1
+        success_msg: "✓ Cypher query execution successful"
+        fail_msg: "✗ Cypher query execution failed"
+      when: not (neo4j_enable_security | default(false)) and cypher_test is defined
+
+    # ============================================================================
+    # PHASE 5: DATABASE OPERATIONS TESTING
+    # ============================================================================
+    
+    - name: Create test node via Cypher
+      ansible.builtin.uri:
+        url: "http://localhost:{{ neo4j_http_port }}/db/data/transaction/commit"
+        method: POST
+        body_format: json
+        body:
+          statements:
+            - statement: "CREATE (n:HealthCheck {name: 'test_node', timestamp: timestamp()}) RETURN n"
+        status_code: [200, 401]
+        return_content: yes
+      register: create_node_test
+      when: not (neo4j_enable_security | default(false))
+
+    - name: Query test node
+      ansible.builtin.uri:
+        url: "http://localhost:{{ neo4j_http_port }}/db/data/transaction/commit"
+        method: POST
+        body_format: json
+        body:
+          statements:
+            - statement: "MATCH (n:HealthCheck) RETURN count(n) as node_count"
+        status_code: [200, 401]
+        return_content: yes
+      register: query_node_test
+      when: not (neo4j_enable_security | default(false))
+
+    - name: Verify database CRUD operations
+      ansible.builtin.assert:
+        that:
+          - create_node_test.status == 200
+          - query_node_test.status == 200
+          - query_node_test.json.results[0].data[0].row[0] | int > 0
+        success_msg: "✓ Database CRUD operations working correctly"
+        fail_msg: "✗ Database CRUD operations failed"
+      when: not (neo4j_enable_security | default(false)) and create_node_test is defined and query_node_test is defined
+
+    # ============================================================================
+    # PHASE 6: PERFORMANCE AND RESOURCE MONITORING
+    # ============================================================================
+    
+    - name: Get Neo4j version and configuration
+      ansible.builtin.uri:
+        url: "http://localhost:{{ neo4j_http_port }}/db/manage/server/version"
+        method: GET
+        status_code: [200, 401]
+        return_content: yes
+      register: version_info
+
+    - name: Get Neo4j JMX information
+      ansible.builtin.uri:
+        url: "http://localhost:{{ neo4j_http_port }}/db/manage/server/jmx/domain/java.lang/instance%3Dtype%3DMemory"
+        method: GET
+        status_code: [200, 401, 404]
+        return_content: yes
+      register: jmx_info
+
+    - name: Display Neo4j performance metrics
+      ansible.builtin.debug:
+        msg: |
+          Neo4j Performance Metrics:
+          ==========================
+          - Version: {{ version_info.content | default('Unknown') }}
+          - HTTP Status: {{ http_api_test.status }}
+          - Database API Status: {{ db_api_test.status }}
+          - JMX Status: {{ jmx_info.status if jmx_info is defined else 'Not Available' }}
+
+    # ============================================================================
+    # PHASE 7: LOG FILE VALIDATION
+    # ============================================================================
+    
+    - name: Check Neo4j log files exist
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      register: log_files_check
+      loop:
+        - "/var/log/neo4j/neo4j.log"
+        - "/var/log/neo4j/debug.log"
+      failed_when: false
+
+    - name: Display log file status
+      ansible.builtin.debug:
+        msg: |
+          Neo4j Log Files:
+          {% for result in log_files_check.results %}
+          - {{ result.item }}: {{ 'Exists' if result.stat.exists else 'Missing' }}
+          {% endfor %}
+
+    # ============================================================================
+    # PHASE 8: CLEANUP TEST DATA
+    # ============================================================================
+    
+    - name: Cleanup test nodes
+      ansible.builtin.uri:
+        url: "http://localhost:{{ neo4j_http_port }}/db/data/transaction/commit"
+        method: POST
+        body_format: json
+        body:
+          statements:
+            - statement: "MATCH (n:HealthCheck) DELETE n"
+        status_code: [200, 401]
+        return_content: yes
+      register: cleanup_result
+      when: not (neo4j_enable_security | default(false))
+
+    # ============================================================================
+    # PHASE 9: FINAL HEALTH SUMMARY
+    # ============================================================================
+    
+    - name: Final Neo4j health summary
+      ansible.builtin.debug:
+        msg: |
+          Neo4j Health Summary:
+          =====================
+          ✓ Service Status: {{ 'Running' if neo4j_service_status.status.ActiveState == 'active' else 'Not Running' }}
+          ✓ HTTP Port Access: {{ 'OK' if http_port_check is succeeded else 'Failed' }}
+          ✓ Bolt Port Access: {{ 'OK' if bolt_port_check is succeeded else 'Failed' }}
+          ✓ HTTP API: {{ 'OK' if http_api_test.status in [200, 401] else 'Failed' }}
+          ✓ Database API: {{ 'OK' if db_api_test.status in [200, 401] else 'Failed' }}
+          ✓ Cypher Queries: {{ 'OK' if (not (neo4j_enable_security | default(false)) and cypher_test is defined and cypher_test.status == 200) else 'Skipped (Security Enabled)' }}
+          ✓ Health Check: COMPLETED SUCCESSFULLY
+
+    - name: Verify overall health check success
+      ansible.builtin.assert:
+        that:
+          - neo4j_service_status.status.ActiveState == "active"
+          - http_port_check is succeeded
+          - bolt_port_check is succeeded
+          - http_api_test.status in [200, 401]
+          - db_api_test.status in [200, 401]
+        success_msg: "🎉 Neo4j comprehensive health check PASSED"
+        fail_msg: "❌ Neo4j health check FAILED - check individual test results above"

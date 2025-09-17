@@ -1,0 +1,115 @@
+---
+# ============================================================================
+# MARIADB DEFAULT VARIABLES
+# ============================================================================
+
+# Basic Configuration
+mariadb_version: "10.6"
+mariadb_root_password: "change_me_secure_password"
+mariadb_bind_address: "127.0.0.1"
+mariadb_port: 3306
+mariadb_environment: "production"
+
+# Package Management
+mariadb_package_state: "present"
+mariadb_repository_url: "http://ftp.igh.cnrs.fr/pub/mariadb/repo/{{ mariadb_version }}/ubuntu"
+mariadb_repository_key_url: "https://mariadb.org/mariadb_release_signing_key.asc"
+
+# Service Configuration
+mariadb_service_name: "mariadb"
+mariadb_service_enabled: true
+mariadb_service_state: "started"
+
+# Container-aware Performance Settings (optimized for containerized environments)
+mariadb_max_connections: "{{ 100 if mariadb_environment == 'production' else 50 }}"
+mariadb_innodb_buffer_pool_size: "{{ '1G' if mariadb_environment == 'production' else '128M' }}"
+mariadb_query_cache_size: "{{ '128M' if mariadb_environment == 'production' else '32M' }}"
+mariadb_query_cache_type: 1
+mariadb_tmp_table_size: "64M"
+mariadb_max_heap_table_size: "64M"
+
+# InnoDB Configuration
+mariadb_innodb_log_file_size: "{{ '256M' if mariadb_environment == 'production' else '64M' }}"
+mariadb_innodb_log_buffer_size: "16M"
+mariadb_innodb_flush_log_at_trx_commit: 2
+mariadb_innodb_file_per_table: true
+
+# Security Configuration
+mariadb_enable_security: true
+mariadb_remove_anonymous_users: true
+mariadb_remove_test_database: "{{ false if mariadb_environment == 'test' else true }}"
+mariadb_disallow_root_login_remotely: "{{ false if mariadb_environment in ['test', 'dev'] else true }}"
+
+# SSL/TLS Configuration
+mariadb_enable_ssl: false
+mariadb_ssl_cert: "/etc/mysql/server-cert.pem"
+mariadb_ssl_key: "/etc/mysql/server-key.pem"
+mariadb_ssl_ca: "/etc/mysql/ca-cert.pem"
+
+# Backup Configuration
+mariadb_enable_backup: false
+mariadb_backup_dir: "/var/backups/mariadb"
+mariadb_backup_retention_days: 7
+
+# Monitoring Configuration
+mariadb_enable_monitoring: false
+mariadb_slow_query_log: true
+mariadb_slow_query_log_file: "/var/log/mysql/slow-query.log"
+mariadb_long_query_time: 2
+
+# Health Check Configuration
+mariadb_health_check_enabled: true
+mariadb_health_check_retries: 30
+mariadb_health_check_delay: 5
+mariadb_validate_config: true
+mariadb_validate_connectivity: true
+
+# Custom Databases and Users
+mariadb_databases: []
+# Example:
+# mariadb_databases:
+#   - name: "app_db"
+#     encoding: "utf8mb4"
+#     collation: "utf8mb4_unicode_ci"
+
+mariadb_users: []
+# Example:
+# mariadb_users:
+#   - name: "app_user"
+#     password: "secure_password"
+#     priv: "app_db.*:ALL"
+#     host: "localhost"
+
+# Test Configuration (for molecule testing)
+mariadb_create_test_db: false
+mariadb_test_db_name: "test_database"
+mariadb_test_user: "test_user"
+mariadb_test_password: "test_user_pass"
+
+# Log Configuration
+mariadb_log_error: "/var/log/mysql/error.log"
+mariadb_log_warnings: 2
+
+# Replication Configuration
+mariadb_enable_replication: false
+mariadb_replication_role: "master"
+mariadb_replication_user: "replicator"
+mariadb_replication_password: "replicator_password"
+mariadb_server_id: 1
+
+# Galera Cluster Configuration
+mariadb_enable_galera: false
+mariadb_galera_cluster_name: "mariadb_cluster"
+mariadb_galera_cluster_nodes: []
+
+# Binary Logging
+mariadb_enable_binlog: true
+mariadb_binlog_format: "ROW"
+mariadb_binlog_expire_logs_days: 7
+
+# Performance Schema
+mariadb_performance_schema: false
+
+# Character Set and Collation
+mariadb_character_set_server: "utf8mb4"
+mariadb_collation_server: "utf8mb4_unicode_ci"

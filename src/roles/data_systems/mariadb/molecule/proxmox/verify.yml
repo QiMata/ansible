@@ -1,0 +1,316 @@
+---
+- name: Verify MariaDB Installation and Health
+  hosts: all
+  gather_facts: false
+  vars:
+    mariadb_root_password: "{{ mariadb_root_password | default('test_password_123') }}"
+    mariadb_port: "{{ mariadb_port | default(3306) }}"
+    mariadb_test_db_name: "{{ mariadb_test_db_name | default('test_database') }}"
+    mariadb_test_user: "{{ mariadb_test_user | default('test_user') }}"
+    mariadb_test_password: "{{ mariadb_test_password | default('test_user_pass') }}"
+    mariadb_health_check_retries: "{{ mariadb_health_check_retries | default(30) }}"
+    mariadb_health_check_delay: "{{ mariadb_health_check_delay | default(5) }}"
+
+  tasks:
+    # ============================================================================
+    # PHASE 1: SERVICE VALIDATION
+    # ============================================================================
+    
+    - name: Check MariaDB service status
+      ansible.builtin.service:
+        name: mariadb
+        state: started
+      register: mariadb_service_status
+
+    - name: Verify MariaDB service is active
+      ansible.builtin.assert:
+        that:
+          - mariadb_service_status.status.ActiveState == "active"
+        success_msg: "✓ MariaDB service is active and running"
+        fail_msg: "✗ MariaDB service is not active"
+
+    - name: Check MariaDB service is enabled
+      ansible.builtin.systemd:
+        name: mariadb
+      register: mariadb_service_info
+
+    - name: Verify MariaDB service is enabled for boot
+      ansible.builtin.assert:
+        that:
+          - mariadb_service_info.status.UnitFileState == "enabled"
+        success_msg: "✓ MariaDB service is enabled for boot"
+        fail_msg: "✗ MariaDB service is not enabled for boot"
+
+    # ============================================================================
+    # PHASE 2: PORT AND CONNECTIVITY VALIDATION
+    # ============================================================================
+    
+    - name: Wait for MariaDB to be responsive on port
+      ansible.builtin.wait_for:
+        port: "{{ mariadb_port }}"
+        host: "0.0.0.0"
+        delay: 2
+        timeout: 60
+      register: port_check
+
+    - name: Verify MariaDB port is accessible
+      ansible.builtin.assert:
+        that:
+          - port_check is succeeded
+        success_msg: "✓ MariaDB is listening on port {{ mariadb_port }}"
+        fail_msg: "✗ MariaDB is not accessible on port {{ mariadb_port }}"
+
+    # ============================================================================
+    # PHASE 3: DATABASE CONNECTION AND AUTHENTICATION
+    # ============================================================================
+    
+    - name: Test root connection to MariaDB
+      community.mysql.mysql_info:
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        login_host: localhost
+        login_port: "{{ mariadb_port }}"
+      register: root_connection_test
+      retries: "{{ mariadb_health_check_retries }}"
+      delay: "{{ mariadb_health_check_delay }}"
+      until: root_connection_test is succeeded
+
+    - name: Verify root connection successful
+      ansible.builtin.assert:
+        that:
+          - root_connection_test is succeeded
+          - root_connection_test.version is defined
+        success_msg: "✓ Root connection to MariaDB successful - Version: {{ root_connection_test.version.full }}"
+        fail_msg: "✗ Failed to connect as root to MariaDB"
+
+    # ============================================================================
+    # PHASE 4: DATABASE AND USER VALIDATION
+    # ============================================================================
+    
+    - name: Check if test database exists
+      community.mysql.mysql_db:
+        name: "{{ mariadb_test_db_name }}"
+        state: present
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        login_host: localhost
+        check_mode: yes
+      register: test_db_check
+
+    - name: Verify test database exists
+      ansible.builtin.assert:
+        that:
+          - test_db_check is succeeded
+        success_msg: "✓ Test database '{{ mariadb_test_db_name }}' exists"
+        fail_msg: "✗ Test database '{{ mariadb_test_db_name }}' does not exist"
+
+    - name: Test user connection to MariaDB
+      community.mysql.mysql_info:
+        login_user: "{{ mariadb_test_user }}"
+        login_password: "{{ mariadb_test_password }}"
+        login_host: localhost
+        login_port: "{{ mariadb_port }}"
+        login_db: "{{ mariadb_test_db_name }}"
+      register: user_connection_test
+
+    - name: Verify test user connection successful
+      ansible.builtin.assert:
+        that:
+          - user_connection_test is succeeded
+        success_msg: "✓ Test user '{{ mariadb_test_user }}' can connect to database"
+        fail_msg: "✗ Test user '{{ mariadb_test_user }}' cannot connect to database"
+
+    # ============================================================================
+    # PHASE 5: FUNCTIONAL DATABASE OPERATIONS
+    # ============================================================================
+    
+    - name: Create test table
+      community.mysql.mysql_query:
+        login_user: "{{ mariadb_test_user }}"
+        login_password: "{{ mariadb_test_password }}"
+        login_host: localhost
+        login_db: "{{ mariadb_test_db_name }}"
+        query: |
+          CREATE TABLE IF NOT EXISTS health_check_table (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            test_data VARCHAR(255),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          ) ENGINE=InnoDB
+      register: create_table_result
+
+    - name: Insert test data
+      community.mysql.mysql_query:
+        login_user: "{{ mariadb_test_user }}"
+        login_password: "{{ mariadb_test_password }}"
+        login_host: localhost
+        login_db: "{{ mariadb_test_db_name }}"
+        query: |
+          INSERT INTO health_check_table (test_data) 
+          VALUES ('Health check test - {{ ansible_date_time.iso8601 }}')
+      register: insert_test_result
+
+    - name: Query test data
+      community.mysql.mysql_query:
+        login_user: "{{ mariadb_test_user }}"
+        login_password: "{{ mariadb_test_password }}"
+        login_host: localhost
+        login_db: "{{ mariadb_test_db_name }}"
+        query: "SELECT COUNT(*) as record_count FROM health_check_table"
+      register: query_test_result
+
+    - name: Verify database operations successful
+      ansible.builtin.assert:
+        that:
+          - create_table_result is succeeded
+          - insert_test_result is succeeded
+          - query_test_result is succeeded
+          - query_test_result.query_result[0][0].record_count | int > 0
+        success_msg: "✓ Database CRUD operations working correctly"
+        fail_msg: "✗ Database CRUD operations failed"
+
+    # ============================================================================
+    # PHASE 6: PERFORMANCE AND RESOURCE MONITORING
+    # ============================================================================
+    
+    - name: Get MariaDB status variables
+      community.mysql.mysql_query:
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        login_host: localhost
+        query: "SHOW STATUS LIKE 'Connections'"
+      register: connection_status
+
+    - name: Get MariaDB process list
+      community.mysql.mysql_query:
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        login_host: localhost
+        query: "SHOW PROCESSLIST"
+      register: process_list
+
+    - name: Get InnoDB status
+      community.mysql.mysql_query:
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        login_host: localhost
+        query: "SHOW ENGINE INNODB STATUS"
+      register: innodb_status
+
+    - name: Display MariaDB performance metrics
+      ansible.builtin.debug:
+        msg: |
+          MariaDB Performance Metrics:
+          ============================
+          - Total Connections: {{ connection_status.query_result[0][0].Value }}
+          - Active Processes: {{ process_list.query_result[0] | length }}
+          - InnoDB Status: Available
+
+    # ============================================================================
+    # PHASE 7: SECURITY VALIDATION
+    # ============================================================================
+    
+    - name: Check for anonymous users
+      community.mysql.mysql_query:
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        login_host: localhost
+        query: "SELECT User, Host FROM mysql.user WHERE User = ''"
+      register: anonymous_users
+
+    - name: Verify no anonymous users (if security enabled)
+      ansible.builtin.assert:
+        that:
+          - anonymous_users.query_result[0] | length == 0
+        success_msg: "✓ No anonymous users found"
+        fail_msg: "⚠ Anonymous users detected"
+      when: mariadb_enable_security | default(false)
+
+    - name: Check root user access
+      community.mysql.mysql_query:
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        login_host: localhost
+        query: "SELECT User, Host FROM mysql.user WHERE User = 'root'"
+      register: root_users
+
+    - name: Display root user configuration
+      ansible.builtin.debug:
+        msg: |
+          Root User Configuration:
+          {% for user in root_users.query_result[0] %}
+          - {{ user.User }}@{{ user.Host }}
+          {% endfor %}
+
+    # ============================================================================
+    # PHASE 8: CONFIGURATION VALIDATION
+    # ============================================================================
+    
+    - name: Get MariaDB configuration variables
+      community.mysql.mysql_query:
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        login_host: localhost
+        query: |
+          SELECT 
+            'max_connections' as variable_name, @@max_connections as value
+          UNION ALL
+          SELECT 
+            'innodb_buffer_pool_size', @@innodb_buffer_pool_size
+          UNION ALL
+          SELECT 
+            'query_cache_size', @@query_cache_size
+          UNION ALL
+          SELECT 
+            'port', @@port
+      register: config_variables
+
+    - name: Display configuration validation
+      ansible.builtin.debug:
+        msg: |
+          MariaDB Configuration:
+          =====================
+          {% for var in config_variables.query_result[0] %}
+          - {{ var.variable_name }}: {{ var.value }}
+          {% endfor %}
+
+    # ============================================================================
+    # PHASE 9: CLEANUP TEST DATA
+    # ============================================================================
+    
+    - name: Cleanup test table
+      community.mysql.mysql_query:
+        login_user: "{{ mariadb_test_user }}"
+        login_password: "{{ mariadb_test_password }}"
+        login_host: localhost
+        login_db: "{{ mariadb_test_db_name }}"
+        query: "DROP TABLE IF EXISTS health_check_table"
+      register: cleanup_result
+
+    # ============================================================================
+    # PHASE 10: FINAL HEALTH SUMMARY
+    # ============================================================================
+    
+    - name: Final MariaDB health summary
+      ansible.builtin.debug:
+        msg: |
+          MariaDB Health Summary:
+          =======================
+          ✓ Service Status: {{ 'Running' if mariadb_service_status.status.ActiveState == 'active' else 'Not Running' }}
+          ✓ Port Access: {{ 'OK' if port_check is succeeded else 'Failed' }}
+          ✓ Root Connection: {{ 'OK' if root_connection_test is succeeded else 'Failed' }}
+          ✓ Test User Connection: {{ 'OK' if user_connection_test is succeeded else 'Failed' }}
+          ✓ Database Operations: {{ 'OK' if query_test_result is succeeded else 'Failed' }}
+          ✓ Version: {{ root_connection_test.version.full | default('Unknown') }}
+          ✓ Test Cleanup: {{ 'OK' if cleanup_result is succeeded else 'Failed' }}
+          ✓ Health Check: COMPLETED SUCCESSFULLY
+
+    - name: Verify overall health check success
+      ansible.builtin.assert:
+        that:
+          - mariadb_service_status.status.ActiveState == "active"
+          - port_check is succeeded
+          - root_connection_test is succeeded
+          - user_connection_test is succeeded
+          - query_test_result is succeeded
+        success_msg: "🎉 MariaDB comprehensive health check PASSED"
+        fail_msg: "❌ MariaDB health check FAILED - check individual test results above"

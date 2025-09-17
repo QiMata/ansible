@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Simple mirror availability checker
+# Exits non-zero on failure so cron/mailutils can alert via alert_manager.py if desired.
+
+set -euo pipefail
+
+PORT={{ apt_mirror_health_check_port | default(8080) }}
+ENDPOINT="{{ apt_mirror_health_check_endpoint | default('/health') }}"
+URL="http://127.0.0.1:${PORT}${ENDPOINT}"
+LOG_DIR="/var/log/apt-mirror"
+LOG_FILE="$LOG_DIR/mirror-availability.log"
+
+mkdir -p "$LOG_DIR"
+
+TS=$(date -Is)
+STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL" || echo "000")
+
+if [[ "$STATUS" == "200" ]]; then
+  echo "$TS OK ${URL} status=$STATUS" >> "$LOG_FILE"
+  exit 0
+else
+  echo "$TS FAIL ${URL} status=$STATUS" >> "$LOG_FILE"
+  # Optional: invoke alert manager if configured
+  if [[ -x /opt/apt-mirror-alerts/alert_manager.py ]]; then
+    /opt/apt-mirror-alerts/alert_manager.py --type availability --status "$STATUS" --url "$URL" || true
+  fi
+  exit 1
+fi

@@ -5,3 +5,14 @@ jenkins_controller_home: "/var/lib/jenkins"
 jenkins_controller_plugins_state: present
 jenkins_controller_backup_dir: "/var/backups/jenkins"
 jenkins_controller_backup_keep_days: 7
+
+# Common tunables
+jenkins_java_version: 17
+jenkins_http_port: 8080
+jenkins_java_opts: ""
+jenkins_admin_user: admin
+# Default LTS version may be overridden in scenario
+jenkins_version: "2.452.2"
+
+# Plugins used by molecule tests
+jenkins_plugins: ["git"]

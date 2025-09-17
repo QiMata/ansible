@@ -1,0 +1,92 @@
+---
+# ============================================================================
+# MARIADB INSTALLATION TASKS
+# ============================================================================
+
+- name: Update package cache
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  when: ansible_os_family == "Debian"
+
+- name: Install required packages
+  ansible.builtin.package:
+    name:
+      - software-properties-common
+      - dirmngr
+      - apt-transport-https
+      - gnupg2
+      - python3-pymysql
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Add MariaDB repository key
+  ansible.builtin.apt_key:
+    url: "{{ mariadb_repository_key_url }}"
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Add MariaDB repository
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=amd64,arm64,ppc64el] {{ mariadb_repository_url }} {{ ansible_distribution_release }} main"
+    state: present
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+
+- name: Set MariaDB root password before installation
+  ansible.builtin.debconf:
+    name: mariadb-server
+    question: "mysql-server/root_password"
+    value: "{{ mariadb_root_password }}"
+    vtype: password
+  when: ansible_os_family == "Debian"
+
+- name: Set MariaDB root password confirmation before installation
+  ansible.builtin.debconf:
+    name: mariadb-server
+    question: "mysql-server/root_password_again"
+    value: "{{ mariadb_root_password }}"
+    vtype: password
+  when: ansible_os_family == "Debian"
+
+- name: Install MariaDB server and client
+  ansible.builtin.package:
+    name:
+      - mariadb-server
+      - mariadb-client
+      - mariadb-common
+    state: "{{ mariadb_package_state }}"
+  notify:
+    - restart mariadb
+    - wait for mariadb
+
+- name: Ensure MariaDB service is started and enabled
+  ansible.builtin.service:
+    name: "{{ mariadb_service_name }}"
+    state: "{{ mariadb_service_state }}"
+    enabled: "{{ mariadb_service_enabled }}"
+
+- name: Create MariaDB configuration directory
+  ansible.builtin.file:
+    path: /etc/mysql/conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create MariaDB log directory
+  ansible.builtin.file:
+    path: /var/log/mysql
+    state: directory
+    owner: mysql
+    group: mysql
+    mode: '0755'
+
+- name: Create MariaDB backup directory
+  ansible.builtin.file:
+    path: "{{ mariadb_backup_dir }}"
+    state: directory
+    owner: mysql
+    group: mysql
+    mode: '0755'
+  when: mariadb_enable_backup

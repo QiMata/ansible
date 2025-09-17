@@ -30,6 +30,8 @@ apt_mirror_health_checks_enabled: true
 apt_mirror_health_check_interval: "*/5 * * * *"
 apt_mirror_health_check_endpoint: "/health"
 apt_mirror_health_check_port: 8080
+# Internal Flask service port (Apache proxies to this)
+apt_mirror_health_service_port: 5000
 
 # Alerting
 apt_mirror_alerting_enabled: true

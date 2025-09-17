@@ -31,6 +31,24 @@ provisioner:
         ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
         ansible_become: yes
         ansible_become_method: sudo
+        # MinIO-specific testing configuration
+        minio_root_user: "minioadmin"
+        minio_root_password: "minioadmin123"
+        minio_console_port: 9001
+        minio_server_port: 9000
+        minio_environment: "test"
+        minio_enable_tls: false
+        minio_enable_monitoring: false
+        # Container-aware settings
+        minio_server_address: "0.0.0.0:9000"
+        minio_console_address: "0.0.0.0:9001"
+        minio_data_dir: "/opt/minio/data"
+        minio_create_test_bucket: true
+        minio_test_bucket_name: "test-bucket"
+        # Health check configuration
+        minio_health_check_enabled: true
+        minio_health_check_retries: 30
+        minio_health_check_delay: 5
   config_options:
     defaults:
       host_key_checking: false

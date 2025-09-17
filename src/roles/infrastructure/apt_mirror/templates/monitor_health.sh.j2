@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PORT="{{ apt_mirror_health_check_port | default(8080) }}"
+ENDPOINT="{{ apt_mirror_health_check_endpoint | default('/health') }}"
+URL="http://127.0.0.1:${PORT}${ENDPOINT}"
+
+log() {
+  echo "[$(date -Is)] $*"
+}
+
+# Ensure service is active
+if systemctl is-active --quiet apt-mirror-health; then
+  log "apt-mirror-health is active"
+else
+  log "apt-mirror-health is NOT active"
+  exit 1
+fi
+
+# Probe HTTP endpoint
+STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL" || true)
+if [[ "$STATUS" == "200" ]]; then
+  log "Health endpoint OK ($URL)"
+  exit 0
+else
+  log "Health endpoint FAILED ($URL) -> $STATUS"
+  exit 2
+fi

@@ -14,7 +14,10 @@ def test_user_exists(host):
 
 
 def test_java_installed(host):
-    assert host.package('openjdk-11-jdk').is_installed
+    pkg_default = host.package('default-jdk')
+    pkg_jdk11 = host.package('openjdk-11-jdk')
+    java_cmd = host.run('java -version')
+    assert pkg_default.is_installed or pkg_jdk11.is_installed or java_cmd.rc == 0
 
 
 def test_authorized_key(host):

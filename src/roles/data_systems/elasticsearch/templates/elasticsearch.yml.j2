@@ -48,7 +48,6 @@ path.data: {{ es_data_paths | to_json }}
 {% endif %}
 path.logs: "{{ es_log_path }}"
 path.home: "{{ es_home_path }}"
-path.conf: "{{ es_config_path }}"
 {% if es_path_repo | length > 0 %}
 path.repo: {{ es_path_repo | to_json }}
 {% endif %}

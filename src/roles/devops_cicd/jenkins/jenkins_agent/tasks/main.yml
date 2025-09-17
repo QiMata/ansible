@@ -8,7 +8,7 @@
 
 - name: Install OpenJDK
   ansible.builtin.apt:
-    name: openjdk-11-jdk
+    name: default-jdk
     state: present
     update_cache: true
 
@@ -17,4 +17,12 @@
     user: "{{ jenkins_agent_user }}"
     key: "{{ jenkins_agent_ssh_public_key }}"
     state: present
-  notify: restart ssh
+    manage_dir: true
+
+- name: Ensure authorized_keys permissions
+  ansible.builtin.file:
+    path: "/home/{{ jenkins_agent_user }}/.ssh/authorized_keys"
+    owner: "{{ jenkins_agent_user }}"
+    group: "{{ jenkins_agent_user }}"
+    mode: '0600'
+    state: file

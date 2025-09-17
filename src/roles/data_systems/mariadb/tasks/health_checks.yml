@@ -1,0 +1,120 @@
+---
+# ============================================================================
+# MARIADB HEALTH CHECKS AND VALIDATION TASKS
+# ============================================================================
+
+- name: Wait for MariaDB service to start
+  ansible.builtin.service:
+    name: "{{ mariadb_service_name }}"
+    state: started
+  register: mariadb_service_status
+
+- name: Wait for MariaDB to be responsive
+  ansible.builtin.wait_for:
+    port: "{{ mariadb_port }}"
+    host: "{{ mariadb_bind_address }}"
+    delay: 2
+    timeout: 60
+  register: mariadb_port_check
+
+- name: Test MariaDB connection
+  community.mysql.mysql_info:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    login_host: localhost
+    login_port: "{{ mariadb_port }}"
+  register: mariadb_connection_test
+  retries: "{{ mariadb_health_check_retries }}"
+  delay: "{{ mariadb_health_check_delay }}"
+  until: mariadb_connection_test is succeeded
+
+- name: Check MariaDB version
+  community.mysql.mysql_query:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    login_host: localhost
+    query: "SELECT VERSION() as version"
+  register: mariadb_version_check
+
+- name: Display MariaDB connection status
+  ansible.builtin.debug:
+    msg: |
+      MariaDB Connection Status:
+      - Service: {{ 'Running' if mariadb_service_status.status.ActiveState == 'active' else 'Not Running' }}
+      - Port Access: {{ 'OK' if mariadb_port_check is succeeded else 'Failed' }}
+      - Connection: {{ 'OK' if mariadb_connection_test is succeeded else 'Failed' }}
+      - Version: {{ mariadb_version_check.query_result[0][0].version if mariadb_version_check is succeeded else 'Unknown' }}
+
+- name: Check MariaDB process list
+  community.mysql.mysql_query:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    login_host: localhost
+    query: "SHOW PROCESSLIST"
+  register: mariadb_processes
+
+- name: Check MariaDB status variables
+  community.mysql.mysql_query:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    login_host: localhost
+    query: |
+      SELECT 
+        'Connections' as variable_name, VARIABLE_VALUE as value
+      FROM INFORMATION_SCHEMA.GLOBAL_STATUS 
+      WHERE VARIABLE_NAME = 'Connections'
+      UNION ALL
+      SELECT 
+        'Threads_connected', VARIABLE_VALUE
+      FROM INFORMATION_SCHEMA.GLOBAL_STATUS 
+      WHERE VARIABLE_NAME = 'Threads_connected'
+      UNION ALL
+      SELECT 
+        'Uptime', VARIABLE_VALUE
+      FROM INFORMATION_SCHEMA.GLOBAL_STATUS 
+      WHERE VARIABLE_NAME = 'Uptime'
+  register: mariadb_status
+
+- name: Display MariaDB status
+  ansible.builtin.debug:
+    msg: |
+      MariaDB Status:
+      {% for status in mariadb_status.query_result[0] %}
+      - {{ status.variable_name }}: {{ status.value }}
+      {% endfor %}
+
+- name: Verify MariaDB is responding correctly
+  ansible.builtin.assert:
+    that:
+      - mariadb_service_status.status.ActiveState == "active"
+      - mariadb_port_check is succeeded
+      - mariadb_connection_test is succeeded
+    fail_msg: "MariaDB health check failed - service is not responding properly"
+    success_msg: "MariaDB health check passed - service is healthy"
+
+- name: Create health check script
+  ansible.builtin.template:
+    src: health-check.sh.j2
+    dest: /usr/local/bin/mariadb-health-check.sh
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create health monitoring cron job
+  ansible.builtin.cron:
+    name: "MariaDB health check"
+    minute: "*/5"
+    job: "/usr/local/bin/mariadb-health-check.sh"
+    user: root
+  when: mariadb_health_check_enabled
+
+- name: Final health summary
+  ansible.builtin.debug:
+    msg: |
+      MariaDB Health Summary:
+      =======================
+      ✓ Service Status: {{ 'Running' if mariadb_service_status.status.ActiveState == 'active' else 'Not Running' }}
+      ✓ Port Access: {{ 'OK' if mariadb_port_check is succeeded else 'Failed' }}
+      ✓ Connection Test: {{ 'OK' if mariadb_connection_test is succeeded else 'Failed' }}
+      ✓ Active Connections: {{ mariadb_status.query_result[0][1].value if mariadb_status is succeeded else 'Unknown' }}
+      ✓ Health Check: COMPLETED

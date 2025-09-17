@@ -9,21 +9,21 @@
     ProxyPreserveHost On
     ProxyRequests Off
     
-    ProxyPass {{ apt_mirror_health_check_endpoint }} http://localhost:{{ apt_mirror_health_check_port }}{{ apt_mirror_health_check_endpoint }}
-    ProxyPassReverse {{ apt_mirror_health_check_endpoint }} http://localhost:{{ apt_mirror_health_check_port }}{{ apt_mirror_health_check_endpoint }}
+    ProxyPass {{ apt_mirror_health_check_endpoint }} http://localhost:{{ apt_mirror_health_service_port }}{{ apt_mirror_health_check_endpoint }}
+    ProxyPassReverse {{ apt_mirror_health_check_endpoint }} http://localhost:{{ apt_mirror_health_service_port }}{{ apt_mirror_health_check_endpoint }}
     
     # Health check endpoints
-    ProxyPass /health/disk http://localhost:{{ apt_mirror_health_check_port }}/health/disk
-    ProxyPassReverse /health/disk http://localhost:{{ apt_mirror_health_check_port }}/health/disk
+    ProxyPass /health/disk http://localhost:{{ apt_mirror_health_service_port }}/health/disk
+    ProxyPassReverse /health/disk http://localhost:{{ apt_mirror_health_service_port }}/health/disk
     
-    ProxyPass /health/sync http://localhost:{{ apt_mirror_health_check_port }}/health/sync
-    ProxyPassReverse /health/sync http://localhost:{{ apt_mirror_health_check_port }}/health/sync
+    ProxyPass /health/sync http://localhost:{{ apt_mirror_health_service_port }}/health/sync
+    ProxyPassReverse /health/sync http://localhost:{{ apt_mirror_health_service_port }}/health/sync
     
-    ProxyPass /health/apache http://localhost:{{ apt_mirror_health_check_port }}/health/apache
-    ProxyPassReverse /health/apache http://localhost:{{ apt_mirror_health_check_port }}/health/apache
+    ProxyPass /health/apache http://localhost:{{ apt_mirror_health_service_port }}/health/apache
+    ProxyPassReverse /health/apache http://localhost:{{ apt_mirror_health_service_port }}/health/apache
     
-    ProxyPass /health/mirror http://localhost:{{ apt_mirror_health_check_port }}/health/mirror
-    ProxyPassReverse /health/mirror http://localhost:{{ apt_mirror_health_check_port }}/health/mirror
+    ProxyPass /health/mirror http://localhost:{{ apt_mirror_health_service_port }}/health/mirror
+    ProxyPassReverse /health/mirror http://localhost:{{ apt_mirror_health_service_port }}/health/mirror
     
     # Logging
     ErrorLog ${APACHE_LOG_DIR}/apt-mirror-health-error.log
@@ -37,8 +37,8 @@
 {% if apt_mirror_client_registration_enabled %}
     # Client registration endpoint
     <Location "/register">
-        ProxyPass http://localhost:{{ apt_mirror_health_check_port }}/register
-        ProxyPassReverse http://localhost:{{ apt_mirror_health_check_port }}/register
+    ProxyPass http://localhost:{{ apt_mirror_health_service_port }}/register
+    ProxyPassReverse http://localhost:{{ apt_mirror_health_service_port }}/register
         
         # Allow registration from internal networks only
         Require ip 10.0.0.0/8

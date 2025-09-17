@@ -31,6 +31,25 @@ provisioner:
         ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
         ansible_become: yes
         ansible_become_method: sudo
+        # Neo4j-specific testing configuration
+        neo4j_initial_password: "test_password_123"
+        neo4j_server_memory_heap_initial_size: "256m"
+        neo4j_server_memory_heap_max_size: "512m"
+        neo4j_server_memory_pagecache_size: "256m"
+        neo4j_environment: "test"
+        neo4j_edition: "community"
+        neo4j_enable_security: false
+        neo4j_create_test_db: true
+        neo4j_test_db_name: "test_database"
+        neo4j_test_user: "test_user"
+        neo4j_test_password: "test_user_pass"
+        # Container-aware settings
+        neo4j_server_default_listen_address: "0.0.0.0"
+        neo4j_server_bolt_listen_address: "0.0.0.0:7687"
+        neo4j_server_http_listen_address: "0.0.0.0:7474"
+        neo4j_health_check_enabled: true
+        neo4j_health_check_retries: 30
+        neo4j_health_check_delay: 5
   config_options:
     defaults:
       host_key_checking: false

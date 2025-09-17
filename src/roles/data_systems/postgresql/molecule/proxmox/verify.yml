@@ -1,11 +1,243 @@
 ---
-- name: Verify
+- name: Verify PostgreSQL Installation and Health
   hosts: all
-  gather_facts: false
+  gather_facts: true
+  vars:
+    postgresql_version: 15
+    postgresql_port: 5432
+    postgresql_service_name: "postgresql@{{ postgresql_version }}-main"
+    test_db_name: "test_db"
+    test_user: "test_user"
+    test_password: "test_password"
   tasks:
-    - name: Example assertion
+    # ============================================================================
+    # SERVICE STATUS VERIFICATION
+    # ============================================================================
+    - name: Check PostgreSQL service status
+      ansible.builtin.service:
+        name: "{{ postgresql_service_name }}"
+        state: started
+      register: pg_service_status
+
+    - name: Verify PostgreSQL service is active
       ansible.builtin.assert:
         that:
-          - true
-        success_msg: "Role postgresql verification passed"
-        fail_msg: "Role postgresql verification failed"
+          - pg_service_status.status.ActiveState == "active"
+        success_msg: "PostgreSQL service is running"
+        fail_msg: "PostgreSQL service is not active"
+
+    # ============================================================================
+    # PORT AND CONNECTIVITY VERIFICATION
+    # ============================================================================
+    - name: Check PostgreSQL port is listening
+      ansible.builtin.wait_for:
+        port: "{{ postgresql_port }}"
+        host: "0.0.0.0"
+        timeout: 30
+      register: pg_port_check
+
+    - name: Verify port connectivity
+      ansible.builtin.assert:
+        that:
+          - pg_port_check is succeeded
+        success_msg: "PostgreSQL port {{ postgresql_port }} is accessible"
+        fail_msg: "PostgreSQL port {{ postgresql_port }} is not accessible"
+
+    # ============================================================================
+    # DATABASE CONNECTION VERIFICATION
+    # ============================================================================
+    - name: Test PostgreSQL connection as postgres user
+      become: true
+      become_user: postgres
+      community.postgresql.postgresql_query:
+        query: "SELECT version();"
+      register: pg_version_check
+
+    - name: Display PostgreSQL version
+      ansible.builtin.debug:
+        msg: "PostgreSQL Version: {{ pg_version_check.query_result[0].version }}"
+
+    - name: Verify PostgreSQL version query succeeded
+      ansible.builtin.assert:
+        that:
+          - pg_version_check is succeeded
+          - pg_version_check.query_result | length > 0
+        success_msg: "PostgreSQL connection and version check successful"
+        fail_msg: "PostgreSQL connection failed"
+
+    # ============================================================================
+    # DATABASE AND USER VERIFICATION
+    # ============================================================================
+    - name: Check if test database exists
+      become: true
+      become_user: postgres
+      community.postgresql.postgresql_query:
+        query: "SELECT 1 FROM pg_database WHERE datname = '{{ test_db_name }}';"
+      register: test_db_check
+
+    - name: Verify test database exists
+      ansible.builtin.assert:
+        that:
+          - test_db_check.query_result | length > 0
+        success_msg: "Test database '{{ test_db_name }}' exists"
+        fail_msg: "Test database '{{ test_db_name }}' was not created"
+
+    - name: Check if test user exists
+      become: true
+      become_user: postgres
+      community.postgresql.postgresql_query:
+        query: "SELECT 1 FROM pg_user WHERE usename = '{{ test_user }}';"
+      register: test_user_check
+
+    - name: Verify test user exists
+      ansible.builtin.assert:
+        that:
+          - test_user_check.query_result | length > 0
+        success_msg: "Test user '{{ test_user }}' exists"
+        fail_msg: "Test user '{{ test_user }}' was not created"
+
+    # ============================================================================
+    # CONFIGURATION VERIFICATION
+    # ============================================================================
+    - name: Check PostgreSQL configuration settings
+      become: true
+      become_user: postgres
+      community.postgresql.postgresql_query:
+        query: |
+          SELECT name, setting, unit, context 
+          FROM pg_settings 
+          WHERE name IN ('listen_addresses', 'max_connections', 'shared_buffers', 'port');
+      register: pg_config_check
+
+    - name: Display PostgreSQL configuration
+      ansible.builtin.debug:
+        msg: |
+          PostgreSQL Configuration:
+          {% for config in pg_config_check.query_result %}
+          - {{ config.name }}: {{ config.setting }}{{ config.unit if config.unit else '' }}
+          {% endfor %}
+
+    - name: Verify critical configuration settings
+      ansible.builtin.assert:
+        that:
+          - pg_config_check.query_result | selectattr('name', 'equalto', 'port') | map(attribute='setting') | first == postgresql_port | string
+          - pg_config_check.query_result | selectattr('name', 'equalto', 'listen_addresses') | map(attribute='setting') | first in ['*', '0.0.0.0']
+        success_msg: "PostgreSQL configuration verified"
+        fail_msg: "PostgreSQL configuration check failed"
+
+    # ============================================================================
+    # PERFORMANCE AND HEALTH METRICS
+    # ============================================================================
+    - name: Check database statistics
+      become: true
+      become_user: postgres
+      community.postgresql.postgresql_query:
+        query: |
+          SELECT 
+            datname,
+            numbackends as active_connections,
+            xact_commit as transactions_committed,
+            xact_rollback as transactions_rolled_back,
+            blks_read,
+            blks_hit,
+            ROUND((blks_hit::float / (blks_hit + blks_read + 1)) * 100, 2) as cache_hit_ratio
+          FROM pg_stat_database 
+          WHERE datname NOT IN ('template0', 'template1');
+      register: pg_stats_check
+
+    - name: Display database statistics
+      ansible.builtin.debug:
+        msg: |
+          Database Statistics:
+          {% for stat in pg_stats_check.query_result %}
+          Database: {{ stat.datname }}
+          - Active Connections: {{ stat.active_connections }}
+          - Committed Transactions: {{ stat.transactions_committed }}
+          - Rolled Back Transactions: {{ stat.transactions_rolled_back }}
+          - Cache Hit Ratio: {{ stat.cache_hit_ratio }}%
+          {% endfor %}
+
+    # ============================================================================
+    # FUNCTIONAL TESTING
+    # ============================================================================
+    - name: Create test table
+      become: true
+      become_user: postgres
+      community.postgresql.postgresql_query:
+        db: "{{ test_db_name }}"
+        query: |
+          CREATE TABLE IF NOT EXISTS test_table (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(100),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
+
+    - name: Insert test data
+      become: true
+      become_user: postgres
+      community.postgresql.postgresql_query:
+        db: "{{ test_db_name }}"
+        query: |
+          INSERT INTO test_table (name) VALUES ('test_record_1'), ('test_record_2')
+          ON CONFLICT DO NOTHING;
+
+    - name: Query test data
+      become: true
+      become_user: postgres
+      community.postgresql.postgresql_query:
+        db: "{{ test_db_name }}"
+        query: "SELECT COUNT(*) as record_count FROM test_table;"
+      register: test_data_check
+
+    - name: Verify functional test
+      ansible.builtin.assert:
+        that:
+          - test_data_check.query_result[0].record_count >= 2
+        success_msg: "Functional test passed - can create tables and insert data"
+        fail_msg: "Functional test failed"
+
+    # ============================================================================
+    # SYSTEM RESOURCE CHECKS
+    # ============================================================================
+    - name: Check disk space usage
+      ansible.builtin.shell: |
+        df -h /var/lib/postgresql | tail -1 | awk '{print $5}' | sed 's/%//'
+      register: disk_usage
+
+    - name: Display disk usage
+      ansible.builtin.debug:
+        msg: "PostgreSQL data directory disk usage: {{ disk_usage.stdout }}%"
+
+    - name: Warning for high disk usage
+      ansible.builtin.debug:
+        msg: "WARNING: High disk usage detected (>80%)"
+      when: disk_usage.stdout | int > 80
+
+    # ============================================================================
+    # FINAL HEALTH SUMMARY
+    # ============================================================================
+    - name: Final PostgreSQL health summary
+      ansible.builtin.debug:
+        msg: |
+          PostgreSQL Health Summary:
+          ================================
+          ✓ Service Status: {{ 'Running' if pg_service_status.status.ActiveState == 'active' else 'Not Running' }}
+          ✓ Port Access: {{ 'OK' if pg_port_check is succeeded else 'Failed' }}
+          ✓ Database Connection: {{ 'OK' if pg_version_check is succeeded else 'Failed' }}
+          ✓ Test Database: {{ 'Created' if test_db_check.query_result | length > 0 else 'Missing' }}
+          ✓ Test User: {{ 'Created' if test_user_check.query_result | length > 0 else 'Missing' }}
+          ✓ Functional Test: {{ 'Passed' if test_data_check.query_result[0].record_count >= 2 else 'Failed' }}
+          ✓ Disk Usage: {{ disk_usage.stdout }}%
+          ✓ Health Check: COMPLETED
+
+    - name: PostgreSQL verification completed successfully
+      ansible.builtin.assert:
+        that:
+          - pg_service_status.status.ActiveState == "active"
+          - pg_port_check is succeeded
+          - pg_version_check is succeeded
+          - test_db_check.query_result | length > 0
+          - test_user_check.query_result | length > 0
+          - test_data_check.query_result[0].record_count >= 2
+        success_msg: "All PostgreSQL verification tests passed!"
+        fail_msg: "One or more PostgreSQL verification tests failed"

@@ -3,7 +3,31 @@
   hosts: all
   become: true
   gather_facts: true
+  vars:
+    # Override defaults for testing
+    es_heap_size: "512m"
+    es_environment: "dev"
+    es_network_host: "0.0.0.0"
   tasks:
     - name: "Include elasticsearch role"
       ansible.builtin.include_role:
+        name: "{{ playbook_dir }}/../.."
+  handlers:
+    - name: update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: restart elasticsearch
+      ansible.builtin.service:
         name: elasticsearch
+        state: restarted
+        enabled: true
+
+    - name: wait for elasticsearch
+      ansible.builtin.uri:
+        url: "http://localhost:9200"
+        method: GET
+        status_code: [200, 401]
+        timeout: 30
+      retries: 6
+      delay: 10

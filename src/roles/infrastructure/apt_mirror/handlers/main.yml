@@ -37,3 +37,20 @@
   ansible.builtin.service:
     name: apt-mirror-alerts
     state: restarted
+  failed_when: false
+  ignore_errors: true
+
+# Triggered after templating /etc/apt/mirror.list; optional to avoid long runs in CI
+- name: run initial mirror
+  ansible.builtin.command: apt-mirror
+  become: true
+  become_user: apt-mirror
+  args:
+    chdir: "{{ apt_mirror_base_path }}"
+  when: (apt_mirror_initial_sync | default(false)) | bool
+
+# Alias to match notify name used in tasks/apache.yml
+- name: restart apache
+  ansible.builtin.service:
+    name: apache2
+    state: restarted

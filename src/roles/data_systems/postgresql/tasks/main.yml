@@ -6,6 +6,11 @@
 - name: Include configuration tasks
   ansible.builtin.include_tasks: config.yml
 
+- name: Include health check tasks
+  ansible.builtin.include_tasks: health_checks.yml
+  when: postgresql_validate_config
+  tags: [health, validation]
+
 - name: Include replication tasks
   ansible.builtin.include_tasks: replication.yml
   when: postgresql_enable_replication | bool

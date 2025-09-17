@@ -1,0 +1,30 @@
+---
+# ============================================================================
+# MARIADB DATABASE AND USER MANAGEMENT TASKS
+# ============================================================================
+
+- name: Create databases
+  community.mysql.mysql_db:
+    name: "{{ item.name }}"
+    encoding: "{{ item.encoding | default('utf8mb4') }}"
+    collation: "{{ item.collation | default('utf8mb4_unicode_ci') }}"
+    state: present
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    login_host: localhost
+  loop: "{{ mariadb_databases }}"
+  when: mariadb_databases | length > 0
+
+- name: Create users
+  community.mysql.mysql_user:
+    name: "{{ item.name }}"
+    password: "{{ item.password }}"
+    priv: "{{ item.priv | default('*.*:USAGE') }}"
+    host: "{{ item.host | default('localhost') }}"
+    state: present
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    login_host: localhost
+  loop: "{{ mariadb_users }}"
+  when: mariadb_users | length > 0
+  no_log: true

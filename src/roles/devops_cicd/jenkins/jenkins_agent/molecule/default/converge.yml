@@ -4,4 +4,4 @@
   become: true
   roles:
     - role: jenkins_agent
-      jenkins_agent_ssh_public_key: "ssh-rsa AAAAB3NzaD dummykey"
+      jenkins_agent_ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICZq8j6i0kL8c1B9c0xH9J7mV3k7e0x8k1a2b3c4d5e6 test@example"

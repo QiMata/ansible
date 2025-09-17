@@ -1,0 +1,53 @@
+---
+# ============================================================================
+# MARIADB VALIDATION TASKS
+# ============================================================================
+
+- name: Check if MariaDB root password is defined
+  ansible.builtin.assert:
+    that:
+      - mariadb_root_password is defined
+      - mariadb_root_password | length > 0
+      - mariadb_root_password != "change_me_secure_password"
+    fail_msg: "MariaDB root password must be defined and changed from default"
+    success_msg: "MariaDB root password is properly configured"
+
+- name: Validate MariaDB port configuration
+  ansible.builtin.assert:
+    that:
+      - mariadb_port is defined
+      - mariadb_port | int > 0
+      - mariadb_port | int < 65536
+    fail_msg: "MariaDB port must be a valid port number (1-65535)"
+    success_msg: "MariaDB port configuration is valid"
+
+- name: Validate memory configuration
+  ansible.builtin.assert:
+    that:
+      - mariadb_innodb_buffer_pool_size is defined
+      - mariadb_query_cache_size is defined
+    fail_msg: "Memory configuration parameters must be defined"
+    success_msg: "Memory configuration is valid"
+
+- name: Check available memory for container environments
+  ansible.builtin.setup:
+    filter: ansible_memory_mb
+  register: memory_info
+
+- name: Warn about memory constraints in containers
+  ansible.builtin.debug:
+    msg: |
+      WARNING: Container memory constraints detected
+      Available Memory: {{ ansible_memory_mb.real.total }}MB
+      InnoDB Buffer Pool: {{ mariadb_innodb_buffer_pool_size }}
+      Please ensure buffer pool size is appropriate for available memory
+  when: 
+    - ansible_virtualization_type in ['docker', 'container', 'lxc']
+    - ansible_memory_mb.real.total | int < 1024
+
+- name: Validate environment configuration
+  ansible.builtin.assert:
+    that:
+      - mariadb_environment in ['production', 'staging', 'development', 'test', 'dev']
+    fail_msg: "mariadb_environment must be one of: production, staging, development, test, dev"
+    success_msg: "Environment configuration is valid"

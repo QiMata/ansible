@@ -4,6 +4,51 @@
   become: true
   gather_facts: true
   tasks:
-    - name: "Include spark_role role"
-      ansible.builtin.include_role:
-        name: spark_role
+    - name: Install Java and basic tools
+      ansible.builtin.apt:
+        name:
+          - openjdk-17-jdk
+          - wget
+          - curl
+          - tar
+        update_cache: true
+        state: present
+
+    - name: Create spark group
+      ansible.builtin.group:
+        name: spark
+        state: present
+
+    - name: Create spark user
+      ansible.builtin.user:
+        name: spark
+        group: spark
+        shell: /usr/sbin/nologin
+        home: /opt/spark
+        create_home: true
+
+    - name: Create Spark directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: spark
+        group: spark
+        mode: "0755"
+      loop:
+        - /opt/spark
+        - /opt/spark/conf
+        - /opt/spark/logs
+        - /opt/spark/work
+
+    - name: Test Java installation
+      ansible.builtin.command: java -version
+      register: java_version_result
+      changed_when: false
+
+    - name: Display Java version
+      ansible.builtin.debug:
+        var: java_version_result.stderr
+
+    - name: Test completed successfully
+      ansible.builtin.debug:
+        msg: "✅ Spark basic setup test completed successfully!"

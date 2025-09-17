@@ -16,3 +16,33 @@
     group: elasticsearch
     mode: '0644'
   notify: restart elasticsearch
+
+- name: Recreate keystore when security is disabled to remove SSL transport settings
+  block:
+    - name: Remove existing keystore
+      ansible.builtin.file:
+        path: /etc/elasticsearch/elasticsearch.keystore
+        state: absent
+
+    - name: Create new empty keystore
+      ansible.builtin.command:
+        cmd: /usr/share/elasticsearch/bin/elasticsearch-keystore create
+      args:
+        creates: /etc/elasticsearch/elasticsearch.keystore
+
+    - name: Set keystore ownership
+      ansible.builtin.file:
+        path: /etc/elasticsearch/elasticsearch.keystore
+        owner: elasticsearch
+        group: elasticsearch
+        mode: '0640'
+  when: >
+    (es_environment is defined and es_environment == 'dev') or
+    (es_dev_settings is defined and es_dev_settings['xpack.security.enabled'] is defined and not es_dev_settings['xpack.security.enabled'])
+  notify: restart elasticsearch
+
+- name: Ensure Elasticsearch service is started and enabled
+  ansible.builtin.service:
+    name: elasticsearch
+    state: started
+    enabled: true
