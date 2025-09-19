@@ -1,8 +1,0 @@
----
-- hosts: apache_spark
-  become: true  # Run the tasks with sudo
-  vars_files:
-    - ../../../../../group_vars/all.yml
-    - ../../../../../group_vars/spark.yml
-  roles:
-    - andrewrothstein.spark

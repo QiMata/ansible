@@ -1,0 +1,16 @@
+version: "3.8"
+services:
+  packer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ansible-packer:local
+    working_dir: /workspace/packer
+    environment:
+      - PACKER_PLUGIN_PATH=/root/.packer.d/plugins
+    volumes:
+      - ..:/workspace
+      - ../.packer.d:/root/.packer.d
+      - /var/run/docker.sock:/var/run/docker.sock
+    entrypoint: ["packer"]
+    command: ["version"]

@@ -1,9 +1,0 @@
----
-- hosts: elastic_logging_KIBANA_WEB
-  become: true
-  vars_files:
-    - ../../../../../group_vars/all.yml
-    - ../../../../../group_vars/elastic.yml
-    - vars.yml
-  roles:
-    - geerlingguy.kibana

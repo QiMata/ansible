@@ -6,4 +6,5 @@
   tasks:
     - name: "Include base role"
       ansible.builtin.include_role:
+        # Use simple role name; roles_path includes infrastructure/shared
         name: base

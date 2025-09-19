@@ -1,11 +1,27 @@
 ---
+# Verification playbook for remove_unnecessary_packages
+# Checks:
+#  1. Required variable / default list resolution
+#  2. Packages are actually absent
+#  3. Provide a concise summary
 - name: Verify
   hosts: all
   gather_facts: false
   tasks:
-    - name: Example assertion
+    - name: Resolve list of packages expected to be absent
+      ansible.builtin.set_fact:
+        _rup_list: "{{ remove_unnecessary_packages_list | default(['games','ftp','telnet']) }}"
+
+    - name: Gather package facts
+      ansible.builtin.package_facts:
+
+    - name: Assert unnecessary packages are absent
       ansible.builtin.assert:
-        that:
-          - true
-        success_msg: "Role remove_unnecessary_packages verification passed"
-        fail_msg: "Role remove_unnecessary_packages verification failed"
+        that: "item not in ansible_facts.packages"
+        fail_msg: "Package '{{ item }}' is still installed"
+        success_msg: "Package '{{ item }}' absent as expected"
+      loop: "{{ _rup_list }}"
+
+    - name: Summary of removed packages
+      ansible.builtin.debug:
+        msg: "Verified absence of packages: {{ _rup_list | join(', ') }}"

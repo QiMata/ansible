@@ -3,9 +3,34 @@
   hosts: all
   gather_facts: false
   tasks:
-    - name: Example assertion
+    - name: Gather package facts
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Assert openssh-server is installed
       ansible.builtin.assert:
         that:
-          - true
-        success_msg: "Role base verification passed"
-        fail_msg: "Role base verification failed"
+          - "'openssh-server' in ansible_facts.packages"
+        success_msg: "openssh-server package installed as expected"
+        fail_msg: "openssh-server package missing"
+
+    - name: Assert telnet package is absent (removed by remove_unnecessary_packages role)
+      ansible.builtin.assert:
+        that:
+          - "'telnet' not in ansible_facts.packages"
+        success_msg: "telnet package absent as expected"
+        fail_msg: "telnet package still present"
+
+    - name: Check SSH service status
+      ansible.builtin.service_facts:
+
+    - name: Assert ssh service is running
+      ansible.builtin.assert:
+        that:
+          - "services['ssh'].state == 'running' or services['sshd'].state == 'running'"
+        success_msg: "SSH service running"
+        fail_msg: "SSH service not running"
+
+    - name: Summary debug
+      ansible.builtin.debug:
+        msg: "Base role verification completed with required package/service states."

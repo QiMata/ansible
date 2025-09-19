@@ -1,0 +1,10 @@
+---
+galaxy_info:
+  author: local
+  description: Update system packages.
+  license: MIT
+  min_ansible_version: '2.14'
+  platforms:
+    - name: Debian
+      versions: ['bookworm']
+dependencies: []

@@ -25,13 +25,3 @@ fail2ban_sender: admin@{{ ansible_fqdn }}
 auto_update_download_updates: true
 auto_update_apply_updates: false
 auto_update_random_sleep: 360
-deployment_profile: "simple"
-ldap_data_file: "{{ playbook_dir }}/files/ldap_data.yml"
-ldap_replication: false
-ldap_use_tls: false
-neo4j_password: "StrongPassw0rd"
-es_heap_size: "4g"
-metadata_api_base: "http://10.0.0.20:5002"
-search_api_base: "http://10.0.0.21:5001"
-
-ansible_python_interpreter: /usr/bin/python3

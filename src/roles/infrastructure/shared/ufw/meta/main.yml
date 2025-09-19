@@ -1,0 +1,10 @@
+---
+galaxy_info:
+  author: local
+  description: Configure uncomplicated firewall (UFW).
+  license: MIT
+  min_ansible_version: '2.14'
+  platforms:
+    - name: Debian
+      versions: ['bookworm']
+dependencies: []

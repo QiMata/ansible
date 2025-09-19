@@ -1,11 +1,61 @@
 ---
+# Verification playbook for ufw role
+# Checks:
+#  1. UFW package installed
+#  2. UFW enabled & default policy deny
+#  3. SSH rule present (allow OpenSSH)
+#  4. Service active
 - name: Verify
   hosts: all
   gather_facts: false
   tasks:
-    - name: Example assertion
+    - name: Gather package facts
+      ansible.builtin.package_facts:
+
+    - name: Assert ufw package installed
       ansible.builtin.assert:
         that:
-          - true
-        success_msg: "Role ufw verification passed"
-        fail_msg: "Role ufw verification failed"
+          - "'ufw' in ansible_facts.packages"
+        fail_msg: "ufw package not installed"
+        success_msg: "ufw package installed"
+
+    - name: Dump ufw status verbose
+      ansible.builtin.shell: "ufw status verbose || true"
+      register: ufw_status
+      changed: false
+
+    - name: Assert ufw enabled
+      ansible.builtin.assert:
+        that:
+          - ufw_status.stdout is search('Status: active')
+        fail_msg: "ufw not active"
+        success_msg: "ufw active"
+
+    - name: Assert default incoming policy deny
+      ansible.builtin.assert:
+        that:
+          # Look for the leading portion of the default policy line – tolerate trailing text
+          - ufw_status.stdout is search('Default: deny \\(incoming')
+        fail_msg: "Default incoming policy not deny"
+        success_msg: "Default incoming policy deny confirmed"
+
+    - name: Assert SSH allow rule present
+      ansible.builtin.assert:
+        that:
+          - ufw_status.stdout is search('22/tcp') or ufw_status.stdout is search('OpenSSH')
+        fail_msg: "SSH allow rule missing"
+        success_msg: "SSH allow rule present"
+
+    - name: Service facts
+      ansible.builtin.service_facts:
+
+    - name: Assert ufw service active if present
+      ansible.builtin.assert:
+        that:
+          - "services['ufw'].state == 'running' if 'ufw' in services else true"
+        fail_msg: "ufw service not running"
+        success_msg: "ufw service running or not required"
+
+    - name: Verification summary
+      ansible.builtin.debug:
+        msg: "UFW verification complete"

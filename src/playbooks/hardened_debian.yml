@@ -1,0 +1,11 @@
+---
+- name: Hardened Debian base image
+  hosts: all
+  become: true
+  vars_files:
+    - group_vars/all.yml
+  roles:
+    - role: infrastructure/shared/update_system
+    - role: infrastructure/shared/common
+    - role: infrastructure/shared/sshd
+    - role: infrastructure/shared/ufw

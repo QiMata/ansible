@@ -1,0 +1,45 @@
+# Example variables for template.pkr.hcl
+playbook_file = "playbooks/base.yml"
+# base_image    = "ubuntu:24.04"
+# become        = true
+# ansible_extra_args = ["-e", "env=dev"]
+
+###############################################
+# Proxmox LXC template variables (new flow)   #
+###############################################
+# Used by template.proxmox-lxc.pkr.hcl
+#
+# Proxmox API connection
+# proxmox_url       = "https://pve.example.com:8006/api2/json"
+# proxmox_insecure  = true
+# proxmox_node      = "pve"
+#
+# Auth (choose one): user/pass OR token
+# proxmox_username  = "root@pam"
+# proxmox_password  = "..."
+# proxmox_token_id  = "packer@pve!token"
+# proxmox_token_secret = "..."
+#
+# LXC base template and sizing
+# lxc_ostemplate    = "local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst"
+# lxc_unprivileged  = true
+# lxc_memory        = 1024
+# lxc_cores         = 2
+# lxc_swap          = 0
+# rootfs_storage    = "local-lvm"
+# rootfs_size       = 10
+# network_bridge    = "vmbr0"
+# network_firewall  = false
+# features_nesting  = true
+#
+# SSH credentials used by the ansible provisioner
+# ssh_username      = "root"
+# ssh_password      = "your-root-password"
+#
+# The final Proxmox LXC template name to save
+# template_name     = "ubuntu-22.04-ansible-YYYYMMDD"
+#
+# Ansible
+# playbook_file     = "playbooks/base.yml"
+# become            = true
+# ansible_extra_args = ["-e", "foo=bar"]

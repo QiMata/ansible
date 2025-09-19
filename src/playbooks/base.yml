@@ -15,7 +15,7 @@
   become: true
   vars_files:
     - group_vars/all.yml
-    - group_vars/system_admin/shared_tools/ansible_semaphore/all.yml
-    - group_vars/system_admin/shared_tools/ansible_semaphore/mariadb_galera.yml
+    - group_vars/systems_admin/shared_tools/ansible_semaphore/all.yml
+    - group_vars/systems_admin/shared_tools/ansible_semaphore/mariadb_galera.yml
   roles:
     - base

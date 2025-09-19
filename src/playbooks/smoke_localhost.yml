@@ -1,0 +1,16 @@
+---
+- name: Smoke test on localhost
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  vars_files:
+    - group_vars/all.yml
+  tasks:
+    - name: Show Python version
+      ansible.builtin.command: python3 --version
+      register: pyver
+      changed_when: false
+
+    - name: Print host and Python
+      ansible.builtin.debug:
+        msg: "Host={{ inventory_hostname }} Python={{ pyver.stdout | default('n/a') }}"

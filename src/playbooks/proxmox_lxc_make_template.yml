@@ -1,0 +1,243 @@
+---
+- name: Convert LXC into Proxmox template
+  hosts: localhost
+  gather_facts: false
+  vars:
+    proxmox_url: "{{ lookup('env', 'PROXMOX_URL') | default('https://192.168.1.100:8006') }}"
+    proxmox_host: "{{ proxmox_url | regex_replace('https?://', '') | regex_replace(':.*$', '') }}"
+    proxmox_user: "{{ lookup('env', 'PROXMOX_USER') | default('root@pam') }}"
+    proxmox_password: "{{ lookup('env', 'PROXMOX_PASSWORD') }}"
+    proxmox_token_id: "{{ lookup('env', 'PROXMOX_TOKEN_ID') }}"
+    proxmox_token_secret: "{{ lookup('env', 'PROXMOX_TOKEN_SECRET') }}"
+    proxmox_validate_certs: "{{ lookup('env', 'PROXMOX_VALIDATE_CERTS') | default('false') | bool }}"
+    proxmox_node: "{{ lookup('env', 'PROXMOX_NODE') | default('pve') }}"
+    container_id: "{{ lookup('env', 'CONTAINER_ID') | default('200') | int }}"
+    container_name: "{{ container_name | default(lookup('env','CONTAINER_NAME') | default('debian-test-instance', true)) }}"
+    template_storage: "{{ lookup('env', 'TEMPLATE_STORAGE') | default('local', true) }}"
+    # Save under CT Templates storage (vztmpl)
+    template_cache_dir: "/mnt/pve/{{ template_storage }}/template/cache"
+    template_filename: "{{ (container_name | regex_replace('[^A-Za-z0-9_.-]','-')) }}.tar.zst"
+    # Final destination is computed after checking writability; default to storage cache, fallback to local cache
+    dest_cache_dir: "{{ template_cache_dir }}"
+    fallback_cache_dir: "/var/lib/vz/template/cache"
+    local_cache_dir: "/var/lib/vz/template/cache"
+    template_full_path: "{{ (dest_cache_dir | default(template_cache_dir)) + '/' + template_filename }}"
+    # Cleanup flag (default true) – may be overridden by -e cleanup_container=false
+    cleanup_container: "{{ lookup('env','CLEANUP') | default('true') | bool }}"
+  tasks:
+    - name: Stop LXC (by ID)
+      uri:
+        url: "{{ proxmox_url }}/api2/json/nodes/{{ proxmox_node }}/lxc/{{ container_id }}/status/stop"
+        method: POST
+        headers:
+          Authorization: "PVEAPIToken={{ proxmox_token_id }}={{ proxmox_token_secret }}"
+        validate_certs: "{{ proxmox_validate_certs }}"
+      failed_when: false
+      when: proxmox_token_id != '' and proxmox_token_secret != ''
+
+    - name: Stop LXC (by ID, password auth)
+      uri:
+        url: "{{ proxmox_url }}/api2/json/nodes/{{ proxmox_node }}/lxc/{{ container_id }}/status/stop"
+        method: POST
+        user: "{{ proxmox_user }}"
+        password: "{{ proxmox_password }}"
+        validate_certs: "{{ proxmox_validate_certs }}"
+      failed_when: false
+      when: proxmox_token_id == '' or proxmox_token_secret == ''
+
+    - name: Wait for container to stop
+      pause:
+        seconds: 10
+
+    - name: Check if storage CT Templates path exists and is writable
+      shell: |
+        set -euo pipefail
+        d="{{ template_cache_dir }}"
+        if [ -d "$d" ] && [ -w "$d" ]; then
+          echo "OK"
+        else
+          echo "NO"
+          exit 1
+        fi
+      args:
+        executable: /bin/bash
+      register: cache_dir_check
+      changed_when: false
+      failed_when: false
+      delegate_to: "{{ proxmox_host }}"
+      vars:
+        ansible_user: root
+        ansible_ssh_pass: "{{ proxmox_password }}"
+        ansible_host: "{{ proxmox_host }}"
+        ansible_connection: ssh
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+
+    - name: Choose destination directory (storage cache or local fallback)
+      set_fact:
+        dest_cache_dir: "{{ template_cache_dir if (cache_dir_check.rc | default(1)) == 0 else local_cache_dir }}"
+
+    - name: Show chosen template destination
+      debug:
+        msg:
+          - "Storage cache writable: {{ (cache_dir_check.rc | default(1)) == 0 }}"
+          - "Destination directory: {{ dest_cache_dir }}"
+
+    - name: Ensure export directory exists (if local fallback)
+      file:
+        path: "{{ dest_cache_dir }}"
+        state: directory
+        mode: '0755'
+      when: dest_cache_dir == local_cache_dir
+      delegate_to: "{{ proxmox_host }}"
+      vars:
+        ansible_user: root
+        ansible_ssh_pass: "{{ proxmox_password }}"
+        ansible_host: "{{ proxmox_host }}"
+        ansible_connection: ssh
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+
+    - name: Export container rootfs to CT template (zstd)
+      shell: |
+        set -euo pipefail
+        SRC_DIR="/var/lib/lxc/{{ container_id }}/rootfs"
+        DST_FILE="{{ dest_cache_dir }}/{{ template_filename }}"
+        TMP_FILE="${DST_FILE}.tmp"
+        if command -v zstd >/dev/null 2>&1 && tar --help 2>&1 | grep -q '\--zstd'; then
+          tar --numeric-owner --xattrs --acls --one-file-system --zstd -cf "${TMP_FILE}" -C "${SRC_DIR}" .
+        else
+          # Fallback to gz if zstd unsupported
+          DST_FILE_GZ="${DST_FILE%.zst}.tar.gz"
+          TMP_FILE_GZ="${DST_FILE_GZ}.tmp"
+          tar --numeric-owner --xattrs --acls --one-file-system -czf "${TMP_FILE_GZ}" -C "${SRC_DIR}" .
+          mv -f "${TMP_FILE_GZ}" "${DST_FILE_GZ}"
+          exit 0
+        fi
+        mv -f "${TMP_FILE}" "${DST_FILE}"
+      args:
+        executable: /bin/bash
+      delegate_to: "{{ proxmox_host }}"
+      vars:
+        ansible_user: root
+        ansible_ssh_pass: "{{ proxmox_password }}"
+        ansible_host: "{{ proxmox_host }}"
+        ansible_connection: ssh
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+
+    - name: Upload template to target storage with pvesm (if exported to local)
+      shell: |
+        set -euo pipefail
+        SRC_FILE="{{ dest_cache_dir }}/{{ template_filename }}"
+        if [ ! -f "$SRC_FILE" ]; then
+          echo "Source file not found: $SRC_FILE" >&2
+          exit 1
+        fi
+        pvesm upload {{ template_storage | quote }} "$SRC_FILE" {{ template_filename | quote }} -content vztmpl
+      args:
+        executable: /bin/bash
+      when: dest_cache_dir != template_cache_dir
+      delegate_to: "{{ proxmox_host }}"
+      vars:
+        ansible_user: root
+        ansible_ssh_pass: "{{ proxmox_password }}"
+        ansible_host: "{{ proxmox_host }}"
+        ansible_connection: ssh
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+
+    - name: Stat exported template
+      stat:
+        path: "{{ template_cache_dir }}/{{ template_filename }}"
+      register: exported_template
+      delegate_to: "{{ proxmox_host }}"
+      vars:
+        ansible_user: root
+        ansible_ssh_pass: "{{ proxmox_password }}"
+        ansible_host: "{{ proxmox_host }}"
+        ansible_connection: ssh
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+
+    - name: Show exported template path
+      debug:
+        msg: "Exported CT template: {{ template_cache_dir }}/{{ template_filename }} (exists={{ exported_template.stat.exists }})"
+
+    - name: List CT templates in storage via Proxmox API
+      uri:
+        url: "{{ proxmox_url }}/api2/json/nodes/{{ proxmox_node }}/storage/{{ template_storage }}/content?content=vztmpl"
+        method: GET
+        headers: >-
+          {{ {'Authorization': 'PVEAPIToken=' ~ proxmox_token_id ~ '=' ~ proxmox_token_secret} if (proxmox_token_id != '' and proxmox_token_secret != '') else omit }}
+        user: "{{ proxmox_user if (proxmox_token_id == '' or proxmox_token_secret == '') else omit }}"
+        password: "{{ proxmox_password if (proxmox_token_id == '' or proxmox_token_secret == '') else omit }}"
+        validate_certs: "{{ proxmox_validate_certs }}"
+      register: storage_list
+
+    - name: Compute whether the exported template is present
+      set_fact:
+        template_listed: >-
+          {{ (storage_list.json.data | default([])) | selectattr('content','equalto','vztmpl') | selectattr('volid','search', template_filename) | list | length > 0 }}
+
+    - name: Show verification outcome
+      debug:
+        msg:
+          - "Templates returned: {{ (storage_list.json.data | default([])) | length }}"
+          - "Template filename: {{ template_filename }}"
+          - "Listed in storage: {{ template_listed }}"
+
+    - name: Assert template is listed in storage
+      assert:
+        that:
+          - template_listed | bool
+        fail_msg: "Template {{ template_filename }} not found in storage {{ template_storage }} CT Templates."
+
+    # Optional: also mark the CT itself as a Proxmox 'template' for fast local cloning
+    - name: Mark LXC as template (token) [optional]
+      uri:
+        url: "{{ proxmox_url }}/api2/json/nodes/{{ proxmox_node }}/lxc/{{ container_id }}/template"
+        method: POST
+        headers:
+          Authorization: "PVEAPIToken={{ proxmox_token_id }}={{ proxmox_token_secret }}"
+        validate_certs: "{{ proxmox_validate_certs }}"
+      register: template_result_token
+      failed_when: false
+      when: proxmox_token_id != '' and proxmox_token_secret != ''
+
+    - name: Show template results (API mark)
+      debug:
+        var: template_result_token.json
+      when: template_result_token is defined
+
+    - name: Mark LXC as template (password) [optional]
+      uri:
+        url: "{{ proxmox_url }}/api2/json/nodes/{{ proxmox_node }}/lxc/{{ container_id }}/template"
+        method: POST
+        user: "{{ proxmox_user }}"
+        password: "{{ proxmox_password }}"
+        validate_certs: "{{ proxmox_validate_certs }}"
+      register: template_result_pw
+      failed_when: false
+      when: proxmox_token_id == '' or proxmox_token_secret == ''
+
+    - name: Show template results (API mark, password)
+      debug:
+        var: template_result_pw
+      when: template_result_pw is defined
+
+    - name: Delete LXC/template (cleanup) via API
+      uri:
+        url: "{{ proxmox_url }}/api2/json/nodes/{{ proxmox_node }}/lxc/{{ container_id }}"
+        method: DELETE
+        headers: >-
+          {{ {'Authorization': 'PVEAPIToken=' ~ proxmox_token_id ~ '=' ~ proxmox_token_secret} if (proxmox_token_id != '' and proxmox_token_secret != '') else omit }}
+        user: "{{ proxmox_user if (proxmox_token_id == '' or proxmox_token_secret == '') else omit }}"
+        password: "{{ proxmox_password if (proxmox_token_id == '' or proxmox_token_secret == '') else omit }}"
+        validate_certs: "{{ proxmox_validate_certs }}"
+        status_code: [200, 500, 404]
+      register: delete_result
+      when: cleanup_container | bool
+      failed_when: false
+
+    - name: Show cleanup result
+      debug:
+        msg:
+          - "Cleanup enabled: {{ cleanup_container }}"
+          - "Delete status: {{ delete_result.status | default('n/a') }}"
+      when: cleanup_container | bool

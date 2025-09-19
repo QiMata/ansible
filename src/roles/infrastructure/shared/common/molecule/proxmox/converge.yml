@@ -6,4 +6,5 @@
   tasks:
     - name: "Include common role"
       ansible.builtin.include_role:
-        name: common
+        # Use absolute path to avoid role resolution issues inside Molecule scenario
+        name: /ansible/src/roles/infrastructure/shared/common

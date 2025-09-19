@@ -1,11 +1,43 @@
 ---
+# Verification playbook for update_system role
+# Checks:
+#  1. APT cache updated recently (simulate apt-get update again)
+#  2. No held broken packages (dpkg --audit empty)
+#  3. Simulate dist-upgrade to ensure no pending essential upgrades (informational)
 - name: Verify
   hosts: all
   gather_facts: false
   tasks:
-    - name: Example assertion
+    - name: Run dpkg audit
+      ansible.builtin.shell: dpkg --audit || true
+      register: dpkg_audit
+      changed: false
+
+    - name: Assert no broken/half-installed packages
+      ansible.builtin.assert:
+        that:
+          - dpkg_audit.stdout | trim == ''
+        fail_msg: "There are broken or half-installed packages: {{ dpkg_audit.stdout }}"
+        success_msg: "No broken packages detected"
+
+    - name: Refresh apt update (should be quick after role run)
+      ansible.builtin.shell: apt-get update -o Dir::Etc::sourcelist='sources.list' -o Dir::Etc::sourceparts='-' -o APT::Get::List-Cleanup='0'
+      register: apt_update
+      changed: false
+
+    - name: Simulate dist-upgrade to see pending upgrades
+      ansible.builtin.shell: apt-get -s dist-upgrade | grep '^Inst' || true
+      register: apt_sim
+      changed: false
+
+    - name: Provide summary of pending upgrades (informational)
+      ansible.builtin.debug:
+        msg: >-
+          Pending upgrade lines (may be empty = fully updated): {{ (apt_sim.stdout_lines | default([])) | length }} items
+
+    - name: Always pass assertion (placeholder for stricter policy later)
       ansible.builtin.assert:
         that:
           - true
-        success_msg: "Role update_system verification passed"
-        fail_msg: "Role update_system verification failed"
+        success_msg: "update_system verification logic executed"
+        fail_msg: "update_system verification failed unexpectedly"

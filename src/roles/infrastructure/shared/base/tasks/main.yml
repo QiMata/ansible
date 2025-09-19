@@ -1,0 +1,8 @@
+---
+# Base role main tasks file
+# This role orchestrates internal dependency roles to establish a baseline system state.
+# Dependency roles executed automatically via meta/main.yml.
+# Placeholder for future hardening or baseline tasks specific to this role.
+- name: Base role placeholder debug
+  ansible.builtin.debug:
+    msg: "Base role executed (dependencies handled via meta)."

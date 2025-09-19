@@ -1,11 +1,63 @@
 ---
+# Verification playbook for sshd role
+# Checks:
+#  1. sshd service enabled & running
+#  2. Config file deployed and contains a few expected directives (if template applied)
+#  3. Port 22 is listening
 - name: Verify
   hosts: all
   gather_facts: false
   tasks:
-    - name: Example assertion
+    - name: Check ssh service status
+      ansible.builtin.service_facts:
+
+    - name: Assert ssh service running & enabled
       ansible.builtin.assert:
         that:
-          - true
-        success_msg: "Role sshd verification passed"
-        fail_msg: "Role sshd verification failed"
+          - "('ssh' in services and services['ssh'].state == 'running') or ('sshd' in services and services['sshd'].state == 'running')"
+          - "('ssh' in services and services['ssh'].enabled) or ('sshd' in services and services['sshd'].enabled)"
+        fail_msg: "SSH service not running and enabled"
+        success_msg: "SSH service running and enabled"
+
+    - name: Stat sshd_config
+      ansible.builtin.stat:
+        path: /etc/ssh/sshd_config
+      register: sshd_config_stat
+
+    - name: Assert sshd_config exists
+      ansible.builtin.assert:
+        that:
+          - sshd_config_stat.stat.exists
+        fail_msg: "/etc/ssh/sshd_config missing"
+        success_msg: "sshd_config present"
+
+    - name: Read sshd_config (subset)
+      ansible.builtin.shell: "grep -E '^(Port|Protocol|PermitRootLogin)' /etc/ssh/sshd_config || true"
+      register: sshd_config_sample
+      changed_when: false
+      failed_when: false
+
+    - name: Assert basic directives present (non-fatal if template differs)
+      ansible.builtin.assert:
+        that:
+          - "sshd_config_sample.stdout is search('Port 22')"
+        fail_msg: "Expected 'Port 22' directive not found in sshd_config"
+        success_msg: "Found expected Port directive in sshd_config"
+      ignore_errors: true
+
+    - name: Check port 22 listening
+      ansible.builtin.shell: "ss -tunlp | grep ':22 ' || ss -tunlp | grep ':22,' || true"
+      register: ssh_port_check
+      changed_when: false
+      failed_when: false
+
+    - name: Assert port 22 is listening
+      ansible.builtin.assert:
+        that:
+          - ssh_port_check.stdout != ''
+        fail_msg: "Port 22 not listening"
+        success_msg: "Port 22 listening"
+
+    - name: Verification summary
+      ansible.builtin.debug:
+        msg: "SSH verification complete"

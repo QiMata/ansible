@@ -57,6 +57,35 @@ This repository is an Ansible mono-repo with roles, inventories, and a Dockerize
 - Docker harness docs: `src/docker/README.molecule.md`
 - Project testing guide: `MOLECULE_TESTING_GUIDE.md`
 
+## Packer-in-Docker runner (run a playbook)
+Use the Packer docker builder plus ansible-local to execute any playbook from `src/` inside an ephemeral Ubuntu container.
+
+Key files:
+- `packer/template.pkr.hcl` — Docker builder + ansible-local wired to `src/`
+- `packer/Dockerfile` — Packer runner image including Docker CLI
+- `packer/run-packer.ps1`, `packer/run-packer.sh` — wrappers that rebuild the runner, run `packer init`, then `packer build`
+
+Requirements:
+- Docker Desktop / Docker engine available on the host (Linux containers)
+
+Quick start (Windows PowerShell from repo root):
+- Smoke test on localhost:
+  - `./packer/run-packer.ps1 -Playbook 'playbooks/smoke_localhost.yml' -Limit 'localhost'`
+- Run a specific playbook (limit to localhost to avoid external hosts):
+  - `./packer/run-packer.ps1 -Playbook 'playbooks/base.yml' -Limit 'localhost' -Become`
+
+Quick start (Linux/macOS from repo root):
+- Smoke test on localhost:
+  - `./packer/run-packer.sh playbooks/smoke_localhost.yml --limit localhost`
+- Run a specific playbook:
+  - `./packer/run-packer.sh playbooks/base.yml --limit localhost --become`
+
+Notes:
+- The playbook path is relative to `src/`.
+- Inventory defaults to localhost; pass `-Limit/--limit` to match your target.
+- Additional Ansible args can be passed via `-AnsibleExtraArgs` (PS) or `--extra` (bash), e.g. `-AnsibleExtraArgs @('-e','foo=bar')`.
+- Packer plugins are cached under `.packer.d/` in the repo; the Docker image artifact is discarded (`discard = true`).
+
 ## Guardrails for suggestions
 - Don’t add external dependencies where an in-repo equivalent exists.
 - Keep the Molecule scenario name `proxmox` unless a new scenario is intentionally introduced.

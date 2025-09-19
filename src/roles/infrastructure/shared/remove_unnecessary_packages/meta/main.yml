@@ -1,0 +1,10 @@
+---
+galaxy_info:
+  author: local
+  description: Remove unnecessary packages from Debian/Ubuntu systems.
+  license: MIT
+  min_ansible_version: '2.14'
+  platforms:
+    - name: Debian
+      versions: ['bookworm']
+dependencies: []

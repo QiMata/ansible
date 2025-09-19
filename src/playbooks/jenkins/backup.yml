@@ -1,6 +1,0 @@
----
-- name: Backup Jenkins
-  hosts: jenkins_controllers
-  become: true
-  roles:
-    - jenkins_backup

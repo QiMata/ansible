@@ -1,28 +1,45 @@
 ---
 dependency:
   name: galaxy
+  enabled: false
 driver:
-  name: community.general.proxmox
+  name: default
+  options:
+    managed: false
+    ansible_connection_options:
+      ansible_connection: ssh
 platforms:
-  - name: base-test
-    template: debian-12-template
-    node: proxmox-node1
-    vmid: auto
-    memory: 1024
-    cores: 1
-    disk_size: 8
-    network_bridge: vmbr0
-    ssh_user: ansible
-    ssh_public_key_file: ~/.ssh/id_rsa.pub
-    ssh_private_key_file: ~/.ssh/id_rsa
+  - name: base-test-instance
+    groups:
+      - test_instances
+      - base_test
 provisioner:
   name: ansible
+  playbooks:
+    create: ../../../../../../molecule/proxmox/create.yml
+    prepare: ../../../../../../molecule/proxmox/prepare.yml
+    converge: converge.yml
+    verify: verify.yml
+    destroy: ../../../../../../molecule/proxmox/destroy.yml
+  inventory:
+    host_vars:
+      base-test-instance:
+        ansible_host: "{{ lookup('env', 'CONTAINER_IP') | default('10.80.0.200') }}"
+        ansible_user: molecule
+        ansible_connection: ssh
+        ansible_ssh_pass: molecule123
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+        ansible_become: yes
+        ansible_become_method: sudo
   config_options:
     defaults:
+      host_key_checking: false
+      stdout_callback: yaml
+      bin_ansible_callbacks: true
       role_name_check: False
-      host_key_checking: False
-    ssh_connection:
-      ssh_args: -o ControlMaster=auto -o ControlPersist=60s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no
+      # Include both the shared roles directory (where 'base' actually lives) and the top-level roles directory
+      # so Ansible can resolve nested shared roles by simple name.
+      roles_path: /ansible/src/roles/infrastructure/shared:/ansible/src/roles
 verifier:
   name: ansible
 scenario:
