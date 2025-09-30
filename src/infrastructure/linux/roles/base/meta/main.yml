@@ -13,10 +13,14 @@ galaxy_info:
 dependencies:
   - role: remove_unnecessary_packages
   - role: update_system
-  # - role: robertdebock.bootstrap
+  - role: robertdebock.bootstrap
+    when: base_enable_bootstrap | bool
   # - role: willshersystems.sshd
-  # - role: robertdebock.auto_update
-  # - role: robertdebock.fail2ban
+  - role: robertdebock.auto_update
+    when: base_enable_auto_update | bool
+  - role: robertdebock.fail2ban
+    when: base_enable_fail2ban | bool
   # - role: oefenweb.ufw
-  # - role: geerlingguy.clamav
+  - role: geerlingguy.clamav
+    when: base_enable_clamav | bool
   # - role: configure_filebeat_os
