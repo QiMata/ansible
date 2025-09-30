@@ -34,3 +34,26 @@ and playbooks are organized so they can be reused for different clients and envi
 Each role is built to be modular and can be tested independently using Molecule.  The playbooks
 combine these roles to configure complete systems. Molecule scenarios in this repository work with
 either the **Docker** or **Podman** driver, so you may use whichever container engine is available.
+
+## Managing vaulted secrets
+
+Host and group secrets (for example the privilege escalation password) are stored in
+`src/group_vars/all/vault.yml`, which is encrypted with **Ansible Vault**. To work with vaulted
+data:
+
+1. Create a local vault password file (for example `vault_password.txt`) that contains the vault
+   password. This file is ignored by Git, so keep it outside of version control.
+2. When running playbooks, provide the password with `--vault-password-file`:
+   ```bash
+   ansible-playbook -i src/inventories/JaredRhodes.ini src/playbooks/<playbook>.yml \
+     --vault-password-file vault_password.txt
+   ```
+3. To view or edit vaulted data, run:
+   ```bash
+   ansible-vault view src/group_vars/all/vault.yml --vault-password-file vault_password.txt
+   ansible-vault edit src/group_vars/all/vault.yml --vault-password-file vault_password.txt
+   ```
+
+New secrets should be added to `src/group_vars/all/vault.yml` and referenced from inventories or
+group variable files using templated variables such as
+`ansible_become_pass: "{{ vault_ansible_become_pass_common }}"`.

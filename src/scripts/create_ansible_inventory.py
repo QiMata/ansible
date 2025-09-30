@@ -7,7 +7,7 @@ def create_ansible_inventory_server_string(env, cat, ss, app, cont, management_i
     inventory_str = f'{cont} ansible_host={management_ip.split("/")[0]} service_ip={service_ip.split("/")[0]} '
     if 'MARIADB_DATABASE' in app:
         inventory_str += f'galera_cluster_bind_address={service_ip.split("/")[0]} galera_cluster_address={service_ip.split("/")[0]} '
-    return inventory_str + 'ansible_become=true ansible_become_method=sudo ansible_user=toothkiller ansible_become_pass=Deathcloud12Darkst12'
+    return inventory_str + 'ansible_become=true ansible_become_method=sudo ansible_user=toothkiller ansible_become_pass="{{ vault_ansible_become_pass_common }}"'
 
 def create_ansible_ini_file(db_conn_str, output_directory):
     # Connect to the PostgreSQL database
