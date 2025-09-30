@@ -37,7 +37,7 @@ Other Debian-based systems similar to the above releases are likely compatible. 
 
 </details>
 
-*Note:* Generally, no other variables need to be set for this role to run. The above defaults are defined in **`src/infrastructure/linux/roles/update_system/defaults/main.yml`** and can be overridden if necessary (e.g., in an inventory or playbook). Typically you would only change these if you have specific policies about the types of upgrades or post-upgrade cleanup.
+*Note:* Generally, no other variables need to be set for this role to run. The above defaults are defined in **`infrastructure/linux/roles/update_system/defaults/main.yml`** and can be overridden if necessary (e.g., in an inventory or playbook). Typically you would only change these if you have specific policies about the types of upgrades or post-upgrade cleanup.
 
 ## Tags
 

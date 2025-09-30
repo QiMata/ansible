@@ -62,7 +62,7 @@ This role includes a Molecule test scenario. To run the tests:
    pip install "molecule[docker]" pytest testinfra
    ```
 2. Ensure any dependent roles are installed via `ansible-galaxy` (not needed here since there are no external role deps).
-3. Change directory into the role’s folder (e.g. `src/roles/openldap_replication`) and run:
+3. Change directory into the role’s folder (e.g. `roles/openldap_replication`) and run:
 
    ```bash
    molecule test

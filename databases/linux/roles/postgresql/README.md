@@ -160,7 +160,7 @@ It is recommended to test this role using **Molecule** (with the Docker driver) 
 2. **Prepare a test scenario:** This role may come with a predefined Molecule scenario (e.g. under `roles/postgresql/molecule/default`). If a scenario is provided, you can use it directly. Navigate to the scenario directory:
 
    ```bash
-   cd src/roles/postgresql/molecule/default
+   cd roles/postgresql/molecule/default
    ```
 
    *(If no Molecule scenario is included with the role, you can create one using `molecule init scenario -r postgresql -d docker`, which will set up a basic scenario directory.)* In the scenario’s configuration (usually `molecule.yml`), ensure the Docker base image matches one of the supported OS (e.g. Debian 12 or Ubuntu 22.04) for a realistic test. The default scenario, if present, typically uses a Debian image.

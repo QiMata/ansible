@@ -67,5 +67,7 @@ docker run -it `
     -e "REMOTE_USER=${RemoteUser}" `
     -e "ANSIBLE_HOST_KEY_CHECKING=False" `
     -e "ANSIBLE_VAULT_PASSWORD_FILE=/${VaultPasswordFile}" `
+    -e "ANSIBLE_CONFIG=/ansible/ansible.cfg" `
+    -w "/ansible" `
     --rm $AnsibleImage `
     ansible-playbook $ExtraArgs

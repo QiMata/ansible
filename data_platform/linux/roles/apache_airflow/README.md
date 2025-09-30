@@ -135,7 +135,7 @@ After running the playbook, if everything succeeds, you should have:
 It is recommended to test this role using **Molecule** (with the Docker driver) to verify its behavior in a clean environment before applying it to your servers. A Molecule test scenario is provided under `molecule/` for this role. Here’s how you can run it:
 
 1. **Install Molecule** (and Docker) on your development machine, if not already installed. For example: `pip install molecule[docker]` (this installs Molecule and the Docker support). Make sure Docker is running on your machine.
-2. **Navigate to the role directory**. From the root of the `ansible` repository, go to `src/roles/apache_airflow`. Molecule will look for its config in `molecule/default/`.
+2. **Navigate to the role directory**. From the root of the `ansible` repository, go to `roles/apache_airflow`. Molecule will look for its config in `molecule/default/`.
 3. **Run the Molecule test sequence**. You can run `molecule test` to perform a full test (which will create containers, apply the role, run verifications, then destroy the containers). During development, you might run steps individually:
 
    * `molecule create` to spin up the test container(s).
