@@ -34,3 +34,19 @@ and playbooks are organized so they can be reused for different clients and envi
 Each role is built to be modular and can be tested independently using Molecule.  The playbooks
 combine these roles to configure complete systems. Molecule scenarios in this repository work with
 either the **Docker** or **Podman** driver, so you may use whichever container engine is available.
+
+## Base playbook variable layout
+
+The `src/playbooks/base.yml` playbook is designed to work against an arbitrary inventory group.
+Set the `base_target_group` extra-var (or define it in inventory) to control which hosts are
+targeted; it defaults to the broad `all` group when unspecified. The playbook expects the
+following variable files to exist relative to the repository root:
+
+- `src/group_vars/all.yml`
+- `src/group_vars/systems_admin/shared_tools/ansible_semaphore/all.yml`
+- `src/group_vars/systems_admin/shared_tools/ansible_semaphore/mariadb_galera.yml`
+
+These files contain the baseline defaults needed by the `base` role. Override them by copying the
+same relative layout into your own project or by providing inventory-specific `group_vars` and
+`host_vars`. This keeps the playbook runnable across environments without requiring host-specific
+files in version control.
