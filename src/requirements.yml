@@ -6,6 +6,10 @@ roles:
     version: "1.7.0"
   - name: geerlingguy.java
     version: "2.3.0"
+  - name: robertdebock.bootstrap
+  - name: robertdebock.auto_update
+  - name: robertdebock.fail2ban
+  - name: geerlingguy.clamav
 
 collections:
   - name: community.hashi_vault
