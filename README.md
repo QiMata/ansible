@@ -12,7 +12,7 @@ and playbooks are organized so they can be reused for different clients and envi
 
 ## Repository Layout
 - `ansible.cfg` – basic configuration pointing Ansible at the bundled roles
-- `requirements.yml` – collection dependencies required to run the playbooks
+- `requirements.yml` – unified Ansible Galaxy requirements (roles and collections) for the project
 - `bin/` – helper scripts for executing Ansible
 - `docs/` – documentation files (for example `keycloak-role.md`,
   `kubeadm-guide.md`, `kong-oss-role.md`, and `proxmox-role.md`)
@@ -20,7 +20,6 @@ and playbooks are organized so they can be reused for different clients and envi
  - `playbooks/` – simple playbooks demonstrating role usage such as `keycloak.yml`, `kubeadm.yml`, `kong.yml`, and `proxmox.yml`
 - `src/` – primary Ansible project
   - `ansible.cfg` – configuration for running playbooks in `src`
-  - `requirements.yml` – additional role and collection dependencies
   - `inventories/` – inventory files for environments such as `prod` and `dev`
   - `group_vars/` and `host_vars/` – variable definitions
   - `playbooks/` – service playbooks like `deploy_bind9.yml` and `deploy_step_ca.yml`

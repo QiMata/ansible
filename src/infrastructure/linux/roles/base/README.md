@@ -81,7 +81,7 @@ Generally, you will include the entire Base role in your play, so fine-grained t
 * **robertdebock.fail2ban** – Installs Fail2Ban and sets up jail configurations to ban malicious IPs after repeated failures.
 * **geerlingguy.clamav** – Installs the ClamAV antivirus service and optionally configures scheduled scans (default is an on-demand scanner and freshclam updater).
 
-These Galaxy roles should be installed in advance. If you use the provided **`src/requirements.yml`** (in the repository), you may need to add the above roles to it (if not already listed) and run `ansible-galaxy install -r requirements.yml`. Otherwise, install them individually, for example:
+These Galaxy roles should be installed in advance. The repository ships with a unified **`requirements.yml`** at the project root; add the above roles to it (if they are not already listed for your environment) and run `ansible-galaxy install -r requirements.yml`. Otherwise, install them individually, for example:
 
 ```bash
 ansible-galaxy install robertdebock.bootstrap robertdebock.auto_update robertdebock.fail2ban geerlingguy.clamav

@@ -83,7 +83,7 @@ No other custom tags are used within this role’s tasks. All configuration and 
 
 ## Dependencies
 
-**Collections:** This role relies on the **community.general** Ansible Collection for the `ufw` module it uses to manage firewall rules. Ensure that `community.general` (version 8.4.0 or higher) is installed before running the role (it is listed in the repository’s requirements.yml). You can install it via Ansible Galaxy if needed:
+**Collections:** This role relies on the **community.general** Ansible Collection for the `ufw` module it uses to manage firewall rules. Ensure that `community.general` (version 8.6.0 or higher) is installed before running the role (it is listed in the repository’s requirements.yml). You can install it via Ansible Galaxy if needed:
 
 ```bash
 ansible-galaxy collection install community.general
