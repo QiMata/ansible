@@ -14,6 +14,11 @@ and playbooks are organized so they can be reused for different clients and envi
 - `ansible.cfg` – basic configuration pointing Ansible at the bundled roles
 - `requirements.yml` – collection dependencies required to run the playbooks
 - `bin/` – helper scripts for executing Ansible
+  - The `ansible-playbook` wrapper scripts now derive their default paths from the
+    repository location, so they work no matter where the repository is cloned.
+    Set environment variables (for the Bash script) or pass parameters/environment
+    variables (for the PowerShell script) to override any of the defaults when
+    needed.
 - `docs/` – documentation files (for example `keycloak-role.md`,
   `kubeadm-guide.md`, `kong-oss-role.md`, and `proxmox-role.md`)
 - `group_vars/` – group variable files used by the top level playbooks

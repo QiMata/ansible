@@ -1,11 +1,22 @@
 param(
-    [string]$WorkDir = "$env:USERPROFILE\dev\workspace\qimata",
-    [string]$SshPrivateKey = "ansible-dev_id_rsa",
-    [string]$RemoteUser = "ansible",
-    [SecureString]$VaultPasswordFile = "vault_pass.txt",
-    [string]$AnsibleImage = "ansible:latest",
+    [string]$WorkDir,
+    [string]$SshPrivateKey,
+    [string]$RemoteUser,
+    [string]$VaultPasswordFile,
+    [string]$AnsibleImage,
     [switch]$Help
 )
+
+# Determine the repository root from the script location so defaults work for
+# any clone location.
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+
+$WorkDir = if ($WorkDir) { $WorkDir } elseif ($env:WORK_DIR) { $env:WORK_DIR } else { $repoRoot }
+$SshPrivateKey = if ($SshPrivateKey) { $SshPrivateKey } elseif ($env:SSH_PRIVATE_KEY) { $env:SSH_PRIVATE_KEY } else { 'ansible-dev_id_rsa' }
+$RemoteUser = if ($RemoteUser) { $RemoteUser } elseif ($env:REMOTE_USER) { $env:REMOTE_USER } else { 'ansible' }
+$VaultPasswordFile = if ($VaultPasswordFile) { $VaultPasswordFile } elseif ($env:ANSIBLE_VAULT_PASSWORD_FILE) { $env:ANSIBLE_VAULT_PASSWORD_FILE } else { 'vault_pass.txt' }
+$AnsibleImage = if ($AnsibleImage) { $AnsibleImage } elseif ($env:ANSIBLE_IMAGE) { $env:ANSIBLE_IMAGE } else { 'ansible:latest' }
+$ansibleHostKeyChecking = if ($env:ANSIBLE_HOST_KEY_CHECKING) { $env:ANSIBLE_HOST_KEY_CHECKING } else { 'False' }
 
 <#
 .SYNOPSIS
@@ -31,10 +42,10 @@ if ($Help) {
     return
 }
 
-# Derive additional paths
-$AnsibleWorkDir = Join-Path $WorkDir "qimata-ansible/ansible"
-$SshKeyDir      = Join-Path $WorkDir "ssh/ansible"
-$VaultDir       = Join-Path $WorkDir "vault"
+# Derive additional paths relative to the repository location unless overridden
+$AnsibleWorkDir = if ($env:ANSIBLE_WORK_DIR) { $env:ANSIBLE_WORK_DIR } else { $WorkDir }
+$SshKeyDir      = if ($env:SSH_KEY_DIR) { $env:SSH_KEY_DIR } else { Join-Path $repoRoot 'ssh/ansible' }
+$VaultDir       = if ($env:ANSIBLE_VAULT_DIR) { $env:ANSIBLE_VAULT_DIR } else { Join-Path $repoRoot 'vault' }
 
 # Gather any extra args to pass to ansible-playbook
 # Everything after "--" goes into $ExtraArgs
@@ -55,6 +66,7 @@ Write-Host "  RemoteUser:            $RemoteUser"
 Write-Host "  VaultDir:              $VaultDir"
 Write-Host "  VaultPasswordFile:     $VaultPasswordFile"
 Write-Host "  AnsibleImage:          $AnsibleImage"
+Write-Host "  AnsibleHostKeyChecking: $ansibleHostKeyChecking"
 Write-Host "  Extra Ansible Args:    $ExtraArgs"
 Write-Host ""
 
@@ -65,7 +77,7 @@ docker run -it `
     -v "${SshKeyDir}/${SshPrivateKey}:/${SshPrivateKey}" `
     -e "SSH_PRIVATE_KEY=/${SshPrivateKey}" `
     -e "REMOTE_USER=${RemoteUser}" `
-    -e "ANSIBLE_HOST_KEY_CHECKING=False" `
+    -e "ANSIBLE_HOST_KEY_CHECKING=${ansibleHostKeyChecking}" `
     -e "ANSIBLE_VAULT_PASSWORD_FILE=/${VaultPasswordFile}" `
     --rm $AnsibleImage `
     ansible-playbook $ExtraArgs
