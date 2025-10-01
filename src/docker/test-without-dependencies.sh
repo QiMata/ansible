@@ -10,10 +10,20 @@ echo "Running molecule test with isolated dependencies..."
 # Change to the source directory
 cd /ansible/src
 
+backup_path=""
+cleanup() {
+    if [ -n "$backup_path" ] && [ -f "$backup_path" ]; then
+        echo "Restoring original requirements.yml..."
+        mv "$backup_path" requirements.yml
+    fi
+}
+trap cleanup EXIT
+
 # Temporarily move the problematic requirements file
 if [ -f "requirements.yml" ]; then
     echo "Backing up requirements.yml..."
-    mv requirements.yml requirements.yml.backup
+    backup_path=$(mktemp /tmp/requirements.yml.XXXXXX)
+    mv requirements.yml "$backup_path"
 fi
 
 # Use only the molecule-specific requirements
@@ -27,9 +37,7 @@ echo "Starting molecule test..."
 molecule test -s proxmox
 
 # Restore the original requirements file
-if [ -f "requirements.yml.backup" ]; then
-    echo "Restoring original requirements.yml..."
-    mv requirements.yml.backup requirements.yml
-fi
+cleanup
+trap - EXIT
 
 echo "Test completed."
