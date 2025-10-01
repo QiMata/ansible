@@ -14,14 +14,8 @@
   hosts: "{{ base_target_group | default('all') }}"
   become: true
   vars_files:
-<<<<<<< HEAD
-    - group_vars/all.yml
-    - group_vars/systems_admin/shared_tools/ansible_semaphore/all.yml
-    - group_vars/systems_admin/shared_tools/ansible_semaphore/mariadb_galera.yml
-=======
     - "{{ playbook_dir }}/../group_vars/all.yml"
     - "{{ playbook_dir }}/../group_vars/systems_admin/shared_tools/ansible_semaphore/all.yml"
     - "{{ playbook_dir }}/../group_vars/systems_admin/shared_tools/ansible_semaphore/mariadb_galera.yml"
->>>>>>> Git/main
   roles:
     - base
