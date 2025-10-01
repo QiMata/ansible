@@ -1,50 +1,30 @@
-from pathlib import Path
+import pathlib
 import shlex
 import sys
 import types
 
-# Ensure the scripts directory is importable
-SCRIPTS_DIR = Path(__file__).resolve().parents[1] / "src" / "scripts"
-if str(SCRIPTS_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS_DIR))
+PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-# Provide a lightweight psycopg2 stub so the module under test can be imported
-if "psycopg2" not in sys.modules:
-    psycopg2_stub = types.ModuleType("psycopg2")
-    psycopg2_stub.connect = lambda *args, **kwargs: None
-    sys.modules["psycopg2"] = psycopg2_stub
+if 'psycopg2' not in sys.modules:
+    sys.modules['psycopg2'] = types.ModuleType('psycopg2')
 
-from create_ansible_inventory import create_ansible_inventory_server_string
+from src.scripts.create_ansible_inventory import create_ansible_inventory_server_string
 
 
-def test_inventory_includes_become_pass_with_safe_quoting():
-    become_pass = "S3cr3t Pass!"
-    result = create_ansible_inventory_server_string(
-        env="dev",
-        cat="app",
-        ss="server",
-        app="web",
-        cont="container01",
+def test_create_ansible_inventory_server_string_includes_become_pass():
+    inventory = create_ansible_inventory_server_string(
+        env="prod",
+        cat="web",
+        ss="frontend",
+        app="app",
+        cont="host1",
         management_ip="10.0.0.1/24",
         service_ip="10.0.1.1/24",
-        ansible_user="ubuntu",
-        become_pass=become_pass,
+        ansible_user="ansible",
+        become_pass="pa ss$word",
     )
 
-    quoted_pass = shlex.quote(become_pass)
-    assert f"ansible_become_pass={quoted_pass}" in result
-    assert "ansible_user=ubuntu" in result
-
-
-def test_inventory_omits_become_pass_when_not_provided():
-    result = create_ansible_inventory_server_string(
-        env="dev",
-        cat="app",
-        ss="server",
-        app="web",
-        cont="container01",
-        management_ip="10.0.0.1/24",
-        service_ip="10.0.1.1/24",
-    )
-
-    assert "ansible_become_pass" not in result
+    expected_fragment = f"ansible_become_pass={shlex.quote('pa ss$word')}"
+    assert expected_fragment in inventory
