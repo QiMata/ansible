@@ -1,0 +1,5 @@
+---
+base_enable_bootstrap: true
+base_enable_auto_update: true
+base_enable_fail2ban: true
+base_enable_clamav: true

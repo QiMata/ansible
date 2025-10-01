@@ -55,3 +55,50 @@ You can also provide the credentials explicitly on the command line by passing
 `--ansible-user` and `--become-pass`. For security, prefer sourcing these values from a secrets
 manager such as **Ansible Vault**, HashiCorp Vault, or injecting them through environment variables
 in your CI pipeline rather than hardcoding them in scripts.
+
+## Ignored build artifacts
+
+To keep the repository clean, generated Ansible assets are ignored by default. Local collections
+(`collections/`), cached facts (`.ansible_facts/`), Molecule working directories (`.molecule/`),
+bytecode (`__pycache__/` and `*.pyc`), retry files (`*.retry`), and temporary logs (`*.log` and
+`logs/`) should never be committed. If you need to share sample outputs or log excerpts, copy only
+the relevant snippets into documentation instead of adding the raw files to version control.
+
+## Managing vaulted secrets
+
+Host and group secrets (for example the privilege escalation password) are stored in
+`src/group_vars/all/vault.yml`, which is encrypted with **Ansible Vault**. To work with vaulted
+data:
+
+1. Create a local vault password file (for example `vault_password.txt`) that contains the vault
+   password. This file is ignored by Git, so keep it outside of version control.
+2. When running playbooks, provide the password with `--vault-password-file`:
+   ```bash
+   ansible-playbook -i src/inventories/JaredRhodes.ini src/playbooks/<playbook>.yml \
+     --vault-password-file vault_password.txt
+   ```
+3. To view or edit vaulted data, run:
+   ```bash
+   ansible-vault view src/group_vars/all/vault.yml --vault-password-file vault_password.txt
+   ansible-vault edit src/group_vars/all/vault.yml --vault-password-file vault_password.txt
+   ```
+
+New secrets should be added to `src/group_vars/all/vault.yml` and referenced from inventories or
+group variable files using templated variables such as
+`ansible_become_pass: "{{ vault_ansible_become_pass_common }}"`.
+
+## Base playbook variable layout
+
+The `src/playbooks/base.yml` playbook is designed to work against an arbitrary inventory group.
+Set the `base_target_group` extra-var (or define it in inventory) to control which hosts are
+targeted; it defaults to the broad `all` group when unspecified. The playbook expects the
+following variable files to exist relative to the repository root:
+
+- `src/group_vars/all.yml`
+- `src/group_vars/systems_admin/shared_tools/ansible_semaphore/all.yml`
+- `src/group_vars/systems_admin/shared_tools/ansible_semaphore/mariadb_galera.yml`
+
+These files contain the baseline defaults needed by the `base` role. Override them by copying the
+same relative layout into your own project or by providing inventory-specific `group_vars` and
+`host_vars`. This keeps the playbook runnable across environments without requiring host-specific
+files in version control.

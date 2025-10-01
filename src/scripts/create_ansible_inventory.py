@@ -13,7 +13,7 @@ def create_ansible_inventory_server_string(env, cat, ss, app, cont, management_i
     if ansible_user:
         inventory_str += f' ansible_user={ansible_user}'
     if become_pass:
-        inventory_str += f' ansible_become_pass={become_pass}'
+        inventory_str += f' ansible_become_pass={ vault_ansible_become_pass_common }'
 
     return inventory_str
 
