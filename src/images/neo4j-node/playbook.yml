@@ -1,0 +1,30 @@
+---
+- name: Hardened Neo4j node image (install-only)
+  hosts: all
+  become: true
+  vars:
+    # Common Neo4j ports; closed unless -e image_open_service_ports=true
+    image_service_ports: [7474, 7687]
+  roles:
+    - role: infrastructure/shared/update_system
+    - role: infrastructure/shared/remove_unnecessary_packages
+    - role: infrastructure/shared/sshd
+      when: ansible_service_mgr | default('') == 'systemd'
+    - role: infrastructure/shared/ufw
+      vars:
+        ufw_allow_ports: "{{ (image_open_service_ports | default(false)) | ternary(image_service_ports, []) }}"
+      when: image_configure_firewall | default(false)
+    - role: infrastructure/shared/base
+
+  tasks:
+    - name: Install Neo4j (no service start)
+      ansible.builtin.import_role:
+        name: data_systems/neo4j
+        tasks_from: install
+
+    - name: Place base configuration (no service start)
+      ansible.builtin.import_role:
+        name: data_systems/neo4j
+        tasks_from: configure
+
+    # Cluster/security/tuning can be applied per-environment later.

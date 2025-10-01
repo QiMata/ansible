@@ -39,7 +39,7 @@ variable "become" {
 }
 
 source "docker" "ubuntu" {
-  image  = var.base_image
+  image   = var.base_image
   discard = true
 }
 
@@ -51,21 +51,35 @@ build {
   provisioner "shell" {
     inline = [
       "apt-get update",
-      "DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3 python3-pip python3-venv ca-certificates curl git ansible",
+      "DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3 python3-pip python3-venv ca-certificates curl gnupg git ansible",
       "rm -rf /var/lib/apt/lists/*"
     ]
   }
 
-  // Run the requested playbook using ansible-local inside the container
-  provisioner "ansible-local" {
-    // Copy full repo ansible tree into the guest and execute
-    playbook_dir  = "${path.root}/../src"
-    playbook_file = "${path.root}/../src/${var.playbook_file}"
+  // Prepare workspace directory for uploaded content
+  provisioner "shell" {
+    inline = [
+      "mkdir -p /opt/workspace"
+    ]
+  }
 
-  // Generate a minimal inventory targeting localhost (adds 127.0.0.1 to these groups)
-  inventory_groups = ["all"]
+  // Upload the repo context used by Ansible
+  provisioner "file" {
+    source      = "${path.root}/../src"
+    destination = "/opt/workspace/src"
+  }
 
-    // Optional flags from the caller
-    extra_arguments = concat(var.become ? ["--become"] : [], var.ansible_extra_args)
+  // Install Galaxy deps (roles + collections) if requirements.yml exists
+  provisioner "shell" {
+    inline = [
+      "if [ -f /opt/workspace/src/requirements.yml ]; then ANSIBLE_CONFIG=/opt/workspace/src/ansible.cfg ansible-galaxy role install -r /opt/workspace/src/requirements.yml -p /opt/workspace/src/roles || true; ANSIBLE_CONFIG=/opt/workspace/src/ansible.cfg ansible-galaxy collection install -r /opt/workspace/src/requirements.yml -p /opt/workspace/src/collections || true; fi"
+    ]
+  }
+
+  // Execute the requested playbook inside the container with Ansible
+  provisioner "shell" {
+    inline = [
+      "ANSIBLE_CONFIG=/opt/workspace/src/ansible.cfg ANSIBLE_ROLES_PATH=/opt/workspace/src/roles ANSIBLE_COLLECTIONS_PATHS=/opt/workspace/src/collections ansible-playbook /opt/workspace/src/${var.playbook_file} -i 'localhost,' -c local --become"
+    ]
   }
 }

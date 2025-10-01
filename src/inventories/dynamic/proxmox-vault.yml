@@ -1,5 +1,5 @@
 # Proxmox Dynamic Inventory Configuration with Vault
-plugin: community.general.proxmox
+plugin: community.proxmox.proxmox
 
 # Proxmox connection details from vault
 url: "{{ vault_proxmox_url }}"
@@ -51,3 +51,4 @@ keyed_groups:
 filters:
   # Only include running VMs by default
   - proxmox_status == "running"
+

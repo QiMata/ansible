@@ -1,0 +1,25 @@
+---
+- name: Hardened MariaDB/Galera node image
+  hosts: all
+  become: true
+  vars:
+    image_service_ports: [3306]
+    mariadb_environment: production
+    mariadb_service_enabled: false
+    mariadb_service_state: "stopped"
+  roles:
+    - role: infrastructure/shared/update_system
+    - role: infrastructure/shared/remove_unnecessary_packages
+    - role: infrastructure/shared/sshd
+    - role: infrastructure/shared/ufw
+      vars:
+        ufw_allow_ports: "{{ (image_open_service_ports | default(false)) | ternary(image_service_ports, []) }}"
+      when: image_configure_firewall | default(false)
+    - role: infrastructure/shared/base
+
+    - role: data_systems/mariadb
+    - role: data_systems/mariadb/mariadb_security
+    - role: data_systems/mariadb/mariadb_performance_tuning
+    - role: data_systems/mariadb/mariadb_monitoring
+    # Backups can be enabled post-provision if desired
+    # - data_systems.mariadb.mariadb_backups

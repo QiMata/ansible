@@ -26,7 +26,7 @@ galaxy_info:
     - security
 
 dependencies:
-  - role: security_identity.letsencrypt.letsencrypt_setup
+  - role: security_identity/letsencrypt/letsencrypt_setup
     when: minio_enable_letsencrypt | default(false)
-  - role: monitoring_observability.prometheus
+  - role: monitoring_observability/prometheus
     when: minio_enable_prometheus | default(false)

@@ -1,0 +1,31 @@
+---
+- name: Hardened MinIO node image (install-only)
+  hosts: all
+  become: true
+  vars_files:
+    - ../common/vars/hardening.yml
+  vars:
+    image_service_ports: [9000, 9001]
+  roles:
+    - infrastructure.shared.update_system
+    - infrastructure.shared.remove_unnecessary_packages
+    - infrastructure.shared.sshd
+    - role: infrastructure.shared.ufw
+      vars:
+        ufw_allow_ports: "{{ image_open_service_ports | ternary(image_service_ports, []) }}"
+    - infrastructure.shared.base
+
+  tasks:
+    - name: Install MinIO (no service start)
+      ansible.builtin.import_role:
+        name: data_systems.minio
+        tasks_from: install
+
+    - name: Seed minimal configuration (no service start)
+      ansible.builtin.import_role:
+        name: data_systems.minio
+        tasks_from: config
+
+    # TLS/Service/Monitoring intentionally not run during bake
+    # to avoid binding to environment-specific secrets.
+

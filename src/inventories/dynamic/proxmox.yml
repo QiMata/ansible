@@ -1,5 +1,5 @@
 # Proxmox Dynamic Inventory Configuration
-plugin: community.general.proxmox
+plugin: community.proxmox.proxmox
 
 # Proxmox connection details
 url: https://10.80.0.1:8006
@@ -57,3 +57,4 @@ filters:
   
   # You can add more filters here based on your needs
   # - proxmox_name is match("^prod-.*")  # Only VMs starting with "prod-"
+

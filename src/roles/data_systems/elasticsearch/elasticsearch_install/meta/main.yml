@@ -11,6 +11,4 @@ galaxy_info:
       versions: [bullseye, bookworm]
     - name: Ubuntu
       versions: [focal, jammy]
-dependencies:
-  - role: geerlingguy.java
-    when: elasticsearch_install_java_install | default(true)
+dependencies: []

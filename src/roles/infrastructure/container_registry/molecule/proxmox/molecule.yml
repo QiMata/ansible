@@ -1,0 +1,58 @@
+---
+dependency:
+  name: galaxy
+  enabled: false
+driver:
+  name: default
+  options:
+    managed: false
+    ansible_connection_options:
+      ansible_connection: ssh
+platforms:
+  - name: container_registry-test-instance
+    groups:
+      - test_instances
+      - container_registry_test
+provisioner:
+  name: ansible
+  playbooks:
+    create: /ansible/src/molecule/proxmox/create.yml
+    prepare: /ansible/src/molecule/proxmox/prepare.yml
+    converge: converge.yml
+    verify: verify.yml
+    destroy: /ansible/src/molecule/proxmox/destroy.yml
+  env:
+    ANSIBLE_ROLES_PATH: "/ansible/src/roles:/ansible/src/roles/infrastructure:/ansible/src/roles/data_analytics:/ansible/src/roles/data_systems:/ansible/src/roles/devops_cicd:/ansible/src/roles/load_balancing_ha:/ansible/src/roles/monitoring_observability:/ansible/src/roles/networking:/ansible/src/roles/operations_management:/ansible/src/roles/security_identity"
+  inventory:
+    host_vars:
+      container_registry-test-instance:
+        ansible_host: "{{ lookup('env', 'CONTAINER_IP') | default('10.80.0.200') }}"
+        ansible_user: molecule
+        ansible_connection: ssh
+        ansible_ssh_pass: "{{ lookup('env', 'CONTAINER_PASSWORD') | default('molecule123') }}"
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+        ansible_become: true
+        ansible_become_method: sudo
+  config_options:
+    defaults:
+      host_key_checking: false
+      stdout_callback: yaml
+      bin_ansible_callbacks: true
+      role_name_check: False
+verifier:
+  name: ansible
+scenario:
+  name: proxmox
+  test_sequence:
+    - dependency
+    - cleanup
+    - destroy
+    - syntax
+    - create
+    - prepare
+    - converge
+    - idempotence
+    - side_effect
+    - verify
+    - cleanup
+    - destroy

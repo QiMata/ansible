@@ -1,7 +1,7 @@
 # Proxmox Dynamic Inventory Configuration - Simple Version
 # This version uses environment variables for security
 
-plugin: community.general.proxmox
+plugin: community.proxmox.proxmox
 
 # Use environment variables for sensitive data
 url: "{{ lookup('env', 'PROXMOX_URL') | default('https://your-proxmox-server:8006') }}"
@@ -53,3 +53,4 @@ keyed_groups:
 filters:
   # Only include running VMs
   - proxmox_status == "running"
+

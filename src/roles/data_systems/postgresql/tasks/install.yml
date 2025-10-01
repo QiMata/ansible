@@ -132,7 +132,7 @@
     name: "postgresql@{{ postgresql_version }}-main"
     state: started
     enabled: true
-  when: not postgresql_use_patroni
+  when: (not postgresql_use_patroni) and (postgresql_enable_service | default(true))
   become: true
   register: service_start_result
 

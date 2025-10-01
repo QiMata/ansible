@@ -15,11 +15,11 @@
     src: elasticsearch.list.j2
     dest: /etc/apt/sources.list.d/elasticsearch.list
     mode: '0644'
-  notify: update apt cache
+  notify: Update APT cache
 
 - name: Install Elasticsearch
   ansible.builtin.apt:
     name: "elasticsearch={{ elasticsearch_install_version }}"
     state: present
     update_cache: true
-  notify: restart elasticsearch
+  notify: Restart Elasticsearch

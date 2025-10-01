@@ -1,0 +1,6 @@
+---
+# Default variables for infrastructure.k3s_host
+k3s_version: ''
+k3s_agent: false
+k3s_server_args: ''
+k3s_agent_args: ''

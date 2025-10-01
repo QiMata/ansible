@@ -1,0 +1,6 @@
+---
+# Handlers for container registry
+- name: restart registry
+  ansible.builtin.service:
+    name: docker
+    state: restarted

@@ -1,0 +1,26 @@
+---
+- name: Hardened Elasticsearch node image
+  hosts: all
+  become: true
+  vars_files:
+    - ../common/vars/hardening.yml
+  vars:
+    image_service_ports: [9200, 9300]
+  roles:
+    - infrastructure.shared.update_system
+    - infrastructure.shared.remove_unnecessary_packages
+    - infrastructure.shared.sshd
+    - role: infrastructure.shared.ufw
+      vars:
+        ufw_allow_ports: "{{ image_open_service_ports | ternary(image_service_ports, []) }}"
+    - infrastructure.shared.base
+
+    # Install Elasticsearch packages; service left enabled but stopped
+    - data_systems.elasticsearch.elasticsearch_install
+    # Minimal config (cluster specifics supplied later)
+    - data_systems.elasticsearch.elasticsearch_config
+    # Optional features to enable later: cluster/security/snapshot
+    # - data_systems.elasticsearch.elasticsearch_cluster
+    # - data_systems.elasticsearch.elasticsearch_security
+    # - data_systems.elasticsearch.elasticsearch_snapshot
+

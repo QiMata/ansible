@@ -1,0 +1,25 @@
+---
+- name: Hardened Elasticsearch node image
+  hosts: all
+  become: true
+  vars:
+    image_service_ports: [9200, 9300]
+    elasticsearch_install_java_install: false
+  roles:
+    - role: infrastructure/shared/update_system
+    - role: infrastructure/shared/remove_unnecessary_packages
+    - role: infrastructure/shared/sshd
+    - role: infrastructure/shared/ufw
+      vars:
+        ufw_allow_ports: "{{ (image_open_service_ports | default(false)) | ternary(image_service_ports, []) }}"
+      when: image_configure_firewall | default(false)
+    - role: infrastructure/shared/base
+
+    # Install Elasticsearch packages; service left enabled but stopped
+    - role: data_systems/elasticsearch/elasticsearch_install
+    # Minimal config (cluster specifics supplied later)
+    - role: data_systems/elasticsearch/elasticsearch_config
+    # Optional features to enable later: cluster/security/snapshot
+    # - data_systems.elasticsearch.elasticsearch_cluster
+    # - data_systems.elasticsearch.elasticsearch_security
+    # - data_systems.elasticsearch.elasticsearch_snapshot

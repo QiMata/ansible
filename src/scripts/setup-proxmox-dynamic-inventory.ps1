@@ -4,13 +4,13 @@
 param(
     [Parameter(Mandatory=$false)]
     [string]$ProxmoxUrl = "https://your-proxmox-server:8006",
-    
+
     [Parameter(Mandatory=$false)]
     [string]$ProxmoxUser = "ansible@pve",
-    
+
     [Parameter(Mandatory=$false)]
     [string]$ProxmoxPassword = "",
-    
+
     [Parameter(Mandatory=$false)]
     [switch]$CreateVaultFile
 )
@@ -59,6 +59,11 @@ Write-Host "1. Visit: https://galaxy.ansible.com/community/general" -ForegroundC
 Write-Host "2. Download the latest version" -ForegroundColor White
 Write-Host "3. Extract to: $collectionsPath\community\general" -ForegroundColor White
 Write-Host ""
+Write-Host "For community.proxmox collection:" -ForegroundColor Cyan
+Write-Host "1. Visit: https://galaxy.ansible.com/community/proxmox" -ForegroundColor White
+Write-Host "2. Download the latest version" -ForegroundColor White
+Write-Host "3. Extract to: $collectionsPath\community\proxmox" -ForegroundColor White
+Write-Host ""
 
 # Step 5: Configure dynamic inventory
 Write-Host "`n5. Configuring Proxmox dynamic inventory..." -ForegroundColor Yellow
@@ -104,7 +109,7 @@ Write-Host ""
 
 # Step 8: Usage instructions
 Write-Host "`n=== Next Steps ===" -ForegroundColor Green
-Write-Host "1. Download and install the community.general collection manually (see above)" -ForegroundColor White
+Write-Host "1. Download and install the community.general and community.proxmox collections manually (see above)" -ForegroundColor White
 Write-Host "2. Configure your Proxmox credentials in inventories\dynamic\proxmox.yml" -ForegroundColor White
 Write-Host "3. Test the connection:" -ForegroundColor White
 Write-Host "   python -c `"from proxmoxer import ProxmoxAPI; print('Proxmoxer OK')`"" -ForegroundColor Cyan

@@ -100,8 +100,8 @@ function New-ProxmoxScenario {
         New-Item -ItemType Directory -Path $proxmoxDir -Force | Out-Null
     }
     
-    # Generate molecule.yml content
-    $moleculeYml = @"
+        # Generate molecule.yml content
+                $moleculeYml = @"
 ---
 dependency:
   name: galaxy
@@ -120,19 +120,23 @@ platforms:
 provisioner:
   name: ansible
   playbooks:
-    create: ../../proxmox/create.yml
-    prepare: prepare.yml
-    converge: converge.yml
-    verify: verify.yml
-    destroy: ../../proxmox/destroy.yml
+        create: /ansible/src/molecule/proxmox/create.yml
+        prepare: /ansible/src/molecule/proxmox/prepare.yml
+        converge: converge.yml
+        verify: verify.yml
+        destroy: /ansible/src/molecule/proxmox/destroy.yml
+    env:
+        ANSIBLE_ROLES_PATH: "/ansible/src/roles:/ansible/src/roles/infrastructure:/ansible/src/roles/data_analytics:/ansible/src/roles/data_systems:/ansible/src/roles/devops_cicd:/ansible/src/roles/load_balancing_ha:/ansible/src/roles/monitoring_observability:/ansible/src/roles/networking:/ansible/src/roles/operations_management:/ansible/src/roles/security_identity"
   inventory:
     host_vars:
       ${RoleName}-test-instance:
-        ansible_host: "{{ lookup('env', 'CONTAINER_IP') | default('10.80.0.200') }}"
-        ansible_user: root
-        ansible_connection: ssh
-        ansible_ssh_pass: "{{ lookup('env', 'CONTAINER_PASSWORD') | default('molecule12345') }}"
-        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+                ansible_host: "{{ lookup('env', 'CONTAINER_IP') | default('10.80.0.200') }}"
+                ansible_user: molecule
+                ansible_connection: ssh
+                ansible_ssh_pass: "{{ lookup('env', 'CONTAINER_PASSWORD') | default('molecule123') }}"
+                ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+                ansible_become: true
+                ansible_become_method: sudo
   config_options:
     defaults:
       host_key_checking: false

@@ -1,0 +1,27 @@
+---
+- name: Hardened MinIO node image (install-only)
+  hosts: all
+  become: true
+  vars:
+    image_service_ports: [9000, 9001]
+  roles:
+    - role: infrastructure/shared/update_system
+    - role: infrastructure/shared/remove_unnecessary_packages
+    - role: infrastructure/shared/sshd
+      when: ansible_service_mgr | default('') == 'systemd'
+    - role: infrastructure/shared/ufw
+      vars:
+        ufw_allow_ports: "{{ (image_open_service_ports | default(false)) | ternary(image_service_ports, []) }}"
+      when: image_configure_firewall | default(false)
+    - role: infrastructure/shared/base
+
+  tasks:
+    - name: Install MinIO (no service start)
+      ansible.builtin.import_role:
+        name: data_systems/minio
+        tasks_from: install
+
+    # Configuration tasks omitted in Docker builder to avoid handler restarts
+
+    # TLS/Service/Monitoring intentionally not run during bake
+    # to avoid binding to environment-specific secrets.

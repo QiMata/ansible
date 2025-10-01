@@ -1,0 +1,23 @@
+---
+- name: Hardened Jenkins agent image
+  hosts: all
+  become: true
+  vars_files:
+    - ../common/vars/hardening.yml
+  vars:
+    image_service_ports: []
+    jenkins_agent_user: jenkins
+    jenkins_agent_home: /home/jenkins
+    # Leave key empty during bake; set at provision time
+    jenkins_agent_ssh_public_key: ""
+  roles:
+    - infrastructure.shared.update_system
+    - infrastructure.shared.remove_unnecessary_packages
+    - infrastructure.shared.sshd
+    - role: infrastructure.shared.ufw
+      vars:
+        ufw_allow_ports: "{{ image_open_service_ports | ternary(image_service_ports, []) }}"
+    - infrastructure.shared.base
+
+    - devops_cicd.jenkins.jenkins_agent
+

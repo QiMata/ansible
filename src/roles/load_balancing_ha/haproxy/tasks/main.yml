@@ -170,6 +170,7 @@
     name: "{{ haproxy_service_name }}"
     state: started
     enabled: true
+  when: haproxy_enable_service | default(true)
 
 # Runtime API Socket Permissions
 - name: Set HAProxy runtime API socket permissions

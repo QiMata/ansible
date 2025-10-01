@@ -1,0 +1,26 @@
+---
+- name: Hardened container registry host image
+  hosts: all
+  become: true
+  vars_files:
+    - ../common/vars/hardening.yml
+  vars:
+    image_service_ports: [5000]
+    registry_name: registry
+    registry_image: registry:2
+    registry_bind: 0.0.0.0
+    registry_port: 5000
+    registry_data_dir: /var/lib/registry
+    registry_env: {}
+  roles:
+    - infrastructure.shared.update_system
+    - infrastructure.shared.remove_unnecessary_packages
+    - infrastructure.shared.sshd
+    - role: infrastructure.shared.ufw
+      vars:
+        ufw_allow_ports: "{{ image_open_service_ports | ternary(image_service_ports, []) }}"
+    - infrastructure.shared.base
+
+    - infrastructure.docker_host
+    - infrastructure.container_registry
+

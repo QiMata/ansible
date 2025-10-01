@@ -184,6 +184,7 @@
     name: "{{ keepalived_service_name }}"
     state: started
     enabled: true
+  when: keepalived_enable_service | default(true)
   tags:
     - keepalived
     - service

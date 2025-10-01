@@ -25,14 +25,12 @@ Since the standard ansible-galaxy has Windows compatibility issues, install manu
 # Install Python packages
 pip install ansible proxmoxer requests
 
-# Download community.general collection manually:
-# 1. Go to https://galaxy.ansible.com/community/general
-# 2. Download the latest tar.gz file
-# 3. Extract to: src/collections/ansible_collections/community/general/
+# Download required collections manually:
+# 1. Download community.general: https://galaxy.ansible.com/community/general
+#    Extract to: src/collections/ansible_collections/community/general/
+# 2. Download community.proxmox: https://galaxy.ansible.com/community/proxmox
+#    Extract to: src/collections/ansible_collections/community/proxmox/
 ```
-
-### 3. Test the Configuration
-
 Use the environment-based configuration file I created:
 
 ```powershell
@@ -110,7 +108,7 @@ ansible-playbook -i inventories/dynamic/proxmox-env.yml playbooks/site.yml
 
 ### Common Issues
 
-1. **"Plugin not found"**: Install community.general collection
+1. **"Plugin not found"**: Install community.proxmox collection (and community.general for module support)
 2. **"Connection refused"**: Check Proxmox URL and firewall
 3. **"Authentication failed"**: Verify credentials and permissions
 4. **"No hosts found"**: Check filters and VM status in Proxmox
@@ -136,9 +134,10 @@ filters: []
 ## Next Steps
 
 1. Set up your Proxmox credentials
-2. Install the community.general collection manually
+2. Install the community.general and community.proxmox collections manually
 3. Test the dynamic inventory
 4. Gradually migrate your playbooks
 5. Remove static inventory files once everything works
 
 The dynamic inventory will automatically discover all your VMs and create groups based on their status, type, and tags, making your infrastructure more maintainable and up-to-date.
+

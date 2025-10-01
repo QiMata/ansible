@@ -1,14 +1,9 @@
 // Packer template to build a Proxmox LXC template by running an Ansible playbook
 
 packer {
-  required_version = ">= 1.10.0"
+  required_version = ">= 1.8.0"
 
   required_plugins {
-    proxmox = {
-      // Telmate Proxmox builder supports LXC
-      source  = "github.com/hashicorp/proxmox"
-      version = ">= 1.1.6"
-    }
     ansible = {
       source  = "github.com/hashicorp/ansible"
       version = ">= 1.0.5"

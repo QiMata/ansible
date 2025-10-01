@@ -1,0 +1,9 @@
+---
+# Shared hardening baseline variables for image bake.
+
+# Keep SSH allowed by default; restrict further per env as needed.
+ufw_allow_ssh: true
+
+# Do not open service ports by default during bake (set true to open).
+image_open_service_ports: false
+

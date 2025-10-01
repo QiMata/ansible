@@ -1,0 +1,25 @@
+---
+- name: Hardened MariaDB/Galera node image
+  hosts: all
+  become: true
+  vars_files:
+    - ../common/vars/hardening.yml
+  vars:
+    image_service_ports: [3306]
+    mariadb_environment: production
+  roles:
+    - infrastructure.shared.update_system
+    - infrastructure.shared.remove_unnecessary_packages
+    - infrastructure.shared.sshd
+    - role: infrastructure.shared.ufw
+      vars:
+        ufw_allow_ports: "{{ image_open_service_ports | ternary(image_service_ports, []) }}"
+    - infrastructure.shared.base
+
+    - data_systems.mariadb
+    - data_systems.mariadb.mariadb_security
+    - data_systems.mariadb.mariadb_performance_tuning
+    - data_systems.mariadb.mariadb_monitoring
+    # Backups can be enabled post-provision if desired
+    # - data_systems.mariadb.mariadb_backups
+

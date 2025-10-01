@@ -1,0 +1,26 @@
+---
+- name: Ensure registry data directory exists
+  ansible.builtin.file:
+    path: "{{ registry_data_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Run Docker registry container via systemd unit (compose-like)
+  community.docker.docker_container:
+    name: "{{ registry_name }}"
+    image: "{{ registry_image }}"
+    state: started
+    restart_policy: always
+    published_ports:
+      - "{{ registry_bind }}:{{ registry_port }}:5000"
+    volumes:
+      - "{{ registry_data_dir }}:/var/lib/registry"
+    env: "{{ registry_env }}"
+
+- name: Enable docker service (ensure engine up)
+  ansible.builtin.service:
+    name: docker
+    enabled: true
+    state: started

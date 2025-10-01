@@ -1,0 +1,17 @@
+---
+# Default variables for infrastructure.docker_host
+
+# Users to add to the docker group
+docker_users: []
+
+# Whether to install from Docker's official repository
+# Set to false to use distro packages
+docker_use_official_repo: true
+
+# Docker packages to install (for Debian/Ubuntu via official repo)
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin

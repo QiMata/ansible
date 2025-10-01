@@ -1,0 +1,26 @@
+---
+- name: Hardened PostgreSQL node image
+  hosts: all
+  become: true
+  vars_files:
+    - ../common/vars/hardening.yml
+  vars:
+    image_service_ports: [5432]
+    # Avoid role’s own firewall so UFW can manage ports centrally
+    postgresql_configure_firewall: false
+    postgresql_env: prod
+  roles:
+    - infrastructure.shared.update_system
+    - infrastructure.shared.remove_unnecessary_packages
+    - infrastructure.shared.sshd
+    - role: infrastructure.shared.ufw
+      vars:
+        ufw_allow_ports: "{{ image_open_service_ports | ternary(image_service_ports, []) }}"
+    - infrastructure.shared.base
+
+    - data_systems.postgresql
+    - data_systems.postgresql.postgresql_security
+    - data_systems.postgresql.postgresql_performance
+    - data_systems.postgresql.postgresql_monitoring
+    - data_systems.postgresql.postgresql_ssl
+

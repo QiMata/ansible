@@ -1,0 +1,9 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: "Include k3s_host role"
+      ansible.builtin.include_role:
+        name: k3s_host

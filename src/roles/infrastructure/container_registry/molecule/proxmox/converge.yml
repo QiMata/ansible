@@ -1,0 +1,9 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: "Include container_registry role"
+      ansible.builtin.include_role:
+        name: container_registry

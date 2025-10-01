@@ -1,0 +1,23 @@
+---
+- name: Hardened K3s node image
+  hosts: all
+  become: true
+  vars_files:
+    - ../common/vars/hardening.yml
+  vars:
+    # Typical K3s ports (server/agent); left closed unless enabled explicitly
+    image_service_ports: [6443, 10250]
+    k3s_agent: false
+    k3s_server_args: ""
+    k3s_agent_args: ""
+  roles:
+    - infrastructure.shared.update_system
+    - infrastructure.shared.remove_unnecessary_packages
+    - infrastructure.shared.sshd
+    - role: infrastructure.shared.ufw
+      vars:
+        ufw_allow_ports: "{{ image_open_service_ports | ternary(image_service_ports, []) }}"
+    - infrastructure.shared.base
+
+    - infrastructure.k3s_host
+

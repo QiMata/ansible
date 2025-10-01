@@ -1,1 +1,1 @@
-deb [trusted=yes] https://artifacts.elastic.co/packages/{{ elasticsearch_install_version | regex_replace('\\..*$', '') }}/apt stable main
+deb [trusted=yes] https://artifacts.elastic.co/packages/{{ (elasticsearch_install_version | regex_replace('\\..*$', '')) }}.x/apt stable main

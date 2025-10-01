@@ -1,0 +1,14 @@
+---
+dependencies:
+  - role: docker_host
+
+galaxy_info:
+  author: your_name
+  description: Run a private Docker registry via Docker
+  license: MIT
+  min_ansible_version: '2.12'
+  platforms:
+    - name: Debian
+      versions: ['bullseye', 'bookworm']
+    - name: Ubuntu
+      versions: ['focal', 'jammy']
