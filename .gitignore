@@ -12,4 +12,5 @@ __pycache__/
 *.retry
 *.log
 logs/
+vault_password.txt
 

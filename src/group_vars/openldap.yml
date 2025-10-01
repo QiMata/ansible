@@ -52,4 +52,4 @@ openldap_olcaccess:
 _basedn: "dc={{ openldap_server_domain.split('.')[0] }},dc={{ openldap_server_domain.split('.')[1] }}"
 
 
-ansible_become_pass: Deathcloud12Darkst12
+ansible_become_pass: "{{ vault_ansible_become_pass_common }}"
