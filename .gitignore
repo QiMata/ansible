@@ -1,4 +1,16 @@
 # ---> Ansible
+# Build artifacts and collections
+collections/
+.ansible_facts/
+.molecule/
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Retry and temporary logs
 *.retry
+*.log
+logs/
 vault_password.txt
 
