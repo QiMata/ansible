@@ -17,4 +17,4 @@
     user: "{{ jenkins_agent_user }}"
     key: "{{ jenkins_agent_ssh_public_key }}"
     state: present
-  notify: restart ssh
+  notify: Restart SSH
