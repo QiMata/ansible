@@ -18,6 +18,7 @@
     key: "{{ jenkins_agent_ssh_public_key }}"
     state: present
     manage_dir: true
+  notify: Restart SSH
 
 - name: Ensure authorized_keys permissions
   ansible.builtin.file:
