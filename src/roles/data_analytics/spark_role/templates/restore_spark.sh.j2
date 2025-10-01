@@ -80,9 +80,9 @@ fi
 # Restore custom scripts
 echo "Restoring custom scripts..."
 if [ -d "${EXTRACTED_DIR}/scripts" ]; then
-    cp -r "${EXTRACTED_DIR}/scripts"/* /opt/spark/scripts/ 2>/dev/null || true
-    chown -R {{ spark_role_user }}:{{ spark_role_group }} /opt/spark/scripts
-    chmod +x /opt/spark/scripts/*.sh 2>/dev/null || true
+    cp -r "${EXTRACTED_DIR}/scripts"/* {{ spark_role_install_dir }}/scripts/ 2>/dev/null || true
+    chown -R {{ spark_role_user }}:{{ spark_role_group }} {{ spark_role_install_dir }}/scripts
+    chmod +x {{ spark_role_install_dir }}/scripts/*.sh 2>/dev/null || true
 fi
 
 # Clean up temporary directory

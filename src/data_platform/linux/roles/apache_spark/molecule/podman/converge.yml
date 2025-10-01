@@ -1,8 +1,0 @@
----
-- name: Converge
-  hosts: all
-  become: true
-  roles:
-    - role: apache_spark
-      vars:
-        apache_spark_history_enabled: true

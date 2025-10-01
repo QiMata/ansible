@@ -3,6 +3,6 @@
   hosts: all
   become: true
   roles:
-    - role: kong
+    - role: spark_role
       vars:
-        kong_database: false
+        spark_role_history_enabled: true

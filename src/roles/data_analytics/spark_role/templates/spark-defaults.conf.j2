@@ -46,8 +46,8 @@ spark.metrics.conf.*.sink.jmx.class   org.apache.spark.metrics.sink.JmxSink
 
 {% if spark_role_prometheus_enabled %}
 # Prometheus JMX Exporter Configuration
-spark.driver.extraJavaOptions          -javaagent:/opt/spark/jars/jmx_prometheus_javaagent-{{ spark_role_prometheus_jmx_exporter_version }}.jar={{ spark_role_prometheus_jmx_exporter_port }}:/opt/spark/conf/jmx_prometheus_config.yml
-spark.executor.extraJavaOptions        -javaagent:/opt/spark/jars/jmx_prometheus_javaagent-{{ spark_role_prometheus_jmx_exporter_version }}.jar={{ spark_role_prometheus_jmx_exporter_port }}:/opt/spark/conf/jmx_prometheus_config.yml
+spark.driver.extraJavaOptions          -javaagent:{{ spark_role_symlink_dir }}/jars/jmx_prometheus_javaagent-{{ spark_role_prometheus_jmx_exporter_version }}.jar={{ spark_role_prometheus_jmx_exporter_port }}:{{ spark_role_symlink_dir }}/conf/jmx_prometheus_config.yml
+spark.executor.extraJavaOptions        -javaagent:{{ spark_role_symlink_dir }}/jars/jmx_prometheus_javaagent-{{ spark_role_prometheus_jmx_exporter_version }}.jar={{ spark_role_prometheus_jmx_exporter_port }}:{{ spark_role_symlink_dir }}/conf/jmx_prometheus_config.yml
 {% endif %}
 
 # Environment-specific configurations

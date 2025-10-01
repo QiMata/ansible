@@ -2,7 +2,7 @@
 # Health Checks and Monitoring Tasks
 - name: Create systemd health check scripts directory
   ansible.builtin.file:
-    path: "/opt/spark/scripts"
+    path: "{{ spark_role_install_dir }}/scripts"
     state: directory
     owner: "{{ spark_role_user }}"
     group: "{{ spark_role_group }}"
@@ -11,7 +11,7 @@
 - name: Deploy health check script
   ansible.builtin.template:
     src: health_check.sh.j2
-    dest: "/opt/spark/scripts/health_check.sh"
+    dest: "{{ spark_role_install_dir }}/scripts/health_check.sh"
     owner: "{{ spark_role_user }}"
     group: "{{ spark_role_group }}"
     mode: '0755'
@@ -20,7 +20,7 @@
 - name: Download Prometheus JMX Exporter
   ansible.builtin.get_url:
     url: "https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/{{ spark_role_prometheus_jmx_exporter_version }}/jmx_prometheus_javaagent-{{ spark_role_prometheus_jmx_exporter_version }}.jar"
-    dest: "/opt/spark/jars/jmx_prometheus_javaagent-{{ spark_role_prometheus_jmx_exporter_version }}.jar"
+    dest: "{{ spark_role_symlink_dir }}/jars/jmx_prometheus_javaagent-{{ spark_role_prometheus_jmx_exporter_version }}.jar"
     owner: "{{ spark_role_user }}"
     group: "{{ spark_role_group }}"
     mode: '0644'
@@ -29,7 +29,7 @@
 - name: Deploy Prometheus JMX Exporter configuration
   ansible.builtin.template:
     src: jmx_prometheus_config.yml.j2
-    dest: "/opt/spark/conf/jmx_prometheus_config.yml"
+    dest: "{{ spark_role_symlink_dir }}/conf/jmx_prometheus_config.yml"
     owner: "{{ spark_role_user }}"
     group: "{{ spark_role_group }}"
     mode: '0644'
@@ -47,7 +47,7 @@
 - name: Deploy alerting script
   ansible.builtin.template:
     src: spark_alerting.sh.j2
-    dest: "/opt/spark/scripts/spark_alerting.sh"
+    dest: "{{ spark_role_install_dir }}/scripts/spark_alerting.sh"
     owner: "{{ spark_role_user }}"
     group: "{{ spark_role_group }}"
     mode: '0755'
@@ -57,6 +57,6 @@
   ansible.builtin.cron:
     name: "Spark health monitoring"
     minute: "*/5"
-    job: "/opt/spark/scripts/spark_alerting.sh"
+    job: "{{ spark_role_install_dir }}/scripts/spark_alerting.sh"
     user: "{{ spark_role_user }}"
   when: spark_role_health_checks_enabled

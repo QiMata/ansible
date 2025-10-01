@@ -27,8 +27,8 @@ done
 
 # Backup custom scripts
 echo "Backing up custom scripts..."
-if [ -d "/opt/spark/scripts" ]; then
-    cp -r "/opt/spark/scripts" "${BACKUP_DIR}/${BACKUP_NAME}/"
+if [ -d "{{ spark_role_install_dir }}/scripts" ]; then
+    cp -r "{{ spark_role_install_dir }}/scripts" "${BACKUP_DIR}/${BACKUP_NAME}/"
 fi
 
 # Backup environment variables and settings

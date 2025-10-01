@@ -9,7 +9,7 @@ echo "Waiting for services to stabilize..."
 sleep 60
 
 # Run comprehensive health check
-if ! /opt/spark/scripts/health_check.sh; then
+if ! {{ spark_role_install_dir }}/scripts/health_check.sh; then
     echo "✗ Post-update health check failed"
     exit 1
 fi

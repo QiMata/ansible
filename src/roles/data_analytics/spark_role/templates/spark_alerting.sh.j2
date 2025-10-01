@@ -2,7 +2,7 @@
 # Spark Alerting Script
 # {{ ansible_managed }}
 
-HEALTH_CHECK_SCRIPT="/opt/spark/scripts/health_check.sh"
+HEALTH_CHECK_SCRIPT="{{ spark_role_install_dir }}/scripts/health_check.sh"
 ALERT_EMAIL="${SPARK_ALERT_EMAIL:-admin@localhost}"
 HOSTNAME="$(hostname -f)"
 

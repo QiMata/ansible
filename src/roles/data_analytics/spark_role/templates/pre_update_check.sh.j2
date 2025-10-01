@@ -5,7 +5,7 @@
 echo "=== Pre-Update Health Check $(date) ==="
 
 # Check if cluster is healthy
-if ! /opt/spark/scripts/health_check.sh; then
+if ! {{ spark_role_install_dir }}/scripts/health_check.sh; then
     echo "✗ Cluster is not healthy. Update should not proceed."
     exit 1
 fi

@@ -3,7 +3,7 @@
 - name: Create rolling update script
   ansible.builtin.template:
     src: rolling_update.sh.j2
-    dest: "/opt/spark/scripts/rolling_update.sh"
+    dest: "{{ spark_role_install_dir }}/scripts/rolling_update.sh"
     owner: "{{ spark_role_user }}"
     group: "{{ spark_role_group }}"
     mode: '0755'
@@ -12,7 +12,7 @@
 - name: Create pre-update health check
   ansible.builtin.template:
     src: pre_update_check.sh.j2
-    dest: "/opt/spark/scripts/pre_update_check.sh"
+    dest: "{{ spark_role_install_dir }}/scripts/pre_update_check.sh"
     owner: "{{ spark_role_user }}"
     group: "{{ spark_role_group }}"
     mode: '0755'
@@ -21,7 +21,7 @@
 - name: Create post-update validation
   ansible.builtin.template:
     src: post_update_validation.sh.j2
-    dest: "/opt/spark/scripts/post_update_validation.sh"
+    dest: "{{ spark_role_install_dir }}/scripts/post_update_validation.sh"
     owner: "{{ spark_role_user }}"
     group: "{{ spark_role_group }}"
     mode: '0755'

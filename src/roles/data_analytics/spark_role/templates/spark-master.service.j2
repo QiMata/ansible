@@ -12,7 +12,7 @@ ExecStart={{ spark_role_symlink_dir }}/sbin/start-master.sh
 ExecStop={{ spark_role_symlink_dir }}/sbin/stop-master.sh
 {% if spark_role_health_checks_enabled %}
 ExecStartPost=/bin/sleep 30
-ExecStartPost=/opt/spark/scripts/health_check.sh
+ExecStartPost={{ spark_role_install_dir }}/scripts/health_check.sh
 {% endif %}
 SuccessExitStatus=143
 Restart=on-failure

@@ -38,7 +38,7 @@
 - name: Deploy performance tuning configuration
   ansible.builtin.template:
     src: performance_tuning.conf.j2
-    dest: "/opt/spark/conf/performance_tuning.conf"
+    dest: "{{ spark_role_symlink_dir }}/conf/performance_tuning.conf"
     owner: "{{ spark_role_user }}"
     group: "{{ spark_role_group }}"
     mode: '0644'
@@ -47,7 +47,7 @@
 - name: Create resource quota configuration
   ansible.builtin.template:
     src: resource_quotas.conf.j2
-    dest: "/opt/spark/conf/resource_quotas.conf"
+    dest: "{{ spark_role_symlink_dir }}/conf/resource_quotas.conf"
     owner: "{{ spark_role_user }}"
     group: "{{ spark_role_group }}"
     mode: '0644'

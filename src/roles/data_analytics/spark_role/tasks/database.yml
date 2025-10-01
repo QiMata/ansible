@@ -2,7 +2,7 @@
 # JDBC Driver Management Tasks
 - name: Create JDBC drivers directory
   ansible.builtin.file:
-    path: "/opt/spark/jars/jdbc"
+    path: "{{ spark_role_symlink_dir }}/jars/jdbc"
     state: directory
     owner: "{{ spark_role_user }}"
     group: "{{ spark_role_group }}"
@@ -12,7 +12,7 @@
 - name: Download JDBC drivers
   ansible.builtin.get_url:
     url: "{{ item.url }}"
-    dest: "{{ item.path | default('/opt/spark/jars/jdbc/' + item.name + '.jar') }}"
+    dest: "{{ item.path | default(spark_role_symlink_dir + '/jars/jdbc/' + item.name + '.jar') }}"
     owner: "{{ spark_role_user }}"
     group: "{{ spark_role_group }}"
     mode: '0644'
@@ -22,7 +22,7 @@
 - name: Create database connection pooling configuration
   ansible.builtin.template:
     src: database_config.conf.j2
-    dest: "/opt/spark/conf/database_config.conf"
+    dest: "{{ spark_role_symlink_dir }}/conf/database_config.conf"
     owner: "{{ spark_role_user }}"
     group: "{{ spark_role_group }}"
     mode: '0644'

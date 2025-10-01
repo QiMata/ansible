@@ -10,7 +10,7 @@ echo "Starting rolling update to Spark version ${NEW_VERSION} at $(date)"
 
 # Pre-update checks
 echo "Running pre-update checks..."
-if ! /opt/spark/scripts/pre_update_check.sh; then
+if ! {{ spark_role_install_dir }}/scripts/pre_update_check.sh; then
     echo "Pre-update checks failed. Aborting update."
     exit 1
 fi
@@ -83,7 +83,7 @@ fi
 
 # Post-update validation
 echo "Running post-update validation..."
-if ! /opt/spark/scripts/post_update_validation.sh; then
+if ! {{ spark_role_install_dir }}/scripts/post_update_validation.sh; then
     echo "Post-update validation failed. Manual intervention required."
     exit 1
 fi
