@@ -1,12 +1,19 @@
 #!/bin/bash
 
-# Set variables from environment or use default values
-WORK_DIR="${WORK_DIR:-${HOME}/dev/workspace/qimata}"
-ANSIBLE_WORK_DIR="${ANSIBLE_WORK_DIR:-${WORK_DIR}/qimata-ansible/ansible}"
+# Determine the repository root based on the script location so defaults work
+# regardless of where the repository is cloned.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+# Set variables from environment or use default values relative to the repository
+# location. Users can still override any of these via environment variables when
+# invoking the script.
+WORK_DIR="${WORK_DIR:-${REPO_ROOT}}"
+ANSIBLE_WORK_DIR="${ANSIBLE_WORK_DIR:-${REPO_ROOT}}"
 SSH_PRIVATE_KEY="${SSH_PRIVATE_KEY:-ansible-dev_id_rsa}"
-SSH_KEY_DIR="${SSH_KEY_DIR:-${HOME}/dev/workspace/qimata/ssh/ansible}"
+SSH_KEY_DIR="${SSH_KEY_DIR:-${REPO_ROOT}/ssh/ansible}"
 REMOTE_USER="${REMOTE_USER:-ansible}"
-ANSIBLE_VAULT_DIR="${ANSIBLE_VAULT_DIR:-${WORK_DIR}/vault}"
+ANSIBLE_VAULT_DIR="${ANSIBLE_VAULT_DIR:-${REPO_ROOT}/vault}"
 ANSIBLE_VAULT_PASSWORD_FILE="${ANSIBLE_VAULT_PASSWORD_FILE:-vault_pass.txt}"
 ANSIBLE_HOST_KEY_CHECKING="${ANSIBLE_HOST_KEY_CHECKING:-False}"
 ANSIBLE_IMAGE="${ANSIBLE_IMAGE:-ansible:latest}"
