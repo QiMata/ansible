@@ -1,7 +1,7 @@
-import psycopg2
 import argparse
 import os
 import shlex
+import psycopg2
 
 
 def create_ansible_inventory_server_string(env, cat, ss, app, cont, management_ip, service_ip, ansible_user=None, become_pass=None):
@@ -14,7 +14,7 @@ def create_ansible_inventory_server_string(env, cat, ss, app, cont, management_i
     if ansible_user:
         inventory_str += f' ansible_user={ansible_user}'
     if become_pass:
-        inventory_str += f" ansible_become_pass={shlex.quote(become_pass)}"
+        inventory_str += f' ansible_become_pass={shlex.quote(str(become_pass))}'
 
     return inventory_str
 
@@ -83,6 +83,7 @@ def create_ansible_ini_file(db_conn_str, output_directory, ansible_user=None, be
         envs[env].add(cat)
 
     # Write to the ini file
+    os.makedirs(output_directory, exist_ok=True)
     for env, cat_set in envs.items():
         with open(os.path.join(output_directory, f'{env}.ini'), 'w') as configfile:
             configfile.write('[all:children]\n')
