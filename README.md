@@ -35,6 +35,27 @@ Each role is built to be modular and can be tested independently using Molecule.
 combine these roles to configure complete systems. Molecule scenarios in this repository work with
 either the **Docker** or **Podman** driver, so you may use whichever container engine is available.
 
+## Inventory generation helper
+
+The repository includes a helper script at `src/scripts/create_ansible_inventory.py` that can
+generate environment specific inventory files from a PostgreSQL database. The script now accepts
+CLI options (with environment variable fallbacks) for the SSH user and the privilege escalation
+password that will be written into each host entry.
+
+```bash
+export ANSIBLE_INVENTORY_USER=ansible
+export ANSIBLE_BECOME_PASS="$(ansible-vault view creds.yml --vault-password-file ~/.vault_pass | jq -r .become_pass)"
+
+python src/scripts/create_ansible_inventory.py \
+  --db_conn_str "postgresql://user:password@db.example.com/inventory" \
+  --output_directory ./generated-inventory
+```
+
+You can also provide the credentials explicitly on the command line by passing
+`--ansible-user` and `--become-pass`. For security, prefer sourcing these values from a secrets
+manager such as **Ansible Vault**, HashiCorp Vault, or injecting them through environment variables
+in your CI pipeline rather than hardcoding them in scripts.
+
 ## Ignored build artifacts
 
 To keep the repository clean, generated Ansible assets are ignored by default. Local collections
