@@ -27,14 +27,14 @@
       - "jenkins={{ jenkins_controller_version }}*"
     state: present
     update_cache: true
-  notify: restart jenkins
+  notify: Restart Jenkins
 
 - name: Disable setup wizard
   ansible.builtin.lineinfile:
     path: /etc/default/jenkins
     regexp: '^JENKINS_ARGS='
     line: 'JENKINS_ARGS="--webroot=/var/cache/$NAME/war --httpPort={{ jenkins_http_port }} -Djenkins.install.runSetupWizard=false {{ jenkins_java_opts }}"'
-  notify: restart jenkins
+  notify: Restart Jenkins
 
 - name: Deploy admin groovy init
   ansible.builtin.template:
@@ -43,7 +43,7 @@
     owner: jenkins
     group: jenkins
     mode: "0644"
-  notify: restart jenkins
+  notify: Restart Jenkins
 
 - name: Create plugins list
   ansible.builtin.template:
@@ -59,7 +59,7 @@
     --plugin-download-directory {{ jenkins_controller_home }}/plugins
   args:
     creates: "{{ jenkins_controller_home }}/plugins/{{ jenkins_controller_plugins[0] }}.jpi"
-  notify: restart jenkins
+  notify: Restart Jenkins
 
 - name: Ensure Jenkins service enabled and started
   ansible.builtin.service:
