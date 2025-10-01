@@ -34,3 +34,11 @@ and playbooks are organized so they can be reused for different clients and envi
 Each role is built to be modular and can be tested independently using Molecule.  The playbooks
 combine these roles to configure complete systems. Molecule scenarios in this repository work with
 either the **Docker** or **Podman** driver, so you may use whichever container engine is available.
+
+## Ignored build artifacts
+
+To keep the repository clean, generated Ansible assets are ignored by default. Local collections
+(`collections/`), cached facts (`.ansible_facts/`), Molecule working directories (`.molecule/`),
+bytecode (`__pycache__/` and `*.pyc`), retry files (`*.retry`), and temporary logs (`*.log` and
+`logs/`) should never be committed. If you need to share sample outputs or log excerpts, copy only
+the relevant snippets into documentation instead of adding the raw files to version control.
