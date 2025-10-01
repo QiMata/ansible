@@ -1,6 +1,7 @@
 import psycopg2
 import argparse
 import os
+import shlex
 
 
 def create_ansible_inventory_server_string(env, cat, ss, app, cont, management_ip, service_ip, ansible_user=None, become_pass=None):
@@ -13,7 +14,7 @@ def create_ansible_inventory_server_string(env, cat, ss, app, cont, management_i
     if ansible_user:
         inventory_str += f' ansible_user={ansible_user}'
     if become_pass:
-        inventory_str += f' ansible_become_pass={ vault_ansible_become_pass_common }'
+        inventory_str += f" ansible_become_pass={shlex.quote(become_pass)}"
 
     return inventory_str
 
