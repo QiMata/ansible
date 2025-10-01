@@ -1,11 +1,7 @@
 ---
 galaxy_info:
-<<<<<<<< HEAD:src/roles/data_analytics/spark_role/meta/main.yml
-  role_name: spark_role
-  namespace: data_analytics
-========
   role_name: apache_spark
->>>>>>>> Git/main:src/data_platform/linux/roles/apache_spark/meta/main.yml
+  namespace: example_inc
   author: Example Inc.
   description: Install and configure Apache Spark standalone cluster with optional HA on Debian
   license: MIT

@@ -4,7 +4,6 @@ sshd:
   ListenAddress: "{{ hostvars[inventory_hostname]['ansible_host'] }}"
   PasswordAuthentication: true
 
-
 # install_fail2ban
 fail2ban_loglevel: INFO
 fail2ban_logtarget: /var/log/fail2ban.log
@@ -25,8 +24,7 @@ fail2ban_sender: admin@{{ ansible_fqdn }}
 auto_update_download_updates: true
 auto_update_apply_updates: false
 auto_update_random_sleep: 360
-<<<<<<< HEAD
-=======
+
 deployment_profile: "simple"
 ldap_data_file: "{{ playbook_dir }}/files/ldap_data.yml"
 ldap_replication: false
@@ -37,4 +35,3 @@ metadata_api_base: "http://10.0.0.20:5002"
 search_api_base: "http://10.0.0.21:5001"
 
 ansible_python_interpreter: /usr/bin/python3
->>>>>>> Git/main
