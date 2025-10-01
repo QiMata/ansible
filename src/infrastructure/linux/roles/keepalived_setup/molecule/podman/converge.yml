@@ -1,0 +1,11 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    keepalived_setup_virtual_ip: 10.10.0.100
+    keepalived_setup_interface: eth0
+    keepalived_setup_virtual_router_id: 99
+    keepalived_setup_priority: 110
+  roles:
+    - role: keepalived_setup

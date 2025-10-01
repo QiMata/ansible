@@ -1,0 +1,14 @@
+---
+galaxy_info:
+  role_name: postgresql
+  namespace: data_systems
+  author: Example Inc.
+  description: PostgreSQL installation and configuration on Debian/Ubuntu with optional HA
+  license: MIT
+  min_ansible_version: '2.15'
+  platforms:
+    - name: Debian
+      versions: [bullseye, bookworm]
+    - name: Ubuntu
+      versions: [focal, jammy]
+dependencies: []

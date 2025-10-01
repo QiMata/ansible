@@ -1,0 +1,5 @@
+---
+# placeholder for HA; currently no-op
+- name: HA placeholder
+  ansible.builtin.debug:
+    msg: "HA features not implemented for single-instance deployment."

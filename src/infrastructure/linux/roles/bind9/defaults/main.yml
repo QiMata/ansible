@@ -1,0 +1,4 @@
+bind9_package_name: bind9
+bind9_service_name: bind9
+bind9_log_dir: /var/log/named
+bind9_dnssec_policy: default

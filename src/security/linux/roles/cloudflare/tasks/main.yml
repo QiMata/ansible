@@ -1,0 +1,9 @@
+---
+- name: Include Cloudflare DNS tasks
+  ansible.builtin.import_tasks: dns.yml
+
+- name: Include Cloudflare settings tasks
+  ansible.builtin.import_tasks: settings.yml
+
+- name: Include Cloudflare firewall tasks
+  ansible.builtin.import_tasks: firewall.yml

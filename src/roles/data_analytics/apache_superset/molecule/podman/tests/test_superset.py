@@ -12,13 +12,13 @@ def test_venv_exists(host):
     assert venv.is_directory
 
 
-def test_superset_cli(host):
+def test_apache_superset_cli(host):
     cmd = host.run('/opt/superset/venv/bin/superset --version')
     assert cmd.rc == 0
 
 
 def test_config_file(host):
-    cfg = host.file('/etc/superset/superset_config.py')
+    cfg = host.file('/etc/superset/apache_superset_config.py')
     assert cfg.exists
 
 

@@ -1,0 +1,15 @@
+# {{ ansible_managed }}
+Port 22
+AddressFamily inet
+ListenAddress {{ sshd_listen_address }}
+Protocol 2
+Compression yes
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes256-ctr
+PermitRootLogin no
+PasswordAuthentication yes
+PubkeyAuthentication no
+ChallengeResponseAuthentication no
+UsePAM yes
+LoginGraceTime 2m
+MaxAuthTries 3
+MaxSessions 10

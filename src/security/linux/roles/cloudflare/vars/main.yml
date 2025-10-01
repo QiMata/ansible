@@ -1,0 +1,5 @@
+---
+cloudflare_ssl_mode: "strict"
+cloudflare_always_use_https: true
+cloudflare_dns_records: []
+cloudflare_firewall_rules: []

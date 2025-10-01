@@ -114,4 +114,4 @@ nginx_load_balancer_ha: true
 nginx_load_balancer_ha_primary: node0
 
 
-ansible_become_pass: Deathcloud12Darkst12
+ansible_become_pass: "{{ vault_ansible_become_pass_common }}"

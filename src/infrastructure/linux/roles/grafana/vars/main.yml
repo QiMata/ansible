@@ -1,0 +1,4 @@
+---
+grafana_package_url: "https://packages.grafana.com/oss/deb"
+grafana_package_key_url: "https://packages.grafana.com/gpg.key"
+grafana_service_name: grafana-server

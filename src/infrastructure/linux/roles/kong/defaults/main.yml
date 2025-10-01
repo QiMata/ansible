@@ -1,0 +1,10 @@
+---
+kong_version: "3.6.0"
+kong_user: kong
+kong_group: kong
+kong_database: "postgres"
+kong_pg_host: "localhost"
+kong_pg_port: 5432
+kong_pg_user: "kong"
+kong_pg_database: "kong"
+kong_pg_password: "kong"

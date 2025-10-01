@@ -1,0 +1,29 @@
+---
+minio_version: "RELEASE.2025-05-05T00-00-00Z"
+minio_download_url: "https://dl.min.io/server/minio/release/linux-amd64/minio"
+minio_binary_path: "/usr/local/bin/minio"
+
+minio_user: "minio"
+minio_group: "minio"
+
+minio_base_dir: "/opt/minio"
+minio_data_dir: "{{ minio_base_dir }}/data"
+
+minio_root_user: "minioadmin"
+minio_root_password: "minioadmin"
+
+minio_server_port: 9000
+minio_console_port: 9001
+
+minio_enable_tls: true
+minio_self_signed: false
+minio_domain: "{{ inventory_hostname }}"
+minio_extra_sans: []
+
+minio_cert_public: ""
+minio_cert_private: ""
+minio_certs_dir: "{{ minio_base_dir }}/certs"
+
+minio_volumes: "{{ minio_data_dir }}"
+
+minio_opts_extra: "--console-address :{{ minio_console_port }}"

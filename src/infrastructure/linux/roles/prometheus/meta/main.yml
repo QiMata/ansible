@@ -1,0 +1,15 @@
+---
+galaxy_info:
+  role_name: prometheus
+  namespace: monitoring_observability
+  author: Example Inc.
+  description: Install and configure Prometheus on Debian-based systems
+  company: Example Inc.
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Debian
+      versions: ["bullseye", "bookworm"]
+    - name: Ubuntu
+      versions: ["focal", "jammy"]
+dependencies: []

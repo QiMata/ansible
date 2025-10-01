@@ -12,5 +12,6 @@
       ansible.builtin.file:
         path: /tmp/webroot
         state: directory
+        mode: '0755'
   roles:
     - role: letsencrypt_setup

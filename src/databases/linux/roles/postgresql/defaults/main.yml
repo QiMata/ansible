@@ -1,0 +1,71 @@
+---
+
+# Version & repository
+postgresql_version: 15
+postgresql_use_official_repo: false
+postgresql_apt_repo_url: >-
+  deb [signed-by=/usr/share/keyrings/postgresql.gpg]
+  http://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main
+postgresql_apt_repo_key_url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+
+# Environment
+postgresql_env: prod
+
+# Paths & service
+postgresql_data_dir: "/var/lib/postgresql/{{ postgresql_version }}/main"
+postgresql_service_name: postgresql
+postgresql_port: 5432
+
+# Basic configuration
+postgresql_listen_addresses: "{{ '*' if postgresql_env == 'prod' else 'localhost' }}"
+postgresql_max_connections: "{{ 100 if postgresql_env == 'prod' else 20 }}"
+postgresql_shared_buffers: "{{ '1GB' if postgresql_env == 'prod' else '256MB' }}"
+postgresql_work_mem: 4MB
+postgresql_maintenance_work_mem: 64MB
+postgresql_effective_cache_size: "{{ '3GB' if postgresql_env == 'prod' else '768MB' }}"
+postgresql_logging_collector: true
+postgresql_log_directory: 'log'
+postgresql_log_min_duration_statement: -1
+postgresql_password_encryption: scram-sha-256
+
+# Health Check Configuration
+postgresql_validate_config: true
+postgresql_health_check_enabled: false
+postgresql_health_check_retries: 6
+postgresql_health_check_delay: 10
+postgresql_health_check_timeout: 30
+
+# Authentication
+postgresql_hba_entries:
+  - { type: 'local', database: 'all', user: 'postgres', address: '', auth_method: 'peer' }
+  - { type: 'local', database: 'all', user: 'all', address: '', auth_method: 'peer' }
+  - { type: 'host', database: 'all', user: 'all', address: '127.0.0.1/32', auth_method: 'md5' }
+  - { type: 'host', database: 'all', user: 'all', address: '::1/128', auth_method: 'md5' }
+
+# Admin & replication
+postgresql_admin_password: ""
+postgresql_enable_replication: false
+postgresql_replication_role: ""
+postgresql_replication_user: replicator
+postgresql_replication_password: ""
+postgresql_replication_network: ""
+
+# HA / Patroni
+postgresql_use_patroni: false
+postgresql_patroni_etcd_host: ""
+postgresql_patroni_cluster_name: pg-cluster
+postgresql_patroni_node_name: "{{ inventory_hostname }}"
+
+# SSL
+postgresql_enable_ssl: false
+postgresql_ssl_cert_file: ""
+postgresql_ssl_key_file: ""
+
+# Firewall
+postgresql_configure_firewall: false
+postgresql_firewall_use_ufw: true
+postgresql_allowed_hosts: []
+
+# Database and User Management
+postgresql_databases: []
+postgresql_users: []

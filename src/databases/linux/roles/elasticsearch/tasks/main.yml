@@ -1,0 +1,13 @@
+---
+- name: Include install tasks
+  ansible.builtin.import_tasks: install.yml
+  tags: install
+
+- name: Include config tasks
+  ansible.builtin.import_tasks: config.yml
+  tags: config
+
+- name: Include security tasks
+  ansible.builtin.import_tasks: security.yml
+  when: elasticsearch_enable_security
+  tags: security

@@ -1,0 +1,39 @@
+---
+- name: Ensure prerequisite packages installed
+  ansible.builtin.apt:
+    name:
+      - git
+      - python3-venv
+      - python3-dev
+      - build-essential
+      - libxml2-dev
+      - libffi-dev
+      - libpq-dev
+      - libssl-dev
+    state: present
+    update_cache: true
+
+- name: Create netbox system user
+  ansible.builtin.user:
+    name: "{{ netbox_user }}"
+    system: true
+    create_home: false
+    shell: /usr/sbin/nologin
+
+- name: Clone NetBox repository
+  ansible.builtin.git:
+    repo: "{{ netbox_git_repo }}"
+    dest: "{{ netbox_install_dir }}"
+    version: "{{ netbox_branch }}"
+    force: true
+  notify: restart netbox
+
+- name: Create virtualenv
+  ansible.builtin.command: "{{ netbox_python }} -m venv {{ netbox_venv }}"
+  args:
+    creates: "{{ netbox_venv }}/bin/activate"
+
+- name: Install NetBox requirements
+  ansible.builtin.pip:
+    requirements: "{{ netbox_install_dir }}/requirements.txt"
+    virtualenv: "{{ netbox_venv }}"

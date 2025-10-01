@@ -1,0 +1,23 @@
+[Unit]
+Description=MinIO Object Storage
+Documentation=https://docs.min.io
+Wants=network-online.target
+After=network-online.target
+
+AssertFileIsExecutable={{ minio_binary_path }}
+
+[Service]
+User={{ minio_user }}
+Group={{ minio_group }}
+EnvironmentFile=-/etc/default/minio
+WorkingDirectory={{ minio_base_dir }}
+ExecStartPre=/bin/sh -c 'if [ -z "$MINIO_VOLUMES" ]; then echo "ERROR: MINIO_VOLUMES is not set"; exit 1; fi'
+ExecStart={{ minio_binary_path }} server $MINIO_OPTS $MINIO_VOLUMES
+Restart=always
+LimitNOFILE=65536
+TasksMax=infinity
+TimeoutStopSec=infinity
+SendSIGKILL=no
+
+[Install]
+WantedBy=multi-user.target

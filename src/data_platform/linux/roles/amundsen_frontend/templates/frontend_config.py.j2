@@ -1,0 +1,6 @@
+from amundsen_application.config import LocalConfig
+
+class ProdConfig(LocalConfig):
+    SEARCHSERVICE_BASE = "{{ amundsen_frontend_search_api_base }}"
+    METADATASERVICE_BASE = "{{ amundsen_frontend_metadata_api_base }}"
+    LOG_LEVEL = "INFO"

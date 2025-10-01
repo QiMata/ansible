@@ -1,0 +1,12 @@
+- name: Include install tasks
+  ansible.builtin.import_tasks: install.yml
+
+- name: Include bootstrap tasks
+  ansible.builtin.import_tasks: bootstrap.yml
+  when: step_ca_bootstrap | bool
+
+- name: Include config tasks
+  ansible.builtin.import_tasks: config.yml
+
+- name: Include service tasks
+  ansible.builtin.import_tasks: service.yml

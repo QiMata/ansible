@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+export SPARK_MASTER_HOST="{{ apache_spark_master_host }}"
+export JAVA_HOME="{{ lookup('env', 'JAVA_HOME') | default('/usr/lib/jvm/default-java', true) }}"
+export SPARK_LOG_DIR="{{ apache_spark_log_dir }}"
+export SPARK_WORKER_DIR="{{ apache_spark_worker_dir }}"
+export SPARK_WORKER_MEMORY="{{ apache_spark_worker_memory }}"
+export SPARK_WORKER_CORES="{{ apache_spark_worker_cores }}"
+
+{% if apache_spark_ha_enabled | bool %}
+export SPARK_DAEMON_JAVA_OPTS="$SPARK_DAEMON_JAVA_OPTS -Dspark.deploy.recoveryMode=ZOOKEEPER -Dspark.deploy.zookeeper.url={{ apache_spark_zookeeper_hosts }} -Dspark.deploy.zookeeper.dir={{ apache_spark_ha_zk_dir }}"
+{% endif %}
+
+{% if apache_spark_recovery_dir | length > 0 and not apache_spark_ha_enabled | bool %}
+export SPARK_DAEMON_JAVA_OPTS="$SPARK_DAEMON_JAVA_OPTS -Dspark.deploy.recoveryMode=FILESYSTEM -Dspark.deploy.recoveryDirectory={{ apache_spark_recovery_dir }}"
+{% endif %}

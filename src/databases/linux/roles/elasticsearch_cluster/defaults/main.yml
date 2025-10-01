@@ -1,0 +1,6 @@
+---
+elasticsearch_cluster_version: "8.x"
+elasticsearch_cluster_name: "amundsen-es-cluster"
+elasticsearch_cluster_heap_size: "2g"
+elasticsearch_cluster_node_roles: ["master", "data"]
+elasticsearch_cluster_network_host: "0.0.0.0"

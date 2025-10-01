@@ -1,0 +1,9 @@
+---
+- name: Template role mapping file
+  ansible.builtin.template:
+    src: role_mapping.yml.j2
+    dest: /etc/elasticsearch/role_mapping.yml
+    owner: root
+    group: elasticsearch
+    mode: '0640'
+  notify: restart elasticsearch

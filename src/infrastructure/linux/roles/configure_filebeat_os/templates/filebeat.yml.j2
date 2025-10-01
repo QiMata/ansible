@@ -1,0 +1,12 @@
+# {{ ansible_managed }}
+
+filebeat.inputs:
+- type: {{ configure_filebeat_os_input_type }}
+  enabled: true
+  paths:
+{% for path in configure_filebeat_os_paths %}
+    - {{ path }}
+{% endfor %}
+
+output.elasticsearch:
+  hosts: {{ configure_filebeat_os_output_elasticsearch_hosts }}

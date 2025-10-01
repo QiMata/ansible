@@ -1,0 +1,93 @@
+---
+- name: Install prerequisite packages
+  ansible.builtin.apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+    state: present
+    update_cache: true
+  become: true
+
+- name: Add Kubernetes apt key
+  ansible.builtin.apt_key:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    state: present
+  become: true
+
+- name: Add Kubernetes repository
+  ansible.builtin.apt_repository:
+    repo: 'deb https://apt.kubernetes.io/ kubernetes-xenial main'
+    state: present
+    filename: kubernetes
+  become: true
+
+- name: Install kubeadm packages
+  ansible.builtin.apt:
+    name:
+      - "kubelet={{ kubeadm_version }}"
+      - "kubeadm={{ kubeadm_version }}"
+      - "kubectl={{ kubeadm_version }}"
+    state: present
+    update_cache: true
+    allow_change_held_packages: true
+  become: true
+
+- name: Disable swap immediately
+  ansible.builtin.command: swapoff -a
+  when: kubeadm_disable_swap | bool
+  become: true
+  changed_when: false
+
+- name: Ensure swap is disabled in fstab
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^([^#].*\s+swap\s+)'
+    replace: '# \1'
+  when: kubeadm_disable_swap | bool
+  become: true
+
+- name: Check if control plane already initialized
+  ansible.builtin.stat:
+    path: /etc/kubernetes/admin.conf
+  register: kubeadm_admin_conf
+
+- name: Initialize control plane
+  ansible.builtin.command: >-
+    kubeadm init --pod-network-cidr={{ kubeadm_pod_network_cidr }} {{ kubeadm_init_extra_opts }}
+  when:
+    - kubeadm_role == 'control-plane'
+    - not kubeadm_admin_conf.stat.exists
+  become: true
+  changed_when: false
+
+- name: Create kube config directory for root
+  ansible.builtin.file:
+    path: /root/.kube
+    state: directory
+    mode: '0700'
+  when:
+    - kubeadm_role == 'control-plane'
+    - not kubeadm_admin_conf.stat.exists
+  become: true
+
+- name: Copy admin kubeconfig to root
+  ansible.builtin.copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /root/.kube/config
+    remote_src: true
+    owner: root
+    group: root
+    mode: '0600'
+  when:
+    - kubeadm_role == 'control-plane'
+    - not kubeadm_admin_conf.stat.exists
+  become: true
+
+- name: Join worker node to cluster
+  ansible.builtin.command: "{{ kubeadm_join_command }}"
+  when:
+    - kubeadm_role == 'worker'
+    - kubeadm_join_command | length > 0
+  become: true
+  changed_when: false

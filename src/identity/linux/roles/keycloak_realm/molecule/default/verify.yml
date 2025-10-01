@@ -1,0 +1,16 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Query realm
+      ansible.builtin.uri:
+        url: http://localhost:8080/realms/molecule-test
+        return_content: false
+        status_code: 200
+      register: realm_res
+      failed_when: realm_res.status != 200
+
+    - name: Assert realm exists
+      ansible.builtin.assert:
+        that: realm_res.status == 200

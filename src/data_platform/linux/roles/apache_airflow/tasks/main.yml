@@ -1,0 +1,15 @@
+---
+- name: Create airflow users
+  ansible.builtin.import_tasks: users.yml
+
+- name: Install airflow
+  ansible.builtin.import_tasks: install.yml
+
+- name: Install Python packages
+  ansible.builtin.import_tasks: pip.yml
+
+- name: Configure airflow
+  ansible.builtin.import_tasks: config.yml
+
+- name: Manage service
+  ansible.builtin.import_tasks: service.yml

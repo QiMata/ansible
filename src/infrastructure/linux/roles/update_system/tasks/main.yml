@@ -1,0 +1,15 @@
+---
+- name: Retry apt update and upgrade
+  block:
+    - name: Update and upgrade system
+      ansible.builtin.apt:
+        upgrade: true
+        update_cache: true
+      register: apt_result
+      until: apt_result is success
+      retries: 10
+      delay: 10
+  rescue:
+    - name: Handle failure
+      ansible.builtin.debug:
+        msg: "Failed to update and upgrade system"

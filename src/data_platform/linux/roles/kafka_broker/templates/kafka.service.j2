@@ -1,0 +1,15 @@
+[Unit]
+Description=Apache Kafka Broker
+After=network.target
+
+[Service]
+Type=simple
+User={{ kafka_broker_user }}
+Group={{ kafka_broker_group }}
+EnvironmentFile=-/etc/default/kafka
+ExecStart={{ kafka_broker_home }}/bin/kafka-server-start.sh {{ kafka_broker_home }}/config/server.properties
+ExecStop={{ kafka_broker_home }}/bin/kafka-server-stop.sh
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

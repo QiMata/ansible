@@ -1,0 +1,13 @@
+---
+galaxy_info:
+  role_name: apache_nifi
+  author: Example Inc.
+  description: Install & configure Apache NiFi with LDAP, HA, ELK, Prometheus
+  license: MIT
+  min_ansible_version: "2.11"
+  platforms:
+    - name: Debian
+      releases: [bullseye, bookworm]
+    - name: Ubuntu
+      releases: [focal, jammy]
+dependencies: []

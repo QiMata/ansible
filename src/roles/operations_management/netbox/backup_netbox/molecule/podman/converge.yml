@@ -13,5 +13,6 @@
       ansible.builtin.file:
         path: "{{ netbox_media_root }}"
         state: directory
+        mode: "0755"
   roles:
     - role: backup_netbox

@@ -1,0 +1,8 @@
+---
+- name: Enable and start NiFi service
+  become: true
+  ansible.builtin.service:
+    name: nifi
+    enabled: true
+    state: started
+  tags: [nifi, service]

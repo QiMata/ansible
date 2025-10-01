@@ -1,0 +1,6 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  roles:
+    - role: ha_proxy_load_balancer_setup

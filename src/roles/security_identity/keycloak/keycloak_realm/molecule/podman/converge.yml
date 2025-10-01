@@ -16,11 +16,13 @@
         enabled: true
 
     - name: Create database
+      become: true
       become_user: postgres
       community.postgresql.postgresql_db:
         name: keycloak
 
     - name: Create user
+      become: true
       become_user: postgres
       community.postgresql.postgresql_user:
         name: keycloak
@@ -37,10 +39,10 @@
         keycloak_hostname: localhost
     - role: keycloak_realm
       vars:
-        keycloak_http_port: 8080
-        keycloak_admin_user: admin
-        keycloak_admin_password: admin
-        keycloak_realms:
+        keycloak_realm_http_port: 8080
+        keycloak_realm_admin_user: admin
+        keycloak_realm_admin_password: admin
+        keycloak_realm_realms:
           - name: molecule-test
             enabled: true
             clients:

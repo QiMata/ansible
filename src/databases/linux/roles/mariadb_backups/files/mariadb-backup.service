@@ -1,0 +1,8 @@
+[Unit]
+Description=MariaDB Backup
+
+[Service]
+ExecStart=/usr/local/bin/mariadb-backup.sh
+
+[Install]
+WantedBy=multi-user.target

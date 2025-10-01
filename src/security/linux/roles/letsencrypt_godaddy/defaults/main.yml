@@ -1,0 +1,14 @@
+---
+letsencrypt_godaddy_cert_domains: []
+letsencrypt_godaddy_account_email: ""
+letsencrypt_godaddy_api_key: ""
+letsencrypt_godaddy_api_secret: ""
+letsencrypt_godaddy_cert_install_path: "/etc/letsencrypt/live"
+letsencrypt_godaddy_service_reload_command: ""
+letsencrypt_godaddy_use_staging: false
+letsencrypt_godaddy_propagation_wait: 600
+letsencrypt_godaddy_acme_sh_install_dir: "/etc/acme"
+letsencrypt_godaddy_acme_sh_git_url: "https://github.com/acmesh-official/acme.sh"
+letsencrypt_godaddy_acme_install_cron: true
+letsencrypt_godaddy_force_renew: false
+letsencrypt_godaddy_acme_sh_auto_upgrade: false

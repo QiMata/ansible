@@ -1,0 +1,15 @@
+---
+# sane defaults – usually overridden in inventory / playbook
+apt_mirror_base_path: "/var/spool/apt-mirror"
+
+apt_mirror_mirrors: []
+apt_mirror_architectures: ["amd64"]
+apt_mirror_include_sources: false
+
+apt_mirror_cron_enabled: true
+apt_mirror_cron_schedule: "0 4 * * *"
+
+apt_mirror_elk_integration_enabled: false
+apt_mirror_ha_features_enabled: false
+apt_mirror_dr_backup_enabled: true
+apt_mirror_prune: true

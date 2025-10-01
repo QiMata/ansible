@@ -1,0 +1,58 @@
+---
+- name: Install Java runtime
+  ansible.builtin.apt:
+    name: "{{ kafka_broker_java_package }}"
+    state: present
+    update_cache: true
+  become: true
+
+- name: Create kafka group
+  ansible.builtin.group:
+    name: "{{ kafka_broker_group }}"
+    system: true
+  become: true
+
+- name: Create kafka user
+  ansible.builtin.user:
+    name: "{{ kafka_broker_user }}"
+    group: "{{ kafka_broker_group }}"
+    system: true
+    shell: /usr/sbin/nologin
+    create_home: false
+  become: true
+
+- name: Create installation directory
+  ansible.builtin.file:
+    path: "{{ kafka_broker_install_dir }}"
+    state: directory
+    owner: "{{ kafka_broker_user }}"
+    group: "{{ kafka_broker_group }}"
+    mode: "0755"
+  become: true
+
+- name: Create data directory
+  ansible.builtin.file:
+    path: "{{ kafka_broker_data_dir }}"
+    state: directory
+    owner: "{{ kafka_broker_user }}"
+    group: "{{ kafka_broker_group }}"
+    mode: "0755"
+  become: true
+
+- name: Download Kafka archive
+  ansible.builtin.get_url:
+    url: "{{ kafka_broker_download_url }}"
+    dest: "/tmp/kafka_{{ kafka_broker_scala_version }}-{{ kafka_broker_version }}.tgz"
+    mode: "0644"
+    force: false
+  become: true
+
+- name: Unpack Kafka
+  ansible.builtin.unarchive:
+    src: "/tmp/kafka_{{ kafka_broker_scala_version }}-{{ kafka_broker_version }}.tgz"
+    dest: "{{ kafka_broker_install_dir }}"
+    owner: "{{ kafka_broker_user }}"
+    group: "{{ kafka_broker_group }}"
+    remote_src: true
+    creates: "{{ kafka_broker_home }}/bin/kafka-server-start.sh"
+  become: true

@@ -1,0 +1,38 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check Java installed
+      ansible.builtin.command: java -version
+      register: java_ver
+      changed_when: false
+      failed_when: java_ver.rc != 0
+
+    - name: Check keycloak user
+      ansible.builtin.getent:
+        database: passwd
+        key: keycloak
+      register: kc_user
+
+    - name: Assert keycloak user exists
+      ansible.builtin.assert:
+        that: kc_user.found
+
+    - name: Check configuration file
+      ansible.builtin.stat:
+        path: /var/lib/keycloak/keycloak-24.0.1/conf/keycloak.conf
+      register: conf
+
+    - name: Assert configuration exists
+      ansible.builtin.assert:
+        that: conf.stat.exists
+
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Assert service running
+      ansible.builtin.assert:
+        that:
+          - "'keycloak.service' in ansible_facts.services"
+          - ansible_facts.services['keycloak.service'].state == 'running'

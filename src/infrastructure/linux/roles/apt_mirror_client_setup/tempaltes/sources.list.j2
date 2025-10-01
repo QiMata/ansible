@@ -1,0 +1,15 @@
+# Debian packages
+deb {{ apt_mirror_client_setup_url }}/debian stable main contrib non-free
+deb-src {{ apt_mirror_client_setup_url }}/debian stable main contrib non-free
+
+# Debian Security
+deb {{ apt_mirror_client_setup_url }}/debian-security stable-security main contrib non-free
+deb-src {{ apt_mirror_client_setup_url }}/debian-security stable-security main contrib non-free
+
+# Debian Updates
+deb {{ apt_mirror_client_setup_url }}/debian stable-updates main contrib non-free
+deb-src {{ apt_mirror_client_setup_url }}/debian stable-updates main contrib non-free
+
+# Debian Backports
+deb {{ apt_mirror_client_setup_url }}/debian stable-backports main contrib non-free
+deb-src {{ apt_mirror_client_setup_url }}/debian stable-backports main contrib non-free

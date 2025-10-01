@@ -1,0 +1,16 @@
+[Unit]
+Description=Apache Airflow Webserver
+After=network.target
+Wants=network.target
+
+[Service]
+EnvironmentFile=/etc/default/airflow
+User={{ apache_airflow_user }}
+Group={{ apache_airflow_group }}
+Type=simple
+ExecStart={{ apache_airflow_venv_path | default('') }}/bin/airflow webserver --port 8080
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

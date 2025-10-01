@@ -1,0 +1,17 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: jenkins-agent
+    image: debian:12
+    privileged: true
+provisioner:
+  name: ansible
+  env:
+    ANSIBLE_ROLES_PATH: "/ansible/src/roles:/ansible/src/roles/devops_cicd:/ansible/src/roles/devops_cicd/jenkins"
+  playbooks:
+    converge: converge.yml
+verifier:
+  name: testinfra

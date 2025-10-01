@@ -1,0 +1,10 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check python3-venv installed
+      ansible.builtin.package:
+        name: python3-venv
+        state: present
+      check_mode: true

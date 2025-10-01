@@ -1,0 +1,68 @@
+---
+- name: Ensure apt deps
+  ansible.builtin.apt:
+    name:
+      - gnupg
+      - curl
+    state: present
+    update_cache: true
+
+- name: Add Jenkins apt key
+  ansible.builtin.get_url:
+    url: "{{ jenkins_controller_repo_key_url }}"
+    dest: /usr/share/keyrings/jenkins.gpg
+    mode: "0644"
+    force: true
+
+- name: Add Jenkins apt repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/jenkins.gpg] {{ jenkins_controller_repo_url }} binary/"
+    filename: jenkins
+    state: present
+
+- name: Install Jenkins and Java
+  ansible.builtin.apt:
+    name:
+      - openjdk-11-jdk
+      - "jenkins={{ jenkins_controller_version }}*"
+    state: present
+    update_cache: true
+  notify: restart jenkins
+
+- name: Disable setup wizard
+  ansible.builtin.lineinfile:
+    path: /etc/default/jenkins
+    regexp: '^JENKINS_ARGS='
+    line: 'JENKINS_ARGS="--webroot=/var/cache/$NAME/war --httpPort={{ jenkins_http_port }} -Djenkins.install.runSetupWizard=false {{ jenkins_java_opts }}"'
+  notify: restart jenkins
+
+- name: Deploy admin groovy init
+  ansible.builtin.template:
+    src: init_admin_user.groovy.j2
+    dest: "{{ jenkins_controller_home }}/init.groovy.d/init_admin_user.groovy"
+    owner: jenkins
+    group: jenkins
+    mode: "0644"
+  notify: restart jenkins
+
+- name: Create plugins list
+  ansible.builtin.template:
+    src: plugins.txt.j2
+    dest: /opt/jenkins_plugins.txt
+    mode: "0644"
+
+- name: Install required plugins offline
+  ansible.builtin.command: >
+    java -jar /usr/share/jenkins/jenkins-plugin-manager.jar
+    --war /usr/share/jenkins/jenkins.war
+    --plugin-file /opt/jenkins_plugins.txt
+    --plugin-download-directory {{ jenkins_controller_home }}/plugins
+  args:
+    creates: "{{ jenkins_controller_home }}/plugins/{{ jenkins_controller_plugins[0] }}.jpi"
+  notify: restart jenkins
+
+- name: Ensure Jenkins service enabled and started
+  ansible.builtin.service:
+    name: jenkins
+    state: started
+    enabled: true

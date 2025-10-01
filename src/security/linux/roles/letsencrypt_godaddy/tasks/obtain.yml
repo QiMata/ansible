@@ -1,0 +1,30 @@
+---
+- name: Fail if domains are not set
+  ansible.builtin.fail:
+    msg: "letsencrypt_godaddy_cert_domains must contain at least one domain"
+  when: letsencrypt_godaddy_cert_domains | length == 0
+
+- name: Set ACME CA flag
+  ansible.builtin.set_fact:
+    acme_ca_flag: "{{ '--staging' if letsencrypt_godaddy_use_staging else '' }}"
+
+- name: Issue or renew certificate
+  ansible.builtin.shell: |
+    export GD_Key="{{ letsencrypt_godaddy_api_key }}";
+    export GD_Secret="{{ letsencrypt_godaddy_api_secret }}";
+    "{{ letsencrypt_godaddy_acme_sh_install_dir }}/acme.sh" --issue \
+      --dns dns_gd \
+      {% for domain in letsencrypt_godaddy_cert_domains %}-d {{ domain }} {% endfor %} \
+      --dnssleep {{ letsencrypt_godaddy_propagation_wait }} \
+      {{ acme_ca_flag }} \
+      {% if letsencrypt_godaddy_account_email %}--accountemail "{{ letsencrypt_godaddy_account_email }}"{% endif %} \
+      {% if letsencrypt_godaddy_force_renew %}--force{% endif %} \
+      --home "{{ letsencrypt_godaddy_acme_sh_install_dir }}" \
+      --config-home "{{ letsencrypt_godaddy_acme_sh_install_dir }}"
+  environment:
+    GD_Key: "{{ letsencrypt_godaddy_api_key }}"
+    GD_Secret: "{{ letsencrypt_godaddy_api_secret }}"
+  register: acme_issue
+  changed_when: "'Cert success' in acme_issue.stdout or 'Cert success' in acme_issue.stderr"
+  no_log: true
+  become: true

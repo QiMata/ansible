@@ -1,0 +1,48 @@
+---
+
+- name: Install Patroni via pip
+  ansible.builtin.pip:
+    name: "patroni[etcd]"
+    state: present
+  become: true
+
+- name: Template Patroni configuration
+  ansible.builtin.template:
+    src: patroni.yml.j2
+    dest: /etc/patroni.yml
+    owner: postgres
+    group: postgres
+    mode: '0644'
+  notify: Restart Patroni
+  become: true
+
+- name: Create systemd unit for Patroni
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/patroni.service
+    content: |
+      [Unit]
+      Description=Patroni PostgreSQL HA Manager
+      After=network.target
+      [Service]
+      User=postgres
+      ExecStart=/usr/local/bin/patroni /etc/patroni.yml
+      Restart=on-failure
+      [Install]
+      WantedBy=multi-user.target
+    mode: '0644'
+  become: true
+  notify: Restart Patroni
+
+- name: Disable standard PostgreSQL service
+  ansible.builtin.service:
+    name: "{{ postgresql_service_name }}"
+    state: stopped
+    enabled: false
+  become: true
+
+- name: Enable and start Patroni
+  ansible.builtin.service:
+    name: patroni
+    state: started
+    enabled: true
+  become: true

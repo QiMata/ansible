@@ -1,0 +1,14 @@
+---
+galaxy_info:
+  role_name: elasticsearch_install
+  namespace: data_systems
+  author: Example Inc.
+  description: Install Elasticsearch packages
+  license: MIT
+  min_ansible_version: "2.13"
+  platforms:
+    - name: Debian
+      versions: [bullseye, bookworm]
+    - name: Ubuntu
+      versions: [focal, jammy]
+dependencies: []

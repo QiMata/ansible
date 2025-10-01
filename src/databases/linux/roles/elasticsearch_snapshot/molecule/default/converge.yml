@@ -1,0 +1,14 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    elasticsearch_snapshot_use_slm: false
+    es_snapshot_repo_name: testrepo
+    es_snapshot_repo_type: fs
+    es_snapshot_repo_settings:
+      location: /tmp/es_snapshots
+      compress: true
+  roles:
+    - role: elasticsearch_cluster
+    - role: elasticsearch_snapshot

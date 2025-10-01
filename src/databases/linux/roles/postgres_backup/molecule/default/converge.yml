@@ -1,0 +1,26 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    postgres_backup_db_name: testdb
+    postgres_backup_db_user: postgres
+  tasks:
+    - name: Install PostgreSQL server
+      ansible.builtin.apt:
+        name: postgresql
+        state: present
+        update_cache: true
+
+    - name: Ensure database exists
+      become_user: postgres
+      become: true
+      community.postgresql.postgresql_db:
+        name: "{{ postgres_backup_db_name }}"
+      failed_when: false
+
+  roles:
+    - role: postgres_backup
+      postgres_backup_db_name: "{{ postgres_backup_db_name }}"
+      postgres_backup_db_user: "{{ postgres_backup_db_user }}"
+      postgres_backup_backup_dir: /var/backups/postgres

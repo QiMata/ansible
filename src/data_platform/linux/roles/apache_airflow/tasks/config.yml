@@ -1,0 +1,33 @@
+---
+- name: Create Airflow home and subdirs
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ apache_airflow_user }}"
+    group: "{{ apache_airflow_group }}"
+    mode: "0755"
+  loop:
+    - "{{ apache_airflow_home }}"
+    - "{{ apache_airflow_home }}/dags"
+    - "{{ apache_airflow_home }}/logs"
+
+- name: Deploy airflow.cfg
+  ansible.builtin.template:
+    src: airflow.cfg.j2
+    dest: "{{ apache_airflow_home }}/airflow.cfg"
+    owner: "{{ apache_airflow_user }}"
+    group: "{{ apache_airflow_group }}"
+    mode: "0600"
+  notify:
+    - restart airflow-webserver
+    - restart airflow-scheduler
+    - restart airflow-worker
+
+- name: Deploy environment file for systemd
+  ansible.builtin.template:
+    src: airflow.env.j2
+    dest: /etc/default/airflow
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload systemd

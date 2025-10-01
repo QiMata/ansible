@@ -1,0 +1,37 @@
+global
+{% for line in haproxy_global_vars %}
+    {{ line }}
+{% endfor %}
+    maxconn 2048
+    stats socket /run/haproxy/admin.sock mode 660 level admin expose-fd listeners
+    pidfile /run/haproxy.pid
+
+defaults
+{% for line in haproxy_defaults_vars %}
+    {{ line }}
+{% endfor %}
+
+{% if haproxy_stats_enable %}
+listen stats
+    bind {{ haproxy_stats_bind_address }}:{{ haproxy_stats_port }}
+    mode http
+    stats enable
+    stats uri /haproxy?stats
+    stats refresh 10s
+    stats auth {{ haproxy_stats_user }}:{{ haproxy_stats_password }}
+{% endif %}
+
+frontend {{ haproxy_frontend_name }}
+    bind {{ haproxy_frontend_bind_address }}:{{ haproxy_frontend_port }}{% if haproxy_ssl_certificate %} ssl crt {{ haproxy_ssl_certificate }}{% endif %}
+    mode {{ haproxy_frontend_mode }}
+    default_backend {{ haproxy_backend_name }}
+
+backend {{ haproxy_backend_name }}
+    mode {{ haproxy_backend_mode }}
+    balance {{ haproxy_backend_balance_method }}
+{% if haproxy_backend_httpchk %}
+    option httpchk {{ haproxy_backend_httpchk }}
+{% endif %}
+{% for srv in haproxy_backend_servers %}
+    server {{ srv.name }} {{ srv.address }} check
+{% endfor %}

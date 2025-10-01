@@ -1,0 +1,27 @@
+- name: Ensure DNSSEC keys directory exists
+  ansible.builtin.file:
+    path: /etc/bind/keys
+    state: directory
+    owner: bind
+    group: bind
+    mode: '0750'
+
+- name: Generate DNSSEC keys
+  ansible.builtin.command: >
+    dnssec-keygen -a RSASHA256 -b 2048 -f KSK
+    -K /etc/bind/keys {{ item.name }}
+  args:
+    creates: "/etc/bind/keys/K{{ item.name }}.*.key"
+  loop: "{{ bind9_zones }}"
+  when: item.dnssec
+
+- name: Include keys in BIND config
+  ansible.builtin.template:
+    src: key.conf.j2
+    dest: "/etc/bind/keys/{{ item.name }}.key"
+    owner: root
+    group: bind
+    mode: '0644'
+  loop: "{{ bind9_zones }}"
+  when: item.dynamic_updates
+  notify: Reload BIND9

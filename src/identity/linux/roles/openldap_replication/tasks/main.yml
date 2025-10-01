@@ -1,0 +1,40 @@
+---
+- name: Fail if replication disabled
+  ansible.builtin.fail:
+    msg: "Replication role invoked but ldap_replication is false"
+  when: not ldap_replication
+
+- name: Set olcServerID
+  community.general.ldap_attrs:
+    dn: "cn=config"
+    attributes:
+      olcServerID: "{{ ansible_play_hosts_all.index(inventory_hostname) + 1 }} {{ inventory_hostname }}"
+    state: present
+    server_uri: "ldapi:///"
+  notify: restart slapd
+
+- name: Enable syncprov overlay
+  community.general.ldap_entry:
+    dn: "olcOverlay=syncprov,olcDatabase={1}mdb,cn=config"
+    objectClass:
+      - olcOverlayConfig
+      - olcSyncProvConfig
+    attributes:
+      olcOverlay: syncprov
+      olcSpCheckpoint: 100 10
+      olcSpSessionlog: 1000
+    state: present
+    server_uri: "ldapi:///"
+  notify: restart slapd
+
+- name: Configure syncrepl for peers
+  ansible.builtin.template:
+    src: syncrepl.ldif.j2
+    dest: /tmp/syncrepl.ldif
+    mode: '0600'
+  run_once: false
+
+- name: Apply syncrepl config
+  ansible.builtin.command: ldapmodify -Y EXTERNAL -H ldapi:/// -f /tmp/syncrepl.ldif
+  changed_when: false
+  notify: restart slapd

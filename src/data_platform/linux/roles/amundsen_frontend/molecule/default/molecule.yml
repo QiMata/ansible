@@ -1,0 +1,15 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: amundsen-frontend-debian
+    image: debian:12
+    privileged: true
+provisioner:
+  name: ansible
+  playbooks:
+    converge: converge.yml
+verifier:
+  name: testinfra

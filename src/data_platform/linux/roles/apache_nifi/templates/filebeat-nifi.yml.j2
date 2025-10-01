@@ -1,0 +1,10 @@
+filebeat.inputs:
+  - type: log
+    paths:
+      - "{{ apache_nifi_home }}/logs/*.log"
+    exclude_files: ['\.gz$']
+    fields:
+      service: nifi
+
+output.logstash:
+  hosts: ["logstash:5044"]

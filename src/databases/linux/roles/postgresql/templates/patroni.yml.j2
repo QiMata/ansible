@@ -1,0 +1,31 @@
+scope: {{ postgresql_patroni_cluster_name }}
+name: {{ postgresql_patroni_node_name }}
+
+etcd:
+  hosts: {{ postgresql_patroni_etcd_host }}
+
+restapi:
+  listen: 127.0.0.1:8008
+  authentication:
+    username: {{ postgresql_replication_user }}
+    password: {{ postgresql_replication_password }}
+
+postgresql:
+  bin_dir: /usr/lib/postgresql/{{ postgresql_version }}/bin
+  data_dir: {{ postgresql_data_dir }}
+  listen: 0.0.0.0:{{ postgresql_port }}
+  parameters:
+    max_connections: {{ postgresql_max_connections }}
+    shared_buffers: {{ postgresql_shared_buffers }}
+    wal_level: replica
+    hot_standby: on
+    max_wal_senders: {{ postgresql_max_wal_senders | default(3) }}
+  authentication:
+    replication:
+      username: {{ postgresql_replication_user }}
+      password: {{ postgresql_replication_password }}
+    superuser:
+      username: postgres
+      password: {{ postgresql_admin_password }}
+
+tags: []

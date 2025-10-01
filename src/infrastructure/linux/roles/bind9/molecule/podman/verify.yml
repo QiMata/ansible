@@ -1,0 +1,20 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check bind9 package installed
+      ansible.builtin.package:
+        name: bind9
+        state: present
+      check_mode: true
+
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Assert bind9 service running
+      ansible.builtin.assert:
+        that: ansible_facts.services['bind9.service'].state == 'running'
+        fail_msg: "bind9 service is not running"
+        quiet: true
+      when: '"bind9.service" in ansible_facts.services'

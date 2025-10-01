@@ -1,0 +1,55 @@
+---
+- name: Ensure amundsen user exists
+  ansible.builtin.user:
+    name: amundsen
+    shell: /usr/sbin/nologin
+  become: true
+
+- name: Create frontend directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: amundsen
+    group: amundsen
+    mode: "0755"
+  loop:
+    - "{{ amundsen_frontend_virtualenv | dirname }}"
+  become: true
+
+- name: Create virtualenv for frontend
+  ansible.builtin.command: python3 -m venv "{{ amundsen_frontend_virtualenv }}"
+  args:
+    creates: "{{ amundsen_frontend_virtualenv }}/bin/activate"
+  become: true
+
+- name: Install frontend service
+  ansible.builtin.pip:
+    virtualenv: "{{ amundsen_frontend_virtualenv }}"
+    name: "amundsen-frontend=={{ amundsen_frontend_version }}"
+    state: present
+  become: true
+
+- name: Deploy frontend config
+  ansible.builtin.template:
+    src: frontend_config.py.j2
+    dest: "{{ amundsen_frontend_virtualenv }}/config.py"
+    owner: amundsen
+    group: amundsen
+    mode: "0644"
+  become: true
+  notify: Restart Frontend Service
+
+- name: Deploy systemd unit
+  ansible.builtin.template:
+    src: frontend_gunicorn.service.j2
+    dest: /etc/systemd/system/amundsen-frontend.service
+    mode: "0644"
+  become: true
+  notify: Reload Systemd
+
+- name: Enable and start service
+  ansible.builtin.systemd:
+    name: amundsen-frontend
+    enabled: true
+    state: started
+  become: true

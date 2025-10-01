@@ -1,0 +1,18 @@
+[Unit]
+Description=Amundsen Metadata Service
+After=network.target
+
+[Service]
+User=amundsen
+Group=amundsen
+Environment=METADATA_SVC_CONFIG_MODULE_CLASS={{ amundsen_metadata_config_class }}
+Environment=NEO4J_HOST={{ amundsen_metadata_neo4j_host }}
+Environment=NEO4J_PORT={{ amundsen_metadata_neo4j_port }}
+Environment=NEO4J_USER={{ amundsen_metadata_neo4j_user }}
+Environment=NEO4J_PASSWORD={{ amundsen_metadata_neo4j_password }}
+ExecStart={{ amundsen_metadata_virtualenv }}/bin/gunicorn --workers {{ amundsen_metadata_gunicorn_workers }} --bind {{ amundsen_metadata_bind_host }}:{{ amundsen_metadata_port }} metadata_service.metadata_wsgi:app
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

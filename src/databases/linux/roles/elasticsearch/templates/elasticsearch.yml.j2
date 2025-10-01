@@ -1,0 +1,16 @@
+cluster.name: "{{ elasticsearch_cluster_name }}"
+node.name: "{{ inventory_hostname }}"
+node.roles: {{ elasticsearch_node_roles | to_json }}
+
+network.host: "{{ elasticsearch_network_host }}"
+http.port: 9200
+
+{% if groups['elasticsearch_master'] | default([]) | length > 1 %}
+discovery.seed_hosts: {{ groups['elasticsearch_master'] | map('extract', hostvars, 'ansible_default_ipv4.address') | list }}
+cluster.initial_master_nodes: {{ groups['elasticsearch_master'] | list }}
+{% else %}
+discovery.type: single-node
+{% endif %}
+
+path.data: /var/lib/elasticsearch
+path.logs: /var/log/elasticsearch

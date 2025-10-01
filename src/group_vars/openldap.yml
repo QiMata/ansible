@@ -11,7 +11,7 @@ ufw_allow_ports: [389, 636]
 # Allow specific interfaces
 ufw_allow_interfaces: ['tcp']
 
-# defaults file for open_ldap_setup
+# defaults file for openldap_server
 openldap_server_domain: qimata.net
 
 # This is the password for admin for openldap
@@ -52,4 +52,4 @@ openldap_olcaccess:
 _basedn: "dc={{ openldap_server_domain.split('.')[0] }},dc={{ openldap_server_domain.split('.')[1] }}"
 
 
-ansible_become_pass: Deathcloud12Darkst12
+ansible_become_pass: "{{ vault_ansible_become_pass_common }}"

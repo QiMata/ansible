@@ -1,0 +1,6 @@
+[Unit]
+Description=PostgreSQL database backup service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/backup_postgres.sh

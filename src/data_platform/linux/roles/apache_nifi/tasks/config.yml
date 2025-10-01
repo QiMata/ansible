@@ -1,0 +1,60 @@
+---
+- name: Deploy nifi.properties
+  become: true
+  ansible.builtin.template:
+    src: nifi.properties.j2
+    dest: "{{ apache_nifi_conf_dir }}/nifi.properties"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0640'
+  notify: restart nifi
+  tags: [nifi, config]
+
+- name: Deploy bootstrap.conf
+  become: true
+  ansible.builtin.template:
+    src: bootstrap.conf.j2
+    dest: "{{ apache_nifi_conf_dir }}/bootstrap.conf"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0640'
+  notify: restart nifi
+  tags: [nifi, config]
+
+- name: Deploy login-identity-providers.xml
+  become: true
+  ansible.builtin.template:
+    src: login-identity-providers.xml.j2
+    dest: "{{ apache_nifi_conf_dir }}/login-identity-providers.xml"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0640'
+  notify: restart nifi
+  tags: [nifi, config]
+
+- name: Deploy authorizers.xml
+  become: true
+  ansible.builtin.template:
+    src: authorizers.xml.j2
+    dest: "{{ apache_nifi_conf_dir }}/authorizers.xml"
+    owner: "{{ apache_nifi_user }}"
+    group: "{{ apache_nifi_group }}"
+    mode: '0640'
+  notify: restart nifi
+  tags: [nifi, config]
+
+- name: Install Filebeat for ELK (optional)
+  ansible.builtin.include_role:
+    name: elastic.filebeat
+  when: apache_nifi_elk_integration
+  tags: [nifi, elk]
+
+- name: Configure Filebeat for NiFi logs (optional)
+  become: true
+  ansible.builtin.template:
+    src: filebeat-nifi.yml.j2
+    dest: /etc/filebeat/conf.d/nifi.yml
+    mode: '0644'
+  when: apache_nifi_elk_integration
+  notify: restart filebeat
+  tags: [nifi, elk]

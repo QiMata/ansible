@@ -1,0 +1,8 @@
+---
+# pfSense role defaults
+pfsense_interfaces: []
+pfsense_gateways: []
+pfsense_default_gateway: ''
+pfsense_aliases: []
+pfsense_rules: []
+pfsense_enable_ssh: true

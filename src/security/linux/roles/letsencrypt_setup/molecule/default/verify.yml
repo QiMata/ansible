@@ -1,0 +1,21 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check certbot binary
+      ansible.builtin.command: certbot --version
+      register: certbot_ver
+      changed_when: false
+      failed_when: certbot_ver.rc != 0
+
+    - name: Check renewal cron
+      ansible.builtin.cron:
+        name: "Certbot auto renewal"
+        state: present
+        user: root
+      register: cron_job
+
+    - name: Assert cron present
+      ansible.builtin.assert:
+        that: cron_job.found

@@ -1,0 +1,14 @@
+---
+galaxy_info:
+  role_name: neo4j
+  namespace: data_systems
+  author: jared_rhodes
+  description: Install & configure Neo4j (single-node or cluster) on Debian-based systems
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Debian
+      versions: ["bullseye", "bookworm"]
+    - name: Ubuntu
+      versions: ["focal", "jammy"]
+dependencies: []

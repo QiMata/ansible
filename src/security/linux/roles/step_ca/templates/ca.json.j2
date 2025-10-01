@@ -1,0 +1,28 @@
+{
+  "address": "{{ step_ca_listen_address }}",
+  "dnsNames": {{ step_ca_dns_names | to_json }},
+  {% if step_ca_use_vault_ra %}
+  "authority": {
+    "type": "vaultCAS",
+    "certificateAuthority": "{{ step_ca_vault_address }}",
+    "certificateAuthorityFingerprint": "",
+    "provisioners": [],
+    "config": {
+      "pkiMountPath": "{{ step_ca_vault_pki_mount }}"
+    },
+    "authType": "approle",
+    "authOptions": {
+      "roleId": "{{ step_ca_vault_role_id }}",
+      "secretId": "{{ step_ca_vault_secret_id }}",
+      "secretIdFile": "",
+      "namespace": ""
+    }
+  },
+  {% else %}
+  "authority": {},
+  {% endif %}
+  "db": {
+    "type": "{{ step_ca_db_backend }}"{% if step_ca_db_backend != 'badger' %},
+    "dataSource": "{{ step_ca_db_username }}:{{ step_ca_db_password }}@tcp({{ step_ca_db_host }}:3306)/{{ step_ca_db_name }}"{% endif %}
+  }
+}

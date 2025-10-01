@@ -9,20 +9,20 @@
     keycloak_db_password: changeme
   tasks:
     - name: Install PostgreSQL server
-      apt:
+      ansible.builtin.apt:
         name: postgresql
         state: present
         update_cache: true
 
     - name: Ensure postgres is running
-      service:
+      ansible.builtin.service:
         name: postgresql
         state: started
         enabled: true
 
   roles:
     - role: postgresql_client
-      keycloak_db_name: "{{ keycloak_db_name }}"
-      keycloak_db_host: "{{ keycloak_db_host }}"
-      keycloak_db_user: "{{ keycloak_db_user }}"
-      keycloak_db_password: "{{ keycloak_db_password }}"
+      postgresql_client_keycloak_db_name: "{{ keycloak_db_name }}"
+      postgresql_client_keycloak_db_host: "{{ keycloak_db_host }}"
+      postgresql_client_keycloak_db_user: "{{ keycloak_db_user }}"
+      postgresql_client_keycloak_db_password: "{{ keycloak_db_password }}"

@@ -1,0 +1,6 @@
+---
+# Handler to restart GLB service when needed
+- name: Restart GLB
+  ansible.builtin.service:
+    name: glb
+    state: restarted

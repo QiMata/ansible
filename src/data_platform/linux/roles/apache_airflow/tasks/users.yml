@@ -1,0 +1,14 @@
+---
+- name: Ensure airflow group exists
+  ansible.builtin.group:
+    name: "{{ apache_airflow_group }}"
+    state: present
+
+- name: Ensure airflow user exists
+  ansible.builtin.user:
+    name: "{{ apache_airflow_user }}"
+    group: "{{ apache_airflow_group }}"
+    home: "{{ apache_airflow_home }}"
+    create_home: true
+    shell: /usr/sbin/nologin
+    system: true

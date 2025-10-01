@@ -1,0 +1,27 @@
+---
+- name: Install required packages
+  ansible.builtin.apt:
+    name: ['mariadb-client', 'gzip']
+    state: present
+
+- name: Copy MariaDB backup script
+  ansible.builtin.template:
+    src: mariadb-backup.sh.j2
+    dest: "{{ mariadb_backups_backup_script_path }}"
+    owner: root
+    group: root
+    mode: '0700'
+
+- name: Copy systemd service file
+  ansible.builtin.copy:
+    src: mariadb-backup.service
+    dest: "{{ mariadb_backups_service_file_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Enable and start service
+  ansible.builtin.systemd:
+    name: mariadb-backup
+    enabled: true
+    state: started

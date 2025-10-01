@@ -1,0 +1,5 @@
+---
+# defaults file for glusterfs_setup
+glusterfs_setup_volume_name: "gv0"
+glusterfs_setup_brick_dir: "/glusterfs/brick1/gv0"
+glusterfs_setup_nodes: ["server1", "server2"]

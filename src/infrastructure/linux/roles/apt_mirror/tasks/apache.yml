@@ -1,0 +1,32 @@
+---
+- name: Ensure apache modules enabled
+  community.general.apache2_module:
+    name: "{{ item }}"
+    state: present
+  loop:
+  - alias
+  - autoindex
+  - headers
+  - proxy
+  - proxy_http
+
+- name: Template apache config for apt-mirror
+  ansible.builtin.template:
+    src: apache-apt-mirror.conf.j2
+    dest: /etc/apache2/conf-available/apt-mirror.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart apache
+
+- name: Enable configuration
+  ansible.builtin.command: a2enconf apt-mirror
+  args:
+    creates: /etc/apache2/conf-enabled/apt-mirror.conf
+  notify: restart apache
+
+- name: Ensure apache started / enabled
+  ansible.builtin.service:
+    name: apache2
+    state: started
+    enabled: true

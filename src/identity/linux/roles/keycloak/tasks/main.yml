@@ -1,0 +1,53 @@
+---
+- name: Ensure required apt packages are present
+  ansible.builtin.apt:
+    name: "{{ keycloak_packages }}"
+    state: present
+    update_cache: true
+
+- name: Create keycloak system user
+  ansible.builtin.user:
+    name: "{{ keycloak_user }}"
+    system: true
+    home: "{{ keycloak_home }}"
+    shell: /usr/sbin/nologin
+
+- name: Download Keycloak archive
+  ansible.builtin.get_url:
+    url: "{{ keycloak_download_url }}"
+    dest: "/tmp/keycloak-{{ keycloak_version }}.tar.gz"
+    mode: '0644'
+    force: false
+
+- name: Unpack Keycloak to install dir
+  ansible.builtin.unarchive:
+    src: "/tmp/keycloak-{{ keycloak_version }}.tar.gz"
+    dest: "{{ keycloak_install_dir }}"
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    remote_src: true
+    creates: "{{ keycloak_install_dir }}/bin/kc.sh"
+
+- name: Deploy systemd unit file
+  ansible.builtin.template:
+    src: keycloak.service.j2
+    dest: /etc/systemd/system/keycloak.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload systemd
+
+- name: Deploy Keycloak configuration
+  ansible.builtin.template:
+    src: keycloak.conf.j2
+    dest: "{{ keycloak_install_dir }}/conf/keycloak.conf"
+    owner: "{{ keycloak_user }}"
+    group: "{{ keycloak_user }}"
+    mode: '0640'
+  notify: Restart Keycloak
+
+- name: Ensure Keycloak is enabled and started
+  ansible.builtin.systemd:
+    name: keycloak
+    enabled: true
+    state: started

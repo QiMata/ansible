@@ -12,3 +12,5 @@ collections:
     version: ">=2.5.0"
   - name: community.mysql
     version: ">=3.0.0"
+  - name: pfsensible.core
+    version: ">=1.4.0"

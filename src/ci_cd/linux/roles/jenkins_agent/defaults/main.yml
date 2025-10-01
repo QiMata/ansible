@@ -1,0 +1,5 @@
+---
+jenkins_agent_user: jenkins
+jenkins_agent_home: "/home/{{ jenkins_agent_user }}"
+jenkins_agent_executors: 2
+jenkins_agent_labels: "linux"

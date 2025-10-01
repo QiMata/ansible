@@ -1,0 +1,13 @@
+---
+- name: Set log level
+  community.general.ldap_attrs:
+    dn: "cn=config"
+    attributes:
+      olcLogLevel: "{{ openldap_server_log_level }}"
+    state: present
+    server_uri: "ldapi:///"
+  notify: restart slapd
+
+- name: Configure TLS (if enabled)
+  ansible.builtin.include_tasks: tls.yml
+  when: openldap_server_use_tls

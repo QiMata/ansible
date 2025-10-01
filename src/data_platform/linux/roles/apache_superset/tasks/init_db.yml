@@ -1,0 +1,54 @@
+---
+- name: Run database migrations
+  ansible.builtin.command: "{{ apache_superset_venv_dir }}/bin/superset db upgrade"
+  environment:
+    FLASK_APP: superset
+    SUPERSET_CONFIG_PATH: "{{ apache_superset_config_path }}"
+  changed_when: false
+  become_user: "{{ apache_superset_user }}"
+  become: true
+
+- name: Create admin user
+  ansible.builtin.command: >
+    {{ apache_superset_venv_dir }}/bin/superset fab create-admin
+    --username "{{ apache_superset_admin_username }}"
+    --firstname "{{ apache_superset_admin_firstname }}"
+    --lastname "{{ apache_superset_admin_lastname }}"
+    --email "{{ apache_superset_admin_email }}"
+    --password "{{ apache_superset_admin_password }}"
+  args:
+    creates: "{{ apache_superset_marker_file }}"
+  environment:
+    FLASK_APP: superset
+    SUPERSET_CONFIG_PATH: "{{ apache_superset_config_path }}"
+  become_user: "{{ apache_superset_user }}"
+  become: true
+
+- name: Touch marker file after admin creation
+  ansible.builtin.file:
+    path: "{{ apache_superset_marker_file }}"
+    state: touch
+    owner: "{{ apache_superset_user }}"
+    group: "{{ apache_superset_group }}"
+    mode: "0644"
+  when: not (apache_superset_marker_file is exists)
+  become: true
+
+- name: Load example data
+  ansible.builtin.command: "{{ apache_superset_venv_dir }}/bin/superset load_examples"
+  environment:
+    FLASK_APP: superset
+    SUPERSET_CONFIG_PATH: "{{ apache_superset_config_path }}"
+  when: apache_superset_load_examples | bool
+  become_user: "{{ apache_superset_user }}"
+  become: true
+  changed_when: false
+
+- name: Initialize roles and permissions
+  ansible.builtin.command: "{{ apache_superset_venv_dir }}/bin/superset init"
+  environment:
+    FLASK_APP: superset
+    SUPERSET_CONFIG_PATH: "{{ apache_superset_config_path }}"
+  changed_when: false
+  become_user: "{{ apache_superset_user }}"
+  become: true

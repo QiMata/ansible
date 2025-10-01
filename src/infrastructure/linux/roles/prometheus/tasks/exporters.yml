@@ -1,0 +1,8 @@
+---
+- name: Ensure Node Exporter service is enabled and started
+  ansible.builtin.service:
+    name: prometheus-node-exporter
+    state: started
+    enabled: true
+  become: true
+  tags: exporters

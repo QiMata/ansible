@@ -1,0 +1,22 @@
+- name: Ensure step user exists
+  ansible.builtin.user:
+    name: "{{ step_ca_user }}"
+    group: "{{ step_ca_group }}"
+    shell: /usr/sbin/nologin
+    create_home: true
+
+- name: Initialize step-ca
+  become: true
+  become_user: "{{ step_ca_user }}"
+  ansible.builtin.command: >
+    step ca init
+    --non-interactive
+    --name "Internal CA"
+    --dns "{{ step_ca_dns_names | join(',') }}"
+    --address "{{ step_ca_listen_address }}"
+    --provisioner "admin"
+    --password-file "{{ step_ca_home }}/ca-pass.txt"
+  args:
+    creates: "{{ step_ca_config_path }}/ca.json"
+  when: not step_ca_use_vault_ra | bool
+  notify: Restart step-ca

@@ -1,0 +1,33 @@
+---
+- name: Wait for Vault API to respond
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ vault_port }}/v1/sys/health"
+    method: GET
+    status_code: 200,429,501
+    return_content: false
+  register: _vault_health
+  retries: 30
+  delay: 2
+  until: _vault_health is succeeded
+
+- name: Enable PKI secrets engine
+  ansible.builtin.command: >
+    vault secrets enable -path=pki pki
+  register: _enable_pki
+  changed_when: "'successfully enabled' in _enable_pki.stdout"
+  environment:
+    VAULT_ADDR: "http://127.0.0.1:{{ vault_port }}"
+  no_log: true
+
+- name: Tune PKI max TTL
+  ansible.builtin.command: >
+    vault secrets tune -max-lease-ttl={{ vault_pki_max_ttl }} pki
+  register: _tune_pki
+  changed_when: "'tuned' in _tune_pki.stdout"
+  environment:
+    VAULT_ADDR: "http://127.0.0.1:{{ vault_port }}"
+  no_log: true
+
+- name: Generate or configure CA
+  ansible.builtin.include_tasks: >
+    "pki_{{ vault_pki_mode }}.yml"

@@ -1,0 +1,6 @@
+---
+- name: Install OpenLDAP packages
+  ansible.builtin.import_tasks: install.yml
+
+- name: Configure OpenLDAP
+  ansible.builtin.import_tasks: config.yml

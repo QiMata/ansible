@@ -1,0 +1,9 @@
+---
+- name: Template JVM options
+  ansible.builtin.template:
+    src: jvm.options.j2
+    dest: /etc/elasticsearch/jvm.options.d/heap.options
+    owner: root
+    group: elasticsearch
+    mode: '0644'
+  notify: restart elasticsearch

@@ -1,0 +1,11 @@
+---
+- name: Reload Systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+  become: true
+
+- name: Restart Search Service
+  ansible.builtin.service:
+    name: amundsen-search
+    state: restarted
+  become: true

@@ -1,0 +1,11 @@
+---
+openldap_server_domain: "example.com"
+openldap_server_base_dn: "dc=example,dc=com"
+openldap_server_organization: "Example Corp"
+openldap_server_admin_password: "{{ vault_ldap_admin_password }}"
+openldap_server_use_tls: false
+openldap_server_tls_cert: "/etc/ldap/ssl/ldap.crt"
+openldap_server_tls_key: "/etc/ldap/ssl/ldap.key"
+openldap_server_tls_ca: "/etc/ldap/ssl/ca.crt"
+openldap_server_log_level: 256        # stats
+openldap_server_extra_schema: []

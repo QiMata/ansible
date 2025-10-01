@@ -1,0 +1,44 @@
+---
+- name: Load LDAP data file
+  ansible.builtin.include_vars:
+    file: "{{ ldap_data_file }}"
+    name: ldap_data
+
+- name: Ensure organizational units
+  community.general.ldap_entry:
+    dn: "ou={{ item.ou }},{{ ldap_data.base_dn }}"
+    objectClass:
+      - top
+      - organizationalUnit
+    attributes:
+      ou: "{{ item.ou }}"
+      description: "{{ item.name | default(item.ou) }}"
+    state: present
+    server_uri: "ldapi:///"
+  loop: "{{ ldap_data.organizations }}"
+
+- name: Ensure user entries
+  community.general.ldap_entry:
+    dn: "uid={{ item.uid }},ou=People,{{ ldap_data.base_dn }}"
+    objectClass:
+      - top
+      - inetOrgPerson
+      - posixAccount
+      - organizationalPerson
+      - person
+    attributes:
+      cn: "{{ item.givenName }} {{ item.sn }}"
+      sn: "{{ item.sn }}"
+      givenName: "{{ item.givenName }}"
+      uid: "{{ item.uid }}"
+      uidNumber: "{{ item.uidNumber }}"
+      gidNumber: "{{ item.gidNumber }}"
+      homeDirectory: "/home/{{ item.uid }}"
+      mail: "{{ item.mail }}"
+      userPassword: "{{ item.password }}"
+    state: present
+    bind_dn: "cn=admin,{{ ldap_data.base_dn }}"
+    bind_pw: "{{ ldap_admin_password }}"
+    server_uri: "ldap://localhost"
+  loop: "{{ ldap_data.users }}"
+  when: ldap_data.users is defined

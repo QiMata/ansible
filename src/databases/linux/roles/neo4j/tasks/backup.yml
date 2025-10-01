@@ -1,0 +1,18 @@
+---
+- name: Ensure backup directory exists
+  ansible.builtin.file:
+    path: "{{ neo4j_backup_dir }}"
+    state: directory
+    owner: neo4j
+    group: neo4j
+    mode: "0750"
+  when: neo4j_backup_enabled
+
+- name: Configure backup cron
+  ansible.builtin.cron:
+    name: "Neo4j backup"
+    minute: "0"
+    hour: "{{ neo4j_backup_hour }}"
+    user: neo4j
+    job: "neo4j-admin database backup --from={{ neo4j_backup_listen_address }} --to-path={{ neo4j_backup_dir }} neo4j >> /var/log/neo4j/backup.log 2>&1"
+  when: neo4j_backup_enabled and neo4j_backup_cron_enabled

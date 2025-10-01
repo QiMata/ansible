@@ -1,0 +1,7 @@
+---
+- name: Run clean.sh after sync
+  ansible.builtin.shell: "{{ apt_mirror_base_path }}/var/clean.sh"
+  args:
+    executable: /bin/bash
+  changed_when: false
+  when: apt_mirror_prune | bool

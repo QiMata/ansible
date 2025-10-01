@@ -1,0 +1,6 @@
+---
+- name: Ensure external database configuration
+  ansible.builtin.debug:
+    msg: "HA setup requires external DB - ensure database is available"
+
+# Note: DB setup managed externally; provide connection parameters only

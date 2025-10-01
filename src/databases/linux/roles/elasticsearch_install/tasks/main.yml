@@ -1,0 +1,5 @@
+---
+- name: Include Elasticsearch install tasks
+  ansible.builtin.import_tasks: install.yml
+- name: Include Elasticsearch service tasks
+  ansible.builtin.import_tasks: service.yml

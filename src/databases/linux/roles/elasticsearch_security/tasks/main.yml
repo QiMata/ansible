@@ -1,0 +1,7 @@
+---
+- name: Include TLS certificate tasks
+  ansible.builtin.import_tasks: certs.yml
+- name: Include LDAP configuration tasks
+  ansible.builtin.import_tasks: ldap.yml
+- name: Include user configuration tasks
+  ansible.builtin.import_tasks: users.yml

@@ -1,0 +1,21 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check backup script
+      ansible.builtin.stat:
+        path: /usr/local/bin/mariadb-backup.sh
+      register: backup_script
+
+    - name: Assert script exists
+      ansible.builtin.assert:
+        that:
+          - backup_script.stat.exists
+          - backup_script.stat.mode == '0700'
+
+    - name: Check backup file created
+      ansible.builtin.shell: ls /tmp/mariadb_backups/*.sql.gz
+      register: dump
+      changed_when: false
+      failed_when: dump.rc != 0

@@ -1,0 +1,9 @@
+---
+amundsen_frontend_version: "4.0.0"
+amundsen_frontend_bind_host: "0.0.0.0"
+amundsen_frontend_port: 5000
+amundsen_frontend_gunicorn_workers: 4
+amundsen_frontend_virtualenv: "/opt/amundsen/frontend/venv"
+amundsen_frontend_metadata_api_base: "http://localhost:5002"
+amundsen_frontend_search_api_base: "http://localhost:5001"
+amundsen_frontend_config_class: "amundsen_application.config.ProdConfig"

@@ -1,0 +1,42 @@
+---
+- name: Create installation directory
+  ansible.builtin.file:
+    path: "{{ apache_superset_install_dir }}"
+    state: directory
+    owner: "{{ apache_superset_user }}"
+    group: "{{ apache_superset_group }}"
+    mode: "0755"
+
+- name: Create virtualenv
+  ansible.builtin.command: python3 -m venv "{{ apache_superset_venv_dir }}"
+  args:
+    creates: "{{ apache_superset_venv_dir }}/bin/activate"
+  become_user: "{{ apache_superset_user }}"
+  become: true
+
+- name: Upgrade pip and setuptools
+  ansible.builtin.pip:
+    virtualenv: "{{ apache_superset_venv_dir }}"
+    name:
+      - pip
+      - setuptools
+    state: present
+  become_user: "{{ apache_superset_user }}"
+  become: true
+
+- name: Install Superset
+  ansible.builtin.pip:
+    virtualenv: "{{ apache_superset_venv_dir }}"
+    name: "apache-superset=={{ apache_superset_version }}"
+    state: present
+  become_user: "{{ apache_superset_user }}"
+  become: true
+
+- name: Install additional Python packages
+  ansible.builtin.pip:
+    virtualenv: "{{ apache_superset_venv_dir }}"
+    name: "{{ apache_superset_additional_python_packages }}"
+    state: present
+  when: apache_superset_additional_python_packages | length > 0
+  become_user: "{{ apache_superset_user }}"
+  become: true

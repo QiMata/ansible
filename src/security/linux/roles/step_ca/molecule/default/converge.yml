@@ -1,0 +1,10 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    step_ca_bootstrap: true
+    step_ca_dns_names:
+      - localhost
+  roles:
+    - step_ca

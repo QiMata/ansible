@@ -1,0 +1,6 @@
+---
+- name: Reload service
+  ansible.builtin.command: "{{ letsencrypt_godaddy_service_reload_command }}"
+  when: letsencrypt_godaddy_service_reload_command | length > 0
+  changed_when: false
+  become: true

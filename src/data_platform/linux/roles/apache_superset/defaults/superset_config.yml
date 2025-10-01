@@ -1,0 +1,3 @@
+---
+apache_superset_wtf_csrf_enabled: true
+apache_superset_feature_flags: {}

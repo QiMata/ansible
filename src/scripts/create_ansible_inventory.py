@@ -1,15 +1,25 @@
-import psycopg2
 import argparse
 import os
+import shlex
+
+import psycopg2
 
 
-def create_ansible_inventory_server_string(env, cat, ss, app, cont, management_ip, service_ip):
+def create_ansible_inventory_server_string(env, cat, ss, app, cont, management_ip, service_ip, ansible_user=None, become_pass=None):
     inventory_str = f'{cont} ansible_host={management_ip.split("/")[0]} service_ip={service_ip.split("/")[0]} '
     if 'MARIADB_DATABASE' in app:
         inventory_str += f'galera_cluster_bind_address={service_ip.split("/")[0]} galera_cluster_address={service_ip.split("/")[0]} '
-    return inventory_str + 'ansible_become=true ansible_become_method=sudo ansible_user=toothkiller ansible_become_pass=Deathcloud12Darkst12'
 
-def create_ansible_ini_file(db_conn_str, output_directory):
+    inventory_str += 'ansible_become=true ansible_become_method=sudo'
+
+    if ansible_user:
+        inventory_str += f' ansible_user={ansible_user}'
+    if become_pass:
+        inventory_str += f' ansible_become_pass={shlex.quote(str(become_pass))}'
+
+    return inventory_str
+
+def create_ansible_ini_file(db_conn_str, output_directory, ansible_user=None, become_pass=None):
     # Connect to the PostgreSQL database
     conn = psycopg2.connect(db_conn_str)
 
@@ -56,12 +66,25 @@ def create_ansible_ini_file(db_conn_str, output_directory):
         if env not in envs:
             envs[env] = set()
 
-        apps[app_group_name].append(create_ansible_inventory_server_string(env, cat, ss, app, cont, management_ip, service_ip))
+        apps[app_group_name].append(
+            create_ansible_inventory_server_string(
+                env,
+                cat,
+                ss,
+                app,
+                cont,
+                management_ip,
+                service_ip,
+                ansible_user,
+                become_pass,
+            )
+        )
         sss[ss].add(app_group_name)
         cats[cat].add(ss)
         envs[env].add(cat)
 
     # Write to the ini file
+    os.makedirs(output_directory, exist_ok=True)
     for env, cat_set in envs.items():
         with open(os.path.join(output_directory, f'{env}.ini'), 'w') as configfile:
             configfile.write('[all:children]\n')
@@ -103,7 +126,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generate Ansible ini file from PostgreSQL database.')
     parser.add_argument('--db_conn_str', required=True, help='Database connection string.')
     parser.add_argument('--output_directory', required=True, help='Output directory path.')
+    parser.add_argument(
+        '--ansible-user',
+        default=os.environ.get('ANSIBLE_INVENTORY_USER'),
+        help='SSH user for generated inventory entries (can also be set with the ANSIBLE_INVENTORY_USER environment variable).',
+    )
+    parser.add_argument(
+        '--become-pass',
+        default=os.environ.get('ANSIBLE_BECOME_PASS'),
+        help='Privilege escalation password for generated inventory entries (can also be set with the ANSIBLE_BECOME_PASS environment variable).',
+    )
 
     args = parser.parse_args()
 
-    create_ansible_ini_file(args.db_conn_str, args.output_directory)
+    create_ansible_ini_file(args.db_conn_str, args.output_directory, args.ansible_user, args.become_pass)

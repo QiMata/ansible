@@ -1,0 +1,35 @@
+---
+- name: Ensure minio group exists
+  ansible.builtin.group:
+    name: "{{ minio_group }}"
+    state: present
+
+- name: Ensure minio user exists
+  ansible.builtin.user:
+    name: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    home: "{{ minio_base_dir }}"
+    shell: /usr/sbin/nologin
+    system: true
+    create_home: false
+    state: present
+
+- name: Create base and data directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: "0755"
+  loop:
+    - "{{ minio_base_dir }}"
+    - "{{ minio_data_dir }}"
+    - "{{ minio_certs_dir }}"
+
+- name: Download MinIO binary
+  ansible.builtin.get_url:
+    url: "{{ minio_download_url }}"
+    dest: "{{ minio_binary_path }}"
+    mode: "0755"
+    owner: root
+    group: root

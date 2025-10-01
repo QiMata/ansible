@@ -1,0 +1,3 @@
+---
+elasticsearch_install_version: "8.8.0"
+elasticsearch_install_java_install: true

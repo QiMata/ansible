@@ -1,0 +1,5 @@
+---
+- name: Include package tasks
+  ansible.builtin.import_tasks: package.yml
+- name: Include UFW tasks
+  ansible.builtin.import_tasks: ufw.yml

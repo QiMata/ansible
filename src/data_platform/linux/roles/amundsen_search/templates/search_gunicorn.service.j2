@@ -1,0 +1,16 @@
+[Unit]
+Description=Amundsen Search Service
+After=network.target
+
+[Service]
+User=amundsen
+Group=amundsen
+Environment=SEARCH_SVC_CONFIG_MODULE_CLASS={{ amundsen_search_config_class }}
+Environment=ELASTICSEARCH_HOST={{ amundsen_search_es_host }}
+Environment=ELASTICSEARCH_PORT={{ amundsen_search_es_port }}
+ExecStart={{ amundsen_search_virtualenv }}/bin/gunicorn --workers {{ amundsen_search_gunicorn_workers }} --bind {{ amundsen_search_bind_host }}:{{ amundsen_search_port }} search_service.search_wsgi:app
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

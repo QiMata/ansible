@@ -1,0 +1,35 @@
+---
+prometheus_version: ""                # Empty string = use distro’s current version
+prometheus_scrape_interval: 60s
+prometheus_evaluation_interval: 60s
+prometheus_retention_time: 30d
+prometheus_data_dir: /var/lib/prometheus
+
+# List of node exporter targets (host:port). Override in inventory/group_vars.
+prometheus_node_targets:
+  - "localhost:9100"
+
+# Additional scrape_configs in raw YAML (list or dict). Empty by default.
+prometheus_additional_scrape_configs: []
+
+# Alertmanager URLs (if any)
+prometheus_alertmanager_urls: []
+
+# External labels (optional)
+prometheus_external_label_monitor: ''
+prometheus_external_label_replica: ''
+
+# Combined alert rules file and default example rule
+prometheus_alert_rules: |
+  groups:
+    - name: example.rules
+      rules:
+        - alert: InstanceDown
+          expr: up == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            description: "{% raw %}{{ $labels.instance }}{% endraw %} is down for more than 5 minutes."
+
+prometheus_rules_file: /etc/prometheus/alert.rules

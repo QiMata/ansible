@@ -1,0 +1,3 @@
+---
+# defaults file for apt_mirror_client_setup
+apt_mirror_client_setup_url: "http://your-apt-mirror-url"

@@ -1,0 +1,11 @@
+---
+proxmox_repo_release: bookworm
+proxmox_repo_url: "http://download.proxmox.com/debian/pve"
+proxmox_repo_key_url: "https://download.proxmox.com/debian/proxmox-release-{{ proxmox_repo_release }}.gpg"
+proxmox_packages:
+  - proxmox-ve
+  - open-iscsi
+proxmox_cluster_enabled: false
+proxmox_cluster_master: false
+proxmox_cluster_name: "pve-cluster"
+# proxmox_cluster_address: "10.0.0.1"  # set when joining existing cluster

@@ -1,0 +1,11 @@
+---
+- name: Reload Systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+  become: true
+
+- name: Restart Frontend Service
+  ansible.builtin.service:
+    name: amundsen-frontend
+    state: restarted
+  become: true

@@ -1,0 +1,35 @@
+---
+- name: Copy TLS cert
+  ansible.builtin.copy:
+    src: "{{ openldap_server_tls_cert }}"
+    dest: /etc/ldap/ssl/ldap.crt
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Copy TLS key
+  ansible.builtin.copy:
+    src: "{{ openldap_server_tls_key }}"
+    dest: /etc/ldap/ssl/ldap.key
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Copy CA cert
+  ansible.builtin.copy:
+    src: "{{ openldap_server_tls_ca }}"
+    dest: /etc/ldap/ssl/ca.crt
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Configure slapd TLS settings
+  community.general.ldap_attrs:
+    dn: "cn=config"
+    attributes:
+      olcTLSCertificateFile: "/etc/ldap/ssl/ldap.crt"
+      olcTLSCertificateKeyFile: "/etc/ldap/ssl/ldap.key"
+      olcTLSCACertificateFile: "/etc/ldap/ssl/ca.crt"
+    state: present
+    server_uri: "ldapi:///"
+  notify: restart slapd

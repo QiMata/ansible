@@ -1,0 +1,28 @@
+---
+- name: Ensure Jenkins user
+  ansible.builtin.user:
+    name: "{{ jenkins_agent_user }}"
+    home: "{{ jenkins_agent_home }}"
+    shell: /bin/bash
+    create_home: true
+
+- name: Install OpenJDK
+  ansible.builtin.apt:
+    name: default-jdk
+    state: present
+    update_cache: true
+
+- name: Deploy controller public key
+  ansible.posix.authorized_key:
+    user: "{{ jenkins_agent_user }}"
+    key: "{{ jenkins_agent_ssh_public_key }}"
+    state: present
+    manage_dir: true
+
+- name: Ensure authorized_keys permissions
+  ansible.builtin.file:
+    path: "/home/{{ jenkins_agent_user }}/.ssh/authorized_keys"
+    owner: "{{ jenkins_agent_user }}"
+    group: "{{ jenkins_agent_user }}"
+    mode: '0600'
+    state: file

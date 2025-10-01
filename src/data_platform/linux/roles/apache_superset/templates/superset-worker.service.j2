@@ -1,0 +1,16 @@
+[Unit]
+Description=Apache Superset Celery Worker
+After=network.target
+
+[Service]
+Type=simple
+User={{ apache_superset_user }}
+Group={{ apache_superset_group }}
+WorkingDirectory={{ apache_superset_install_dir }}
+Environment=SUPERSET_CONFIG_PATH={{ apache_superset_config_path }}
+ExecStart={{ apache_superset_venv_dir }}/bin/celery --app=superset.tasks.celery_app:app worker --pool=prefork -O fair -c 4
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

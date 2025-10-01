@@ -1,0 +1,44 @@
+---
+
+- name: Ensure prerequisites are installed
+  ansible.builtin.apt:
+    name: [gnupg, ca-certificates, python3-psycopg2]
+    state: present
+    update_cache: true
+  become: true
+
+- name: Add PostgreSQL APT key
+  ansible.builtin.get_url:
+    url: "{{ postgresql_apt_repo_key_url }}"
+    dest: /usr/share/keyrings/postgresql.gpg
+    mode: '0644'
+  when: postgresql_use_official_repo
+  become: true
+
+- name: Add PostgreSQL repository
+  ansible.builtin.apt_repository:
+    repo: "{{ postgresql_apt_repo_url }}"
+    filename: postgresql
+    state: present
+  when: postgresql_use_official_repo
+  become: true
+
+- name: Install PostgreSQL packages
+  ansible.builtin.apt:
+    name: >-
+      {{ ['postgresql-{{ postgresql_version }}',
+          'postgresql-client-{{ postgresql_version }}',
+          'postgresql-contrib-{{ postgresql_version }}']
+          if postgresql_use_official_repo else
+          ['postgresql', 'postgresql-contrib'] }}
+    state: present
+    update_cache: true
+  become: true
+
+- name: Ensure PostgreSQL service is enabled and started
+  ansible.builtin.service:
+    name: "{{ postgresql_service_name }}"
+    state: started
+    enabled: true
+  when: not postgresql_use_patroni
+  become: true

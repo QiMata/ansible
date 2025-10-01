@@ -1,0 +1,6 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  roles:
+    - role: remove_unnecessary_packages

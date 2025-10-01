@@ -1,0 +1,4 @@
+---
+minio_required_packages:
+  - curl
+  - openssl

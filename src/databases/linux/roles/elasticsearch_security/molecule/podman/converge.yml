@@ -1,0 +1,8 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  roles:
+    - role: elasticsearch_install
+    - role: elasticsearch_config
+    - role: elasticsearch_security

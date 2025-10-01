@@ -1,0 +1,10 @@
+---
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Enable and start NetBox
+  ansible.builtin.systemd:
+    name: netbox
+    enabled: true
+    state: started

@@ -1,0 +1,17 @@
+---
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+  become: true
+
+- name: Install common dependencies
+  ansible.builtin.apt:
+    name:
+      - python3-venv
+      - python3-pip
+      - apt-transport-https
+      - ca-certificates
+      - gnupg
+    state: present
+  become: true

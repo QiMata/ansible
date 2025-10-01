@@ -1,0 +1,15 @@
+HTTP/1.0 400 Bad Request
+Cache-Control: no-cache
+Connection: close
+Content-Type: text/html
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>400 Bad Request</title>
+  </head>
+  <body>
+    <h1>Bad Request</h1>
+    <p>Your browser sent a request that this server could not understand.</p>
+  </body>
+</html>

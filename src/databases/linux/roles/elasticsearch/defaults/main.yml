@@ -1,0 +1,23 @@
+---
+# Elasticsearch package and repository version
+elasticsearch_version: "8.x"
+# Cluster configuration
+elasticsearch_cluster_name: "elasticsearch-cluster"
+elasticsearch_node_roles: []
+elasticsearch_network_host: "{{ ansible_default_ipv4.address }}"
+# JVM heap size
+elasticsearch_heap_size: "2g"
+# Install OpenJDK if required
+elasticsearch_install_java: true
+# Enable X-Pack security and related features
+elasticsearch_enable_security: false
+# TLS certificates already provided
+elasticsearch_tls_provided: false
+# LDAP settings for security integration
+elasticsearch_ldap_url: ""
+elasticsearch_ldap_bind_dn: ""
+elasticsearch_ldap_bind_password: ""
+elasticsearch_ldap_user_base_dn: ""
+elasticsearch_ldap_group_base_dn: ""
+elasticsearch_ldap_admin_group_dn: ""
+elasticsearch_ldap_user_group_dn: ""

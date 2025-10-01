@@ -1,0 +1,17 @@
+[Unit]
+Description=Apache Spark Worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+User={{ apache_spark_user }}
+Group={{ apache_spark_group }}
+WorkingDirectory={{ apache_spark_symlink_dir }}/sbin
+ExecStart={{ apache_spark_symlink_dir }}/sbin/start-worker.sh {{ apache_spark_master_url }}
+ExecStop={{ apache_spark_symlink_dir }}/sbin/stop-worker.sh
+SuccessExitStatus=143
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

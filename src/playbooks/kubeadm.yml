@@ -1,0 +1,6 @@
+---
+- name: Deploy Kubernetes with kubeadm
+  hosts: k8s
+  become: true
+  roles:
+    - kubeadm

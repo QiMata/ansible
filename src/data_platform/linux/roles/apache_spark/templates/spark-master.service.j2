@@ -1,0 +1,17 @@
+[Unit]
+Description=Apache Spark Master
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+User={{ apache_spark_user }}
+Group={{ apache_spark_group }}
+WorkingDirectory={{ apache_spark_symlink_dir }}/sbin
+ExecStart={{ apache_spark_symlink_dir }}/sbin/start-master.sh
+ExecStop={{ apache_spark_symlink_dir }}/sbin/stop-master.sh
+SuccessExitStatus=143
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

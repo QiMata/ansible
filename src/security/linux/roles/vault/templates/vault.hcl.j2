@@ -1,0 +1,17 @@
+storage "file" {
+  path = "{{ vault_data_dir }}"
+}
+
+listener "tcp" {
+  address       = "{{ vault_addr }}:{{ vault_port }}"
+{% if vault_tls_cert_src and vault_tls_key_src %}
+  tls_cert_file = "{{ vault_tls_dir }}/vault.crt"
+  tls_key_file  = "{{ vault_tls_dir }}/vault.key"
+{% else %}
+  tls_disable   = "true"
+{% endif %}
+}
+
+ui = {{ vault_ui | bool }}
+
+disable_mlock = true
