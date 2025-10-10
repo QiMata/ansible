@@ -1,0 +1,5 @@
+# Ansible managed override file for Logstash service
+[Service]
+{% for key, value in logstash_environment.items() %}
+Environment="{{ key }}={{ value }}"
+{% endfor %}

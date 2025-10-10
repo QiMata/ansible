@@ -1,5 +1,6 @@
 ---
 # Simple development cluster setup
+# To test HA locally, add a zookeeper_nodes group and apply the data_systems/zookeeper role first.
 # Minimal configuration for development/testing environments
 
 - name: Deploy Development Spark Cluster

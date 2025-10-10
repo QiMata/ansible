@@ -1,0 +1,11 @@
+---
+- name: Install Kibana package
+  ansible.builtin.package:
+    name: "{{ kibana_package }}"
+    state: "{{ kibana_package_state }}"
+
+- name: Install additional Kibana packages
+  ansible.builtin.package:
+    name: "{{ kibana_extra_packages }}"
+    state: present
+  when: kibana_extra_packages | length > 0

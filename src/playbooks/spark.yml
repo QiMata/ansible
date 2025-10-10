@@ -1,0 +1,49 @@
+---
+- name: Configure Apache Spark masters
+  hosts: spark_master_nodes
+  become: true
+  gather_facts: true
+  vars_files:
+    - "{{ playbook_dir }}/../group_vars/all.yml"
+    - "{{ playbook_dir }}/../group_vars/spark.yml"
+  vars:
+    spark_role_ha_enabled: {{ (groups.get('spark_master_nodes', []) | length) > 1 }}
+    spark_role_auth_secret: "{{ vault_spark_auth_secret | default('CHANGEME-spark-shared-secret') }}"
+    spark_role_ssl_enabled: true
+    spark_role_ssl_keystore_path: "{{ spark_ssl_keystore_path | default('/etc/spark/secrets/keystore.jks') }}"
+    spark_role_ssl_keystore_password: "{{ vault_spark_keystore_password | default('CHANGEME-keystore') }}"
+    spark_role_ssl_truststore_path: "{{ spark_ssl_truststore_path | default('/etc/spark/secrets/truststore.jks') }}"
+    spark_role_ssl_truststore_password: "{{ vault_spark_truststore_password | default('CHANGEME-truststore') }}"
+    spark_role_prometheus_enabled: true
+    spark_role_prometheus_jmx_exporter_port: {{ spark_jmx_exporter_port | default(7071) }}
+    spark_role_history_enabled: true
+    spark_role_history_host: "{{ spark_history_host | default(inventory_hostname) }}"
+  roles:
+    - role: data_analytics.spark_role
+      tags: ['spark', 'spark_master']
+
+- name: Configure Apache Spark workers
+  hosts: spark_worker_nodes
+  become: true
+  gather_facts: true
+  vars_files:
+    - "{{ playbook_dir }}/../group_vars/all.yml"
+    - "{{ playbook_dir }}/../group_vars/spark.yml"
+  vars:
+    spark_cluster_master_host: >-
+      {{
+        hostvars.get(
+          groups.get('spark_master_nodes', [inventory_hostname])[0],
+          {}
+        ).get('ansible_host', groups.get('spark_master_nodes', [inventory_hostname])[0])
+      }}
+    spark_role_master_host: "{{ spark_cluster_master_host }}"
+    spark_role_master_url: "spark://{{ spark_cluster_master_host }}:7077"
+    spark_role_auth_secret: "{{ vault_spark_auth_secret | default('CHANGEME-spark-shared-secret') }}"
+    spark_role_prometheus_enabled: true
+    spark_role_prometheus_jmx_exporter_port: {{ spark_jmx_exporter_port | default(7071) }}
+    spark_role_worker_memory: "{{ spark_worker_memory | default('4g') }}"
+    spark_role_worker_cores: {{ spark_worker_cores | default(4) }}
+  roles:
+    - role: data_analytics.spark_role
+      tags: ['spark', 'spark_worker']

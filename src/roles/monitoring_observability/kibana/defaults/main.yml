@@ -1,0 +1,44 @@
+---
+# General Kibana package settings
+kibana_package: "kibana"
+kibana_package_state: present
+kibana_repo_manage: true
+kibana_major_version: "8.x"
+
+# Service management
+kibana_service_state: started
+kibana_service_enabled: true
+
+# Configuration management
+kibana_config_path: "/etc/kibana/kibana.yml"
+kibana_config_owner: kibana
+kibana_config_group: kibana
+kibana_config_mode: "0640"
+kibana_config_template: "kibana.yml.j2"
+kibana_config: {
+  "server.host": "0.0.0.0",
+  "server.port": 5601,
+  "elasticsearch.hosts": ["http://localhost:9200"]
+}
+
+# Environment overrides for the systemd unit
+kibana_environment: {}
+
+# Additional packages that should be installed alongside Kibana
+kibana_extra_packages: []
+
+# Health check configuration
+kibana_healthcheck_enabled: true
+kibana_healthcheck_url: "http://127.0.0.1:5601/api/status"
+kibana_healthcheck_retries: 10
+kibana_healthcheck_delay: 6
+
+# Internal defaults populated by platform variables
+kibana_prereq_packages: []
+kibana_service_name: kibana
+kibana_apt_repo: "deb https://artifacts.elastic.co/packages/{{ kibana_major_version }}/apt stable main"
+kibana_apt_key_url: "https://artifacts.elastic.co/GPG-KEY-elasticsearch"
+kibana_yum_repo_name: elasticsearch
+kibana_yum_repo_description: "Elastic {{ kibana_major_version }} Repository"
+kibana_yum_repo_baseurl: "https://artifacts.elastic.co/packages/{{ kibana_major_version }}/yum"
+kibana_yum_gpg_key_url: "https://artifacts.elastic.co/GPG-KEY-elasticsearch"

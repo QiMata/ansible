@@ -1,0 +1,12 @@
+---
+- name: Wait for Kibana API to become available
+  ansible.builtin.uri:
+    url: "{{ kibana_healthcheck_url }}"
+    method: GET
+    status_code: 200
+    validate_certs: false
+  register: kibana_healthcheck_result
+  retries: {{ kibana_healthcheck_retries }}
+  delay: {{ kibana_healthcheck_delay }}
+  until: kibana_healthcheck_result.status == 200
+  changed_when: false

@@ -1,0 +1,11 @@
+---
+- name: Reload systemd configuration
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: ansible_service_mgr == 'systemd'
+
+- name: Ensure Kibana service state
+  ansible.builtin.service:
+    name: "{{ kibana_service_name }}"
+    state: "{{ kibana_service_state }}"
+    enabled: "{{ kibana_service_enabled }}"

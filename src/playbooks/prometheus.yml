@@ -1,0 +1,108 @@
+---
+- name: Deploy Prometheus server
+  hosts: prometheus_servers
+  become: true
+  gather_facts: true
+  vars_files:
+    - "{{ playbook_dir }}/../group_vars/all.yml"
+  vars:
+    # Secure the web UI with basic authentication secrets stored in Ansible Vault.
+    prometheus_basic_auth_users:
+      admin:
+        password: "{{ vault_prometheus_admin_password | default('CHANGEME-prometheus-admin') }}"
+
+    # Alertmanager endpoints are usually provided by monitoring_observability.alertmanager playbooks.
+    prometheus_alertmanager_urls: {{ prometheus_alertmanager_endpoints | default(['http://alertmanager.service.internal:9093']) }}
+
+    # Enable TLS if certificates are provisioned by security_identity/letsencrypt.
+    prometheus_enable_tls: true
+    prometheus_tls_cert_file: "{{ prometheus_tls_cert_file | default('/etc/letsencrypt/live/prometheus/fullchain.pem') }}"
+    prometheus_tls_key_file: "{{ prometheus_tls_key_file | default('/etc/letsencrypt/live/prometheus/privkey.pem') }}"
+
+    # Build scrape targets for partner services.
+    prometheus_minio_metrics_port: {{ minio_cluster_prometheus_port | default(9000) }}
+    prometheus_spark_metrics_port: {{ spark_jmx_exporter_port | default(7071) }}
+
+  pre_tasks:
+    - name: Collect MinIO scrape targets from inventory
+      ansible.builtin.set_fact:
+        prometheus_minio_targets: >-
+          {{
+            (prometheus_minio_targets | default([]))
+            + [
+              (hostvars.get(item, {}).get('ansible_host', item)) ~ ':' ~
+              (hostvars.get(item, {}).get('minio_prometheus_port', prometheus_minio_metrics_port) | string)
+            ]
+          }}
+      loop: "{{ groups.get('minio_servers', []) }}"
+      run_once: true
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Collect Spark scrape targets from inventory
+      ansible.builtin.set_fact:
+        prometheus_spark_targets: >-
+          {{
+            (prometheus_spark_targets | default([]))
+            + [
+              (hostvars.get(item, {}).get('ansible_host', item)) ~ ':' ~
+              (hostvars.get(item, {}).get('spark_role_prometheus_jmx_exporter_port', prometheus_spark_metrics_port) | string)
+            ]
+          }}
+      loop: "{{ (groups.get('spark_master_nodes', []) + groups.get('spark_worker_nodes', [])) | unique }}"
+      run_once: true
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Register MinIO scrape job
+      ansible.builtin.set_fact:
+        prometheus_additional_scrape_configs: >-
+          {{
+            (prometheus_additional_scrape_configs | default([]))
+            + [
+              {
+                'job_name': 'minio',
+                'metrics_path': '/minio/v2/metrics/cluster',
+                'scheme': 'https',
+                'static_configs': [
+                  {
+                    'targets': prometheus_minio_targets | default([]),
+                    'labels': {
+                      'service': 'minio',
+                      'namespace': 'object-storage'
+                    }
+                  }
+                ]
+              }
+            ]
+          }}
+      when: (prometheus_minio_targets | default([])) | length > 0
+      run_once: true
+
+    - name: Register Spark scrape job
+      ansible.builtin.set_fact:
+        prometheus_additional_scrape_configs: >-
+          {{
+            (prometheus_additional_scrape_configs | default([]))
+            + [
+              {
+                'job_name': 'spark',
+                'metrics_path': '/metrics',
+                'scheme': 'http',
+                'static_configs': [
+                  {
+                    'targets': prometheus_spark_targets | default([]),
+                    'labels': {
+                      'service': 'spark',
+                      'namespace': 'data-platform'
+                    }
+                  }
+                ]
+              }
+            ]
+          }}
+      when: (prometheus_spark_targets | default([])) | length > 0
+      run_once: true
+  roles:
+    - role: monitoring_observability.prometheus
+      tags: ['prometheus']

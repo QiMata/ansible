@@ -1,0 +1,71 @@
+---
+- name: Ensure Logstash configuration directory exists
+  ansible.builtin.file:
+    path: "{{ logstash_config_path | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy logstash.yml configuration
+  ansible.builtin.template:
+    src: logstash.yml.j2
+    dest: "{{ logstash_config_path }}"
+    owner: "{{ logstash_config_owner }}"
+    group: "{{ logstash_config_group }}"
+    mode: "{{ logstash_config_mode }}"
+  notify: restart logstash
+
+- name: Deploy pipelines.yml configuration
+  ansible.builtin.template:
+    src: pipelines.yml.j2
+    dest: "{{ logstash_pipelines_path }}"
+    owner: "{{ logstash_config_owner }}"
+    group: "{{ logstash_config_group }}"
+    mode: "{{ logstash_config_mode }}"
+  notify: restart logstash
+
+- name: Ensure pipeline configuration directory exists
+  ansible.builtin.file:
+    path: "{{ logstash_conf_dir }}"
+    state: directory
+    owner: "{{ logstash_config_owner }}"
+    group: "{{ logstash_config_group }}"
+    mode: "0755"
+
+- name: Deploy pipeline configuration files
+  ansible.builtin.copy:
+    dest: "{{ logstash_conf_dir }}/{{ item.name }}"
+    content: "{{ item.content }}\n"
+    owner: "{{ logstash_config_owner }}"
+    group: "{{ logstash_config_group }}"
+    mode: "{{ logstash_config_mode }}"
+  loop: "{{ logstash_pipeline_files }}"
+  when: logstash_pipeline_files | length > 0
+  notify: restart logstash
+
+- name: Ensure systemd override directory exists
+  ansible.builtin.file:
+    path: "/etc/systemd/system/{{ logstash_service_name }}.service.d"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: logstash_environment | length > 0
+
+- name: Configure Logstash environment overrides
+  ansible.builtin.template:
+    src: environment.conf.j2
+    dest: "/etc/systemd/system/{{ logstash_service_name }}.service.d/override.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  when: logstash_environment | length > 0
+  notify: restart logstash
+
+- name: Remove Logstash environment overrides when not defined
+  ansible.builtin.file:
+    path: "/etc/systemd/system/{{ logstash_service_name }}.service.d/override.conf"
+    state: absent
+  when: logstash_environment | length == 0
+  notify: restart logstash

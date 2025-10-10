@@ -1,0 +1,24 @@
+---
+- name: Add Elastic GPG key (Debian)
+  ansible.builtin.apt_key:
+    url: "{{ kibana_apt_key_url }}"
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Add Elastic repository (Debian)
+  ansible.builtin.apt_repository:
+    repo: "{{ kibana_apt_repo }}"
+    state: present
+    filename: elastic
+    update_cache: true
+  when: ansible_os_family == "Debian"
+
+- name: Add Elastic repository (RedHat)
+  ansible.builtin.yum_repository:
+    name: "{{ kibana_yum_repo_name }}"
+    description: "{{ kibana_yum_repo_description }}"
+    baseurl: "{{ kibana_yum_repo_baseurl }}"
+    gpgcheck: true
+    gpgkey: "{{ kibana_yum_gpg_key_url }}"
+    enabled: true
+  when: ansible_os_family == "RedHat"

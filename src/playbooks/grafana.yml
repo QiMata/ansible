@@ -1,0 +1,72 @@
+---
+- name: Provision Grafana dashboards and alerting
+  hosts: grafana_servers
+  become: true
+  gather_facts: true
+  vars_files:
+    - "{{ playbook_dir }}/../group_vars/all.yml"
+  vars:
+    grafana_admin_password: "{{ vault_grafana_admin_password | default('CHANGEME-grafana-admin') }}"
+
+    # TLS certificates are normally delivered by security_identity/letsencrypt or an external secret manager.
+    grafana_https_enabled: true
+    grafana_cert_file: "{{ grafana_tls_cert_file | default('/etc/letsencrypt/live/grafana/fullchain.pem') }}"
+    grafana_cert_key: "{{ grafana_tls_key_file | default('/etc/letsencrypt/live/grafana/privkey.pem') }}"
+
+    # Back Grafana with a managed PostgreSQL instance provisioned by data_systems.postgresql or similar.
+    grafana_database:
+      type: postgres
+      host: "{{ grafana_database_host | default('postgresql.service.internal:5432') }}"
+      name: "{{ grafana_database_name | default('grafana') }}"
+      user: "{{ grafana_database_user | default('grafana') }}"
+      password: "{{ vault_grafana_database_password | default('CHANGEME-grafana-db') }}"
+      ssl_mode: require
+
+    # Automatically build Prometheus URL based on the generated inventory.
+    grafana_prometheus_host: >-
+      {{
+        hostvars.get(
+          (groups.get('prometheus_servers', ['prometheus']) | first),
+          {}
+        ).get('ansible_host', groups.get('prometheus_servers', ['prometheus']) | first)
+      }}
+    grafana_datasources:
+      - name: Prometheus
+        type: prometheus
+        url: "http://{{ grafana_prometheus_host }}:9090"
+        access: proxy
+        isDefault: true
+        basicAuth: false
+        jsonData:
+          httpMethod: POST
+      - name: MinIO Audit Logs
+        type: loki
+        url: "http://{{ grafana_loki_host | default('loki.logging.svc:3100') }}"
+        access: proxy
+        basicAuth: false
+        jsonData:
+          maxLines: 500
+
+    # Alerting integrations reference secrets delivered through Ansible Vault or your secret manager.
+    grafana_alerting_enabled: true
+    grafana_contact_points:
+      - name: "slack-oncall"
+        type: slack
+        settings:
+          recipient: "{{ grafana_alert_slack_channel | default('#oncall') }}"
+          token: "{{ vault_slack_oncall_token | default('CHANGEME-slack-token') }}"
+      - name: "email-sre"
+        type: email
+        settings:
+          addresses: "{{ grafana_alert_email | default('sre@example.com') }}"
+    grafana_notification_policies:
+      - receiver: slack-oncall
+        group_by: ['alertname', 'team']
+        matchers:
+          - { label: team, match: =~, value: 'data|platform' }
+      - receiver: email-sre
+        matchers:
+          - { label: severity, match: =, value: 'critical' }
+  roles:
+    - role: monitoring_observability.grafana
+      tags: ['grafana']

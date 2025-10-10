@@ -1,0 +1,11 @@
+---
+- name: Reload systemd configuration
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: ansible_service_mgr == 'systemd'
+
+- name: Ensure Logstash service state
+  ansible.builtin.service:
+    name: "{{ logstash_service_name }}"
+    state: "{{ logstash_service_state }}"
+    enabled: "{{ logstash_service_enabled }}"

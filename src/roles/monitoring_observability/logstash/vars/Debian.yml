@@ -1,0 +1,5 @@
+---
+logstash_prereq_packages:
+  - apt-transport-https
+  - gnupg
+logstash_service_name: logstash
