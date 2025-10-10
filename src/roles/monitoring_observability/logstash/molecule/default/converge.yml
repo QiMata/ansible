@@ -1,0 +1,8 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  roles:
+    - role: monitoring_observability.logstash
+      vars:
+        logstash_healthcheck_enabled: false

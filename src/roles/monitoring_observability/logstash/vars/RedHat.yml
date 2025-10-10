@@ -1,0 +1,4 @@
+---
+logstash_prereq_packages:
+  - yum-utils
+logstash_service_name: logstash

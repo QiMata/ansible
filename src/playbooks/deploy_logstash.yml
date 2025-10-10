@@ -1,0 +1,6 @@
+---
+- name: Deploy Logstash
+  hosts: logstash
+  become: true
+  roles:
+    - role: monitoring_observability.logstash

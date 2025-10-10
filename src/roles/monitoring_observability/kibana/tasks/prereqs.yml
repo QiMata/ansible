@@ -1,0 +1,7 @@
+---
+- name: Install Kibana prerequisite packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ kibana_prereq_packages }}"
+  when: kibana_prereq_packages | length > 0

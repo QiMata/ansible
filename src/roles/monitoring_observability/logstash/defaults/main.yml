@@ -1,0 +1,55 @@
+---
+# General Logstash package settings
+logstash_package: "logstash"
+logstash_package_state: present
+logstash_repo_manage: true
+logstash_major_version: "8.x"
+
+# Service management
+logstash_service_state: started
+logstash_service_enabled: true
+
+# Configuration management
+logstash_config_path: "/etc/logstash/logstash.yml"
+logstash_pipelines_path: "/etc/logstash/pipelines.yml"
+logstash_conf_dir: "/etc/logstash/conf.d"
+logstash_config_owner: logstash
+logstash_config_group: logstash
+logstash_config_mode: "0640"
+logstash_settings:
+  http.host: "0.0.0.0"
+  path.data: "/var/lib/logstash"
+  path.logs: "/var/log/logstash"
+  node.name: "{{ ansible_hostname }}"
+logstash_pipelines:
+  - pipeline.id: main
+    path.config: "/etc/logstash/conf.d/main.conf"
+logstash_pipeline_files:
+  - name: main.conf
+    content: |
+      input {
+        beats {
+          port => 5044
+        }
+      }
+      output {
+        stdout { }
+      }
+logstash_environment: {}
+logstash_extra_packages: []
+
+# Health check
+logstash_healthcheck_enabled: true
+logstash_healthcheck_url: "http://127.0.0.1:9600/_node/pipelines"
+logstash_healthcheck_retries: 10
+logstash_healthcheck_delay: 6
+
+# Internal defaults populated by platform variables
+logstash_prereq_packages: []
+logstash_service_name: logstash
+logstash_apt_repo: "deb https://artifacts.elastic.co/packages/{{ logstash_major_version }}/apt stable main"
+logstash_apt_key_url: "https://artifacts.elastic.co/GPG-KEY-elasticsearch"
+logstash_yum_repo_name: elasticsearch
+logstash_yum_repo_description: "Elastic {{ logstash_major_version }} Repository"
+logstash_yum_repo_baseurl: "https://artifacts.elastic.co/packages/{{ logstash_major_version }}/yum"
+logstash_yum_gpg_key_url: "https://artifacts.elastic.co/GPG-KEY-elasticsearch"

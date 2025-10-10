@@ -390,7 +390,8 @@ The test suite validates:
 
 - **[security/ssl_certificates](../../security/ssl_certificates/README.md)**: SSL certificate management for secure Filebeat connections
 - **[monitoring/elasticsearch](../../monitoring/elasticsearch/README.md)**: Elasticsearch deployment for log storage
-- **[monitoring/kibana](../../monitoring/kibana/README.md)**: Kibana setup for log visualization
+- **[monitoring_observability/kibana](../kibana/README.md)**: Kibana setup for log visualization
+- **[monitoring_observability/logstash](../logstash/README.md)**: Logstash ingestion pipelines for central logging
 - **[infrastructure/docker](../../infrastructure/docker/README.md)**: Docker configuration for container log collection
 
 ### Integration Examples
@@ -398,6 +399,7 @@ The test suite validates:
 **With ELK Stack:**
 ```yaml
 - import_playbook: deploy_elasticsearch.yml
+- import_playbook: deploy_logstash.yml
 - import_playbook: deploy_kibana.yml
 - hosts: all
   roles:
