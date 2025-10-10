@@ -7,4 +7,4 @@ filebeat.inputs:
       service: nifi
 
 output.logstash:
-  hosts: ["logstash:5044"]
+  hosts: {{ apache_nifi_filebeat_logstash_hosts | to_json }}

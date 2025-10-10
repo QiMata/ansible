@@ -5,5 +5,9 @@
 - name: Include configuration tasks
   ansible.builtin.import_tasks: config.yml
 
+- name: Include monitoring tasks when Prometheus integration is enabled
+  ansible.builtin.import_tasks: monitoring.yml
+  when: apache_nifi_prometheus_integration
+
 - name: Include service tasks
   ansible.builtin.import_tasks: service.yml

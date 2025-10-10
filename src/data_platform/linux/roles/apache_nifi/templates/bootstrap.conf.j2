@@ -1,4 +1,7 @@
 java=java
 java.arg.1=-Xms512m
 java.arg.2=-Xmx2g
+{% if apache_nifi_prometheus_integration %}
+java.arg.3=-javaagent:{{ apache_nifi_home }}/lib/jmx_prometheus_javaagent.jar={{ apache_nifi_prometheus_jmx_port }}:{{ apache_nifi_prometheus_jmx_config_path }}
+{% endif %}
 run.as={{ apache_nifi_user }}

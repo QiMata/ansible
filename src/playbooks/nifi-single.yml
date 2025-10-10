@@ -3,9 +3,9 @@
   hosts: nifi_single
   become: true
   vars:
-    apache_nifi_cluster_enable: false
-    apache_nifi_security_mode: ssl
-    apache_nifi_initial_admin_identity: "CN=NiFi Admin, OU=IT, O=Example Corp, C=US"
+    apache_nifi_cluster_enabled: false
+    apache_nifi_enable_https: true
+    apache_nifi_admin_identity: "CN=NiFi Admin, OU=IT, O=Example Corp, C=US"
     apache_nifi_keystore_password: "changeit"
     apache_nifi_truststore_password: "changeit"
   roles:
