@@ -1,0 +1,234 @@
+---
+# Orchestrated deployment for the reference data product stack
+# This playbook installs foundational services used across the
+# analytics platform including PostgreSQL, Airflow, Spark, NiFi,
+# MinIO, the Amundsen data catalog, Superset BI, monitoring, and
+# the Elastic stack components.
+
+- name: Apply base configuration to all data product nodes
+  hosts: all
+  become: true
+  roles:
+    - base
+  tags:
+    - base
+
+- name: Provision PostgreSQL for metadata driven services
+  hosts: database
+  become: true
+  roles:
+    - role: postgresql
+      vars:
+        postgresql_databases: "{{ data_product_postgresql_databases }}"
+        postgresql_users: "{{ data_product_postgresql_users }}"
+        postgresql_hba_entries: "{{ data_product_postgresql_hba_entries }}"
+        postgresql_listen_addresses: "{{ data_product_postgresql_listen_addresses }}"
+  tags:
+    - database
+
+- name: Configure Redis message broker
+  hosts: message_broker
+  become: true
+  roles:
+    - role: geerlingguy.redis
+      vars:
+        redis_bind: "{{ data_product_redis_bind }}"
+        redis_port: "{{ data_product_redis_port }}"
+        redis_password: "{{ vault_data_product_redis_password }}"
+        redis_requirepass: true
+  tags:
+    - message_broker
+
+- name: Deploy object storage with MinIO
+  hosts: storage
+  become: true
+  roles:
+    - role: minio_systemd
+      vars:
+        minio_volumes: "{{ data_product_minio_datadirs | join(' ') }}"
+        minio_root_user: "{{ data_product_minio_root_user }}"
+        minio_root_password: "{{ vault_data_product_minio_root_password }}"
+  tags:
+    - storage
+
+- name: Configure Elasticsearch cluster
+  hosts: elasticsearch
+  become: true
+  roles:
+    - role: elasticsearch
+      vars:
+        es_cluster_name: "{{ data_product_elasticsearch_cluster_name }}"
+        es_heap_size: "{{ data_product_elasticsearch_heap }}"
+        es_network_host: "{{ data_product_elasticsearch_network_host }}"
+        es_http_port: "{{ data_product_elasticsearch_http_port }}"
+        es_bootstrap_memory_lock: true
+        es_enable_security: "{{ data_product_elasticsearch_security_enabled }}"
+        es_api_basic_auth_username: "{{ data_product_elasticsearch_api_user }}"
+        es_api_basic_auth_password: "{{ vault_data_product_elasticsearch_api_password }}"
+  tags:
+    - elastic
+
+- name: Deploy Apache Airflow core services
+  hosts: airflow_core
+  become: true
+  roles:
+    - role: apache_airflow
+      vars:
+        apache_airflow_executor: "{{ data_product_airflow_executor }}"
+        apache_airflow_database_host: "{{ data_product_airflow_db_host }}"
+        apache_airflow_database_port: "{{ data_product_airflow_db_port }}"
+        apache_airflow_database_name: "{{ data_product_airflow_db_name }}"
+        apache_airflow_database_user: "{{ data_product_airflow_db_user }}"
+        apache_airflow_database_password: "{{ vault_airflow_db_password }}"
+        apache_airflow_broker_url: "{{ data_product_airflow_broker_url }}"
+        apache_airflow_fernet_key: "{{ vault_airflow_fernet_key }}"
+        apache_airflow_systemd_units_enabled: "{{ data_product_airflow_units }}"
+  tags:
+    - airflow
+
+- name: Configure dedicated Airflow schedulers
+  hosts: airflow_schedulers
+  become: true
+  roles:
+    - role: airflow_scheduler
+      vars:
+        airflow_scheduler_instances: "{{ data_product_airflow_scheduler_instances }}"
+        airflow_scheduler_heartrate: "{{ data_product_airflow_scheduler_heartrate }}"
+        airflow_scheduler_service_state: started
+  tags:
+    - airflow
+    - airflow_scheduler
+
+- name: Configure Airflow webservers
+  hosts: airflow_webservers
+  become: true
+  roles:
+    - role: airflow_webserver
+      vars:
+        airflow_webserver_bind_host: "{{ data_product_airflow_web_host }}"
+        airflow_webserver_port: "{{ data_product_airflow_web_port }}"
+        airflow_webserver_base_url: "{{ data_product_airflow_base_url }}"
+  tags:
+    - airflow
+    - airflow_webserver
+
+- name: Configure NiFi automation services
+  hosts: nifi_nodes
+  become: true
+  roles:
+    - role: apache_nifi
+      vars:
+        apache_nifi_version: "{{ data_product_nifi_version }}"
+        apache_nifi_https_enabled: "{{ data_product_nifi_https_enabled }}"
+        apache_nifi_authentication_strategy: "{{ data_product_nifi_auth_strategy }}"
+        apache_nifi_sensitive_props_key: "{{ vault_data_product_nifi_sensitive_key }}"
+  tags:
+    - nifi
+
+- name: Configure Apache Spark masters
+  hosts: spark_master
+  become: true
+  roles:
+    - role: spark_role
+      vars:
+        spark_role_master_host: "{{ inventory_hostname }}"
+        spark_role_history_enabled: "{{ data_product_spark_history_enabled }}"
+        spark_role_prometheus_enabled: "{{ data_product_spark_prometheus_enabled }}"
+        apache_spark_symlink_dir: "{{ spark_role_symlink_dir }}"
+        apache_spark_user: "{{ spark_role_user }}"
+        apache_spark_group: "{{ spark_role_group }}"
+  tags:
+    - spark
+
+- name: Configure Apache Spark workers
+  hosts: spark_worker
+  become: true
+  roles:
+    - role: spark_role
+      vars:
+        spark_role_master_host: "{{ data_product_spark_master_host }}"
+        spark_role_worker_memory: "{{ data_product_spark_worker_memory }}"
+        spark_role_worker_cores: "{{ data_product_spark_worker_cores }}"
+        apache_spark_symlink_dir: "{{ spark_role_symlink_dir }}"
+        apache_spark_user: "{{ spark_role_user }}"
+        apache_spark_group: "{{ spark_role_group }}"
+  tags:
+    - spark
+
+- name: Deploy Amundsen metadata service
+  hosts: amundsen_metadata
+  become: true
+  roles:
+    - role: amundsen_metadata
+      vars:
+        amundsen_metadata_neo4j_host: "{{ data_product_amundsen_neo4j_host }}"
+        amundsen_metadata_neo4j_port: "{{ data_product_amundsen_neo4j_port }}"
+        amundsen_metadata_neo4j_user: "{{ data_product_amundsen_neo4j_user }}"
+        amundsen_metadata_neo4j_password: "{{ vault_data_product_amundsen_neo4j_password }}"
+  tags:
+    - amundsen
+
+- name: Deploy Amundsen search service
+  hosts: amundsen_search
+  become: true
+  roles:
+    - role: amundsen_search
+      vars:
+        amundsen_search_es_host: "{{ data_product_elasticsearch_coordinator }}"
+        amundsen_search_es_port: "{{ data_product_elasticsearch_http_port }}"
+        amundsen_search_es_scheme: "{{ data_product_elasticsearch_scheme }}"
+        amundsen_search_es_auth_enabled: "{{ data_product_elasticsearch_security_enabled }}"
+        amundsen_search_es_username: "{{ data_product_elasticsearch_api_user }}"
+        amundsen_search_es_password: "{{ vault_data_product_elasticsearch_api_password }}"
+  tags:
+    - amundsen
+
+- name: Deploy Amundsen frontend
+  hosts: amundsen_frontend
+  become: true
+  roles:
+    - role: amundsen_frontend
+      vars:
+        amundsen_frontend_api_host: "{{ data_product_amundsen_metadata_url }}"
+        amundsen_frontend_search_host: "{{ data_product_amundsen_search_url }}"
+        amundsen_frontend_auth_enabled: "{{ data_product_amundsen_auth_enabled }}"
+  tags:
+    - amundsen
+
+- name: Deploy Apache Superset
+  hosts: superset_servers
+  become: true
+  roles:
+    - role: apache_superset
+      vars:
+        superset_database_uri: "{{ data_product_superset_database_uri }}"
+        superset_redis_url: "{{ data_product_superset_redis_url }}"
+        superset_secret_key: "{{ vault_superset_secret_key }}"
+  tags:
+    - superset
+
+- name: Deploy Prometheus server
+  hosts: prometheus_servers
+  become: true
+  roles:
+    - role: prometheus
+      vars:
+        prometheus_global_scrape_interval: "{{ data_product_prometheus_scrape_interval }}"
+        prometheus_global_evaluation_interval: "{{ data_product_prometheus_evaluation_interval }}"
+        prometheus_targets: "{{ data_product_prometheus_targets }}"
+  tags:
+    - monitoring
+    - prometheus
+
+- name: Deploy Grafana dashboards
+  hosts: grafana_servers
+  become: true
+  roles:
+    - role: grafana
+      vars:
+        grafana_security_admin_user: "{{ data_product_grafana_admin_user }}"
+        grafana_security_admin_password: "{{ vault_grafana_admin_password }}"
+        grafana_datasources: "{{ data_product_grafana_datasources }}"
+  tags:
+    - monitoring
+    - grafana

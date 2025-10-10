@@ -1,0 +1,4 @@
+---
+# Webserver node exposes the Airflow UI only.
+data_product_airflow_units:
+  - webserver

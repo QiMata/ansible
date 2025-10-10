@@ -1,0 +1,4 @@
+---
+# Scheduler node only runs the scheduler systemd unit.
+data_product_airflow_units:
+  - scheduler

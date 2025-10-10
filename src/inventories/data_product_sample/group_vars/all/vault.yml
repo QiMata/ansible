@@ -1,0 +1,13 @@
+---
+# Encrypt this file with ansible-vault in real deployments.
+vault_airflow_db_password: "REPLACE_WITH_VAULT_airflow_db_password"
+vault_airflow_fernet_key: "REPLACE_WITH_VAULT_airflow_fernet_key"
+vault_data_product_redis_password: "REPLACE_WITH_VAULT_redis_password"
+vault_data_product_minio_root_password: "REPLACE_WITH_VAULT_minio_root_password"
+vault_data_product_elasticsearch_api_password: "REPLACE_WITH_VAULT_elastic_password"
+vault_data_product_nifi_sensitive_key: "REPLACE_WITH_VAULT_nifi_sensitive_key"
+vault_data_product_amundsen_neo4j_password: "REPLACE_WITH_VAULT_amundsen_neo4j_password"
+vault_data_product_amundsen_db_password: "REPLACE_WITH_VAULT_amundsen_db_password"
+vault_superset_db_password: "REPLACE_WITH_VAULT_superset_db_password"
+vault_superset_secret_key: "REPLACE_WITH_VAULT_superset_secret_key"
+vault_grafana_admin_password: "REPLACE_WITH_VAULT_grafana_admin_password"
