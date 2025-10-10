@@ -1,0 +1,60 @@
+---
+# ============================================================================
+# LOGSTASH ROLE DEFAULTS
+# ============================================================================
+
+# Package version channel
+logstash_version: "8.x"
+logstash_package_state: present
+logstash_manage_repo: true
+
+# Service configuration
+logstash_service_name: logstash
+logstash_service_state: started
+logstash_service_enabled: true
+
+# Paths
+logstash_config_dir: /etc/logstash
+logstash_pipeline_dir: "{{ logstash_config_dir }}/conf.d"
+logstash_settings_file: "{{ logstash_config_dir }}/logstash.yml"
+logstash_tls_dir: "{{ logstash_config_dir }}/certs"
+
+# API and monitoring
+logstash_http_host: "0.0.0.0"
+logstash_http_port: 9600
+logstash_monitoring_enabled: true
+logstash_queue_type: memory
+logstash_pipeline_workers: "{{ ansible_processor_vcpus | default(2) }}"
+logstash_pipeline_batch_size: 125
+
+# Beats input defaults
+logstash_beats_host: "0.0.0.0"
+logstash_beats_port: 5044
+logstash_beats_ssl_verify_mode: "peer"  # peer or none
+logstash_additional_inputs: []
+logstash_filters: []
+logstash_elasticsearch_hosts:
+  - 'http://localhost:9200'
+logstash_outputs: []
+
+# TLS configuration
+logstash_enable_tls: false
+logstash_tls_cert: ""
+logstash_tls_key: ""
+logstash_tls_ca: ""
+logstash_tls_cert_src: ""
+logstash_tls_key_src: ""
+logstash_tls_ca_src: ""
+logstash_tls_cert_path: "{{ logstash_tls_dir }}/logstash.crt"
+logstash_tls_key_path: "{{ logstash_tls_dir }}/logstash.key"
+logstash_tls_ca_path: "{{ logstash_tls_dir }}/ca.crt"
+logstash_tls_key_permissions: "0640"
+logstash_tls_cert_permissions: "0644"
+logstash_tls_ca_permissions: "0644"
+
+# JVM options
+logstash_heap_size: "1g"
+logstash_jvm_options_extra: []
+
+# Validate configuration before restart
+logstash_config_test: true

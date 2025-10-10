@@ -1,0 +1,33 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: logstash-instance
+    image: ubuntu:22.04
+    privileged: true
+    command: /lib/systemd/systemd
+    cgroupns_mode: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    capabilities:
+      - SYS_ADMIN
+    tmpfs:
+      - /run
+      - /tmp
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      callbacks_enabled: profile_tasks, timer, yaml
+    ssh_connection:
+      pipelining: false
+  inventory:
+    host_vars:
+      logstash-instance:
+        logstash_service_state: started
+        logstash_service_enabled: true
+        logstash_monitoring_enabled: true
+verifier:
+  name: ansible

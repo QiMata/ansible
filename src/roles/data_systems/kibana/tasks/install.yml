@@ -1,0 +1,49 @@
+---
+- name: Ensure prerequisite packages are present
+  ansible.builtin.apt:
+    name:
+      - apt-transport-https
+      - gnupg
+      - ca-certificates
+    state: present
+    update_cache: true
+
+- name: Download Elastic GPG key
+  ansible.builtin.get_url:
+    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    dest: /tmp/elastic.gpg
+    mode: '0644'
+  when: kibana_manage_repo
+
+- name: Install Elastic GPG key
+  ansible.builtin.shell: |
+    gpg --dearmor < /tmp/elastic.gpg > /usr/share/keyrings/elastic-keyring.gpg
+  args:
+    creates: /usr/share/keyrings/elastic-keyring.gpg
+  when: kibana_manage_repo
+
+- name: Configure Elastic APT repository
+  ansible.builtin.template:
+    src: elastic.repo.list.j2
+    dest: /etc/apt/sources.list.d/elastic-{{ kibana_version }}.list
+    mode: '0644'
+  when: kibana_manage_repo
+  notify: update apt cache
+
+- name: Install Kibana package
+  ansible.builtin.apt:
+    name: kibana
+    state: "{{ kibana_package_state }}"
+    update_cache: true
+  notify: restart kibana
+
+- name: Ensure Kibana directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: kibana
+    group: kibana
+    mode: '0755'
+  loop:
+    - "{{ kibana_data_path }}"
+    - "{{ kibana_log_path }}"

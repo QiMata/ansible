@@ -1,0 +1,22 @@
+---
+- name: Assert supported operating system
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family in ['Debian']
+    fail_msg: "The kibana role currently supports Debian-based distributions"
+
+- name: Include installation tasks
+  ansible.builtin.import_tasks: install.yml
+  tags: [kibana, install]
+
+- name: Include TLS tasks
+  ansible.builtin.import_tasks: tls.yml
+  tags: [kibana, tls]
+
+- name: Include configuration tasks
+  ansible.builtin.import_tasks: config.yml
+  tags: [kibana, config]
+
+- name: Include service management tasks
+  ansible.builtin.import_tasks: service.yml
+  tags: [kibana, service]

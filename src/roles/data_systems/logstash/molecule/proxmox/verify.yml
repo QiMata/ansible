@@ -1,0 +1,35 @@
+---
+- name: Verify Logstash service on Proxmox target
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check Logstash service status
+      ansible.builtin.service_facts:
+
+    - name: Assert Logstash service active
+      ansible.builtin.assert:
+        that:
+          - "ansible_facts.services['logstash.service'].state == 'running'"
+        fail_msg: "Logstash service is not running on remote host"
+
+    - name: Query Logstash pipelines API
+      ansible.builtin.uri:
+        url: "http://localhost:9600/_node/pipelines"
+        method: GET
+        status_code: 200
+      register: logstash_pipeline_status
+      retries: 10
+      delay: 6
+      until: logstash_pipeline_status.status == 200
+
+    - name: Ensure Beats input present
+      ansible.builtin.assert:
+        that:
+          - logstash_pipeline_status.json.pipelines.main.plugins.inputs | selectattr('name', 'equalto', 'beats') | list | length > 0
+        fail_msg: "Beats input pipeline missing"
+
+    - name: Ensure Elasticsearch output present
+      ansible.builtin.assert:
+        that:
+          - logstash_pipeline_status.json.pipelines.main.plugins.outputs | selectattr('name', 'equalto', 'elasticsearch') | list | length > 0
+        fail_msg: "Elasticsearch output missing"

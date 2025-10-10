@@ -1,0 +1,74 @@
+---
+- name: Ensure TLS directory exists
+  ansible.builtin.file:
+    path: "{{ logstash_tls_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0750'
+
+- name: Deploy TLS certificate from file
+  ansible.builtin.copy:
+    src: "{{ logstash_tls_cert_src }}"
+    dest: "{{ logstash_tls_cert_path }}"
+    owner: root
+    group: root
+    mode: "{{ logstash_tls_cert_permissions }}"
+  when: logstash_tls_cert_src | length > 0
+  notify: restart logstash
+
+- name: Deploy TLS private key from file
+  ansible.builtin.copy:
+    src: "{{ logstash_tls_key_src }}"
+    dest: "{{ logstash_tls_key_path }}"
+    owner: root
+    group: logstash
+    mode: "{{ logstash_tls_key_permissions }}"
+  when: logstash_tls_key_src | length > 0
+  notify: restart logstash
+
+- name: Deploy TLS CA bundle from file
+  ansible.builtin.copy:
+    src: "{{ logstash_tls_ca_src }}"
+    dest: "{{ logstash_tls_ca_path }}"
+    owner: root
+    group: root
+    mode: "{{ logstash_tls_ca_permissions }}"
+  when: logstash_tls_ca_src | length > 0
+  notify: restart logstash
+
+- name: Deploy TLS certificate content
+  ansible.builtin.copy:
+    content: "{{ logstash_tls_cert }}"
+    dest: "{{ logstash_tls_cert_path }}"
+    owner: root
+    group: root
+    mode: "{{ logstash_tls_cert_permissions }}"
+  when:
+    - logstash_tls_cert | length > 0
+    - logstash_tls_cert_src | length == 0
+  notify: restart logstash
+
+- name: Deploy TLS key content
+  ansible.builtin.copy:
+    content: "{{ logstash_tls_key }}"
+    dest: "{{ logstash_tls_key_path }}"
+    owner: root
+    group: logstash
+    mode: "{{ logstash_tls_key_permissions }}"
+  when:
+    - logstash_tls_key | length > 0
+    - logstash_tls_key_src | length == 0
+  notify: restart logstash
+
+- name: Deploy TLS CA content
+  ansible.builtin.copy:
+    content: "{{ logstash_tls_ca }}"
+    dest: "{{ logstash_tls_ca_path }}"
+    owner: root
+    group: root
+    mode: "{{ logstash_tls_ca_permissions }}"
+  when:
+    - logstash_tls_ca | length > 0
+    - logstash_tls_ca_src | length == 0
+  notify: restart logstash

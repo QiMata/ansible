@@ -1,0 +1,30 @@
+---
+- name: Verify Kibana on Proxmox
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Assert Elasticsearch and Kibana services running
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.services['elasticsearch.service'].state == 'running'
+          - ansible_facts.services['kibana.service'].state == 'running'
+        fail_msg: "One or more services are not running"
+
+    - name: Query Kibana status API
+      ansible.builtin.uri:
+        url: "http://localhost:5601/api/status"
+        method: GET
+        status_code: 200
+      register: kibana_status
+      retries: 10
+      delay: 6
+      until: kibana_status.status == 200
+
+    - name: Ensure Kibana reports Elasticsearch availability
+      ansible.builtin.assert:
+        that:
+          - kibana_status.json.status.core.elasticsearch.level == 'available'
+        fail_msg: "Kibana reports Elasticsearch as unavailable"

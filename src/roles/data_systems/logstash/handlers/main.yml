@@ -1,0 +1,14 @@
+---
+- name: update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: restart logstash
+  ansible.builtin.service:
+    name: "{{ logstash_service_name }}"
+    state: restarted
+    enabled: true

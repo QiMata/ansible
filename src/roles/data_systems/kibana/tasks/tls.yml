@@ -1,0 +1,105 @@
+---
+- name: Ensure Kibana TLS directory exists
+  ansible.builtin.file:
+    path: "{{ kibana_tls_dir }}"
+    state: directory
+    owner: kibana
+    group: kibana
+    mode: '0750'
+
+- name: Deploy Kibana TLS certificate from file
+  ansible.builtin.copy:
+    src: "{{ kibana_tls_cert_src }}"
+    dest: "{{ kibana_tls_cert_path }}"
+    owner: kibana
+    group: kibana
+    mode: "{{ kibana_tls_cert_permissions }}"
+  when:
+    - kibana_enable_tls
+    - kibana_tls_cert_src | length > 0
+  notify: restart kibana
+
+- name: Deploy Kibana TLS key from file
+  ansible.builtin.copy:
+    src: "{{ kibana_tls_key_src }}"
+    dest: "{{ kibana_tls_key_path }}"
+    owner: kibana
+    group: kibana
+    mode: "{{ kibana_tls_key_permissions }}"
+  when:
+    - kibana_enable_tls
+    - kibana_tls_key_src | length > 0
+  notify: restart kibana
+
+- name: Deploy Kibana TLS CA from file
+  ansible.builtin.copy:
+    src: "{{ kibana_tls_ca_src }}"
+    dest: "{{ kibana_tls_ca_path }}"
+    owner: kibana
+    group: kibana
+    mode: "{{ kibana_tls_ca_permissions }}"
+  when:
+    - kibana_enable_tls
+    - kibana_tls_ca_src | length > 0
+  notify: restart kibana
+
+- name: Deploy Kibana TLS certificate content
+  ansible.builtin.copy:
+    content: "{{ kibana_tls_cert }}"
+    dest: "{{ kibana_tls_cert_path }}"
+    owner: kibana
+    group: kibana
+    mode: "{{ kibana_tls_cert_permissions }}"
+  when:
+    - kibana_enable_tls
+    - kibana_tls_cert | length > 0
+    - kibana_tls_cert_src | length == 0
+  notify: restart kibana
+
+- name: Deploy Kibana TLS key content
+  ansible.builtin.copy:
+    content: "{{ kibana_tls_key }}"
+    dest: "{{ kibana_tls_key_path }}"
+    owner: kibana
+    group: kibana
+    mode: "{{ kibana_tls_key_permissions }}"
+  when:
+    - kibana_enable_tls
+    - kibana_tls_key | length > 0
+    - kibana_tls_key_src | length == 0
+  notify: restart kibana
+
+- name: Deploy Kibana TLS CA content
+  ansible.builtin.copy:
+    content: "{{ kibana_tls_ca }}"
+    dest: "{{ kibana_tls_ca_path }}"
+    owner: kibana
+    group: kibana
+    mode: "{{ kibana_tls_ca_permissions }}"
+  when:
+    - kibana_enable_tls
+    - kibana_tls_ca | length > 0
+    - kibana_tls_ca_src | length == 0
+  notify: restart kibana
+
+- name: Deploy Elasticsearch CA from file
+  ansible.builtin.copy:
+    src: "{{ kibana_elasticsearch_ssl_ca_src }}"
+    dest: "{{ kibana_elasticsearch_ssl_ca_path }}"
+    owner: kibana
+    group: kibana
+    mode: '0644'
+  when: kibana_elasticsearch_ssl_ca_src | length > 0
+  notify: restart kibana
+
+- name: Deploy Elasticsearch CA content
+  ansible.builtin.copy:
+    content: "{{ kibana_elasticsearch_ssl_ca }}"
+    dest: "{{ kibana_elasticsearch_ssl_ca_path }}"
+    owner: kibana
+    group: kibana
+    mode: '0644'
+  when:
+    - kibana_elasticsearch_ssl_ca | length > 0
+    - kibana_elasticsearch_ssl_ca_src | length == 0
+  notify: restart kibana

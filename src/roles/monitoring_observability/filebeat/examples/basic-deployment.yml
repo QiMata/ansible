@@ -18,20 +18,19 @@
           pattern: '^\d{4}-\d{2}-\d{2}'
           negate: true
           match: after
-    
+
+    # Point to Logstash nodes deployed via the data_systems/logstash role
     filebeat_output_type: logstash
-    filebeat_logstash_hosts:
-      - "logstash1.example.com:5044"
-      - "logstash2.example.com:5044"
-    
+    filebeat_logstash_hosts: {{ groups['logstash_servers'] | default(['logstash1.example.com']) | map('regex_replace', '$', ':5044') | list }}
+
     filebeat_global_tags:
       datacenter: "{{ datacenter_name | default('dc1') }}"
       environment: production
       team: infrastructure
-    
+
   roles:
     - monitoring_observability.filebeat
-  
+
   tags:
     - monitoring
     - logging

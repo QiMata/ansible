@@ -1,0 +1,22 @@
+---
+- name: Prepare
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Update package cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+      when: ansible_os_family == 'Debian'
+
+    - name: Install supporting packages
+      ansible.builtin.apt:
+        name:
+          - curl
+          - wget
+          - python3
+          - python3-pip
+          - gnupg
+        state: present
+      when: ansible_os_family == 'Debian'

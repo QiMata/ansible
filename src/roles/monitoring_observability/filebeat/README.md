@@ -82,6 +82,8 @@ filebeat_inputs:
 ### Output Configuration
 
 #### Logstash Output
+
+> **Tip:** Deploy the server-side Beats intake with the `data_systems/logstash` role in this repository. Combine it with `data_systems/elasticsearch` and `data_systems/kibana` to deliver an end-to-end Elastic stack.
 ```yaml
 filebeat_output_type: logstash
 filebeat_logstash_hosts:
@@ -301,7 +303,7 @@ roles/monitoring_observability/filebeat/
 
 - **File Permissions**: Configuration file is set to `0644` (readable by all, writable by owner)
 - **Service User**: Filebeat runs under its default service user
-- **Network Access**: Ensure Logstash endpoint is accessible and secured
+- **Network Access**: Ensure Logstash endpoints managed by the `data_systems/logstash` role are accessible and secured
 - **Log Permissions**: Verify Filebeat has read access to monitored log files
 
 ## Troubleshooting
