@@ -1,0 +1,31 @@
+---
+- name: Ensure supported platform
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family in ["Debian", "RedHat"]
+    fail_msg: >-
+      The monitoring_observability.kibana role currently supports Debian/Ubuntu
+      and RHEL-compatible distributions.
+
+- name: Load platform specific variables
+  ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
+
+- name: Install prerequisite packages
+  ansible.builtin.include_tasks: prereqs.yml
+
+- name: Configure package repositories
+  ansible.builtin.include_tasks: repo.yml
+  when: kibana_repo_manage
+
+- name: Install Kibana packages
+  ansible.builtin.include_tasks: install.yml
+
+- name: Deploy Kibana configuration
+  ansible.builtin.include_tasks: config.yml
+
+- name: Manage Kibana service
+  ansible.builtin.include_tasks: service.yml
+
+- name: Perform Kibana health check
+  ansible.builtin.include_tasks: healthcheck.yml
+  when: kibana_healthcheck_enabled

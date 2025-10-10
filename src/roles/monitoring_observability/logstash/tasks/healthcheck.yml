@@ -1,0 +1,12 @@
+---
+- name: Wait for Logstash API to become available
+  ansible.builtin.uri:
+    url: "{{ logstash_healthcheck_url }}"
+    method: GET
+    status_code: 200
+    validate_certs: false
+  register: logstash_healthcheck_result
+  retries: {{ logstash_healthcheck_retries }}
+  delay: {{ logstash_healthcheck_delay }}
+  until: logstash_healthcheck_result.status == 200
+  changed_when: false

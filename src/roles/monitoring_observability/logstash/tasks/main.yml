@@ -1,0 +1,31 @@
+---
+- name: Ensure supported platform
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family in ["Debian", "RedHat"]
+    fail_msg: >-
+      The monitoring_observability.logstash role currently supports Debian/Ubuntu
+      and RHEL-compatible distributions.
+
+- name: Load platform specific variables
+  ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
+
+- name: Install prerequisite packages
+  ansible.builtin.include_tasks: prereqs.yml
+
+- name: Configure package repositories
+  ansible.builtin.include_tasks: repo.yml
+  when: logstash_repo_manage
+
+- name: Install Logstash packages
+  ansible.builtin.include_tasks: install.yml
+
+- name: Deploy Logstash configuration
+  ansible.builtin.include_tasks: config.yml
+
+- name: Manage Logstash service
+  ansible.builtin.include_tasks: service.yml
+
+- name: Perform Logstash health check
+  ansible.builtin.include_tasks: healthcheck.yml
+  when: logstash_healthcheck_enabled

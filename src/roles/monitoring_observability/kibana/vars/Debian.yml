@@ -1,0 +1,5 @@
+---
+kibana_prereq_packages:
+  - apt-transport-https
+  - gnupg
+kibana_service_name: kibana

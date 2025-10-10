@@ -1,0 +1,7 @@
+---
+- name: Install Logstash prerequisite packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ logstash_prereq_packages }}"
+  when: logstash_prereq_packages | length > 0
