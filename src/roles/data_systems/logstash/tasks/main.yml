@@ -1,0 +1,23 @@
+---
+- name: Assert supported operating system
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family in ['Debian']
+    fail_msg: "The logstash role currently supports Debian-based distributions"
+
+- name: Include installation tasks
+  ansible.builtin.import_tasks: install.yml
+  tags: [logstash, install]
+
+- name: Include TLS tasks
+  ansible.builtin.import_tasks: tls.yml
+  when: logstash_enable_tls
+  tags: [logstash, tls]
+
+- name: Include configuration tasks
+  ansible.builtin.import_tasks: config.yml
+  tags: [logstash, config]
+
+- name: Include service management tasks
+  ansible.builtin.import_tasks: service.yml
+  tags: [logstash, service]

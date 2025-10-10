@@ -1,0 +1,9 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  roles:
+    - role: data_systems/logstash
+      vars:
+        logstash_config_test: true
+        logstash_outputs: []

@@ -1,0 +1,74 @@
+---
+- name: Verify Kibana deployment
+  hosts: all
+  become: true
+  tasks:
+    - name: Gather package facts
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Assert Kibana package installed
+      ansible.builtin.assert:
+        that:
+          - "'kibana' in ansible_facts.packages"
+        fail_msg: "Kibana package is not installed"
+
+    - name: Assert Elasticsearch package installed
+      ansible.builtin.assert:
+        that:
+          - "'elasticsearch' in ansible_facts.packages"
+        fail_msg: "Elasticsearch package is not installed"
+
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Assert Elasticsearch service running
+      ansible.builtin.assert:
+        that:
+          - "ansible_facts.services['elasticsearch.service'].state == 'running'"
+        fail_msg: "Elasticsearch service is not running"
+
+    - name: Assert Kibana service running
+      ansible.builtin.assert:
+        that:
+          - "ansible_facts.services['kibana.service'].state == 'running'"
+        fail_msg: "Kibana service is not running"
+
+    - name: Wait for Kibana HTTP port
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ kibana_server_port }}"
+        timeout: 90
+
+    - name: Query Kibana status API
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ kibana_server_port }}/api/status"
+        method: GET
+        status_code: 200
+      register: kibana_status
+      retries: 15
+      delay: 6
+      until: kibana_status.status == 200
+
+    - name: Assert Kibana status is available
+      ansible.builtin.assert:
+        that:
+          - kibana_status.json.status.overall.level == 'available'
+          - kibana_status.json.status.core.elasticsearch.level == 'available'
+        fail_msg: "Kibana did not report healthy status"
+
+    - name: Query Elasticsearch cluster health
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:9200/_cluster/health"
+        method: GET
+        status_code: 200
+      register: es_health
+      retries: 15
+      delay: 4
+      until: es_health.status == 200
+
+    - name: Assert Elasticsearch health is acceptable
+      ansible.builtin.assert:
+        that:
+          - es_health.json.status in ['green', 'yellow']
+        fail_msg: "Elasticsearch cluster health is not acceptable"

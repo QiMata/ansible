@@ -1,0 +1,6 @@
+---
+- name: Ensure Kibana service state
+  ansible.builtin.service:
+    name: "{{ kibana_service_name }}"
+    state: "{{ kibana_service_state }}"
+    enabled: "{{ kibana_service_enabled }}"

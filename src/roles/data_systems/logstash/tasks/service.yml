@@ -1,0 +1,14 @@
+---
+- name: Validate Logstash configuration
+  ansible.builtin.command:
+    cmd: /usr/share/logstash/bin/logstash --config.test_and_exit -f {{ logstash_pipeline_dir }}
+  register: logstash_config_check
+  changed_when: false
+  failed_when: logstash_config_check.rc != 0
+  when: logstash_config_test
+
+- name: Ensure Logstash service state
+  ansible.builtin.service:
+    name: "{{ logstash_service_name }}"
+    state: "{{ logstash_service_state }}"
+    enabled: "{{ logstash_service_enabled }}"

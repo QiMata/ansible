@@ -1,0 +1,39 @@
+input {
+  beats {
+    host => "{{ logstash_beats_host }}"
+    port => {{ logstash_beats_port }}
+    {% if logstash_enable_tls %}
+    ssl => true
+    ssl_certificate => "{{ logstash_tls_cert_path }}"
+    ssl_key => "{{ logstash_tls_key_path }}"
+    {% if logstash_tls_ca_path %}ssl_certificate_authorities => ["{{ logstash_tls_ca_path }}"]{% endif %}
+    ssl_verify_mode => "{{ logstash_beats_ssl_verify_mode }}"
+    {% else %}
+    ssl => false
+    {% endif %}
+  }
+{% for input_block in logstash_additional_inputs %}
+  {{ input_block }}
+{% endfor %}
+}
+
+filter {
+{% if logstash_filters %}
+{% for filter_block in logstash_filters %}
+  {{ filter_block }}
+{% endfor %}
+{% else %}
+  # No additional filters configured
+{% endif %}
+}
+
+output {
+{% if logstash_outputs %}
+{% for output_block in logstash_outputs %}
+  {{ output_block }}
+{% endfor %}
+{% else %}
+  elasticsearch { hosts => {{ logstash_elasticsearch_hosts | to_json }} index => "logstash-%{+YYYY.MM.dd}" }
+  stdout { codec => rubydebug }
+{% endif %}
+}

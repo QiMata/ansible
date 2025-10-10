@@ -1,0 +1,17 @@
+---
+galaxy_info:
+  author: Automation Team
+  description: Install and configure Logstash with Beats input, TLS, and systemd management.
+  company: Example Corp
+  license: MIT
+  min_ansible_version: '2.12'
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+  galaxy_tags:
+    - logstash
+    - elasticsearch
+    - beats
+    - logging
+  dependencies: []

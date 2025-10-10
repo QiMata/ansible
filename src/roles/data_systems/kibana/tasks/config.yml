@@ -1,0 +1,17 @@
+---
+- name: Ensure Kibana TLS directory exists
+  ansible.builtin.file:
+    path: "{{ kibana_tls_dir }}"
+    state: directory
+    owner: kibana
+    group: kibana
+    mode: '0750'
+
+- name: Render Kibana configuration
+  ansible.builtin.template:
+    src: kibana.yml.j2
+    dest: "{{ kibana_config_path }}"
+    owner: root
+    group: kibana
+    mode: '0640'
+  notify: restart kibana

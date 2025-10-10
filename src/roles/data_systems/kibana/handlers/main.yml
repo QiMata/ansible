@@ -1,0 +1,10 @@
+---
+- name: update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: restart kibana
+  ansible.builtin.service:
+    name: "{{ kibana_service_name }}"
+    state: restarted
+    enabled: true

@@ -1,0 +1,36 @@
+server.host: "{{ kibana_server_host }}"
+server.port: {{ kibana_server_port }}
+server.maxPayloadBytes: {{ kibana_server_max_payload_bytes }}
+{% if kibana_server_public_base_url %}server.publicBaseUrl: "{{ kibana_server_public_base_url }}"
+{% endif %}
+server.name: "{{ ansible_hostname }}"
+server.shutdownTimeout: "5s"
+
+elasticsearch.hosts: {{ kibana_elasticsearch_hosts | to_json }}
+{% if kibana_elasticsearch_username %}elasticsearch.username: "{{ kibana_elasticsearch_username }}"
+{% endif %}
+{% if kibana_elasticsearch_password %}elasticsearch.password: "{{ kibana_elasticsearch_password }}"
+{% endif %}
+elasticsearch.ssl.verificationMode: "{{ kibana_elasticsearch_ssl_verification_mode }}"
+{% if kibana_elasticsearch_ssl_ca_src or kibana_elasticsearch_ssl_ca %}elasticsearch.ssl.certificateAuthorities: ["{{ kibana_elasticsearch_ssl_ca_path }}"]
+{% endif %}
+
+xpack.reporting.enabled: {{ kibana_reporting_enabled | bool | lower }}
+xpack.monitoring.ui.enabled: {{ kibana_monitoring_enabled | bool | lower }}
+xpack.fleet.enabled: {{ kibana_fleet_enabled | bool | lower }}
+telemetry.enabled: {{ kibana_telemetry_enabled | bool | lower }}
+
+{% if kibana_enable_tls %}
+server.ssl.enabled: true
+server.ssl.certificate: "{{ kibana_tls_cert_path }}"
+server.ssl.key: "{{ kibana_tls_key_path }}"
+{% if kibana_tls_ca_src or kibana_tls_ca %}server.ssl.certificateAuthorities: ["{{ kibana_tls_ca_path }}"]
+{% endif %}
+{% else %}
+server.ssl.enabled: false
+{% endif %}
+
+i18n.locale: "{{ kibana_i18n_locale }}"
+
+{% for key, value in kibana_extra_settings.items() %}{{ key }}: {{ value | to_nice_yaml(indent=0) | trim }}
+{% endfor %}

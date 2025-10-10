@@ -1,0 +1,25 @@
+---
+- name: Converge Elasticsearch
+  hosts: all
+  become: true
+  gather_facts: true
+  vars:
+    es_cluster_name: proxmox-es
+    es_heap_size: "512m"
+    es_enable_security: false
+  tasks:
+    - name: Include elasticsearch role
+      ansible.builtin.include_role:
+        name: data_systems/elasticsearch
+
+- name: Converge Kibana
+  hosts: all
+  become: true
+  gather_facts: true
+  vars:
+    kibana_elasticsearch_hosts:
+      - "http://localhost:9200"
+  tasks:
+    - name: Include kibana role
+      ansible.builtin.include_role:
+        name: "{{ playbook_dir }}/../.."

@@ -1,0 +1,52 @@
+---
+- name: Verify Logstash installation
+  hosts: all
+  become: true
+  tasks:
+    - name: Gather package facts
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Assert Logstash package is installed
+      ansible.builtin.assert:
+        that:
+          - "'logstash' in ansible_facts.packages"
+        fail_msg: "Logstash package is not installed"
+
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Assert Logstash service is running
+      ansible.builtin.assert:
+        that:
+          - "ansible_facts.services[logstash_service_name + '.service'].state == 'running'"
+        fail_msg: "Logstash service is not running"
+
+    - name: Wait for Beats input port
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ logstash_beats_port }}"
+        timeout: 30
+
+    - name: Wait for Logstash HTTP API
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ logstash_http_port }}/_node/pipelines"
+        method: GET
+        status_code: 200
+        return_content: true
+      register: logstash_pipelines
+      retries: 15
+      delay: 4
+      until: logstash_pipelines.status == 200
+
+    - name: Assert Beats input is registered
+      ansible.builtin.assert:
+        that:
+          - logstash_pipelines.json.pipelines.main.plugins.inputs | selectattr('name', 'equalto', 'beats') | list | length > 0
+        fail_msg: "Beats input plugin is not active in pipeline"
+
+    - name: Assert default output to Elasticsearch exists
+      ansible.builtin.assert:
+        that:
+          - logstash_pipelines.json.pipelines.main.plugins.outputs | selectattr('name', 'equalto', 'elasticsearch') | list | length > 0
+        fail_msg: "Elasticsearch output not detected in pipeline"

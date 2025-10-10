@@ -1,0 +1,49 @@
+---
+- name: Render Logstash settings
+  ansible.builtin.template:
+    src: logstash.yml.j2
+    dest: "{{ logstash_settings_file }}"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart logstash
+
+- name: Deploy Beats pipeline configuration
+  ansible.builtin.template:
+    src: pipeline-beats.conf.j2
+    dest: "{{ logstash_pipeline_dir }}/beats-input.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart logstash
+
+- name: Configure JVM min heap size
+  ansible.builtin.lineinfile:
+    path: /etc/logstash/jvm.options.d/heap.options
+    regexp: '^\-Xms'
+    line: "-Xms{{ logstash_heap_size }}"
+    create: true
+    mode: '0644'
+  notify: restart logstash
+
+- name: Configure JVM max heap size
+  ansible.builtin.lineinfile:
+    path: /etc/logstash/jvm.options.d/heap.options
+    regexp: '^\-Xmx'
+    line: "-Xmx{{ logstash_heap_size }}"
+    create: true
+    mode: '0644'
+  notify: restart logstash
+
+- name: Deploy additional JVM options
+  ansible.builtin.copy:
+    dest: /etc/logstash/jvm.options.d/99-extra.options
+    content: |-
+      {% for option in logstash_jvm_options_extra %}
+      {{ option }}
+      {% endfor %}
+    owner: root
+    group: root
+    mode: '0644'
+  when: logstash_jvm_options_extra | length > 0
+  notify: restart logstash

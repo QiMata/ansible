@@ -1,0 +1,13 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+  vars:
+    logstash_heap_size: "512m"
+    logstash_monitoring_enabled: true
+    logstash_config_test: true
+  tasks:
+    - name: Include logstash role
+      ansible.builtin.include_role:
+        name: "{{ playbook_dir }}/../.."
