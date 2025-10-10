@@ -29,4 +29,9 @@ apache_nifi_ldap_user_search_filter: ""
 apache_nifi_admin_identity: ""
 
 apache_nifi_elk_integration: false
+apache_nifi_filebeat_logstash_hosts:
+  - "logstash:5044"
 apache_nifi_prometheus_integration: false
+apache_nifi_prometheus_jmx_exporter_version: "0.20.0"
+apache_nifi_prometheus_jmx_port: 9404
+apache_nifi_prometheus_jmx_config_path: "{{ apache_nifi_conf_dir }}/monitoring/jmx_prometheus.yml"

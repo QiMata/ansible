@@ -1,4 +1,6 @@
 ---
+roles:
+  - name: elastic.filebeat
 collections:
   - name: community.postgresql
     version: ">=3.4.0"
