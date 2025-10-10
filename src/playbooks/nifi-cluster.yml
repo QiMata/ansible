@@ -1,15 +1,21 @@
 ---
-- name: Configure Zookeeper nodes
+# This playbook requires a zookeeper_nodes inventory group and variables:
+#   - zookeeper_nodes: ordered list of ZooKeeper hosts (e.g., defined in group_vars/zookeeper_nodes.yml)
+#   - zookeeper_client_port: client port exposed by the ensemble (defaults to 2181 if unset)
+- name: Configure ZooKeeper nodes
   hosts: zookeeper_nodes
   become: true
   roles:
-    - zookeeper_role
+    - role: data_systems.zookeeper
 
 - name: Deploy NiFi cluster
   hosts: nifi_cluster
   become: true
   vars:
     apache_nifi_cluster_enabled: true
-    apache_nifi_zookeeper_connect: "{{ groups['zookeeper_nodes'] | map('extract', hostvars, ['inventory_hostname']) | join(':2181,') }}:2181"
+    apache_nifi_zookeeper_connect: >-
+      {{ groups['zookeeper_nodes']
+         | map('regex_replace', '^(.*)$', '\\1:' ~ (hostvars[groups['zookeeper_nodes'][0]].zookeeper_client_port | default(2181)))
+         | join(',') }}
   roles:
     - apache_nifi

@@ -1,0 +1,5 @@
+---
+- name: Restart ZooKeeper
+  ansible.builtin.service:
+    name: "{{ zookeeper_service_name }}"
+    state: restarted

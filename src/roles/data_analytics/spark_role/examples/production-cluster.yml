@@ -1,9 +1,15 @@
 ---
 # Example playbook for comprehensive Spark cluster deployment
-# This example enables all major features for a production environment
+# This example enables all major features for a production environment and provisions ZooKeeper for HA
+
+- name: Provision ZooKeeper ensemble for Spark and NiFi
+  hosts: zookeeper_nodes
+  become: true
+  roles:
+    - role: data_systems/zookeeper
 
 - name: Deploy Production Spark Cluster with All Features
-  hosts: all
+  hosts: spark_cluster
   become: true
   vars:
     # Basic Spark Configuration
@@ -11,7 +17,7 @@
     spark_role_worker_memory: "8g"
     spark_role_worker_cores: 4
     spark_role_history_enabled: true
-    
+
     # Security Features
     spark_role_security_enabled: true
     spark_role_auth_secret: "{{ vault_spark_auth_secret }}"  # Store in Ansible Vault
@@ -20,23 +26,23 @@
     spark_role_acls_enabled: true
     spark_role_admin_acls: "admin,spark-admin"
     spark_role_view_acls: "*"
-    
+
     # Kerberos (if available)
     spark_role_kerberos_enabled: false  # Set to true in Kerberos environments
     # spark_role_kerberos_principal: "spark/{{ ansible_fqdn }}@{{ kerberos_realm }}"
     # spark_role_kerberos_keytab: "/etc/security/keytabs/spark.keytab"
-    
+
     # Monitoring and Health
     spark_role_health_checks_enabled: true
     spark_role_metrics_enabled: true
     spark_role_prometheus_enabled: true
     spark_role_jmx_enabled: true
-    
+
     # Log Management
     spark_role_log_rotation_enabled: true
     spark_role_log_max_size: "500M"
     spark_role_log_retention_days: 90
-    
+
     # Database Connectivity
     spark_role_jdbc_drivers:
       - name: "postgresql"
@@ -48,13 +54,13 @@
       - name: "oracle"
         url: "https://download.oracle.com/otn-pub/otn_software/jdbc/218/ojdbc11.jar"
         driver_class: "oracle.jdbc.driver.OracleDriver"
-    
+
     # Performance Optimization
     spark_role_performance_tuning_enabled: true
     spark_role_resource_isolation_enabled: true
     spark_role_network_optimization_enabled: true
     spark_role_resource_quotas_enabled: true
-    
+
     # Multi-Environment Configuration
     spark_role_environment: "production"
     spark_role_environment_configs:
@@ -79,7 +85,7 @@
         max_executors: 20
         driver_memory: "4g"
         driver_cores: 2
-    
+
     # Resource Quotas
     spark_role_user_quotas:
       data-science-team:
@@ -94,7 +100,7 @@
         max_cores: 8
         max_memory: "16g"
         max_applications: 3
-    
+
     spark_role_queue_configs:
       high-priority:
         max_cores: 64
@@ -111,27 +117,26 @@
         max_memory: "32g"
         max_applications: 10
         weight: 0.5
-    
+
     # Backup and Recovery
     spark_role_backup_enabled: true
     spark_role_backup_dir: "/opt/spark/backups"
     spark_role_backup_retention_days: 90
-    
+
     # Rolling Updates
     spark_role_rolling_update_enabled: true
     spark_role_rolling_update_batch_size: 2
-    
+
     # Auto-scaling (requires spark_autoscaling role)
     spark_role_autoscaling_enabled: false  # Enable if using auto-scaling
     spark_role_min_workers: 3
     spark_role_max_workers: 20
-    
+
     # High Availability
     spark_role_ha_enabled: true
     spark_role_recovery_dir: "/shared/spark/recovery"  # Shared filesystem for HA
-    # Alternative: ZooKeeper HA
-    # spark_role_zookeeper_hosts: "zk1.example.com:2181,zk2.example.com:2181,zk3.example.com:2181"
-    
+    spark_role_zookeeper_hosts: "{{ groups['zookeeper_nodes'] | map('regex_replace', '^(.*)$', '\\1:' ~ (hostvars[groups['zookeeper_nodes'][0]].zookeeper_client_port | default(2181))) | join(',') }}"
+
   roles:
     - role: data_analytics/spark_role
 
@@ -140,24 +145,24 @@
       ansible.builtin.debug:
         msg: |
           Spark Cluster Deployment Complete!
-          
+
           Master Web UI: http://{{ groups['spark_masters'][0] }}:8080
           History Server: http://{{ groups['spark_masters'][0] }}:18080
-          
+
           Security Features:
           - Authentication: {{ 'Enabled' if spark_role_security_enabled else 'Disabled' }}
           - SSL/TLS: {{ 'Enabled' if spark_role_ssl_enabled else 'Disabled' }}
           - ACLs: {{ 'Enabled' if spark_role_acls_enabled else 'Disabled' }}
-          
+
           Monitoring:
           - Health Checks: {{ 'Enabled' if spark_role_health_checks_enabled else 'Disabled' }}
           - Prometheus Metrics: {{ 'Enabled' if spark_role_prometheus_enabled else 'Disabled' }}
-          
+
           Operational Features:
           - Backup: {{ 'Enabled' if spark_role_backup_enabled else 'Disabled' }}
           - Rolling Updates: {{ 'Enabled' if spark_role_rolling_update_enabled else 'Disabled' }}
           - Performance Tuning: {{ 'Enabled' if spark_role_performance_tuning_enabled else 'Disabled' }}
-          
+
           Run health check: sudo /opt/spark/scripts/health_check.sh
       run_once: true
       delegate_to: localhost
