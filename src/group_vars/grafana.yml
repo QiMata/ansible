@@ -1,0 +1,18 @@
+---
+grafana_admin_user: admin
+grafana_admin_password: "{{ vault_grafana_admin_password }}"
+grafana_datasources:
+  - name: Prometheus
+    type: prometheus
+    url: "{{ grafana_prometheus_url }}"
+    access: proxy
+    isDefault: true
+  - name: Elasticsearch-Logs
+    type: elasticsearch
+    url: "{{ grafana_elasticsearch_url }}"
+    access: proxy
+    jsonData:
+      esVersion: 7.0.0
+      interval: Daily
+      timeField: '@timestamp'
+    database: "logstash-*"

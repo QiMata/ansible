@@ -1,0 +1,6 @@
+---
+amundsen_metadata_neo4j_host: "neo4j-1"
+amundsen_metadata_neo4j_port: 7687
+amundsen_metadata_neo4j_user: neo4j
+amundsen_metadata_neo4j_password: "{{ vault_neo4j_password }}"
+amundsen_metadata_config_class: metadata_service.config.ProdConfig

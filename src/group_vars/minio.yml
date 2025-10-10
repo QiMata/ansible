@@ -1,0 +1,10 @@
+---
+minio_root_user: "{{ vault_minio_root_user }}"
+minio_root_password: "{{ vault_minio_root_password }}"
+minio_enable_tls: true
+minio_self_signed: true
+minio_domain: "data-storage.example.com"
+minio_extra_sans:
+  - "{{ inventory_hostname }}"
+  - "{{ hostvars[inventory_hostname].ansible_host | default(inventory_hostname) }}"
+minio_opts_extra: "--console-address :{{ minio_console_port }} --certs-dir {{ minio_certs_dir }}"

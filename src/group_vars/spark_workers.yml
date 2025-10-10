@@ -1,0 +1,5 @@
+---
+apache_spark_master_host: "{{ hostvars[groups['spark_master'][0]].ansible_host | default(groups['spark_master'][0]) }}"
+apache_spark_master_url: "spark://{{ hostvars[groups['spark_master'][0]].ansible_host | default(groups['spark_master'][0]) }}:7077"
+apache_spark_worker_memory: 4g
+apache_spark_worker_cores: 2

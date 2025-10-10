@@ -1,0 +1,30 @@
+---
+prometheus_node_targets:
+  - "{{ hostvars[groups['airflow_scheduler'][0]].ansible_host | default(groups['airflow_scheduler'][0]) }}:9100"
+  - "{{ hostvars[groups['spark_master'][0]].ansible_host | default(groups['spark_master'][0]) }}:9100"
+  - "{{ hostvars[groups['minio'][0]].ansible_host | default(groups['minio'][0]) }}:9100"
+
+prometheus_additional_scrape_configs: |
+  - job_name: 'airflow-metrics'
+    metrics_path: /admin/metrics
+    static_configs:
+      - targets:
+          - "{{ hostvars[groups['airflow_scheduler'][0]].ansible_host | default(groups['airflow_scheduler'][0]) }}:8080"
+  - job_name: 'spark-master'
+    metrics_path: /metrics/master/json
+    static_configs:
+      - targets:
+          - "{{ hostvars[groups['spark_master'][0]].ansible_host | default(groups['spark_master'][0]) }}:8080"
+  - job_name: 'nifi'
+    metrics_path: /metrics
+    scheme: https
+    static_configs:
+      - targets:
+          - "{{ hostvars[groups['nifi'][0]].ansible_host | default(groups['nifi'][0]) }}:{{ apache_nifi_secure_port }}"
+    tls_config:
+      insecure_skip_verify: true
+  - job_name: 'minio'
+    metrics_path: /minio/v2/metrics/cluster
+    static_configs:
+      - targets:
+          - "{{ hostvars[groups['minio'][0]].ansible_host | default(groups['minio'][0]) }}:{{ minio_server_port }}"

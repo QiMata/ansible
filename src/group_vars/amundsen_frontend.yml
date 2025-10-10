@@ -1,0 +1,4 @@
+---
+amundsen_frontend_metadata_api_base: "{{ amundsen_metadata_api_base }}"
+amundsen_frontend_search_api_base: "{{ amundsen_search_api_base }}"
+amundsen_frontend_config_class: amundsen_application.config.ProdConfig

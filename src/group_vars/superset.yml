@@ -1,0 +1,11 @@
+---
+apache_superset_database_uri: "{{ superset_database_uri }}"
+apache_superset_secret_key: "{{ vault_superset_secret_key }}"
+apache_superset_admin_username: superset_admin
+apache_superset_admin_password: "{{ vault_superset_admin_password }}"
+apache_superset_admin_email: data-platform@example.com
+apache_superset_redis_url: "redis://redis.internal:6379/0"
+apache_superset_celery_broker_url: "{{ airflow_broker_url }}"
+apache_superset_feature_flags:
+  DASHBOARD_NATIVE_FILTERS: true
+  THUMBNAILS: true

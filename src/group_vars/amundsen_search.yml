@@ -1,0 +1,4 @@
+---
+amundsen_search_es_host: "{{ hostvars[groups['elasticsearch'][0]].ansible_host | default(groups['elasticsearch'][0]) }}"
+amundsen_search_es_port: "{{ elasticsearch_http_port }}"
+amundsen_search_config_class: search_service.config.ProdConfig

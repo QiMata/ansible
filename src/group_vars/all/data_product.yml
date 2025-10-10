@@ -1,0 +1,51 @@
+---
+# Cross-service configuration for the composite data product stack
+airflow_metadata_db_name: airflow_metadata
+airflow_metadata_db_user: airflow
+airflow_metadata_db_port: 5432
+airflow_metadata_db_host: "{{ hostvars[groups['postgresql'][0]].ansible_host | default(groups['postgresql'][0]) }}"
+airflow_broker_user: airflow
+airflow_broker_vhost: airflow
+airflow_broker_port: 5672
+airflow_broker_host: "{{ hostvars[groups['rabbitmq'][0]].ansible_host | default(groups['rabbitmq'][0]) }}"
+airflow_broker_url: >-
+  amqp://{{ airflow_broker_user }}:{{ vault_airflow_broker_password }}@{{ airflow_broker_host }}:{{ airflow_broker_port }}/{{ airflow_broker_vhost }}
+airflow_result_backend: >-
+  db+postgresql://{{ airflow_metadata_db_user }}:{{ vault_airflow_db_password }}@{{ airflow_metadata_db_host }}:{{ airflow_metadata_db_port }}/{{ airflow_metadata_db_name }}
+
+superset_metadata_db_name: superset
+superset_metadata_db_user: superset
+superset_metadata_db_port: 5432
+superset_metadata_db_host: "{{ hostvars[groups['postgresql'][0]].ansible_host | default(groups['postgresql'][0]) }}"
+superset_database_uri: >-
+  postgresql+psycopg2://{{ superset_metadata_db_user }}:{{ vault_superset_db_password }}@{{ superset_metadata_db_host }}:{{ superset_metadata_db_port }}/{{ superset_metadata_db_name }}
+
+amundsen_metadata_api_base: "http://{{ groups['amundsen_metadata'][0] }}:5002"
+amundsen_search_api_base: "http://{{ groups['amundsen_search'][0] }}:5001"
+
+minio_console_public_url: "https://{{ groups['minio'][0] }}:9001"
+
+prometheus_http_port: 9090
+prometheus_targets_airflow: []
+prometheus_targets_spark: []
+prometheus_targets_minio: []
+prometheus_targets_nifi: []
+
+# Grafana integrates Prometheus as default datasource and optionally Elasticsearch
+elasticsearch_http_port: 9200
+grafana_prometheus_url: "http://{{ hostvars[groups['prometheus'][0]].ansible_host | default(groups['prometheus'][0]) }}:{{ prometheus_http_port }}"
+grafana_elasticsearch_url: "http://{{ hostvars[groups['elasticsearch'][0]].ansible_host | default(groups['elasticsearch'][0]) }}:{{ elasticsearch_http_port }}"
+
+data_product_postgres_databases:
+  - name: "{{ airflow_metadata_db_name }}"
+    owner: "{{ airflow_metadata_db_user }}"
+  - name: "{{ superset_metadata_db_name }}"
+    owner: "{{ superset_metadata_db_user }}"
+
+data_product_postgres_users:
+  - name: "{{ airflow_metadata_db_user }}"
+    password: "{{ vault_airflow_db_password }}"
+    priv: "ALL"
+  - name: "{{ superset_metadata_db_user }}"
+    password: "{{ vault_superset_db_password }}"
+    priv: "ALL"
