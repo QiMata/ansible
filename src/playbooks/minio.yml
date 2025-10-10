@@ -1,0 +1,31 @@
+---
+- name: Deploy MinIO object storage cluster
+  hosts: minio_servers
+  become: true
+  gather_facts: true
+  vars_files:
+    - "{{ playbook_dir }}/../group_vars/all.yml"
+  vars:
+    # These credentials must be stored in Ansible Vault and injected via inventory or extra vars.
+    minio_root_user: "{{ vault_minio_root_user | default('minioadmin') }}"
+    minio_root_password: "{{ vault_minio_root_password | default('CHANGEME-minio-root') }}"
+
+    # TLS certificates are typically provisioned by security_identity/letsencrypt or an external PKI.
+    minio_enable_tls: true
+    minio_cert_public: "{{ vault_minio_tls_cert | default('/etc/letsencrypt/live/minio/fullchain.pem') }}"
+    minio_cert_private: "{{ vault_minio_tls_key | default('/etc/letsencrypt/live/minio/privkey.pem') }}"
+
+    # Enable observability so Prometheus can scrape MinIO cluster metrics.
+    minio_enable_prometheus: true
+    minio_prometheus_port: {{ minio_cluster_prometheus_port | default(9000) }}
+
+    # Replication credentials should also come from Vault if disaster recovery buckets are configured.
+    minio_enable_replication: {{ minio_cluster_enable_replication | default(true) }}
+    minio_replication_targets:
+      - target_url: "https://dr-minio.example.com"
+        access_key: "{{ vault_minio_dr_access_key | default('CHANGEME-access') }}"
+        secret_key: "{{ vault_minio_dr_secret | default('CHANGEME-secret') }}"
+        replicate_delete_markers: true
+  roles:
+    - role: data_systems.minio
+      tags: ['minio']
