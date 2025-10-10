@@ -1,0 +1,18 @@
+# Managed by Ansible - ZooKeeper configuration
+# Cluster ensemble definition for NiFi and Spark HA
+
+tickTime={{ zookeeper_tick_time }}
+dataDir={{ zookeeper_data_dir }}
+clientPort={{ zookeeper_client_port }}
+initLimit={{ zookeeper_init_limit }}
+syncLimit={{ zookeeper_sync_limit }}
+maxClientCnxns={{ zookeeper_max_client_cnxns }}
+autopurge.snapRetainCount={{ zookeeper_autopurge_snap_retain_count }}
+autopurge.purgeInterval={{ zookeeper_autopurge_purge_interval }}
+minSessionTimeout={{ zookeeper_min_session_timeout }}
+maxSessionTimeout={{ zookeeper_max_session_timeout }}
+4lw.commands.whitelist={{ zookeeper_four_letter_word_whitelist }}
+
+{% for key, value in zookeeper_additional_properties.items() | sort %}{{ key }}={{ value }}
+{% endfor %}{% for host in zookeeper_nodes %}{% set host_data = hostvars.get(host, {}) %}server.{{ loop.index }}={{ host_data.get('zookeeper_quorum_host', host_data.get('ansible_hostname', host_data.get('ansible_host', host))) }}:{{ zookeeper_peer_port }}:{{ zookeeper_leader_election_port }}
+{% endfor %}

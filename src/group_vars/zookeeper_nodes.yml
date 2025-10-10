@@ -1,0 +1,7 @@
+---
+# ZooKeeper ensemble definition shared by NiFi and Spark HA playbooks
+zookeeper_nodes:
+  - zk1.example.com
+  - zk2.example.com
+  - zk3.example.com
+zookeeper_client_port: 2181

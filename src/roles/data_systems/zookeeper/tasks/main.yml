@@ -1,0 +1,67 @@
+---
+- name: Validate ZooKeeper ensemble configuration
+  ansible.builtin.assert:
+    that:
+      - zookeeper_nodes | length > 0
+      - inventory_hostname in zookeeper_nodes
+    fail_msg: >-
+      The `zookeeper_nodes` variable must contain the inventory hostnames for the ensemble and include the current host
+      ({{ inventory_hostname }}).
+    success_msg: "ZooKeeper ensemble configuration is valid."
+
+- name: Determine ZooKeeper myid
+  ansible.builtin.set_fact:
+    zookeeper_myid: "{{ zookeeper_nodes.index(inventory_hostname) + 1 }}"
+
+- name: Install ZooKeeper packages
+  ansible.builtin.package:
+    name: "{{ zookeeper_package }}"
+    state: present
+
+- name: Ensure ZooKeeper configuration directory exists
+  ansible.builtin.file:
+    path: "{{ zookeeper_conf_dir }}"
+    state: directory
+    owner: root
+    group: zookeeper
+    mode: "0750"
+
+- name: Ensure ZooKeeper data directory exists
+  ansible.builtin.file:
+    path: "{{ zookeeper_data_dir }}"
+    state: directory
+    owner: zookeeper
+    group: zookeeper
+    mode: "0750"
+
+- name: Ensure ZooKeeper log directory exists
+  ansible.builtin.file:
+    path: "{{ zookeeper_log_dir }}"
+    state: directory
+    owner: zookeeper
+    group: zookeeper
+    mode: "0755"
+
+- name: Render zoo.cfg configuration
+  ansible.builtin.template:
+    src: zoo.cfg.j2
+    dest: "{{ zookeeper_config_path }}"
+    owner: root
+    group: zookeeper
+    mode: "0640"
+  notify: Restart ZooKeeper
+
+- name: Render myid file
+  ansible.builtin.template:
+    src: myid.j2
+    dest: "{{ zookeeper_myid_path }}"
+    owner: zookeeper
+    group: zookeeper
+    mode: "0640"
+  notify: Restart ZooKeeper
+
+- name: Ensure ZooKeeper service is enabled and started
+  ansible.builtin.service:
+    name: "{{ zookeeper_service_name }}"
+    state: started
+    enabled: true

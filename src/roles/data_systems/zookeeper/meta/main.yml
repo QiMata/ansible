@@ -1,0 +1,30 @@
+---
+galaxy_info:
+  role_name: zookeeper
+  namespace: data_systems
+  author: Example Inc.
+  description: Install and configure an Apache ZooKeeper ensemble for NiFi and Spark HA deployments.
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+  galaxy_tags:
+    - zookeeper
+    - ha
+    - nifi
+    - spark
+    - coordination
+    - systemd
+
+dependencies: []
