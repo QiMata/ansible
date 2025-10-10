@@ -1,0 +1,38 @@
+---
+- name: Validate data product orchestrator
+  hosts: localhost
+  gather_facts: false
+  vars:
+    repo_root: "{{ playbook_dir | dirname | dirname | dirname }}"
+    src_root: "{{ repo_root }}/src"
+    orchestrator_playbook: "{{ src_root }}/playbooks/data_product.yml"
+    sample_inventory: "{{ src_root }}/molecule/data_product/inventory/hosts.ini"
+    sample_group_vars: "{{ repo_root }}/src/inventories/data_product_sample/group_vars/all/main.yml"
+    sample_vault_vars: "{{ repo_root }}/src/inventories/data_product_sample/group_vars/all/vault.yml"
+  tasks:
+    - name: Syntax check orchestrator playbook
+      ansible.builtin.command: >-
+        ansible-playbook
+        -i {{ sample_inventory }}
+        {{ orchestrator_playbook }}
+        --syntax-check
+        -e @{{ sample_group_vars }}
+        -e @{{ sample_vault_vars }}
+      args:
+        chdir: "{{ repo_root }}"
+      environment:
+        ANSIBLE_CONFIG: "{{ src_root }}/ansible.cfg"
+
+    - name: Execute base tag in check mode against localhost
+      ansible.builtin.command: >-
+        ansible-playbook
+        -i {{ sample_inventory }}
+        {{ orchestrator_playbook }}
+        --tags base
+        --check
+        -e @{{ sample_group_vars }}
+        -e @{{ sample_vault_vars }}
+      args:
+        chdir: "{{ repo_root }}"
+      environment:
+        ANSIBLE_CONFIG: "{{ src_root }}/ansible.cfg"

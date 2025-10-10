@@ -1,0 +1,39 @@
+---
+# Basic JMX exporter configuration for NiFi metrics
+startDelaySeconds: 0
+ssl: false
+lowercaseOutputName: false
+lowercaseOutputLabelNames: false
+
+rules:
+  - pattern: "org.apache.nifi<type=FlowFileRepository><>(.+)"
+    name: nifi_flowfile_repository_$1
+    type: GAUGE
+
+  - pattern: "org.apache.nifi<type=ContentRepository><>(.+)"
+    name: nifi_content_repository_$1
+    type: GAUGE
+
+  - pattern: "org.apache.nifi<type=ProvenanceRepository><>(.+)"
+    name: nifi_provenance_repository_$1
+    type: GAUGE
+
+  - pattern: "org.apache.nifi.processors<type=ProcessorMetrics, name=(.+)><>(.+)"
+    name: nifi_processor_$2
+    labels:
+      processor: $1
+    type: GAUGE
+
+  - pattern: "java.lang<type=Memory><>(.+)"
+    name: jvm_memory_$1
+    type: GAUGE
+
+  - pattern: "java.lang<type=GarbageCollector, name=(.+)><>(.+)"
+    name: jvm_gc_$2
+    labels:
+      gc: $1
+    type: GAUGE
+
+  - pattern: "java.lang<type=Threading><>(.+)"
+    name: jvm_threads_$1
+    type: GAUGE

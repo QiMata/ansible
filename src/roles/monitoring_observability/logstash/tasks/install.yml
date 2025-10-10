@@ -1,0 +1,11 @@
+---
+- name: Install Logstash package
+  ansible.builtin.package:
+    name: "{{ logstash_package }}"
+    state: "{{ logstash_package_state }}"
+
+- name: Install additional Logstash packages
+  ansible.builtin.package:
+    name: "{{ logstash_extra_packages }}"
+    state: present
+  when: logstash_extra_packages | length > 0

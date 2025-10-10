@@ -13,6 +13,7 @@ roles:
   - name: robertdebock.auto_update
   - name: robertdebock.fail2ban
   - name: geerlingguy.clamav
+  - name: elastic.filebeat
 
 collections:
   - name: community.general

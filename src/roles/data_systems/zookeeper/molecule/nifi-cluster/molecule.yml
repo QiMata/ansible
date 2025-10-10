@@ -1,0 +1,45 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: zk1
+    image: geerlingguy/docker-debian12-ansible:latest
+    privileged: true
+    command: /lib/systemd/systemd
+    pre_build_image: true
+  - name: zk2
+    image: geerlingguy/docker-debian12-ansible:latest
+    privileged: true
+    command: /lib/systemd/systemd
+    pre_build_image: true
+  - name: zk3
+    image: geerlingguy/docker-debian12-ansible:latest
+    privileged: true
+    command: /lib/systemd/systemd
+    pre_build_image: true
+provisioner:
+  name: ansible
+  inventory:
+    hosts:
+      all:
+        children:
+          zookeeper_nodes:
+            hosts:
+              zk1:
+              zk2:
+              zk3:
+    group_vars:
+      zookeeper_nodes:
+        zookeeper_nodes:
+          - zk1
+          - zk2
+          - zk3
+        zookeeper_client_port: 2181
+  playbooks:
+    converge: ../../../../playbooks/nifi-cluster.yml
+  options:
+    limit: zookeeper_nodes
+verifier:
+  name: ansible

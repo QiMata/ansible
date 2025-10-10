@@ -1,0 +1,4 @@
+---
+kibana_prereq_packages:
+  - yum-utils
+kibana_service_name: kibana

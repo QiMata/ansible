@@ -1,73 +1,171 @@
 ---
-- name: Prepare base infrastructure for the data product stack
+# Orchestrated deployment for the reference data product stack
+# Combines settings from both branches (codex/add-composite-playbook-and-documentation and main)
+# Notes:
+# - Host groups are unioned to support either inventory naming (e.g., postgresql OR database).
+# - Variable names are normalized with safe defaults (e.g., data_product_postgresql_* or data_product_postgres_*).
+# - Airflow keeps the richer config from main; retains readiness checks and DB migration from codex.
+# - Both Redis (main) and RabbitMQ (codex) brokers are supported; define one of the groups and set broker URL vars.
+
+- name: Apply base configuration to all data product nodes
   hosts: all
   become: true
-  tags:
-    - base
+  tags: [base]
   roles:
-    - role: common
-    - role: update_system
+    - base
 
-- name: Configure PostgreSQL for metadata and analytics services
-  hosts: postgresql
+# ----------------------- PostgreSQL -----------------------
+- name: Provision PostgreSQL for metadata-driven services
+  hosts: postgresql:database
   become: true
-  strategy: linear
-  tags:
-    - database
+  tags: [database]
+  vars:
+    _pg_databases: "{{ data_product_postgresql_databases | default(data_product_postgres_databases | default([])) }}"
+    _pg_users: "{{ data_product_postgresql_users | default(data_product_postgres_users | default([])) }}"
+    _pg_hba_entries: "{{ data_product_postgresql_hba_entries | default(omit) }}"
+    _pg_listen_addresses: "{{ data_product_postgresql_listen_addresses | default(omit) }}"
   pre_tasks:
-    - name: Validate PostgreSQL database definitions
+    - name: Validate PostgreSQL database/user definitions
       ansible.builtin.assert:
         that:
-          - data_product_postgres_databases | length > 0
-          - data_product_postgres_users | length > 0
+          - _pg_databases | length > 0
+          - _pg_users | length > 0
         fail_msg: >-
-          Define data_product_postgres_databases and data_product_postgres_users in group_vars/postgresql.yml.
+          Define data_product_postgresql_databases (or data_product_postgres_databases) and
+          data_product_postgresql_users (or data_product_postgres_users) in group_vars for the DB hosts.
   roles:
     - role: postgresql
       vars:
-        postgresql_databases: "{{ data_product_postgres_databases }}"
-        postgresql_users: "{{ data_product_postgres_users }}"
+        postgresql_databases: "{{ _pg_databases }}"
+        postgresql_users: "{{ _pg_users }}"
+        postgresql_hba_entries: "{{ _pg_hba_entries }}"
+        postgresql_listen_addresses: "{{ _pg_listen_addresses }}"
   post_tasks:
     - name: Expose connection info for dependent services
       ansible.builtin.debug:
-        msg: "{{ item.name }} available on postgresql://{{ item.user }}@{{ ansible_host | default(inventory_hostname) }}:{{ postgresql_port }}/{{ item.name }}"
-      loop: "{{ data_product_postgres_databases }}"
+        msg: "{{ item.name }} available on postgresql://{{ item.user }}@{{ ansible_host | default(inventory_hostname) }}:{{ postgresql_port | default(5432) }}/{{ item.name }}"
+      loop: "{{ _pg_databases }}"
       run_once: true
 
-- name: Deploy RabbitMQ message broker for Airflow
+# ----------------------- Message Brokers -----------------------
+- name: Configure Redis message broker (preferred)
+  hosts: message_broker
+  become: true
+  tags: [message_broker, redis]
+  roles:
+    - role: geerlingguy.redis
+      vars:
+        redis_bind: "{{ data_product_redis_bind }}"
+        redis_port: "{{ data_product_redis_port | default(6379) }}"
+        redis_password: "{{ vault_data_product_redis_password | default(omit) }}"
+        redis_requirepass: "{{ (vault_data_product_redis_password is defined) | ternary(true, false) }}"
+
+- name: Deploy RabbitMQ message broker (optional alternative for Airflow)
   hosts: rabbitmq
   become: true
-  tags:
-    - rabbitmq
+  tags: [message_broker, rabbitmq]
   roles:
     - role: rabbitmq
 
-- name: Deploy Apache Airflow scheduler nodes
-  hosts: airflow_scheduler
+# ----------------------- Object Storage (MinIO) -----------------------
+- name: Deploy object storage with MinIO (systemd)
+  hosts: storage
   become: true
-  strategy: linear
-  tags:
-    - airflow
+  tags: [storage, minio]
+  roles:
+    - role: minio_systemd
+      vars:
+        minio_volumes: "{{ data_product_minio_datadirs | join(' ') }}"
+        minio_root_user: "{{ data_product_minio_root_user }}"
+        minio_root_password: "{{ vault_data_product_minio_root_password }}"
+
+# (If you keep older minio role + group)
+- name: Deploy MinIO object storage (legacy role)
+  hosts: minio
+  become: true
+  tags: [storage, minio]
+  roles:
+    - role: minio
+
+# ----------------------- Elasticsearch -----------------------
+- name: Configure Elasticsearch cluster
+  hosts: elasticsearch
+  become: true
+  tags: [elastic]
+  roles:
+    - role: elasticsearch
+      vars:
+        es_cluster_name: "{{ data_product_elasticsearch_cluster_name }}"
+        es_heap_size: "{{ data_product_elasticsearch_heap }}"
+        es_network_host: "{{ data_product_elasticsearch_network_host }}"
+        es_http_port: "{{ data_product_elasticsearch_http_port | default(9200) }}"
+        es_bootstrap_memory_lock: true
+        es_enable_security: "{{ data_product_elasticsearch_security_enabled | default(false) }}"
+        es_api_basic_auth_username: "{{ data_product_elasticsearch_api_user | default(omit) }}"
+        es_api_basic_auth_password: "{{ vault_data_product_elasticsearch_api_password | default(omit) }}"
+
+# ----------------------- Airflow -----------------------
+- name: Deploy Apache Airflow core services
+  hosts: airflow_core
+  become: true
+  tags: [airflow]
   pre_tasks:
+    - name: Determine PostgreSQL host for Airflow metadata
+      ansible.builtin.set_fact:
+        _pg_host: >-
+          {{
+            (groups['postgresql'] | default([]) | length) > 0
+            | ternary(
+                hostvars[groups['postgresql'][0]].ansible_host | default(groups['postgresql'][0]),
+                (groups['database'] | default([]) | length) > 0
+                | ternary(hostvars[groups['database'][0]].ansible_host | default(groups['database'][0]), omit)
+              )
+          }}
     - name: Wait for PostgreSQL to accept connections
       ansible.builtin.wait_for:
-        host: "{{ hostvars[groups['postgresql'][0]].ansible_host | default(groups['postgresql'][0]) }}"
-        port: "{{ airflow_metadata_db_port }}"
+        host: "{{ _pg_host }}"
+        port: "{{ data_product_airflow_db_port | default(5432) }}"
         timeout: 300
       delegate_to: localhost
       run_once: true
-    - name: Wait for RabbitMQ message broker
+      when: _pg_host is defined
+    - name: Determine broker host and port for Airflow
+      ansible.builtin.set_fact:
+        _broker_host: >-
+          {{
+            (groups['message_broker'] | default([]) | length) > 0
+            | ternary(
+                hostvars[groups['message_broker'][0]].ansible_host | default(groups['message_broker'][0]),
+                (groups['rabbitmq'] | default([]) | length) > 0
+                | ternary(hostvars[groups['rabbitmq'][0]].ansible_host | default(groups['rabbitmq'][0]), omit)
+              )
+          }}
+        _broker_port: >-
+          {{
+            (groups['message_broker'] | default([]) | length) > 0
+            | ternary(data_product_redis_port | default(6379),
+                      airflow_broker_port | default(5672))
+          }}
+    - name: Wait for message broker
       ansible.builtin.wait_for:
-        host: "{{ hostvars[groups['rabbitmq'][0]].ansible_host | default(groups['rabbitmq'][0]) }}"
-        port: "{{ airflow_broker_port }}"
+        host: "{{ _broker_host }}"
+        port: "{{ _broker_port }}"
         timeout: 300
       delegate_to: localhost
       run_once: true
+      when: _broker_host is defined
   roles:
     - role: apache_airflow
       vars:
-        apache_airflow_systemd_units_enabled:
-          - scheduler
+        apache_airflow_executor: "{{ data_product_airflow_executor }}"
+        apache_airflow_database_host: "{{ data_product_airflow_db_host | default(_pg_host) }}"
+        apache_airflow_database_port: "{{ data_product_airflow_db_port | default(5432) }}"
+        apache_airflow_database_name: "{{ data_product_airflow_db_name }}"
+        apache_airflow_database_user: "{{ data_product_airflow_db_user }}"
+        apache_airflow_database_password: "{{ vault_airflow_db_password }}"
+        apache_airflow_broker_url: "{{ data_product_airflow_broker_url }}"
+        apache_airflow_fernet_key: "{{ vault_airflow_fernet_key }}"
+        apache_airflow_systemd_units_enabled: "{{ data_product_airflow_units }}"
   post_tasks:
     - name: Run Airflow database migrations (db upgrade)
       ansible.builtin.command: airflow db upgrade
@@ -76,126 +174,163 @@
       changed_when: false
       run_once: true
       become: true
-      become_user: "{{ apache_airflow_user }}"
+      become_user: "{{ apache_airflow_user | default('airflow') }}"
 
-- name: Deploy Apache Airflow webserver nodes
-  hosts: airflow_webserver
+- name: Configure dedicated Airflow schedulers
+  hosts: airflow_schedulers
   become: true
-  tags:
-    - airflow
+  tags: [airflow, airflow_scheduler]
   roles:
-    - role: apache_airflow
+    - role: airflow_scheduler
       vars:
-        apache_airflow_systemd_units_enabled:
-          - webserver
+        airflow_scheduler_instances: "{{ data_product_airflow_scheduler_instances }}"
+        airflow_scheduler_heartrate: "{{ data_product_airflow_scheduler_heartrate }}"
+        airflow_scheduler_service_state: started
+
+- name: Configure Airflow webservers
+  hosts: airflow_webservers
+  become: true
+  tags: [airflow, airflow_webserver]
+  roles:
+    - role: airflow_webserver
+      vars:
+        airflow_webserver_bind_host: "{{ data_product_airflow_web_host }}"
+        airflow_webserver_port: "{{ data_product_airflow_web_port }}"
+        airflow_webserver_base_url: "{{ data_product_airflow_base_url }}"
 
 - name: Deploy Apache Airflow workers
   hosts: airflow_workers
   become: true
-  tags:
-    - airflow
+  tags: [airflow]
   roles:
     - role: apache_airflow
       vars:
         apache_airflow_systemd_units_enabled:
           - worker
 
-- name: Provision Apache Spark masters
-  hosts: spark_master
+# ----------------------- NiFi -----------------------
+- name: Configure NiFi automation services
+  hosts: nifi:nifi_nodes
   become: true
-  tags:
-    - spark
-  roles:
-    - role: apache_spark
-      vars:
-        apache_spark_master_host: "{{ inventory_hostname }}"
-
-- name: Provision Apache Spark workers
-  hosts: spark_workers
-  become: true
-  tags:
-    - spark
-  roles:
-    - role: apache_spark
-      vars:
-        apache_spark_master_host: "{{ hostvars[groups['spark_master'][0]].inventory_hostname | default(groups['spark_master'][0]) }}"
-        apache_spark_master_url: "spark://{{ hostvars[groups['spark_master'][0]].ansible_host | default(groups['spark_master'][0]) }}:7077"
-
-- name: Deploy Apache NiFi processors
-  hosts: nifi
-  become: true
-  tags:
-    - nifi
+  tags: [nifi]
   roles:
     - role: apache_nifi
+      vars:
+        apache_nifi_version: "{{ data_product_nifi_version | default(omit) }}"
+        apache_nifi_https_enabled: "{{ data_product_nifi_https_enabled | default(false) }}"
+        apache_nifi_authentication_strategy: "{{ data_product_nifi_auth_strategy | default(omit) }}"
+        apache_nifi_sensitive_props_key: "{{ vault_data_product_nifi_sensitive_key | default(omit) }}"
 
-- name: Deploy MinIO object storage
-  hosts: minio
+# ----------------------- Spark -----------------------
+- name: Configure Apache Spark masters
+  hosts: spark_master
   become: true
-  tags:
-    - minio
+  tags: [spark]
   roles:
-    - role: minio
+    - role: spark_role
+      vars:
+        spark_role_master_host: "{{ inventory_hostname }}"
+        spark_role_history_enabled: "{{ data_product_spark_history_enabled | default(false) }}"
+        spark_role_prometheus_enabled: "{{ data_product_spark_prometheus_enabled | default(false) }}"
+        apache_spark_symlink_dir: "{{ spark_role_symlink_dir | default(omit) }}"
+        apache_spark_user: "{{ spark_role_user | default(omit) }}"
+        apache_spark_group: "{{ spark_role_group | default(omit) }}"
 
+- name: Configure Apache Spark workers
+  hosts: spark_workers:spark_worker
+  become: true
+  tags: [spark]
+  roles:
+    - role: spark_role
+      vars:
+        spark_role_master_host: "{{ data_product_spark_master_host }}"
+        spark_role_worker_memory: "{{ data_product_spark_worker_memory | default(omit) }}"
+        spark_role_worker_cores: "{{ data_product_spark_worker_cores | default(omit) }}"
+        apache_spark_symlink_dir: "{{ spark_role_symlink_dir | default(omit) }}"
+        apache_spark_user: "{{ spark_role_user | default(omit) }}"
+        apache_spark_group: "{{ spark_role_group | default(omit) }}"
+
+# ----------------------- Amundsen -----------------------
 - name: Deploy Amundsen metadata service
   hosts: amundsen_metadata
   become: true
-  tags:
-    - amundsen
+  tags: [amundsen]
   roles:
     - role: amundsen_metadata
+      vars:
+        amundsen_metadata_neo4j_host: "{{ data_product_amundsen_neo4j_host }}"
+        amundsen_metadata_neo4j_port: "{{ data_product_amundsen_neo4j_port }}"
+        amundsen_metadata_neo4j_user: "{{ data_product_amundsen_neo4j_user }}"
+        amundsen_metadata_neo4j_password: "{{ vault_data_product_amundsen_neo4j_password }}"
 
 - name: Deploy Amundsen search service
   hosts: amundsen_search
   become: true
-  tags:
-    - amundsen
+  tags: [amundsen]
   roles:
     - role: amundsen_search
+      vars:
+        amundsen_search_es_host: "{{ data_product_elasticsearch_coordinator }}"
+        amundsen_search_es_port: "{{ data_product_elasticsearch_http_port | default(9200) }}"
+        amundsen_search_es_scheme: "{{ data_product_elasticsearch_scheme | default('http') }}"
+        amundsen_search_es_auth_enabled: "{{ data_product_elasticsearch_security_enabled | default(false) }}"
+        amundsen_search_es_username: "{{ data_product_elasticsearch_api_user | default(omit) }}"
+        amundsen_search_es_password: "{{ vault_data_product_elasticsearch_api_password | default(omit) }}"
 
 - name: Deploy Amundsen frontend
   hosts: amundsen_frontend
   become: true
-  tags:
-    - amundsen
+  tags: [amundsen]
   roles:
     - role: amundsen_frontend
+      vars:
+        amundsen_frontend_api_host: "{{ data_product_amundsen_metadata_url }}"
+        amundsen_frontend_search_host: "{{ data_product_amundsen_search_url }}"
+        amundsen_frontend_auth_enabled: "{{ data_product_amundsen_auth_enabled | default(false) }}"
 
+# ----------------------- Superset -----------------------
 - name: Deploy Apache Superset
-  hosts: superset
+  hosts: superset:superset_servers
   become: true
-  strategy: linear
-  tags:
-    - superset
+  tags: [superset]
   pre_tasks:
-    - name: Ensure Superset metadata database reachable
+    - name: Ensure Superset metadata DB reachable (optional if using external URI)
       ansible.builtin.wait_for:
-        host: "{{ hostvars[groups['postgresql'][0]].ansible_host | default(groups['postgresql'][0]) }}"
-        port: "{{ superset_metadata_db_port }}"
+        host: "{{ _pg_host | default(hostvars[groups['postgresql'][0]].ansible_host | default(groups['postgresql'][0])) }}"
+        port: "{{ superset_metadata_db_port | default(5432) }}"
         timeout: 300
       delegate_to: localhost
       run_once: true
+      when:
+        - (groups['postgresql'] | default([]) | length) > 0
+        - superset_metadata_db_port is defined
   roles:
     - role: apache_superset
+      vars:
+        superset_database_uri: "{{ data_product_superset_database_uri }}"
+        superset_redis_url: "{{ data_product_superset_redis_url | default(omit) }}"
+        superset_secret_key: "{{ vault_superset_secret_key | default(omit) }}"
 
-- name: Deploy Prometheus monitoring
-  hosts: prometheus
+# ----------------------- Monitoring -----------------------
+- name: Deploy Prometheus server
+  hosts: prometheus:prometheus_servers
   become: true
-  tags:
-    - prometheus
+  tags: [monitoring, prometheus]
   roles:
     - role: prometheus
+      vars:
+        prometheus_global_scrape_interval: "{{ data_product_prometheus_scrape_interval | default('15s') }}"
+        prometheus_global_evaluation_interval: "{{ data_product_prometheus_evaluation_interval | default('15s') }}"
+        prometheus_targets: "{{ data_product_prometheus_targets | default(omit) }}"
 
 - name: Deploy Grafana dashboards
-  hosts: grafana
+  hosts: grafana:grafana_servers
   become: true
-  strategy: linear
-  tags:
-    - grafana
+  tags: [monitoring, grafana]
   pre_tasks:
     - name: Wait for Prometheus API
       ansible.builtin.uri:
-        url: "http://{{ hostvars[groups['prometheus'][0]].ansible_host | default(groups['prometheus'][0]) }}:{{ prometheus_http_port }}/-/ready"
+        url: "http://{{ hostvars[groups['prometheus'][0]].ansible_host | default(groups['prometheus'][0]) }}:{{ prometheus_http_port | default(9090) }}/-/ready"
         method: GET
         status_code: 200
         timeout: 10
@@ -205,5 +340,10 @@
       until: _prometheus_ready.status == 200
       delegate_to: localhost
       run_once: true
+      when: (groups['prometheus'] | default([]) | length) > 0
   roles:
     - role: grafana
+      vars:
+        grafana_security_admin_user: "{{ data_product_grafana_admin_user | default(omit) }}"
+        grafana_security_admin_password: "{{ vault_grafana_admin_password | default(omit) }}"
+        grafana_datasources: "{{ data_product_grafana_datasources | default(omit) }}"

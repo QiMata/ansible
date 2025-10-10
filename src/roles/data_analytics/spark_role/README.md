@@ -346,6 +346,7 @@ This would allow you to run or skip the Spark role via the tag, but by default (
 * **Collections:** No external Ansible collections are required by this role. All modules used (e.g., `apt`, `get_url`, `file`, `template`, `systemd`) are part of the standard Ansible built-in modules (or included in Ansible by default). You do not need to install any Ansible Galaxy collections to use this role. Just make sure your Ansible installation has these modules (which it will if you’re using a typical Ansible distribution for Debian-based targets).
 
 * **Role Dependencies:** None. This role does not depend on any other Ansible roles. The `meta/main.yml` specifies no role dependencies, and all necessary setup (including Java installation) is handled internally. In contrast to some community Spark roles which require a separate Java role (e.g., `geerlingguy.java`), this role installs OpenJDK by itself. You can, however, use it alongside other roles (see **Cross-Referencing Related Roles** below for some suggestions) but there is no hard requirement to include another role before this one.
+* **ZooKeeper for HA:** If you enable Spark master HA with ZooKeeper, provision a ZooKeeper ensemble before applying this role. This repository now includes `data_systems.zookeeper`, which installs and configures ZooKeeper for both NiFi and Spark. See the [Example Playbook](#example-playbook) section for guidance on combining the roles.
 
 * **External Packages:** The role will install the following software on the target hosts:
 
@@ -398,11 +399,56 @@ Below is an example of how to use the `apache_spark` in an Ansible playbook to s
         spark_master_host: "{{ groups['spark_master'][0] }}"  # Point workers to the first master host
         spark_master_url: "spark://{{ groups['spark_master'][0] }}:7077"  # Construct master URL (if not using default)
         # Note: If HA with multiple masters, you might list multiple masters in spark_master_host in a comma-separated form for Spark (not typical; usually ZooKeeper handles HA)
+
+### Integrating ZooKeeper for Spark HA
+
+If you enable `spark_ha_enabled: true`, deploy a ZooKeeper ensemble first so Spark masters can coordinate. The repository's [`data_systems.zookeeper`](../../data_systems/zookeeper/README.md) role provides this capability. A combined playbook might look like:
+
+```yaml
+- name: Provision ZooKeeper ensemble for Spark HA
+  hosts: zookeeper_nodes
+  become: true
+  roles:
+    - role: data_systems.zookeeper
+      vars:
+        zookeeper_nodes: {{ groups['zookeeper_nodes'] }}
+
+- name: Install and configure Spark Masters with HA
+  hosts: spark_master
+  become: yes
+  roles:
+    - role: apache_spark
+      vars:
+        spark_ha_enabled: true
+        spark_role_zookeeper_hosts: >-
+          {{ groups['zookeeper_nodes']
+             | map('regex_replace', '^(.*)$', '\1:' ~ (hostvars[groups['zookeeper_nodes'][0]].zookeeper_client_port | default(2181)))
+             | join(',') }}
 ```
+
+Define the ZooKeeper hosts in your inventory, for example:
+
+```ini
+[zookeeper_nodes]
+zk1.example.com
+zk2.example.com
+zk3.example.com
+```
+
+And group variables (e.g., `group_vars/zookeeper_nodes.yml`):
+
+```yaml
+zookeeper_nodes:
+  - zk1.example.com
+  - zk2.example.com
+  - zk3.example.com
+zookeeper_client_port: 2181
+```
+
 
 **Usage notes:** In the above playbook, we run the role on the master group and workers group separately. We set `spark_history_enabled: true` for the master so that it runs a history server (if you don’t want the history server, you can omit that). On the workers, we override `spark_master_host` to the hostname of the master (using the first host in the `spark_master` group). This ensures that each worker’s systemd service knows where to connect. We also explicitly set `spark_master_url` in this example for clarity, but in fact the role would compute it from `spark_master_host` automatically. The `become: yes` is important because installing packages and configuring services require root privileges.
 
-If you wanted to deploy a **High Availability** Spark Master setup, you would have two or more hosts in `spark_master` group. In that case, you *must* set `spark_ha_enabled: true` on those hosts (e.g., via group vars or in the play as shown commented) and configure either `spark_zookeeper_hosts` (for ZooKeeper-based HA) or `spark_recovery_dir` (for file-based HA on shared storage). ZooKeeper is the more common approach for Spark HA. Ensure you have a ZooKeeper ensemble running and provide its hosts in `spark_zookeeper_hosts`. The role will then configure each Spark Master to register with ZooKeeper and perform leader election. For file-based HA, choose a path (e.g., an NFS mount or distributed filesystem location) that all masters can access, and set `spark_recovery_dir` to that path on all master nodes.
+If you wanted to deploy a **High Availability** Spark Master setup, you would have two or more hosts in `spark_master` group. In that case, you *must* set `spark_ha_enabled: true` on those hosts (e.g., via group vars or in the play as shown commented) and configure either `spark_zookeeper_hosts` (for ZooKeeper-based HA) or `spark_recovery_dir` (for file-based HA on shared storage). ZooKeeper is the more common approach for Spark HA. Ensure you have a ZooKeeper ensemble running and provide its hosts in `spark_role_zookeeper_hosts`. The role will then configure each Spark Master to register with ZooKeeper and perform leader election. For file-based HA, choose a path (e.g., an NFS mount or distributed filesystem location) that all masters can access, and set `spark_recovery_dir` to that path on all master nodes.
 
 After running the playbook, you should have:
 
@@ -541,7 +587,7 @@ By addressing these considerations — using proper network restrictions, keepin
 
 This Spark role is one part of a larger ecosystem. In the same repository (and more broadly in a data platform deployment), there are other roles that can complement or be used alongside **Spark**. Depending on your use case, you might consider the following:
 
-* **`zookeeper` role:** If you plan to enable Spark Master HA with ZooKeeper, you will need a running ZooKeeper ensemble. Check if this repository includes a role to set up **Apache ZooKeeper** (often a role might be named `zookeeper` or integrated into other roles). For example, the **Apache NiFi** clustering in this repo uses ZooKeeper, so a ZK setup might exist. If not, you may use a community role or set up ZooKeeper manually. Ensuring ZooKeeper is highly available and secure is important if it’s used for coordinating Spark masters.
+* **`data_systems.zookeeper` role:** Spark Master HA relies on a healthy ZooKeeper ensemble. This repository now ships with `data_systems.zookeeper`, the same role consumed by the NiFi clustering playbook, so you can provision the ensemble consistently for Spark and NiFi. Apply that role to hosts in your `zookeeper_nodes` inventory group before running this Spark role with HA enabled.
 
 * **`apache_airflow` role:** Apache Airflow is another orchestrator in the data ecosystem. There is an **Apache Airflow** role in this repository that deploys Airflow. Airflow can be used to schedule Spark jobs as part of workflows (using Spark submit operators or Kubernetes operators, etc.). While Airflow and Spark are independent, you might deploy both and have Airflow trigger jobs on the Spark cluster. If you are building out a complete data pipeline, consider deploying Airflow (with the `apache_airflow` role) to manage and schedule Spark jobs or other tasks.
 

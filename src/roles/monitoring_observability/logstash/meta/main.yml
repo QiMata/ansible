@@ -1,0 +1,14 @@
+---
+galaxy_info:
+  role_name: logstash
+  namespace: monitoring_observability
+  author: Example Inc.
+  description: Install and configure Logstash for Elastic Stack deployments.
+  license: MIT
+  min_ansible_version: "2.13"
+  platforms:
+    - name: Debian
+      versions: ["bullseye", "bookworm"]
+    - name: Ubuntu
+      versions: ["focal", "jammy"]
+dependencies: []

@@ -1,0 +1,4 @@
+---
+# Worker node handles Celery task execution.
+data_product_airflow_units:
+  - worker

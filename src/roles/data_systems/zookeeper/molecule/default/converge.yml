@@ -1,0 +1,9 @@
+---
+- name: Converge
+  hosts: zookeeper_nodes
+  become: true
+  vars:
+    zookeeper_nodes: {{ groups['zookeeper_nodes'] }}
+    zookeeper_client_port: 2181
+  roles:
+    - role: data_systems/zookeeper
