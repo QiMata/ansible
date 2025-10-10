@@ -1,4 +1,7 @@
 ---
-rabbitmq_erlang_cookie: !vault |
-  $ANSIBLE_VAULT;1.1;AES256;example
-  <encrypted rabbitmq cookie here>
+rabbitmq_erlang_cookie: "{{ vault_rabbitmq_erlang_cookie }}"
+rabbitmq_clustered: false
+rabbitmq_port: "{{ airflow_broker_port }}"
+rabbitmq_plugins:
+  - rabbitmq_management
+  - rabbitmq_prometheus

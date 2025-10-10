@@ -1,0 +1,209 @@
+---
+- name: Prepare base infrastructure for the data product stack
+  hosts: all
+  become: true
+  tags:
+    - base
+  roles:
+    - role: common
+    - role: update_system
+
+- name: Configure PostgreSQL for metadata and analytics services
+  hosts: postgresql
+  become: true
+  strategy: linear
+  tags:
+    - database
+  pre_tasks:
+    - name: Validate PostgreSQL database definitions
+      ansible.builtin.assert:
+        that:
+          - data_product_postgres_databases | length > 0
+          - data_product_postgres_users | length > 0
+        fail_msg: >-
+          Define data_product_postgres_databases and data_product_postgres_users in group_vars/postgresql.yml.
+  roles:
+    - role: postgresql
+      vars:
+        postgresql_databases: "{{ data_product_postgres_databases }}"
+        postgresql_users: "{{ data_product_postgres_users }}"
+  post_tasks:
+    - name: Expose connection info for dependent services
+      ansible.builtin.debug:
+        msg: "{{ item.name }} available on postgresql://{{ item.user }}@{{ ansible_host | default(inventory_hostname) }}:{{ postgresql_port }}/{{ item.name }}"
+      loop: "{{ data_product_postgres_databases }}"
+      run_once: true
+
+- name: Deploy RabbitMQ message broker for Airflow
+  hosts: rabbitmq
+  become: true
+  tags:
+    - rabbitmq
+  roles:
+    - role: rabbitmq
+
+- name: Deploy Apache Airflow scheduler nodes
+  hosts: airflow_scheduler
+  become: true
+  strategy: linear
+  tags:
+    - airflow
+  pre_tasks:
+    - name: Wait for PostgreSQL to accept connections
+      ansible.builtin.wait_for:
+        host: "{{ hostvars[groups['postgresql'][0]].ansible_host | default(groups['postgresql'][0]) }}"
+        port: "{{ airflow_metadata_db_port }}"
+        timeout: 300
+      delegate_to: localhost
+      run_once: true
+    - name: Wait for RabbitMQ message broker
+      ansible.builtin.wait_for:
+        host: "{{ hostvars[groups['rabbitmq'][0]].ansible_host | default(groups['rabbitmq'][0]) }}"
+        port: "{{ airflow_broker_port }}"
+        timeout: 300
+      delegate_to: localhost
+      run_once: true
+  roles:
+    - role: apache_airflow
+      vars:
+        apache_airflow_systemd_units_enabled:
+          - scheduler
+  post_tasks:
+    - name: Run Airflow database migrations (db upgrade)
+      ansible.builtin.command: airflow db upgrade
+      environment:
+        AIRFLOW_HOME: "{{ apache_airflow_home }}"
+      changed_when: false
+      run_once: true
+      become: true
+      become_user: "{{ apache_airflow_user }}"
+
+- name: Deploy Apache Airflow webserver nodes
+  hosts: airflow_webserver
+  become: true
+  tags:
+    - airflow
+  roles:
+    - role: apache_airflow
+      vars:
+        apache_airflow_systemd_units_enabled:
+          - webserver
+
+- name: Deploy Apache Airflow workers
+  hosts: airflow_workers
+  become: true
+  tags:
+    - airflow
+  roles:
+    - role: apache_airflow
+      vars:
+        apache_airflow_systemd_units_enabled:
+          - worker
+
+- name: Provision Apache Spark masters
+  hosts: spark_master
+  become: true
+  tags:
+    - spark
+  roles:
+    - role: apache_spark
+      vars:
+        apache_spark_master_host: "{{ inventory_hostname }}"
+
+- name: Provision Apache Spark workers
+  hosts: spark_workers
+  become: true
+  tags:
+    - spark
+  roles:
+    - role: apache_spark
+      vars:
+        apache_spark_master_host: "{{ hostvars[groups['spark_master'][0]].inventory_hostname | default(groups['spark_master'][0]) }}"
+        apache_spark_master_url: "spark://{{ hostvars[groups['spark_master'][0]].ansible_host | default(groups['spark_master'][0]) }}:7077"
+
+- name: Deploy Apache NiFi processors
+  hosts: nifi
+  become: true
+  tags:
+    - nifi
+  roles:
+    - role: apache_nifi
+
+- name: Deploy MinIO object storage
+  hosts: minio
+  become: true
+  tags:
+    - minio
+  roles:
+    - role: minio
+
+- name: Deploy Amundsen metadata service
+  hosts: amundsen_metadata
+  become: true
+  tags:
+    - amundsen
+  roles:
+    - role: amundsen_metadata
+
+- name: Deploy Amundsen search service
+  hosts: amundsen_search
+  become: true
+  tags:
+    - amundsen
+  roles:
+    - role: amundsen_search
+
+- name: Deploy Amundsen frontend
+  hosts: amundsen_frontend
+  become: true
+  tags:
+    - amundsen
+  roles:
+    - role: amundsen_frontend
+
+- name: Deploy Apache Superset
+  hosts: superset
+  become: true
+  strategy: linear
+  tags:
+    - superset
+  pre_tasks:
+    - name: Ensure Superset metadata database reachable
+      ansible.builtin.wait_for:
+        host: "{{ hostvars[groups['postgresql'][0]].ansible_host | default(groups['postgresql'][0]) }}"
+        port: "{{ superset_metadata_db_port }}"
+        timeout: 300
+      delegate_to: localhost
+      run_once: true
+  roles:
+    - role: apache_superset
+
+- name: Deploy Prometheus monitoring
+  hosts: prometheus
+  become: true
+  tags:
+    - prometheus
+  roles:
+    - role: prometheus
+
+- name: Deploy Grafana dashboards
+  hosts: grafana
+  become: true
+  strategy: linear
+  tags:
+    - grafana
+  pre_tasks:
+    - name: Wait for Prometheus API
+      ansible.builtin.uri:
+        url: "http://{{ hostvars[groups['prometheus'][0]].ansible_host | default(groups['prometheus'][0]) }}:{{ prometheus_http_port }}/-/ready"
+        method: GET
+        status_code: 200
+        timeout: 10
+      register: _prometheus_ready
+      retries: 30
+      delay: 10
+      until: _prometheus_ready.status == 200
+      delegate_to: localhost
+      run_once: true
+  roles:
+    - role: grafana

@@ -1,0 +1,10 @@
+---
+apache_airflow_executor: CeleryExecutor
+apache_airflow_database_url: >-
+  postgresql+psycopg2://{{ airflow_metadata_db_user }}:{{ vault_airflow_db_password }}@{{ airflow_metadata_db_host }}:{{ airflow_metadata_db_port }}/{{ airflow_metadata_db_name }}
+apache_airflow_broker_url: "{{ airflow_broker_url }}"
+apache_airflow_result_backend: "{{ airflow_result_backend }}"
+apache_airflow_fernet_key: "{{ vault_airflow_fernet_key }}"
+apache_airflow_worker_concurrency: 8
+apache_airflow_systemd_units_enabled:
+  - worker

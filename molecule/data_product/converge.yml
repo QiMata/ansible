@@ -1,0 +1,9 @@
+---
+- name: Molecule syntax check for data product stack
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Run ansible-playbook syntax check on the composite playbook
+      ansible.builtin.command: >-
+        ansible-playbook -i ../../inventories/data_product.ini ../../src/playbooks/data_product.yml --syntax-check
+      changed_when: false

@@ -1,0 +1,17 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: delegated
+lint: |
+  ansible-lint --offline -x var-naming,run-once,no-changed-when ../../src/playbooks/data_product.yml
+platforms:
+  - name: localhost
+provisioner:
+  name: ansible
+  playbooks:
+    converge: converge.yml
+scenario:
+  name: data_product
+verifier:
+  name: ansible
