@@ -141,3 +141,61 @@ These files contain the baseline defaults needed by the `base` role. Override th
 same relative layout into your own project or by providing inventory-specific `group_vars` and
 `host_vars`. This keeps the playbook runnable across environments without requiring host-specific
 files in version control.
+## Data product orchestration playbook
+
+A full data and analytics stack can now be deployed with the orchestrator playbook at
+`src/playbooks/data_product.yml`. The playbook chains the base hardening role with
+PostgreSQL, Redis, Apache Airflow, MinIO, Apache Spark, Apache NiFi, the Amundsen
+catalog, Apache Superset, Prometheus, Grafana, and the Elasticsearch stack so that
+cross-service credentials and dependencies are wired automatically.
+
+### Prerequisites
+1. Install the required community roles and collections before running the playbook:
+   ```bash
+   ansible-galaxy install -r src/requirements.yml
+   ```
+2. Copy the sample inventory and adjust addresses to match your environment. The
+   repository ships with `src/inventories/data_product_sample/hosts.ini` which includes
+   group definitions for database, message broker, analytics, monitoring, storage, and
+   search tiers.
+3. Update `src/inventories/data_product_sample/group_vars/all/vault.yml` with production
+   credentials and encrypt it with Ansible Vault. The orchestrator expects the following
+   vaulted variables:
+   - `vault_airflow_db_password`
+   - `vault_airflow_fernet_key`
+   - `vault_data_product_redis_password`
+   - `vault_data_product_minio_root_password`
+   - `vault_data_product_elasticsearch_api_password`
+   - `vault_data_product_nifi_sensitive_key`
+   - `vault_data_product_amundsen_neo4j_password`
+   - `vault_data_product_amundsen_db_password`
+   - `vault_superset_db_password`
+   - `vault_superset_secret_key`
+   - `vault_grafana_admin_password`
+
+### Running the playbook
+```bash
+ansible-playbook \
+  -i src/inventories/data_product_sample/hosts.ini \
+  src/playbooks/data_product.yml \
+  --vault-password-file ~/.vault_pass
+```
+
+Use the `--tags` flag to run targeted subsets (for example `--tags database,airflow`)
+while iterating on specific services.
+
+### Recommended validation steps
+- Syntax check the playbook:
+  ```bash
+  ansible-playbook -i src/inventories/data_product_sample/hosts.ini src/playbooks/data_product.yml --syntax-check
+  ```
+- Execute the Molecule smoke scenario for the aggregated deployment (see
+  `src/molecule/data_product`) after installing the delegated driver plugin:
+  ```bash
+  pip install 'molecule-plugins[delegated]'
+  cd src && molecule test -s data_product
+  ```
+
+The sample inventory provides cross-service variables for Airflow ↔ PostgreSQL/Redis,
+Superset ↔ Redis/PostgreSQL, and Grafana ↔ Prometheus/Elasticsearch so the default run
+works end-to-end once secrets are vaulted and hostnames are updated.

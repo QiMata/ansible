@@ -1,0 +1,123 @@
+---
+# Shared defaults for the sample data product deployment
+# Values here are safe defaults that can be customised per environment.
+
+# PostgreSQL configuration consumed by the postgresql role
+data_product_postgresql_databases:
+  - name: airflow
+    owner: airflow_app
+  - name: superset
+    owner: superset_app
+  - name: amundsen
+    owner: amundsen_app
+
+data_product_postgresql_users:
+  - name: airflow_app
+    password: "{{ vault_airflow_db_password }}"
+    priv: "ALL"
+  - name: superset_app
+    password: "{{ vault_superset_db_password }}"
+    priv: "ALL"
+  - name: amundsen_app
+    password: "{{ vault_data_product_amundsen_db_password }}"
+    priv: "ALL"
+
+data_product_postgresql_hba_entries:
+  - { type: local, database: all, user: postgres, address: '', method: peer }
+  - { type: host, database: all, user: all, address: '0.0.0.0/0', method: md5 }
+  - { type: host, database: all, user: all, address: '::/0', method: md5 }
+
+data_product_postgresql_listen_addresses: "*"
+
+# Redis / message broker defaults
+data_product_redis_bind: 0.0.0.0
+data_product_redis_port: 6379
+
+# MinIO settings
+data_product_minio_datadirs:
+  - /var/lib/minio/data
+data_product_minio_root_user: minioadmin
+
+# Elasticsearch cluster defaults
+data_product_elasticsearch_cluster_name: data-product-search
+data_product_elasticsearch_heap: 2g
+data_product_elasticsearch_network_host: 0.0.0.0
+data_product_elasticsearch_http_port: 9200
+data_product_elasticsearch_security_enabled: false
+data_product_elasticsearch_api_user: elastic
+data_product_elasticsearch_scheme: http
+data_product_elasticsearch_coordinator: "{{ hostvars[groups['elasticsearch'][0]].ansible_host | default(groups['elasticsearch'][0]) }}"
+
+# Airflow configuration
+data_product_airflow_executor: CeleryExecutor
+data_product_airflow_db_host: "{{ hostvars[groups['database'][0]].ansible_host | default(groups['database'][0]) }}"
+data_product_airflow_db_port: 5432
+data_product_airflow_db_name: airflow
+data_product_airflow_db_user: airflow_app
+data_product_airflow_broker_url: "redis://:{{ vault_data_product_redis_password }}@{{ hostvars[groups['message_broker'][0]].ansible_host | default(groups['message_broker'][0]) }}:{{ data_product_redis_port }}/0"
+data_product_airflow_units:
+  - webserver
+  - scheduler
+  - worker
+  - flower
+data_product_airflow_scheduler_instances: 1
+data_product_airflow_scheduler_heartrate: 5
+data_product_airflow_web_host: 0.0.0.0
+data_product_airflow_web_port: 8080
+data_product_airflow_base_url: "http://{{ groups['airflow_webservers'][0] }}:{{ data_product_airflow_web_port }}"
+
+# NiFi configuration
+data_product_nifi_version: 1.23.2
+data_product_nifi_https_enabled: true
+data_product_nifi_auth_strategy: ldap
+
+# Spark configuration
+data_product_spark_history_enabled: true
+data_product_spark_prometheus_enabled: true
+data_product_spark_master_host: "{{ groups['spark_master'][0] }}"
+data_product_spark_worker_memory: 2g
+data_product_spark_worker_cores: 2
+
+# Amundsen configuration
+data_product_amundsen_neo4j_host: localhost
+data_product_amundsen_neo4j_port: 7687
+data_product_amundsen_neo4j_user: amundsen
+data_product_amundsen_metadata_url: "http://{{ groups['amundsen_metadata'][0] }}:5002"
+data_product_amundsen_search_url: "http://{{ groups['amundsen_search'][0] }}:5001"
+data_product_amundsen_auth_enabled: false
+
+# Superset configuration
+data_product_superset_database_uri: "postgresql+psycopg2://superset_app:{{ vault_superset_db_password }}@{{ data_product_airflow_db_host }}:{{ data_product_airflow_db_port }}/superset"
+data_product_superset_redis_url: "redis://:{{ vault_data_product_redis_password }}@{{ hostvars[groups['message_broker'][0]].ansible_host | default(groups['message_broker'][0]) }}:{{ data_product_redis_port }}/1"
+
+# Prometheus
+# Targets are provided as a map compatible with the prometheus role defaults
+data_product_prometheus_scrape_interval: 15s
+data_product_prometheus_evaluation_interval: 15s
+data_product_prometheus_targets:
+  node_exporter:
+    - "{{ hostvars[groups['airflow_schedulers'][0]].ansible_host | default(groups['airflow_schedulers'][0]) }}:9100"
+    - "{{ hostvars[groups['spark_master'][0]].ansible_host | default(groups['spark_master'][0]) }}:9100"
+  airflow:
+    - "{{ groups['airflow_webservers'][0] }}:8793"
+  superset:
+    - "{{ groups['superset_servers'][0] }}:9101"
+
+# Grafana datasources - Prometheus and Elasticsearch out of the box
+data_product_grafana_admin_user: admin
+data_product_grafana_datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: "http://{{ hostvars[groups['prometheus_servers'][0]].ansible_host | default(groups['prometheus_servers'][0]) }}:9090"
+    isDefault: true
+    jsonData:
+      timeInterval: 15s
+  - name: Elasticsearch-Logs
+    type: elasticsearch
+    access: proxy
+    url: "http://{{ hostvars[groups['elasticsearch'][0]].ansible_host | default(groups['elasticsearch'][0]) }}:{{ data_product_elasticsearch_http_port }}"
+    jsonData:
+      index: "logs-*"
+      timeField: "@timestamp"
+      esVersion: 7
