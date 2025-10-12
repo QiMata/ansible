@@ -19,7 +19,7 @@
         update_existing: true
         extra:
           sslmode: "require"
-          
+
       - conn_id: "postgres_analytics"
         conn_type: "postgres"
         host: "{{ postgres_analytics_host }}"
@@ -52,7 +52,7 @@
           aws_access_key_id: "{{ aws_access_key }}"
           aws_secret_access_key: "{{ aws_secret_key }}"
           region_name: "us-west-2"
-          
+
       - conn_id: "gcp_bigquery"
         conn_type: "google_cloud_platform"
         description: "GCP BigQuery connection"
@@ -84,7 +84,7 @@
       ansible.builtin.include_role:
         name: airflow_connector
       vars:
-        airflow_connections: "{{ all_airflow_connections }}"
+        airflow_connections: "{{ all_airflow_connections }}"  # noqa var-naming
         airflow_connector_list_connections: true
         airflow_connector_verbose: true
 
@@ -92,15 +92,15 @@
       ansible.builtin.include_role:
         name: airflow_connector
       vars:
-        airflow_connections_export_file: "/opt/airflow/backup/connections_{{ ansible_date_time.epoch }}.json"
-        airflow_connections_export_format: "json"
+        airflow_connections_export_file: "/opt/airflow/backup/connections_{{ ansible_date_time.epoch }}.json"  # noqa var-naming
+        airflow_connections_export_format: "json"  # noqa var-naming
       tags: backup
 
     - name: Cleanup old connections if needed
       ansible.builtin.include_role:
         name: airflow_connector
       vars:
-        airflow_connections_to_delete:
+        airflow_connections_to_delete:  # noqa var-naming
           - "old_postgres_conn"
           - "deprecated_api"
       when: cleanup_old_connections | default(false) | bool

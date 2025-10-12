@@ -63,10 +63,14 @@
       - receiver: slack-oncall
         group_by: ['alertname', 'team']
         matchers:
-          - { label: team, match: =~, value: 'data|platform' }
+          - label: team
+            match: '=~'
+            value: 'data|platform'
       - receiver: email-sre
         matchers:
-          - { label: severity, match: =, value: 'critical' }
+          - label: severity
+            match: '='
+            value: 'critical'
   roles:
     - role: monitoring_observability.grafana
       tags: ['grafana']
