@@ -3,11 +3,11 @@
   hosts: neo4j_servers
   become: true
   roles:
-    - role: data_systems.neo4j
+    - role: neo4j
 
 - name: Converge Cluster
   hosts: neo4j_core:neo4j_replica
   become: true
   serial: 1
   roles:
-    - role: data_systems.neo4j
+    - role: neo4j

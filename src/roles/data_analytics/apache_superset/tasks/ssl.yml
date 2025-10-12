@@ -10,36 +10,38 @@
     group: root
     mode: '0755'
   loop:
-    - "{{ superset_ssl_cert_path }}"
-    - "{{ superset_ssl_key_path }}"
-  tags: ['superset', 'superset_ssl']
+    - "{{ apache_superset_ssl_cert_path }}"
+    - "{{ apache_superset_ssl_key_path }}"
+  tags: ['superset', 'apache_superset_ssl']
 
 - name: Check if SSL certificate exists
   ansible.builtin.stat:
-    path: "{{ superset_ssl_cert_path }}"
+    path: "{{ apache_superset_ssl_cert_path }}"
   register: ssl_cert_stat
-  tags: ['superset', 'superset_ssl']
+  tags: ['superset', 'apache_superset_ssl']
 
 - name: Check if SSL private key exists
   ansible.builtin.stat:
-    path: "{{ superset_ssl_key_path }}"
+    path: "{{ apache_superset_ssl_key_path }}"
   register: ssl_key_stat
-  tags: ['superset', 'superset_ssl']
+  tags: ['superset', 'apache_superset_ssl']
 
 - name: Generate self-signed SSL certificate if none exists
+  when: not ssl_cert_stat.stat.exists or not ssl_key_stat.stat.exists
+  tags: ['superset', 'apache_superset_ssl']
   block:
     - name: Generate private key
       community.crypto.openssl_privatekey:
-        path: "{{ superset_ssl_key_path }}"
+        path: "{{ apache_superset_ssl_key_path }}"
         size: 2048
         owner: root
-        group: "{{ superset_group }}"
+        group: "{{ apache_superset_group }}"
         mode: '0640'
 
     - name: Generate certificate signing request
       community.crypto.openssl_csr:
         path: "/tmp/superset.csr"
-        privatekey_path: "{{ superset_ssl_key_path }}"
+        privatekey_path: "{{ apache_superset_ssl_key_path }}"
         common_name: "{{ ansible_fqdn }}"
         subject_alt_name:
           - "DNS:{{ ansible_fqdn }}"
@@ -48,36 +50,34 @@
 
     - name: Generate self-signed certificate
       community.crypto.x509_certificate:
-        path: "{{ superset_ssl_cert_path }}"
-        privatekey_path: "{{ superset_ssl_key_path }}"
+        path: "{{ apache_superset_ssl_cert_path }}"
+        privatekey_path: "{{ apache_superset_ssl_key_path }}"
         csr_path: "/tmp/superset.csr"
         provider: selfsigned
         owner: root
-        group: "{{ superset_group }}"
+        group: "{{ apache_superset_group }}"
         mode: '0644'
 
     - name: Remove CSR file
       ansible.builtin.file:
         path: "/tmp/superset.csr"
         state: absent
-  when: not ssl_cert_stat.stat.exists or not ssl_key_stat.stat.exists
-  tags: ['superset', 'superset_ssl']
 
 - name: Generate DH parameters if not exists
   community.crypto.openssl_dhparam:
-    path: "{{ superset_ssl_dhparam_path }}"
+    path: "{{ apache_superset_ssl_dhparam_path }}"
     size: 2048
     owner: root
     group: root
     mode: '0644'
-  when: superset_ssl_dhparam_path != ""
-  tags: ['superset', 'superset_ssl']
+  when: apache_superset_ssl_dhparam_path != ""
+  tags: ['superset', 'apache_superset_ssl']
 
 - name: Validate SSL certificate
   community.crypto.x509_certificate_info:
-    path: "{{ superset_ssl_cert_path }}"
+    path: "{{ apache_superset_ssl_cert_path }}"
   register: ssl_cert_info
-  tags: ['superset', 'superset_ssl']
+  tags: ['superset', 'apache_superset_ssl']
 
 - name: Display SSL certificate information
   ansible.builtin.debug:
@@ -85,4 +85,4 @@
       - "SSL Certificate Subject: {{ ssl_cert_info.subject }}"
       - "SSL Certificate Valid From: {{ ssl_cert_info.not_before }}"
       - "SSL Certificate Valid Until: {{ ssl_cert_info.not_after }}"
-  tags: ['superset', 'superset_ssl']
+  tags: ['superset', 'apache_superset_ssl']

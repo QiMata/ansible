@@ -76,7 +76,7 @@
         url: "http://localhost:{{ neo4j_http_port }}"
         method: GET
         status_code: [200, 401]
-        return_content: yes
+        return_content: true
       register: http_api_test
       retries: "{{ neo4j_health_check_retries }}"
       delay: "{{ neo4j_health_check_delay }}"
@@ -94,7 +94,7 @@
         url: "http://localhost:{{ neo4j_http_port }}/db/data/"
         method: GET
         status_code: [200, 401]
-        return_content: yes
+        return_content: true
       register: db_api_test
 
     - name: Verify database API endpoint
@@ -117,7 +117,7 @@
           statements:
             - statement: "RETURN 1 as test_value"
         status_code: [200, 401]
-        return_content: yes
+        return_content: true
       register: cypher_test
       when: not (neo4j_enable_security | default(false))
 
@@ -143,7 +143,7 @@
           statements:
             - statement: "CREATE (n:HealthCheck {name: 'test_node', timestamp: timestamp()}) RETURN n"
         status_code: [200, 401]
-        return_content: yes
+        return_content: true
       register: create_node_test
       when: not (neo4j_enable_security | default(false))
 
@@ -156,7 +156,7 @@
           statements:
             - statement: "MATCH (n:HealthCheck) RETURN count(n) as node_count"
         status_code: [200, 401]
-        return_content: yes
+        return_content: true
       register: query_node_test
       when: not (neo4j_enable_security | default(false))
 
@@ -179,7 +179,7 @@
         url: "http://localhost:{{ neo4j_http_port }}/db/manage/server/version"
         method: GET
         status_code: [200, 401]
-        return_content: yes
+        return_content: true
       register: version_info
 
     - name: Get Neo4j JMX information
@@ -187,7 +187,7 @@
         url: "http://localhost:{{ neo4j_http_port }}/db/manage/server/jmx/domain/java.lang/instance%3Dtype%3DMemory"
         method: GET
         status_code: [200, 401, 404]
-        return_content: yes
+        return_content: true
       register: jmx_info
 
     - name: Display Neo4j performance metrics
@@ -234,7 +234,7 @@
           statements:
             - statement: "MATCH (n:HealthCheck) DELETE n"
         status_code: [200, 401]
-        return_content: yes
+        return_content: true
       register: cleanup_result
       when: not (neo4j_enable_security | default(false))
 
@@ -252,7 +252,15 @@
           ✓ Bolt Port Access: {{ 'OK' if bolt_port_check is succeeded else 'Failed' }}
           ✓ HTTP API: {{ 'OK' if http_api_test.status in [200, 401] else 'Failed' }}
           ✓ Database API: {{ 'OK' if db_api_test.status in [200, 401] else 'Failed' }}
-          ✓ Cypher Queries: {{ 'OK' if (not (neo4j_enable_security | default(false)) and cypher_test is defined and cypher_test.status == 200) else 'Skipped (Security Enabled)' }}
+          ✓ Cypher Queries: {{
+            'OK'
+            if (
+              not (neo4j_enable_security | default(false))
+              and cypher_test is defined
+              and cypher_test.status == 200
+            )
+            else 'Skipped (Security Enabled)'
+          }}
           ✓ Health Check: COMPLETED SUCCESSFULLY
 
     - name: Verify overall health check success

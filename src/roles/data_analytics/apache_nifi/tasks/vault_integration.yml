@@ -46,7 +46,7 @@
     owner: "{{ apache_nifi_user }}"
     group: "{{ apache_nifi_group }}"
     mode: '0640'
-  notify: restart nifi
+  notify: Restart NiFi service
   tags: [nifi, vault, config]
 
 - name: Create Vault token file (if using token auth)
@@ -62,6 +62,8 @@
 
 - name: Create Vault AppRole files (if using AppRole auth)
   become: true
+  when: apache_nifi_vault_role_id != "" and apache_nifi_vault_secret_id != ""
+  tags: [nifi, vault]
   block:
     - name: Create role_id file
       ansible.builtin.copy:
@@ -78,9 +80,6 @@
         owner: "{{ apache_nifi_user }}"
         group: "{{ apache_nifi_group }}"
         mode: '0600'
-  when: apache_nifi_vault_role_id != "" and apache_nifi_vault_secret_id != ""
-  tags: [nifi, vault]
-
 - name: Create Vault secret fetching script
   become: true
   ansible.builtin.template:
@@ -98,8 +97,8 @@
     dest: /etc/systemd/system/vault-agent-nifi.service
     mode: '0644'
   notify:
-    - reload systemd
-    - restart vault-agent-nifi
+    - Reload systemd
+    - Restart Vault agent for NiFi
   tags: [nifi, vault, service]
 
 - name: Start and enable Vault agent service

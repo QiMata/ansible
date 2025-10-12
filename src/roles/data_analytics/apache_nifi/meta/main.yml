@@ -12,11 +12,10 @@ galaxy_info:
     - name: Ubuntu
       releases: [focal, jammy]
 
-dependencies:
-  # Optional dependency on Vault role for secrets management
-  - role: security_identity/vault
-    when: apache_nifi_vault_integration | default(false)
-
-  # Optional dependency on Prometheus role for monitoring
-  - role: monitoring_observability/prometheus
-    when: apache_nifi_prometheus_integration | default(false)
+dependencies: []
+# Optional dependency on Vault role for secrets management:
+# - role: security_identity.vault
+#   when: apache_nifi_vault_integration | default(false)
+# Optional dependency on Prometheus role for monitoring:
+# - role: monitoring_observability.prometheus
+#   when: apache_nifi_prometheus_integration | default(false)

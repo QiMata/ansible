@@ -3,8 +3,8 @@
 
 set -e
 
-BACKUP_DIR="{{ superset_config_backup_path }}"
-RETENTION_DAYS="{{ superset_config_backup_retention_days }}"
+BACKUP_DIR="{{ apache_superset_config_backup_path }}"
+RETENTION_DAYS="{{ apache_superset_config_backup_retention_days }}"
 
 if [ ! -d "${BACKUP_DIR}" ]; then
   echo "Backup directory does not exist: ${BACKUP_DIR}"
@@ -14,7 +14,7 @@ fi
 echo "Cleaning up configuration backups older than ${RETENTION_DAYS} days from ${BACKUP_DIR}"
 
 # Remove old backup files
-find "${BACKUP_DIR}" -name "superset_config_*.tar.gz" -mtime +${RETENTION_DAYS} -delete
-find "${BACKUP_DIR}" -name "superset_scripts_*.tar.gz" -mtime +${RETENTION_DAYS} -delete
+find "${BACKUP_DIR}" -name "apache_superset_config_*.tar.gz" -mtime +${RETENTION_DAYS} -delete
+find "${BACKUP_DIR}" -name "apache_superset_scripts_*.tar.gz" -mtime +${RETENTION_DAYS} -delete
 
 echo "Configuration backup cleanup completed at $(date)"

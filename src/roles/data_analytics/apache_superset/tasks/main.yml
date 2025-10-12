@@ -1,51 +1,51 @@
 ---
 - name: Include install tasks
   ansible.builtin.import_tasks: install.yml
-  tags: ['superset', 'superset_install']
+  tags: ['superset', 'apache_superset_install']
 
 - name: Include venv setup tasks
   ansible.builtin.import_tasks: setup_venv.yml
-  tags: ['superset', 'superset_venv']
+  tags: ['superset', 'apache_superset_venv']
 
 - name: Include configuration tasks
   ansible.builtin.import_tasks: config.yml
-  tags: ['superset', 'superset_config']
+  tags: ['superset', 'apache_superset_config']
 
 - name: Include SSL/TLS configuration tasks
   ansible.builtin.import_tasks: ssl.yml
-  when: superset_ssl_enabled
-  tags: ['superset', 'superset_ssl']
+  when: apache_superset_ssl_enabled
+  tags: ['superset', 'apache_superset_ssl']
 
 - name: Include database management tasks
   ansible.builtin.import_tasks: database.yml
-  tags: ['superset', 'superset_database']
+  tags: ['superset', 'apache_superset_database']
 
 - name: Include authentication configuration tasks
   ansible.builtin.import_tasks: auth.yml
-  tags: ['superset', 'superset_auth']
+  tags: ['superset', 'apache_superset_auth']
 
 - name: Include monitoring and logging tasks
   ansible.builtin.import_tasks: monitoring.yml
-  tags: ['superset', 'superset_monitoring']
+  tags: ['superset', 'apache_superset_monitoring']
 
 - name: Include security tasks
   ansible.builtin.import_tasks: security.yml
-  tags: ['superset', 'superset_security']
+  tags: ['superset', 'apache_superset_security']
 
 - name: Include backup tasks
   ansible.builtin.import_tasks: backup.yml
-  when: superset_db_backup_enabled or superset_config_backup_enabled
-  tags: ['superset', 'superset_backup']
+  when: apache_superset_db_backup_enabled or apache_superset_config_backup_enabled
+  tags: ['superset', 'apache_superset_backup']
 
 - name: Include database initialization tasks
   ansible.builtin.import_tasks: init_db.yml
-  tags: ['superset', 'superset_db']
+  tags: ['superset', 'apache_superset_db']
 
 - name: Include Celery worker tasks
   ansible.builtin.import_tasks: celery.yml
-  when: superset_celery_enabled
-  tags: ['superset', 'superset_celery']
+  when: apache_superset_celery_enabled
+  tags: ['superset', 'apache_superset_celery']
 
 - name: Include service tasks
   ansible.builtin.import_tasks: service.yml
-  tags: ['superset', 'superset_service']
+  tags: ['superset', 'apache_superset_service']

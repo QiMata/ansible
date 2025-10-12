@@ -5,61 +5,61 @@
   ansible.builtin.file:
     path: /var/log/celery
     state: directory
-    owner: "{{ superset_user }}"
-    group: "{{ superset_group }}"
+    owner: "{{ apache_superset_user }}"
+    group: "{{ apache_superset_group }}"
     mode: '0755'
-  tags: ['superset', 'superset_celery']
+  tags: ['superset', 'apache_superset_celery']
 
 - name: Create Celery PID directory
   ansible.builtin.file:
     path: /var/run/celery
     state: directory
-    owner: "{{ superset_user }}"
-    group: "{{ superset_group }}"
+    owner: "{{ apache_superset_user }}"
+    group: "{{ apache_superset_group }}"
     mode: '0755'
-  tags: ['superset', 'superset_celery']
+  tags: ['superset', 'apache_superset_celery']
 
 - name: Template Celery worker systemd service
   ansible.builtin.template:
     src: superset-worker.service.j2
-    dest: "/etc/systemd/system/{{ superset_service_name }}-worker.service"
+    dest: "/etc/systemd/system/{{ apache_superset_service_name }}-worker.service"
     owner: root
     group: root
     mode: '0644'
   notify:
     - reload systemd
     - restart superset-worker
-  tags: ['superset', 'superset_celery']
+  tags: ['superset', 'apache_superset_celery']
 
 - name: Template Celery beat systemd service
   ansible.builtin.template:
     src: superset-beat.service.j2
-    dest: "/etc/systemd/system/{{ superset_service_name }}-beat.service"
+    dest: "/etc/systemd/system/{{ apache_superset_service_name }}-beat.service"
     owner: root
     group: root
     mode: '0644'
-  when: superset_celery_beat_enabled
+  when: apache_superset_celery_beat_enabled
   notify:
     - reload systemd
     - restart superset-beat
-  tags: ['superset', 'superset_celery']
+  tags: ['superset', 'apache_superset_celery']
 
 - name: Enable and start Celery worker service
   ansible.builtin.systemd:
-    name: "{{ superset_service_name }}-worker"
+    name: "{{ apache_superset_service_name }}-worker"
     enabled: true
     state: started
     daemon_reload: true
-  tags: ['superset', 'superset_celery']
+  tags: ['superset', 'apache_superset_celery']
 
 - name: Enable and start Celery beat service
   ansible.builtin.systemd:
-    name: "{{ superset_service_name }}-beat"
+    name: "{{ apache_superset_service_name }}-beat"
     enabled: true
     state: started
     daemon_reload: true
-  when: superset_celery_beat_enabled
-  tags: ['superset', 'superset_celery']
+  when: apache_superset_celery_beat_enabled
+  tags: ['superset', 'apache_superset_celery']
 
 - name: Configure logrotate for Celery logs
   ansible.builtin.template:
@@ -68,4 +68,4 @@
     owner: root
     group: root
     mode: '0644'
-  tags: ['superset', 'superset_celery']
+  tags: ['superset', 'apache_superset_celery']

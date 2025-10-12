@@ -19,7 +19,9 @@
 
 - name: Download Prometheus JMX Exporter
   ansible.builtin.get_url:
-    url: "https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/{{ spark_role_prometheus_jmx_exporter_version }}/jmx_prometheus_javaagent-{{ spark_role_prometheus_jmx_exporter_version }}.jar"
+    url: >-
+      https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/
+      {{ spark_role_prometheus_jmx_exporter_version }}/jmx_prometheus_javaagent-{{ spark_role_prometheus_jmx_exporter_version }}.jar
     dest: "/opt/spark/jars/jmx_prometheus_javaagent-{{ spark_role_prometheus_jmx_exporter_version }}.jar"
     owner: "{{ spark_role_user }}"
     group: "{{ spark_role_group }}"

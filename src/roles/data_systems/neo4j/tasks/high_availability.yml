@@ -12,6 +12,9 @@
     src: haproxy_neo4j.cfg.j2
     dest: /etc/haproxy/conf.d/neo4j.cfg
     backup: true
+    mode: '0644'
+    owner: root
+    group: root
   when: neo4j_ha_proxy_enabled
   notify: restart haproxy
 

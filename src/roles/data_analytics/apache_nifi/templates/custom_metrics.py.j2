@@ -31,8 +31,8 @@ logger = logging.getLogger(__name__)
 
 class NiFiMetricsCollector:
     def __init__(self):
-        self.nifi_url = "{% if nifi_enable_https %}https://localhost:{{ nifi_secure_port }}{% else %}http://localhost:{{ nifi_listen_port }}{% endif %}"
-        self.api_base = f"{self.nifi_url}/nifi-api"
+        self.apache_nifi_url = "{% if apache_nifi_enable_https %}https://localhost:{{ apache_nifi_secure_port }}{% else %}http://localhost:{{ apache_nifi_listen_port }}{% endif %}"
+        self.api_base = f"{self.apache_nifi_url}/nifi-api"
         self.verify_ssl = False
         self.metrics_data = {}
         self.last_collection = None
@@ -51,13 +51,13 @@ class NiFiMetricsCollector:
                 controller_status = data.get('controllerStatus', {})
                 
                 self.metrics_data.update({
-                    'nifi_active_threads': controller_status.get('activeThreadCount', 0),
-                    'nifi_queued_count': controller_status.get('queuedCount', 0),
-                    'nifi_queued_size': controller_status.get('queuedContentSize', 0),
-                    'nifi_running_components': controller_status.get('runningCount', 0),
-                    'nifi_stopped_components': controller_status.get('stoppedCount', 0),
-                    'nifi_invalid_components': controller_status.get('invalidCount', 0),
-                    'nifi_disabled_components': controller_status.get('disabledCount', 0)
+                    'apache_nifi_active_threads': controller_status.get('activeThreadCount', 0),
+                    'apache_nifi_queued_count': controller_status.get('queuedCount', 0),
+                    'apache_nifi_queued_size': controller_status.get('queuedContentSize', 0),
+                    'apache_nifi_running_components': controller_status.get('runningCount', 0),
+                    'apache_nifi_stopped_components': controller_status.get('stoppedCount', 0),
+                    'apache_nifi_invalid_components': controller_status.get('invalidCount', 0),
+                    'apache_nifi_disabled_components': controller_status.get('disabledCount', 0)
                 })
                 
                 logger.debug("Flow metrics collected successfully")
@@ -82,17 +82,17 @@ class NiFiMetricsCollector:
                 aggregate_snapshot = system_diagnostics.get('aggregateSnapshot', {})
                 
                 self.metrics_data.update({
-                    'nifi_heap_used': aggregate_snapshot.get('heapUtilization', {}).get('utilizedBytes', 0),
-                    'nifi_heap_max': aggregate_snapshot.get('heapUtilization', {}).get('maxBytes', 0),
-                    'nifi_non_heap_used': aggregate_snapshot.get('nonHeapUtilization', {}).get('utilizedBytes', 0),
-                    'nifi_disk_usage': aggregate_snapshot.get('totalDiskBytes', 0),
-                    'nifi_processor_load_avg': aggregate_snapshot.get('processorLoadAverage', 0),
-                    'nifi_flow_file_repository_usage': aggregate_snapshot.get('flowFileRepositoryStorageUsage', {}).get('usedSpace', 0),
-                    'nifi_content_repository_usage': sum([
+                    'apache_nifi_heap_used': aggregate_snapshot.get('heapUtilization', {}).get('utilizedBytes', 0),
+                    'apache_nifi_heap_max': aggregate_snapshot.get('heapUtilization', {}).get('maxBytes', 0),
+                    'apache_nifi_non_heap_used': aggregate_snapshot.get('nonHeapUtilization', {}).get('utilizedBytes', 0),
+                    'apache_nifi_disk_usage': aggregate_snapshot.get('totalDiskBytes', 0),
+                    'apache_nifi_processor_load_avg': aggregate_snapshot.get('processorLoadAverage', 0),
+                    'apache_nifi_flow_file_repository_usage': aggregate_snapshot.get('flowFileRepositoryStorageUsage', {}).get('usedSpace', 0),
+                    'apache_nifi_content_repository_usage': sum([
                         repo.get('usedSpace', 0) 
                         for repo in aggregate_snapshot.get('contentRepositoryStorageUsage', [])
                     ]),
-                    'nifi_provenance_repository_usage': sum([
+                    'apache_nifi_provenance_repository_usage': sum([
                         repo.get('usedSpace', 0) 
                         for repo in aggregate_snapshot.get('provenanceRepositoryStorageUsage', [])
                     ])
@@ -121,9 +121,9 @@ class NiFiMetricsCollector:
                     connected_nodes = len([n for n in nodes if n.get('status') == 'CONNECTED'])
                     
                     self.metrics_data.update({
-                        'nifi_cluster_total_nodes': len(nodes),
-                        'nifi_cluster_connected_nodes': connected_nodes,
-                        'nifi_cluster_disconnected_nodes': len(nodes) - connected_nodes
+                        'apache_nifi_cluster_total_nodes': len(nodes),
+                        'apache_nifi_cluster_connected_nodes': connected_nodes,
+                        'apache_nifi_cluster_disconnected_nodes': len(nodes) - connected_nodes
                     })
                     
                     logger.debug("Cluster metrics collected successfully")
@@ -158,9 +158,9 @@ class NiFiMetricsCollector:
                     max_queue_count = max(max_queue_count, queued_count)
                 
                 self.metrics_data.update({
-                    'nifi_connections_total_queued_count': total_queued_count,
-                    'nifi_connections_total_queued_size': total_queued_size,
-                    'nifi_connections_max_queue_count': max_queue_count
+                    'apache_nifi_connections_total_queued_count': total_queued_count,
+                    'apache_nifi_connections_total_queued_size': total_queued_size,
+                    'apache_nifi_connections_max_queue_count': max_queue_count
                 })
                 
                 logger.debug("Connection metrics collected successfully")
@@ -178,7 +178,7 @@ class NiFiMetricsCollector:
         self.collect_connection_metrics()
         
         # Add timestamp
-        self.metrics_data['nifi_metrics_last_collection'] = int(time.time())
+        self.metrics_data['apache_nifi_metrics_last_collection'] = int(time.time())
         self.last_collection = datetime.now()
         
         logger.info(f"Metrics collection completed. Collected {len(self.metrics_data)} metrics")

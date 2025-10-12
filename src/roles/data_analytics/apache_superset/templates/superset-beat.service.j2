@@ -1,24 +1,24 @@
 [Unit]
 Description=Superset Celery Beat Scheduler
 After=network.target
-Requires={{ superset_service_name }}.service
+Requires={{ apache_superset_service_name }}.service
 
 [Service]
 Type=simple
-User={{ superset_user }}
-Group={{ superset_group }}
-WorkingDirectory={{ superset_install_dir }}
-Environment=SUPERSET_CONFIG_PATH={{ superset_config_path }}
-ExecStart={{ superset_venv_dir }}/bin/celery beat --app=superset.tasks.celery_app:app --loglevel={{ superset_celery_worker_log_level }}
+User={{ apache_superset_user }}
+Group={{ apache_superset_group }}
+WorkingDirectory={{ apache_superset_install_dir }}
+Environment=SUPERSET_CONFIG_PATH={{ apache_superset_config_path }}
+ExecStart={{ apache_superset_venv_dir }}/bin/celery beat --app=superset.tasks.celery_app:app --loglevel={{ apache_superset_celery_worker_log_level }}
 Restart=always
 RestartSec=10
 
 # Logging
-StandardOutput=file:/var/log/celery/{{ superset_service_name }}-beat.log
-StandardError=file:/var/log/celery/{{ superset_service_name }}-beat-error.log
+StandardOutput=file:/var/log/celery/{{ apache_superset_service_name }}-beat.log
+StandardError=file:/var/log/celery/{{ apache_superset_service_name }}-beat-error.log
 
 # Process management
-PIDFile=/var/run/celery/{{ superset_service_name }}-beat.pid
+PIDFile=/var/run/celery/{{ apache_superset_service_name }}-beat.pid
 KillSignal=SIGTERM
 TimeoutStopSec=30
 
@@ -27,7 +27,7 @@ NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=yes
-ReadWritePaths={{ superset_install_dir }} /var/log/celery /var/run/celery
+ReadWritePaths={{ apache_superset_install_dir }} /var/log/celery /var/run/celery
 
 [Install]
 WantedBy=multi-user.target

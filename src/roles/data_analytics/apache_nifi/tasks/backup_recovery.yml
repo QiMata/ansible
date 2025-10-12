@@ -83,7 +83,7 @@
   become: true
   ansible.builtin.cron:
     name: "NiFi backup"
-    cron_file: nifi_backup
+    cron_file: apache_nifi_backup
     user: "{{ apache_nifi_user }}"
     job: "{{ apache_nifi_conf_dir }}/scripts/backup_nifi.sh >> {{ apache_nifi_home }}/logs/backup.log 2>&1"
     minute: "{{ apache_nifi_backup_schedule.split(' ')[0] }}"
@@ -98,7 +98,7 @@
   become: true
   ansible.builtin.cron:
     name: "NiFi backup cleanup"
-    cron_file: nifi_backup_cleanup
+    cron_file: apache_nifi_backup_cleanup
     user: "{{ apache_nifi_user }}"
     job: "{{ apache_nifi_conf_dir }}/scripts/cleanup_backups.sh >> {{ apache_nifi_home }}/logs/backup_cleanup.log 2>&1"
     minute: "0"
@@ -111,6 +111,10 @@
 
 - name: Perform restore if requested
   become: true
+  when:
+    - apache_nifi_restore_enabled
+    - apache_nifi_restore_source != ""
+  tags: [nifi, restore]
   block:
     - name: Stop NiFi service
       ansible.builtin.systemd:
@@ -121,18 +125,14 @@
       ansible.builtin.command:
         cmd: "{{ apache_nifi_conf_dir }}/scripts/restore_nifi.sh {{ apache_nifi_restore_source }}"
       become_user: "{{ apache_nifi_user }}"
+      become: true
       register: restore_result
-
+      changed_when: restore_result.rc == 0
+      failed_when: restore_result.rc != 0
     - name: Start NiFi service
       ansible.builtin.systemd:
         name: nifi
         state: started
-
     - name: Display restore results
       ansible.builtin.debug:
         var: restore_result.stdout_lines
-
-  when:
-    - apache_nifi_restore_enabled
-    - apache_nifi_restore_source != ""
-  tags: [nifi, restore]

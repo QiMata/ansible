@@ -19,21 +19,21 @@
           - openjdk-17-jdk
           - unzip
         state: present
-        update_cache: yes
+        update_cache: true
 
     - name: "Create nifi group"
       ansible.builtin.group:
         name: "{{ apache_nifi_group }}"
-        system: yes
+        system: true
 
     - name: "Create nifi user"
       ansible.builtin.user:
         name: "{{ apache_nifi_user }}"
         group: "{{ apache_nifi_group }}"
-        system: yes
+        system: true
         shell: /bin/bash
         home: "{{ apache_nifi_home }}"
-        createhome: no
+        createhome: false
 
     - name: "Create NiFi directories"
       ansible.builtin.file:

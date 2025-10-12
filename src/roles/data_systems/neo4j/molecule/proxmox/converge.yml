@@ -30,7 +30,7 @@
     # Container-specific preparations
     - name: Update package cache
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 3600
       when: ansible_os_family == "Debian"
 
@@ -44,23 +44,23 @@
         state: present
 
   tasks:
-    - name: "Include neo4j role"
+    - name: Include neo4j role
       ansible.builtin.include_role:
-        name: "{{ playbook_dir }}/../.."
+        name: neo4j
 
   handlers:
-    - name: restart neo4j
+    - name: Restart Neo4j Service
       ansible.builtin.service:
         name: neo4j
         state: restarted
         enabled: true
 
-    - name: wait for neo4j
+    - name: Wait for Neo4j
       ansible.builtin.uri:
         url: "http://{{ neo4j_server_default_listen_address }}:7474"
         method: GET
         status_code: [200, 401]
+      register: neo4j_health_check
       retries: 30
       delay: 5
       until: neo4j_health_check.status in [200, 401]
-      register: neo4j_health_check

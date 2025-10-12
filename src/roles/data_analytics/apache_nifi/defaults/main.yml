@@ -9,24 +9,24 @@ apache_nifi_group: nifi
 apache_nifi_home: /opt/nifi
 apache_nifi_conf_dir: "{{ apache_nifi_home }}/conf"
 
-nifi_cluster_enabled: false
-nifi_zookeeper_connect: ""
-nifi_cluster_protocol_port: 11443
+apache_nifi_cluster_enabled: "{{ nifi_cluster_enabled | default(false) | bool }}"
+apache_nifi_zookeeper_connect: "{{ nifi_zookeeper_connect | default('') }}"
+apache_nifi_cluster_protocol_port: "{{ nifi_cluster_protocol_port | default(11443) | int }}"
 
-nifi_enable_https: true
-nifi_listen_port: 8080
-nifi_secure_port: 9443
+apache_nifi_enable_https: "{{ nifi_enable_https | default(true) | bool }}"
+apache_nifi_listen_port: "{{ nifi_listen_port | default(8080) | int }}"
+apache_nifi_secure_port: "{{ nifi_secure_port | default(9443) | int }}"
 apache_nifi_keystore_path: "{{ apache_nifi_conf_dir }}/keystore.jks"
 apache_nifi_keystore_password: changeme
 apache_nifi_truststore_path: "{{ apache_nifi_conf_dir }}/truststore.jks"
 apache_nifi_truststore_password: changeme
 
-nifi_ldap_url: ""
-nifi_ldap_bind_dn: ""
-nifi_ldap_bind_password: ""
-nifi_ldap_user_search_base: ""
-nifi_ldap_user_search_filter: ""
-nifi_admin_identity: ""
+apache_nifi_ldap_url: "{{ nifi_ldap_url | default('') }}"
+apache_nifi_ldap_bind_dn: "{{ nifi_ldap_bind_dn | default('') }}"
+apache_nifi_ldap_bind_password: "{{ nifi_ldap_bind_password | default('') }}"
+apache_nifi_ldap_user_search_base: "{{ nifi_ldap_user_search_base | default('') }}"
+apache_nifi_ldap_user_search_filter: "{{ nifi_ldap_user_search_filter | default('') }}"
+apache_nifi_admin_identity: "{{ nifi_admin_identity | default('') }}"
 
 apache_nifi_elk_integration: false
 apache_nifi_prometheus_integration: false
@@ -114,7 +114,7 @@ apache_nifi_log_retention_days: 30
 apache_nifi_alerting_enabled: false
 apache_nifi_alerting_rules: []
 # Example:
-# - name: "nifi_down"
+# - name: "apache_nifi_down"
 #   expr: "up{job=\"nifi\"} == 0"
 #   for: "5m"
 #   severity: "critical"
@@ -175,10 +175,10 @@ apache_nifi_connectivity_tests: []
 # Example:
 # - name: "ldap_connectivity"
 #   type: "ldap"
-#   host: "{{ nifi_ldap_url }}"
+#   host: "{{ apache_nifi_ldap_url }}"
 # - name: "zookeeper_connectivity"
 #   type: "tcp"
-#   host: "{{ nifi_zookeeper_connect }}"
+#   host: "{{ apache_nifi_zookeeper_connect }}"
 
 # ================================
 # Advanced Features

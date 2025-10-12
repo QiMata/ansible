@@ -2,14 +2,17 @@
 # Pre-upgrade validation checks
 
 - name: Check disk space
-  ansible.builtin.shell: df -h /var/lib/neo4j | tail -1 | awk '{print $5}' | sed 's/%//'
+  ansible.builtin.command:
+    cmd: df -P /var/lib/neo4j
   register: disk_usage
   changed_when: false
 
 - name: Ensure sufficient disk space
   ansible.builtin.fail:
-    msg: "Insufficient disk space for upgrade. Current usage: {{ disk_usage.stdout }}%"
-  when: disk_usage.stdout | int > 80
+    msg: >-
+      Insufficient disk space for upgrade. Current usage:
+      {{ disk_usage.stdout_lines[-1].split()[4] | regex_replace('%', '') }}%
+  when: (disk_usage.stdout_lines[-1].split()[4] | regex_replace('%', '') | int) > 80
 
 - name: Check Neo4j service status
   ansible.builtin.service_facts:

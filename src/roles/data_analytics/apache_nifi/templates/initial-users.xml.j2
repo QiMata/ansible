@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <users>
     <!-- Initial Admin User -->
-    {% if nifi_admin_identity != "" %}
-    <user identifier="{{ nifi_admin_identity | hash('sha256') }}" identity="{{ nifi_admin_identity }}"/>
+    {% if apache_nifi_admin_identity != "" %}
+    <user identifier="{{ apache_nifi_admin_identity | hash('sha256') }}" identity="{{ apache_nifi_admin_identity }}"/>
     {% endif %}
     
     <!-- Provisioned Users -->

@@ -12,7 +12,7 @@
       failed_when: cgroup_installed.changed
 
     - name: Verify network optimization settings
-      ansible.builtin.sysctl:
+      ansible.posix.sysctl:
         name: net.core.rmem_max
         value: "134217728"
       check_mode: true

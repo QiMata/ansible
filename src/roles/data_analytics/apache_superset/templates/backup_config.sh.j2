@@ -3,9 +3,9 @@
 
 set -e
 
-BACKUP_DIR="{{ superset_config_backup_path }}"
+BACKUP_DIR="{{ apache_superset_config_backup_path }}"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-BACKUP_FILE="${BACKUP_DIR}/superset_config_${TIMESTAMP}.tar.gz"
+BACKUP_FILE="${BACKUP_DIR}/apache_superset_config_${TIMESTAMP}.tar.gz"
 
 # Create backup directory if it doesn't exist
 mkdir -p "${BACKUP_DIR}"
@@ -14,16 +14,16 @@ echo "Backing up Superset configuration at $(date)"
 
 # Create configuration backup
 tar -czf "${BACKUP_FILE}" \
-  -C "{{ superset_config_dir | dirname }}" \
-  "{{ superset_config_dir | basename }}" \
+  -C "{{ apache_superset_config_dir | dirname }}" \
+  "{{ apache_superset_config_dir | basename }}" \
   --exclude='*.pyc' \
   --exclude='__pycache__'
 
 # Also backup any custom scripts or configs from install directory
-if [ -d "{{ superset_install_dir }}" ]; then
-  tar -czf "${BACKUP_DIR}/superset_scripts_${TIMESTAMP}.tar.gz" \
-    -C "{{ superset_install_dir | dirname }}" \
-    "{{ superset_install_dir | basename }}" \
+if [ -d "{{ apache_superset_install_dir }}" ]; then
+  tar -czf "${BACKUP_DIR}/apache_superset_scripts_${TIMESTAMP}.tar.gz" \
+    -C "{{ apache_superset_install_dir | dirname }}" \
+    "{{ apache_superset_install_dir | basename }}" \
     --exclude='venv' \
     --exclude='*.db' \
     --exclude='*.log' \
@@ -32,4 +32,4 @@ if [ -d "{{ superset_install_dir }}" ]; then
 fi
 
 echo "Configuration backup completed: ${BACKUP_FILE}"
-echo "Scripts backup completed: ${BACKUP_DIR}/superset_scripts_${TIMESTAMP}.tar.gz"
+echo "Scripts backup completed: ${BACKUP_DIR}/apache_superset_scripts_${TIMESTAMP}.tar.gz"

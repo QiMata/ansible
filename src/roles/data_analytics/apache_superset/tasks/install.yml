@@ -26,7 +26,7 @@
       - fail2ban
       - logrotate
     state: present
-  when: superset_firewall_enabled or superset_fail2ban_enabled
+  when: apache_superset_firewall_enabled or apache_superset_fail2ban_enabled
   become: true
 
 - name: Install SSL/TLS packages
@@ -35,5 +35,5 @@
       - openssl
       - ca-certificates
     state: present
-  when: superset_ssl_enabled
+  when: apache_superset_ssl_enabled
   become: true

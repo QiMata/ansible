@@ -1,34 +1,34 @@
 ---
-- name: restart nifi
+- name: Restart NiFi service
   become: true
   ansible.builtin.systemd:
     name: nifi
     state: restarted
 
-- name: reload systemd
+- name: Reload systemd
   become: true
   ansible.builtin.systemd:
     daemon_reload: true
 
-- name: restart vault-agent-nifi
+- name: Restart Vault agent for NiFi
   become: true
   ansible.builtin.systemd:
     name: vault-agent-nifi
     state: restarted
 
-- name: restart nifi-custom-metrics
+- name: Restart NiFi custom metrics
   become: true
   ansible.builtin.systemd:
     name: nifi-custom-metrics
     state: restarted
 
-- name: restart nifi-health-check.timer
+- name: Restart NiFi health check timer
   become: true
   ansible.builtin.systemd:
     name: nifi-health-check.timer
     state: restarted
 
-- name: restart nifi-config-drift.timer
+- name: Restart NiFi config drift timer
   become: true
   ansible.builtin.systemd:
     name: nifi-config-drift.timer

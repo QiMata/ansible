@@ -1,15 +1,5 @@
 ---
-superset_version: "latest"
-
-superset_user: "superset"
-superset_group: "superset"
-
-superset_install_dir: "/opt/superset"
-superset_venv_dir: "{{ superset_install_dir }}/venv"
-superset_config_dir: "/etc/superset"
-superset_config_path: "{{ superset_config_dir }}/superset_config.py"
-
-superset_system_packages:
+apache_superset__system_packages_default:
   - build-essential
   - libssl-dev
   - libffi-dev
@@ -20,148 +10,159 @@ superset_system_packages:
   - default-libmysqlclient-dev
   - libpq-dev
 
-superset_additional_python_packages: []  # e.g. ['psycopg2-binary', 'mysqlclient']
-
-superset_database_uri: "sqlite:////{{ superset_install_dir }}/superset.db"
-
-superset_secret_key: "CHANGEME"  # override via vault
-superset_admin_username: "admin"  # override via vault
-superset_admin_password: "CHANGEME"  # override via vault
-superset_admin_email: "admin@example.com"
-superset_admin_firstname: "Superset"
-superset_admin_lastname: "Admin"
-
-superset_load_examples: false
-superset_use_gunicorn: true
-superset_gunicorn_workers: 4
-superset_gunicorn_bind: "0.0.0.0:8088"
-
-superset_redis_url: ""
-superset_celery_broker_url: ""
-
-superset_feature_flags: {}
-
-superset_service_name: "superset"
-
-superset_marker_file: "{{ superset_config_dir }}/.admin_created"
-
-# SSL/TLS Configuration
-superset_ssl_enabled: false
-superset_ssl_cert_path: "/etc/ssl/certs/superset.crt"
-superset_ssl_key_path: "/etc/ssl/private/superset.key"
-superset_ssl_ca_path: ""
-superset_ssl_protocols: "TLSv1.2 TLSv1.3"
-superset_ssl_ciphers: "ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM:DHE+CHACHA20:!aNULL:!MD5:!DSS"
-superset_ssl_dhparam_path: "/etc/ssl/certs/dhparam.pem"
-
-# Celery Worker Configuration
-superset_celery_enabled: false
-superset_celery_workers: 2
-superset_celery_beat_enabled: false
-superset_celery_beat_schedule: {}
-superset_celery_worker_log_level: "info"
-superset_celery_worker_concurrency: 4
-superset_celery_result_backend: "{{ superset_celery_broker_url }}"
-
-# Database Management
-superset_db_auto_create: false
-superset_db_validate_connection: true
-superset_db_backup_enabled: false
-superset_db_backup_schedule: "0 2 * * *"  # Daily at 2 AM
-superset_db_backup_retention_days: 7
-superset_db_backup_path: "/var/backups/superset"
-
-# Authentication Configuration
-superset_auth_type: "AUTH_DB"  # AUTH_DB, AUTH_LDAP, AUTH_OAUTH
-superset_ldap_enabled: false
-superset_ldap_server: ""
-superset_ldap_use_tls: true
-superset_ldap_bind_user: ""
-superset_ldap_bind_password: ""
-superset_ldap_basedn: ""
-superset_ldap_search: ""
-superset_ldap_uid_field: "uid"
-superset_ldap_firstname_field: "givenName"
-superset_ldap_lastname_field: "sn"
-superset_ldap_email_field: "mail"
-
-# OAuth Configuration
-superset_oauth_enabled: false
-superset_oauth_providers: []
-# Example:
-# superset_oauth_providers:
-#   - name: "google"
-#     client_id: "your-client-id"
-#     client_secret: "your-client-secret"
-#     server_metadata_url: "https://accounts.google.com/.well-known/openid-configuration"
-
-# Monitoring and Logging
-superset_log_level: "INFO"
-superset_log_file: "/var/log/superset/superset.log"
-superset_log_max_bytes: 104857600  # 100MB
-superset_log_backup_count: 5
-superset_enable_access_log: true
-superset_access_log_file: "/var/log/superset/access.log"
-
-# Metrics/Monitoring
-superset_metrics_enabled: false
-superset_metrics_port: 9090
-superset_health_check_enabled: true
-superset_health_check_path: "/health"
-
-# Advanced Configuration
-superset_email_enabled: false
-superset_smtp_host: ""
-superset_smtp_port: 587
-superset_smtp_use_tls: true
-superset_smtp_username: ""
-superset_smtp_password: ""
-superset_smtp_mail_from: "superset@example.com"
-
-# Visualization Plugins
-superset_custom_plugins: []
-# Example:
-# superset_custom_plugins:
-#   - name: "custom-chart-plugin"
-#     package: "superset-plugin-chart-custom"
-#     version: "latest"
-
-# Row Level Security
-superset_rls_enabled: false
-
-# Performance and Caching
-superset_cache_config:
+apache_superset__additional_python_packages_default: []
+apache_superset__feature_flags_default: {}
+apache_superset__celery_beat_schedule_default: {}
+apache_superset__custom_plugins_default: []
+apache_superset__cache_config_default:
   CACHE_TYPE: "SimpleCache"
   CACHE_DEFAULT_TIMEOUT: 300
-
-superset_results_cache_config:
+apache_superset__results_cache_config_default:
   CACHE_TYPE: "SimpleCache"
   CACHE_DEFAULT_TIMEOUT: 3600
-
-superset_thumbnail_cache_config:
+apache_superset__thumbnail_cache_config_default:
   CACHE_TYPE: "SimpleCache"
   CACHE_DEFAULT_TIMEOUT: 86400
+apache_superset__firewall_allowed_ips_default: []
+apache_superset__oauth_providers_default: []
+apache_superset__superset_config_backup_schedule_default: "0 3 * * *"
+apache_superset__db_backup_schedule_default: "0 2 * * *"
 
-# Advanced Gunicorn Options
-superset_gunicorn_timeout: 300
-superset_gunicorn_keepalive: 2
-superset_gunicorn_max_requests: 1000
-superset_gunicorn_max_requests_jitter: 100
-superset_gunicorn_preload_app: true
-superset_gunicorn_worker_class: "sync"
-superset_gunicorn_worker_connections: 1000
+apache_superset_version: "{{ superset_version | default('latest') }}"
+apache_superset_user: "{{ superset_user | default('superset') }}"
+apache_superset_group: "{{ superset_group | default('superset') }}"
+apache_superset_install_dir: "{{ superset_install_dir | default('/opt/superset') }}"
+apache_superset_venv_dir: >-
+  {{ superset_venv_dir | default(apache_superset_install_dir + '/venv') }}
+apache_superset_config_dir: "{{ superset_config_dir | default('/etc/superset') }}"
+apache_superset_config_path: >-
+  {{ superset_config_path | default(apache_superset_config_dir + '/superset_config.py') }}
 
-# Security Enhancements
-superset_firewall_enabled: false
-superset_firewall_allowed_ips: []
-superset_fail2ban_enabled: false
-superset_csp_enabled: false
-superset_csp_policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';"
-superset_rate_limiting_enabled: false
-superset_rate_limit_per_minute: 100
+apache_superset_system_packages: >-
+  {{ superset_system_packages | default(apache_superset__system_packages_default) }}
+apache_superset_additional_python_packages: >-
+  {{ superset_additional_python_packages | default(apache_superset__additional_python_packages_default) }}
+apache_superset_database_uri: >-
+  {{ superset_database_uri | default('sqlite:////' + apache_superset_install_dir + '/superset.db') }}
 
-# Backup and Recovery
-superset_config_backup_enabled: false
-superset_config_backup_schedule: "0 3 * * *"  # Daily at 3 AM
-superset_config_backup_path: "/var/backups/superset-config"
-superset_config_backup_retention_days: 30
+apache_superset_secret_key: "{{ superset_secret_key | default('CHANGEME') }}"
+apache_superset_admin_username: "{{ superset_admin_username | default('admin') }}"
+apache_superset_admin_password: "{{ superset_admin_password | default('CHANGEME') }}"
+apache_superset_admin_email: "{{ superset_admin_email | default('admin@example.com') }}"
+apache_superset_admin_firstname: "{{ superset_admin_firstname | default('Superset') }}"
+apache_superset_admin_lastname: "{{ superset_admin_lastname | default('Admin') }}"
+
+apache_superset_load_examples: "{{ superset_load_examples | default(false) | bool }}"
+apache_superset_use_gunicorn: "{{ superset_use_gunicorn | default(true) | bool }}"
+apache_superset_gunicorn_workers: "{{ superset_gunicorn_workers | default(4) | int }}"
+apache_superset_gunicorn_bind: "{{ superset_gunicorn_bind | default('0.0.0.0:8088') }}"
+
+apache_superset_redis_url: "{{ superset_redis_url | default('') }}"
+apache_superset_celery_broker_url: "{{ superset_celery_broker_url | default('') }}"
+
+apache_superset_feature_flags: >-
+  {{ superset_feature_flags | default(apache_superset__feature_flags_default) }}
+
+apache_superset_service_name: "{{ superset_service_name | default('superset') }}"
+apache_superset_marker_file: >-
+  {{ superset_marker_file | default(apache_superset_config_dir + '/.admin_created') }}
+
+apache_superset_ssl_enabled: "{{ superset_ssl_enabled | default(false) | bool }}"
+apache_superset_ssl_cert_path: "{{ superset_ssl_cert_path | default('/etc/ssl/certs/superset.crt') }}"
+apache_superset_ssl_key_path: "{{ superset_ssl_key_path | default('/etc/ssl/private/superset.key') }}"
+apache_superset_ssl_ca_path: "{{ superset_ssl_ca_path | default('') }}"
+apache_superset_ssl_protocols: "{{ superset_ssl_protocols | default('TLSv1.2 TLSv1.3') }}"
+apache_superset_ssl_ciphers: >-
+  {{ superset_ssl_ciphers | default('ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM:DHE+CHACHA20:!aNULL:!MD5:!DSS') }}
+apache_superset_ssl_dhparam_path: "{{ superset_ssl_dhparam_path | default('/etc/ssl/certs/dhparam.pem') }}"
+
+apache_superset_celery_enabled: "{{ superset_celery_enabled | default(false) | bool }}"
+apache_superset_celery_workers: "{{ superset_celery_workers | default(2) | int }}"
+apache_superset_celery_beat_enabled: "{{ superset_celery_beat_enabled | default(false) | bool }}"
+apache_superset_celery_beat_schedule: >-
+  {{ superset_celery_beat_schedule | default(apache_superset__celery_beat_schedule_default) }}
+apache_superset_celery_worker_log_level: "{{ superset_celery_worker_log_level | default('info') }}"
+apache_superset_celery_worker_concurrency: "{{ superset_celery_worker_concurrency | default(4) | int }}"
+apache_superset_celery_result_backend: >-
+  {{ superset_celery_result_backend | default(apache_superset_celery_broker_url) }}
+
+apache_superset_db_auto_create: "{{ superset_db_auto_create | default(false) | bool }}"
+apache_superset_db_validate_connection: "{{ superset_db_validate_connection | default(true) | bool }}"
+apache_superset_db_backup_enabled: "{{ superset_db_backup_enabled | default(false) | bool }}"
+apache_superset_db_backup_schedule: >-
+  {{ superset_db_backup_schedule | default(apache_superset__db_backup_schedule_default) }}
+apache_superset_db_backup_retention_days: "{{ superset_db_backup_retention_days | default(7) | int }}"
+apache_superset_db_backup_path: "{{ superset_db_backup_path | default('/var/backups/superset') }}"
+
+apache_superset_auth_type: "{{ superset_auth_type | default('AUTH_DB') }}"
+apache_superset_ldap_enabled: "{{ superset_ldap_enabled | default(false) | bool }}"
+apache_superset_ldap_server: "{{ superset_ldap_server | default('') }}"
+apache_superset_ldap_use_tls: "{{ superset_ldap_use_tls | default(true) | bool }}"
+apache_superset_ldap_bind_user: "{{ superset_ldap_bind_user | default('') }}"
+apache_superset_ldap_bind_password: "{{ superset_ldap_bind_password | default('') }}"
+apache_superset_ldap_basedn: "{{ superset_ldap_basedn | default('') }}"
+apache_superset_ldap_search: "{{ superset_ldap_search | default('') }}"
+apache_superset_ldap_uid_field: "{{ superset_ldap_uid_field | default('uid') }}"
+apache_superset_ldap_firstname_field: "{{ superset_ldap_firstname_field | default('givenName') }}"
+apache_superset_ldap_lastname_field: "{{ superset_ldap_lastname_field | default('sn') }}"
+apache_superset_ldap_email_field: "{{ superset_ldap_email_field | default('mail') }}"
+
+apache_superset_oauth_enabled: "{{ superset_oauth_enabled | default(false) | bool }}"
+apache_superset_oauth_providers: >-
+  {{ superset_oauth_providers | default(apache_superset__oauth_providers_default) }}
+
+apache_superset_log_level: "{{ superset_log_level | default('INFO') }}"
+apache_superset_log_file: "{{ superset_log_file | default('/var/log/superset/superset.log') }}"
+apache_superset_log_max_bytes: "{{ superset_log_max_bytes | default(104857600) | int }}"
+apache_superset_log_backup_count: "{{ superset_log_backup_count | default(5) | int }}"
+apache_superset_enable_access_log: "{{ superset_enable_access_log | default(true) | bool }}"
+apache_superset_access_log_file: "{{ superset_access_log_file | default('/var/log/superset/access.log') }}"
+
+apache_superset_metrics_enabled: "{{ superset_metrics_enabled | default(false) | bool }}"
+apache_superset_metrics_port: "{{ superset_metrics_port | default(9090) | int }}"
+apache_superset_health_check_enabled: "{{ superset_health_check_enabled | default(true) | bool }}"
+apache_superset_health_check_path: "{{ superset_health_check_path | default('/health') }}"
+
+apache_superset_email_enabled: "{{ superset_email_enabled | default(false) | bool }}"
+apache_superset_smtp_host: "{{ superset_smtp_host | default('') }}"
+apache_superset_smtp_port: "{{ superset_smtp_port | default(587) | int }}"
+apache_superset_smtp_use_tls: "{{ superset_smtp_use_tls | default(true) | bool }}"
+apache_superset_smtp_username: "{{ superset_smtp_username | default('') }}"
+apache_superset_smtp_password: "{{ superset_smtp_password | default('') }}"
+apache_superset_smtp_mail_from: "{{ superset_smtp_mail_from | default('superset@example.com') }}"
+
+apache_superset_custom_plugins: >-
+  {{ superset_custom_plugins | default(apache_superset__custom_plugins_default) }}
+
+apache_superset_rls_enabled: "{{ superset_rls_enabled | default(false) | bool }}"
+
+apache_superset_cache_config: >-
+  {{ superset_cache_config | default(apache_superset__cache_config_default) }}
+apache_superset_results_cache_config: >-
+  {{ superset_results_cache_config | default(apache_superset__results_cache_config_default) }}
+apache_superset_thumbnail_cache_config: >-
+  {{ superset_thumbnail_cache_config | default(apache_superset__thumbnail_cache_config_default) }}
+
+apache_superset_gunicorn_timeout: "{{ superset_gunicorn_timeout | default(300) | int }}"
+apache_superset_gunicorn_keepalive: "{{ superset_gunicorn_keepalive | default(2) | int }}"
+apache_superset_gunicorn_max_requests: "{{ superset_gunicorn_max_requests | default(1000) | int }}"
+apache_superset_gunicorn_max_requests_jitter: "{{ superset_gunicorn_max_requests_jitter | default(100) | int }}"
+apache_superset_gunicorn_preload_app: "{{ superset_gunicorn_preload_app | default(true) | bool }}"
+apache_superset_gunicorn_worker_class: "{{ superset_gunicorn_worker_class | default('sync') }}"
+apache_superset_gunicorn_worker_connections: "{{ superset_gunicorn_worker_connections | default(1000) | int }}"
+
+apache_superset_firewall_enabled: "{{ superset_firewall_enabled | default(false) | bool }}"
+apache_superset_firewall_allowed_ips: >-
+  {{ superset_firewall_allowed_ips | default(apache_superset__firewall_allowed_ips_default) }}
+apache_superset_fail2ban_enabled: "{{ superset_fail2ban_enabled | default(false) | bool }}"
+apache_superset_csp_enabled: "{{ superset_csp_enabled | default(false) | bool }}"
+apache_superset_csp_policy: >-
+  {{ superset_csp_policy | default("default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';") }}
+apache_superset_rate_limiting_enabled: "{{ superset_rate_limiting_enabled | default(false) | bool }}"
+apache_superset_rate_limit_per_minute: "{{ superset_rate_limit_per_minute | default(100) | int }}"
+
+apache_superset_config_backup_enabled: "{{ superset_config_backup_enabled | default(false) | bool }}"
+apache_superset_config_backup_schedule: >-
+  {{ superset_config_backup_schedule | default(apache_superset__superset_config_backup_schedule_default) }}
+apache_superset_config_backup_path: "{{ superset_config_backup_path | default('/var/backups/superset-config') }}"
+apache_superset_config_backup_retention_days: "{{ superset_config_backup_retention_days | default(30) | int }}"

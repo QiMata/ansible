@@ -61,7 +61,14 @@
   ansible.builtin.lineinfile:
     path: /etc/neo4j/neo4j.conf
     regexp: "^#?dbms.cluster.discovery.endpoints="
-    line: "dbms.cluster.discovery.endpoints={{ groups['neo4j_core'] | map('extract', hostvars, 'ansible_default_ipv4') | map(attribute='address') | map('regex_replace', '^(.*)$', '\\1:5000') | join(',') }}"
+    line: >-
+      dbms.cluster.discovery.endpoints={{
+        groups['neo4j_core']
+        | map('extract', hostvars, 'ansible_default_ipv4')
+        | map(attribute='address')
+        | map('regex_replace', '^(.*)$', '\\1:5000')
+        | join(',')
+      }}
   notify: restart neo4j
   when:
     - neo4j_cluster_enabled

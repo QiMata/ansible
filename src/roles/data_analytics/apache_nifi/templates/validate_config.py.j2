@@ -31,7 +31,7 @@ class NiFiConfigValidator:
         """Log informational message"""
         print(f"INFO: {message}")
     
-    def validate_nifi_properties(self):
+    def validate_apache_nifi_properties(self):
         """Validate nifi.properties file"""
         self.log_info("Validating nifi.properties")
         
@@ -59,7 +59,7 @@ class NiFiConfigValidator:
                     self.log_error(f"Required property '{prop}' not found in nifi.properties")
             
             # Validate HTTPS configuration if enabled
-            {% if nifi_enable_https %}
+            {% if apache_nifi_enable_https %}
             https_props = [
                 'nifi.web.https.port',
                 'nifi.security.keystore',
@@ -78,7 +78,7 @@ class NiFiConfigValidator:
             {% endif %}
             
             # Validate cluster configuration if enabled
-            {% if nifi_cluster_enabled %}
+            {% if apache_nifi_cluster_enabled %}
             cluster_props = [
                 'nifi.cluster.is.node',
                 'nifi.cluster.node.address',
@@ -159,7 +159,7 @@ class NiFiConfigValidator:
     
     def validate_keystore_files(self):
         """Validate keystore and truststore files"""
-        {% if nifi_enable_https %}
+        {% if apache_nifi_enable_https %}
         self.log_info("Validating keystore files")
         
         keystore_path = Path("{{ apache_nifi_keystore_path }}")
@@ -226,12 +226,12 @@ class NiFiConfigValidator:
         
         # Development environment checks
         if environment == "development":
-            if {{ nifi_enable_https | lower }}:
+            if {{ apache_nifi_enable_https | lower }}:
                 self.log_warning("HTTPS enabled in development environment - consider using HTTP for easier testing")
         
         # Production environment checks
         elif environment == "production":
-            if not {{ nifi_enable_https | lower }}:
+            if not {{ apache_nifi_enable_https | lower }}:
                 self.log_error("HTTPS should be enabled in production environment")
             
             if not {{ apache_nifi_security_hardening | lower }}:
@@ -270,7 +270,7 @@ class NiFiConfigValidator:
         print("Starting NiFi configuration validation")
         print("=" * 50)
         
-        self.validate_nifi_properties()
+        self.validate_apache_nifi_properties()
         self.validate_xml_files()
         self.validate_bootstrap_conf()
         self.validate_keystore_files()

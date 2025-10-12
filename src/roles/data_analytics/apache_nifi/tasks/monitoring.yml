@@ -36,7 +36,7 @@
     group: "{{ apache_nifi_group }}"
     mode: '0644'
   when: apache_nifi_prometheus_jmx_exporter
-  notify: restart nifi
+  notify: Restart NiFi service
   tags: [nifi, monitoring, prometheus, jmx]
 
 - name: Create custom metrics collection script
@@ -58,8 +58,8 @@
     mode: '0644'
   when: apache_nifi_prometheus_custom_metrics
   notify:
-    - reload systemd
-    - restart nifi-custom-metrics
+    - Reload systemd
+    - Restart NiFi custom metrics
   tags: [nifi, monitoring, prometheus, service]
 
 - name: Start and enable custom metrics service
@@ -82,13 +82,13 @@
     mode: '0644'
     backup: true
   when: apache_nifi_structured_logging
-  notify: restart nifi
+  notify: Restart NiFi service
   tags: [nifi, monitoring, logging]
 
 - name: Create log rotation configuration
   become: true
   ansible.builtin.template:
-    src: nifi_logrotate.j2
+    src: apache_nifi_logrotate.j2
     dest: /etc/logrotate.d/nifi
     mode: '0644'
   when: apache_nifi_log_rotation
@@ -113,7 +113,7 @@
     mode: '0644'
   when: apache_nifi_health_checks
   notify:
-    - reload systemd
+    - Reload systemd
   tags: [nifi, monitoring, health, service]
 
 - name: Create systemd timer for health checks
@@ -124,8 +124,8 @@
     mode: '0644'
   when: apache_nifi_health_checks
   notify:
-    - reload systemd
-    - restart nifi-health-check.timer
+    - Reload systemd
+    - Restart NiFi health check timer
   tags: [nifi, monitoring, health, timer]
 
 - name: Start and enable health check timer
@@ -141,7 +141,7 @@
 - name: Create alerting rules configuration
   become: true
   ansible.builtin.template:
-    src: nifi_alert_rules.yml.j2
+    src: apache_nifi_alert_rules.yml.j2
     dest: "{{ apache_nifi_conf_dir }}/monitoring/alert_rules.yml"
     owner: "{{ apache_nifi_user }}"
     group: "{{ apache_nifi_group }}"

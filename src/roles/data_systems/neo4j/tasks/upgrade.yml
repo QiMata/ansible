@@ -29,12 +29,25 @@
     - neo4j_upgrade_enabled
     - neo4j_upgrade_strategy in ['stop_start', 'blue_green']
 
-- name: Upgrade Neo4j package
+- name: Upgrade Neo4j package to specific version
   ansible.builtin.apt:
-    name: "{{ neo4j_package_name }}{% if neo4j_version %}={{ neo4j_version }}{% endif %}"
-    state: latest
+    name: "{{ neo4j_package_name }}={{ neo4j_version }}"
+    state: present
     update_cache: true
-  when: neo4j_upgrade_enabled
+  when:
+    - neo4j_upgrade_enabled
+    - neo4j_version | default('') | length > 0
+  notify: restart neo4j
+
+- name: Upgrade Neo4j package to latest available
+  ansible.builtin.apt:
+    name: "{{ neo4j_package_name }}"
+    state: present
+    update_cache: true
+    only_upgrade: true
+  when:
+    - neo4j_upgrade_enabled
+    - neo4j_version | default('') | length == 0
   notify: restart neo4j
 
 - name: Pin Neo4j version

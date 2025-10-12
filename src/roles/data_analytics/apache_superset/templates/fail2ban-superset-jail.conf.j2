@@ -1,8 +1,8 @@
 [superset]
 enabled = true
-port = {{ superset_gunicorn_bind.split(':')[1] }}
+port = {{ apache_superset_gunicorn_bind.split(':')[1] }}
 filter = superset
-logpath = {{ superset_log_file }}
+logpath = {{ apache_superset_log_file }}
 maxretry = 5
 bantime = 3600
 findtime = 600

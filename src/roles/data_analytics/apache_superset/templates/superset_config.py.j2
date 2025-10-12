@@ -3,11 +3,11 @@ import logging
 from datetime import timedelta
 
 # Core Configuration
-SECRET_KEY = "{{ superset_secret_key }}"
-SQLALCHEMY_DATABASE_URI = "{{ superset_database_uri }}"
+SECRET_KEY = "{{ apache_superset_secret_key }}"
+SQLALCHEMY_DATABASE_URI = "{{ apache_superset_database_uri }}"
 
 # Logging Configuration
-LOG_LEVEL = "{{ superset_log_level }}"
+LOG_LEVEL = "{{ apache_superset_log_level }}"
 LOG_FORMAT = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
 
 # Configure Python logging
@@ -16,7 +16,7 @@ logging.basicConfig(
     level=getattr(logging, LOG_LEVEL.upper()),
     format=LOG_FORMAT,
     handlers=[
-        logging.FileHandler("{{ superset_log_file }}"),
+        logging.FileHandler("{{ apache_superset_log_file }}"),
         logging.StreamHandler()
     ]
 )
@@ -24,67 +24,67 @@ logging.basicConfig(
 # Rotate log files
 from logging.handlers import RotatingFileHandler
 file_handler = RotatingFileHandler(
-    "{{ superset_log_file }}",
-    maxBytes={{ superset_log_max_bytes }},
-    backupCount={{ superset_log_backup_count }}
+    "{{ apache_superset_log_file }}",
+    maxBytes={{ apache_superset_log_max_bytes }},
+    backupCount={{ apache_superset_log_backup_count }}
 )
 file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
 
 # Security Configuration
-{% if superset_csp_enabled %}
+{% if apache_superset_csp_enabled %}
 TALISMAN_ENABLED = True
 TALISMAN_CONFIG = {
-    'content_security_policy': "{{ superset_csp_policy }}",
-    'force_https': {{ superset_ssl_enabled | lower }},
+    'content_security_policy': "{{ apache_superset_csp_policy }}",
+    'force_https': {{ apache_superset_ssl_enabled | lower }},
 }
 {% endif %}
 
 # SSL/TLS Configuration
-{% if superset_ssl_enabled %}
+{% if apache_superset_ssl_enabled %}
 ENABLE_PROXY_FIX = True
 SSL_REDIRECT = True
 {% endif %}
 
 # Cache Configuration
-{% if superset_redis_url %}
+{% if apache_superset_redis_url %}
 CACHE_CONFIG = {
     'CACHE_TYPE': 'RedisCache',
-    'CACHE_REDIS_URL': '{{ superset_redis_url }}',
-    'CACHE_DEFAULT_TIMEOUT': {{ superset_cache_config.CACHE_DEFAULT_TIMEOUT }}
+    'CACHE_REDIS_URL': '{{ apache_superset_redis_url }}',
+    'CACHE_DEFAULT_TIMEOUT': {{ apache_superset_cache_config.CACHE_DEFAULT_TIMEOUT }}
 }
 {% else %}
-CACHE_CONFIG = {{ superset_cache_config | to_nice_json }}
+CACHE_CONFIG = {{ apache_superset_cache_config | to_nice_json }}
 {% endif %}
 
 # Results Cache Configuration
-{% if superset_redis_url %}
+{% if apache_superset_redis_url %}
 RESULTS_BACKEND = {
     'CACHE_TYPE': 'RedisCache',
-    'CACHE_REDIS_URL': '{{ superset_redis_url }}',
-    'CACHE_DEFAULT_TIMEOUT': {{ superset_results_cache_config.CACHE_DEFAULT_TIMEOUT }}
+    'CACHE_REDIS_URL': '{{ apache_superset_redis_url }}',
+    'CACHE_DEFAULT_TIMEOUT': {{ apache_superset_results_cache_config.CACHE_DEFAULT_TIMEOUT }}
 }
 {% else %}
-RESULTS_BACKEND = {{ superset_results_cache_config | to_nice_json }}
+RESULTS_BACKEND = {{ apache_superset_results_cache_config | to_nice_json }}
 {% endif %}
 
 # Thumbnail Cache Configuration
-{% if superset_redis_url %}
+{% if apache_superset_redis_url %}
 THUMBNAIL_CACHE_CONFIG = {
     'CACHE_TYPE': 'RedisCache',
-    'CACHE_REDIS_URL': '{{ superset_redis_url }}',
-    'CACHE_DEFAULT_TIMEOUT': {{ superset_thumbnail_cache_config.CACHE_DEFAULT_TIMEOUT }}
+    'CACHE_REDIS_URL': '{{ apache_superset_redis_url }}',
+    'CACHE_DEFAULT_TIMEOUT': {{ apache_superset_thumbnail_cache_config.CACHE_DEFAULT_TIMEOUT }}
 }
 {% else %}
-THUMBNAIL_CACHE_CONFIG = {{ superset_thumbnail_cache_config | to_nice_json }}
+THUMBNAIL_CACHE_CONFIG = {{ apache_superset_thumbnail_cache_config | to_nice_json }}
 {% endif %}
 
 # Celery Configuration
-{% if superset_celery_enabled and superset_celery_broker_url %}
+{% if apache_superset_celery_enabled and apache_superset_celery_broker_url %}
 CELERY_CONFIG = {
-    'BROKER_URL': '{{ superset_celery_broker_url }}',
+    'BROKER_URL': '{{ apache_superset_celery_broker_url }}',
     'CELERY_IMPORTS': ['superset.sql_lab'],
-    'CELERY_RESULT_BACKEND': '{{ superset_celery_result_backend }}',
-    'CELERYD_LOG_LEVEL': '{{ superset_celery_worker_log_level.upper() }}',
+    'CELERY_RESULT_BACKEND': '{{ apache_superset_celery_result_backend }}',
+    'CELERYD_LOG_LEVEL': '{{ apache_superset_celery_worker_log_level.upper() }}',
     'CELERYD_PREFETCH_MULTIPLIER': 1,
     'CELERY_ACKS_LATE': True,
     'CELERY_ANNOTATIONS': {
@@ -92,45 +92,45 @@ CELERY_CONFIG = {
             'rate_limit': '100/s',
         },
     },
-    'CELERYBEAT_SCHEDULE': {{ superset_celery_beat_schedule | to_nice_json }},
+    'CELERYBEAT_SCHEDULE': {{ apache_superset_celery_beat_schedule | to_nice_json }},
     'CELERY_TASK_SOFT_TIME_LIMIT': 300,
     'CELERY_TASK_TIME_LIMIT': 600,
 }
 {% endif %}
 
 # Rate Limiting Configuration
-{% if superset_rate_limiting_enabled %}
+{% if apache_superset_rate_limiting_enabled %}
 RATELIMIT_ENABLED = True
-RATELIMIT_STORAGE_URL = '{{ superset_redis_url if superset_redis_url else "memory://" }}'
+RATELIMIT_STORAGE_URL = '{{ apache_superset_redis_url if apache_superset_redis_url else "memory://" }}'
 RATELIMIT_PER_ENDPOINT = {
-    'default': '{{ superset_rate_limit_per_minute }}/minute',
+    'default': '{{ apache_superset_rate_limit_per_minute }}/minute',
     'login': '5/minute',
-    'api': '{{ superset_rate_limit_per_minute }}/minute',
+    'api': '{{ apache_superset_rate_limit_per_minute }}/minute',
 }
 {% endif %}
 
 # Authentication Configuration
-{% if superset_auth_type == 'AUTH_LDAP' and superset_ldap_enabled %}
+{% if apache_superset_auth_type == 'AUTH_LDAP' and apache_superset_ldap_enabled %}
 from flask_appbuilder.security.manager import AUTH_LDAP
 
 AUTH_TYPE = AUTH_LDAP
-AUTH_LDAP_SERVER = "{{ superset_ldap_server }}"
-AUTH_LDAP_USE_TLS = {{ superset_ldap_use_tls | lower }}
-AUTH_LDAP_BIND_USER = "{{ superset_ldap_bind_user }}"
-AUTH_LDAP_BIND_PASSWORD = "{{ superset_ldap_bind_password }}"
-AUTH_LDAP_SEARCH = "{{ superset_ldap_search }}"
-AUTH_LDAP_SEARCH_FILTER = "({{ superset_ldap_uid_field }}=%s)"
-AUTH_LDAP_UID_FIELD = "{{ superset_ldap_uid_field }}"
-AUTH_LDAP_FIRSTNAME_FIELD = "{{ superset_ldap_firstname_field }}"
-AUTH_LDAP_LASTNAME_FIELD = "{{ superset_ldap_lastname_field }}"
-AUTH_LDAP_EMAIL_FIELD = "{{ superset_ldap_email_field }}"
+AUTH_LDAP_SERVER = "{{ apache_superset_ldap_server }}"
+AUTH_LDAP_USE_TLS = {{ apache_superset_ldap_use_tls | lower }}
+AUTH_LDAP_BIND_USER = "{{ apache_superset_ldap_bind_user }}"
+AUTH_LDAP_BIND_PASSWORD = "{{ apache_superset_ldap_bind_password }}"
+AUTH_LDAP_SEARCH = "{{ apache_superset_ldap_search }}"
+AUTH_LDAP_SEARCH_FILTER = "({{ apache_superset_ldap_uid_field }}=%s)"
+AUTH_LDAP_UID_FIELD = "{{ apache_superset_ldap_uid_field }}"
+AUTH_LDAP_FIRSTNAME_FIELD = "{{ apache_superset_ldap_firstname_field }}"
+AUTH_LDAP_LASTNAME_FIELD = "{{ apache_superset_ldap_lastname_field }}"
+AUTH_LDAP_EMAIL_FIELD = "{{ apache_superset_ldap_email_field }}"
 
-{% elif superset_auth_type == 'AUTH_OAUTH' and superset_oauth_enabled %}
+{% elif apache_superset_auth_type == 'AUTH_OAUTH' and apache_superset_oauth_enabled %}
 from flask_appbuilder.security.manager import AUTH_OAUTH
 
 AUTH_TYPE = AUTH_OAUTH
 OAUTH_PROVIDERS = [
-{% for provider in superset_oauth_providers %}
+{% for provider in apache_superset_oauth_providers %}
     {
         'name': '{{ provider.name }}',
         'token_key': 'access_token',
@@ -149,14 +149,14 @@ OAUTH_PROVIDERS = [
 {% endif %}
 
 # Email Configuration
-{% if superset_email_enabled %}
-SMTP_HOST = "{{ superset_smtp_host }}"
-SMTP_STARTTLS = {{ superset_smtp_use_tls | lower }}
+{% if apache_superset_email_enabled %}
+SMTP_HOST = "{{ apache_superset_smtp_host }}"
+SMTP_STARTTLS = {{ apache_superset_smtp_use_tls | lower }}
 SMTP_SSL = False
-SMTP_USER = "{{ superset_smtp_username }}"
-SMTP_PASSWORD = "{{ superset_smtp_password }}"
-SMTP_PORT = {{ superset_smtp_port }}
-SMTP_MAIL_FROM = "{{ superset_smtp_mail_from }}"
+SMTP_USER = "{{ apache_superset_smtp_username }}"
+SMTP_PASSWORD = "{{ apache_superset_smtp_password }}"
+SMTP_PORT = {{ apache_superset_smtp_port }}
+SMTP_MAIL_FROM = "{{ apache_superset_smtp_mail_from }}"
 
 # Enable email reports
 FEATURE_FLAGS["ALERT_REPORTS"] = True
@@ -167,19 +167,19 @@ FEATURE_FLAGS = {
     'ENABLE_TEMPLATE_PROCESSING': True,
     'DASHBOARD_NATIVE_FILTERS': True,
     'DASHBOARD_CROSS_FILTERS': True,
-{% if superset_rls_enabled %}
+{% if apache_superset_rls_enabled %}
     'ROW_LEVEL_SECURITY': True,
 {% endif %}
-{% if superset_metrics_enabled %}
+{% if apache_superset_metrics_enabled %}
     'DASHBOARD_RBAC': True,
 {% endif %}
-{% for key, value in superset_feature_flags.items() %}
+{% for key, value in apache_superset_feature_flags.items() %}
     "{{ key }}": {{ value | to_nice_json }},
 {% endfor %}
 }
 
 # Metrics and Monitoring
-{% if superset_metrics_enabled %}
+{% if apache_superset_metrics_enabled %}
 from prometheus_flask_exporter import PrometheusMetrics
 
 ENABLE_TIME_ROTATE = True
@@ -191,8 +191,8 @@ STATSD_PREFIX = 'superset'
 {% endif %}
 
 # Health Check Configuration
-{% if superset_health_check_enabled %}
-HEALTH_CHECK_ENDPOINT = "{{ superset_health_check_path }}"
+{% if apache_superset_health_check_enabled %}
+HEALTH_CHECK_ENDPOINT = "{{ apache_superset_health_check_path }}"
 {% endif %}
 
 # Security Headers
@@ -202,7 +202,7 @@ WTF_CSRF_TIME_LIMIT = None
 
 # Session Configuration
 PERMANENT_SESSION_LIFETIME = timedelta(hours=24)
-SESSION_COOKIE_SECURE = {{ superset_ssl_enabled | lower }}
+SESSION_COOKIE_SECURE = {{ apache_superset_ssl_enabled | lower }}
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 
@@ -218,21 +218,21 @@ PREVENT_UNSAFE_DB_CONNECTIONS = True
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 # Custom CSS and JavaScript
-{% if superset_custom_plugins %}
+{% if apache_superset_custom_plugins %}
 # Custom visualization plugins
-CUSTOM_PLUGINS = {{ superset_custom_plugins | to_nice_json }}
+CUSTOM_PLUGINS = {{ apache_superset_custom_plugins | to_nice_json }}
 {% endif %}
 
 # Gunicorn specific settings for performance
-{% if superset_use_gunicorn %}
+{% if apache_superset_use_gunicorn %}
 # These are passed to Gunicorn via command line
-GUNICORN_BIND = "{{ superset_gunicorn_bind }}"
-GUNICORN_WORKERS = {{ superset_gunicorn_workers }}
-GUNICORN_TIMEOUT = {{ superset_gunicorn_timeout }}
-GUNICORN_KEEPALIVE = {{ superset_gunicorn_keepalive }}
-GUNICORN_MAX_REQUESTS = {{ superset_gunicorn_max_requests }}
-GUNICORN_MAX_REQUESTS_JITTER = {{ superset_gunicorn_max_requests_jitter }}
-GUNICORN_PRELOAD_APP = {{ superset_gunicorn_preload_app | lower }}
-GUNICORN_WORKER_CLASS = "{{ superset_gunicorn_worker_class }}"
-GUNICORN_WORKER_CONNECTIONS = {{ superset_gunicorn_worker_connections }}
+GUNICORN_BIND = "{{ apache_superset_gunicorn_bind }}"
+GUNICORN_WORKERS = {{ apache_superset_gunicorn_workers }}
+GUNICORN_TIMEOUT = {{ apache_superset_gunicorn_timeout }}
+GUNICORN_KEEPALIVE = {{ apache_superset_gunicorn_keepalive }}
+GUNICORN_MAX_REQUESTS = {{ apache_superset_gunicorn_max_requests }}
+GUNICORN_MAX_REQUESTS_JITTER = {{ apache_superset_gunicorn_max_requests_jitter }}
+GUNICORN_PRELOAD_APP = {{ apache_superset_gunicorn_preload_app | lower }}
+GUNICORN_WORKER_CLASS = "{{ apache_superset_gunicorn_worker_class }}"
+GUNICORN_WORKER_CONNECTIONS = {{ apache_superset_gunicorn_worker_connections }}
 {% endif %}

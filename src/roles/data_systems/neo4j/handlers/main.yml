@@ -1,13 +1,11 @@
 ---
-- name: Restart Neo4j
+- name: Restart Neo4j Service
   ansible.builtin.service:
     name: neo4j
     state: restarted
-
-- name: restart neo4j
-  ansible.builtin.service:
-    name: neo4j
-    state: restarted
+  listen:
+    - restart neo4j
+    - Restart Neo4j
 
 - name: Restart Filebeat
   ansible.builtin.service:
@@ -15,12 +13,16 @@
     state: restarted
   when: neo4j_elk_integration
 
-- name: reload systemd
+- name: Reload Systemd Daemon
   ansible.builtin.systemd:
     daemon_reload: true
+  listen:
+    - reload systemd
 
-- name: restart haproxy
+- name: Restart HAProxy
   ansible.builtin.service:
     name: haproxy
     state: restarted
   when: neo4j_ha_proxy_enabled
+  listen:
+    - restart haproxy

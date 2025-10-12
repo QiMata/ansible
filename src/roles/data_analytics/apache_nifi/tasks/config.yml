@@ -7,7 +7,7 @@
     owner: "{{ apache_nifi_user }}"
     group: "{{ apache_nifi_group }}"
     mode: '0640'
-  notify: restart nifi
+  notify: Restart NiFi service
   tags: [nifi, config]
 
 - name: Deploy bootstrap.conf
@@ -18,7 +18,7 @@
     owner: "{{ apache_nifi_user }}"
     group: "{{ apache_nifi_group }}"
     mode: '0640'
-  notify: restart nifi
+  notify: Restart NiFi service
   tags: [nifi, config]
 
 - name: Deploy login-identity-providers.xml
@@ -29,7 +29,7 @@
     owner: "{{ apache_nifi_user }}"
     group: "{{ apache_nifi_group }}"
     mode: '0640'
-  notify: restart nifi
+  notify: Restart NiFi service
   tags: [nifi, config]
 
 - name: Deploy authorizers.xml
@@ -40,7 +40,7 @@
     owner: "{{ apache_nifi_user }}"
     group: "{{ apache_nifi_group }}"
     mode: '0640'
-  notify: restart nifi
+  notify: Restart NiFi service
   tags: [nifi, config]
 
 - name: Install Filebeat for ELK (optional)

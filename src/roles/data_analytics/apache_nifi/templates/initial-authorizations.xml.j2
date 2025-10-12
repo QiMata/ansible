@@ -2,27 +2,27 @@
 <authorizations>
     <policies>
         <!-- Admin Policies -->
-        {% if nifi_admin_identity != "" %}
+        {% if apache_nifi_admin_identity != "" %}
         <policy identifier="admin-flow-policy" resource="/flow" action="R">
-            <user identifier="{{ nifi_admin_identity | hash('sha256') }}"/>
+            <user identifier="{{ apache_nifi_admin_identity | hash('sha256') }}"/>
         </policy>
         <policy identifier="admin-controller-policy" resource="/controller" action="RW">
-            <user identifier="{{ nifi_admin_identity | hash('sha256') }}"/>
+            <user identifier="{{ apache_nifi_admin_identity | hash('sha256') }}"/>
         </policy>
         <policy identifier="admin-system-policy" resource="/system" action="R">
-            <user identifier="{{ nifi_admin_identity | hash('sha256') }}"/>
+            <user identifier="{{ apache_nifi_admin_identity | hash('sha256') }}"/>
         </policy>
         <policy identifier="admin-provenance-policy" resource="/provenance" action="R">
-            <user identifier="{{ nifi_admin_identity | hash('sha256') }}"/>
+            <user identifier="{{ apache_nifi_admin_identity | hash('sha256') }}"/>
         </policy>
         <policy identifier="admin-restricted-components-policy" resource="/restricted-components" action="W">
-            <user identifier="{{ nifi_admin_identity | hash('sha256') }}"/>
+            <user identifier="{{ apache_nifi_admin_identity | hash('sha256') }}"/>
         </policy>
         <policy identifier="admin-policies-policy" resource="/policies" action="RW">
-            <user identifier="{{ nifi_admin_identity | hash('sha256') }}"/>
+            <user identifier="{{ apache_nifi_admin_identity | hash('sha256') }}"/>
         </policy>
         <policy identifier="admin-tenants-policy" resource="/tenants" action="RW">
-            <user identifier="{{ nifi_admin_identity | hash('sha256') }}"/>
+            <user identifier="{{ apache_nifi_admin_identity | hash('sha256') }}"/>
         </policy>
         {% endif %}
         

@@ -6,90 +6,90 @@
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
-    owner: "{{ superset_user }}"
-    group: "{{ superset_group }}"
+    owner: "{{ apache_superset_user }}"
+    group: "{{ apache_superset_group }}"
     mode: '0750'
   loop:
-    - "{{ superset_db_backup_path }}"
-    - "{{ superset_config_backup_path }}"
+    - "{{ apache_superset_db_backup_path }}"
+    - "{{ apache_superset_config_backup_path }}"
   when: item != ""
-  tags: ['superset', 'superset_backup']
+  tags: ['superset', 'apache_superset_backup']
 
 - name: Create database backup script
   ansible.builtin.template:
     src: backup_database.sh.j2
-    dest: "{{ superset_install_dir }}/backup_database.sh"
-    owner: "{{ superset_user }}"
-    group: "{{ superset_group }}"
+    dest: "{{ apache_superset_install_dir }}/backup_database.sh"
+    owner: "{{ apache_superset_user }}"
+    group: "{{ apache_superset_group }}"
     mode: '0750'
-  when: superset_db_backup_enabled
-  tags: ['superset', 'superset_backup']
+  when: apache_superset_db_backup_enabled
+  tags: ['superset', 'apache_superset_backup']
 
 - name: Create configuration backup script
   ansible.builtin.template:
     src: backup_config.sh.j2
-    dest: "{{ superset_install_dir }}/backup_config.sh"
-    owner: "{{ superset_user }}"
-    group: "{{ superset_group }}"
+    dest: "{{ apache_superset_install_dir }}/backup_config.sh"
+    owner: "{{ apache_superset_user }}"
+    group: "{{ apache_superset_group }}"
     mode: '0750'
-  when: superset_config_backup_enabled
-  tags: ['superset', 'superset_backup']
+  when: apache_superset_config_backup_enabled
+  tags: ['superset', 'apache_superset_backup']
 
 - name: Create database backup cleanup script
   ansible.builtin.template:
     src: cleanup_db_backups.sh.j2
-    dest: "{{ superset_install_dir }}/cleanup_db_backups.sh"
-    owner: "{{ superset_user }}"
-    group: "{{ superset_group }}"
+    dest: "{{ apache_superset_install_dir }}/cleanup_db_backups.sh"
+    owner: "{{ apache_superset_user }}"
+    group: "{{ apache_superset_group }}"
     mode: '0750'
-  when: superset_db_backup_enabled
-  tags: ['superset', 'superset_backup']
+  when: apache_superset_db_backup_enabled
+  tags: ['superset', 'apache_superset_backup']
 
 - name: Create config backup cleanup script
   ansible.builtin.template:
     src: cleanup_config_backups.sh.j2
-    dest: "{{ superset_install_dir }}/cleanup_config_backups.sh"
-    owner: "{{ superset_user }}"
-    group: "{{ superset_group }}"
+    dest: "{{ apache_superset_install_dir }}/cleanup_config_backups.sh"
+    owner: "{{ apache_superset_user }}"
+    group: "{{ apache_superset_group }}"
     mode: '0750'
-  when: superset_config_backup_enabled
-  tags: ['superset', 'superset_backup']
+  when: apache_superset_config_backup_enabled
+  tags: ['superset', 'apache_superset_backup']
 
 - name: Schedule database backup cron job
   vars:
-    superset_db_backup_schedule_parts: "{{ superset_db_backup_schedule.split() }}"
+    apache_superset_db_backup_schedule_parts: "{{ apache_superset_db_backup_schedule.split() }}"
   ansible.builtin.cron:
     name: "Superset database backup"
-    minute: "{{ superset_db_backup_schedule_parts[0] }}"
-    hour: "{{ superset_db_backup_schedule_parts[1] }}"
-    day: "{{ superset_db_backup_schedule_parts[2] }}"
-    month: "{{ superset_db_backup_schedule_parts[3] }}"
-    weekday: "{{ superset_db_backup_schedule_parts[4] }}"
-    user: "{{ superset_user }}"
-    job: "{{ superset_install_dir }}/backup_database.sh"
+    minute: "{{ apache_superset_db_backup_schedule_parts[0] }}"
+    hour: "{{ apache_superset_db_backup_schedule_parts[1] }}"
+    day: "{{ apache_superset_db_backup_schedule_parts[2] }}"
+    month: "{{ apache_superset_db_backup_schedule_parts[3] }}"
+    weekday: "{{ apache_superset_db_backup_schedule_parts[4] }}"
+    user: "{{ apache_superset_user }}"
+    job: "{{ apache_superset_install_dir }}/backup_database.sh"
     state: present
   when:
-    - superset_db_backup_enabled
-    - superset_db_backup_schedule_parts | length == 5
-  tags: ['superset', 'superset_backup']
+    - apache_superset_db_backup_enabled
+    - apache_superset_db_backup_schedule_parts | length == 5
+  tags: ['superset', 'apache_superset_backup']
 
 - name: Schedule configuration backup cron job
   vars:
-    superset_config_backup_schedule_parts: "{{ superset_config_backup_schedule.split() }}"
+    apache_superset_config_backup_schedule_parts: "{{ apache_superset_config_backup_schedule.split() }}"
   ansible.builtin.cron:
     name: "Superset configuration backup"
-    minute: "{{ superset_config_backup_schedule_parts[0] }}"
-    hour: "{{ superset_config_backup_schedule_parts[1] }}"
-    day: "{{ superset_config_backup_schedule_parts[2] }}"
-    month: "{{ superset_config_backup_schedule_parts[3] }}"
-    weekday: "{{ superset_config_backup_schedule_parts[4] }}"
-    user: "{{ superset_user }}"
-    job: "{{ superset_install_dir }}/backup_config.sh"
+    minute: "{{ apache_superset_config_backup_schedule_parts[0] }}"
+    hour: "{{ apache_superset_config_backup_schedule_parts[1] }}"
+    day: "{{ apache_superset_config_backup_schedule_parts[2] }}"
+    month: "{{ apache_superset_config_backup_schedule_parts[3] }}"
+    weekday: "{{ apache_superset_config_backup_schedule_parts[4] }}"
+    user: "{{ apache_superset_user }}"
+    job: "{{ apache_superset_install_dir }}/backup_config.sh"
     state: present
   when:
-    - superset_config_backup_enabled
-    - superset_config_backup_schedule_parts | length == 5
-  tags: ['superset', 'superset_backup']
+    - apache_superset_config_backup_enabled
+    - apache_superset_config_backup_schedule_parts | length == 5
+  tags: ['superset', 'apache_superset_backup']
 
 - name: Schedule database backup cleanup cron job
   ansible.builtin.cron:
@@ -99,11 +99,11 @@
     day: '*'
     month: '*'
     weekday: '*'
-    user: "{{ superset_user }}"
-    job: "{{ superset_install_dir }}/cleanup_db_backups.sh"
+    user: "{{ apache_superset_user }}"
+    job: "{{ apache_superset_install_dir }}/cleanup_db_backups.sh"
     state: present
-  when: superset_db_backup_enabled
-  tags: ['superset', 'superset_backup']
+  when: apache_superset_db_backup_enabled
+  tags: ['superset', 'apache_superset_backup']
 
 - name: Schedule config backup cleanup cron job
   ansible.builtin.cron:
@@ -113,17 +113,17 @@
     day: '*'
     month: '*'
     weekday: '*'
-    user: "{{ superset_user }}"
-    job: "{{ superset_install_dir }}/cleanup_config_backups.sh"
+    user: "{{ apache_superset_user }}"
+    job: "{{ apache_superset_install_dir }}/cleanup_config_backups.sh"
     state: present
-  when: superset_config_backup_enabled
-  tags: ['superset', 'superset_backup']
+  when: apache_superset_config_backup_enabled
+  tags: ['superset', 'apache_superset_backup']
 
 - name: Display backup configuration
   ansible.builtin.debug:
     msg:
-      - "Database backup enabled: {{ superset_db_backup_enabled }}"
-      - "Database backup schedule: {{ superset_db_backup_schedule if superset_db_backup_enabled else 'N/A' }}"
-      - "Config backup enabled: {{ superset_config_backup_enabled }}"
-      - "Config backup schedule: {{ superset_config_backup_schedule if superset_config_backup_enabled else 'N/A' }}"
-  tags: ['superset', 'superset_backup']
+      - "Database backup enabled: {{ apache_superset_db_backup_enabled }}"
+      - "Database backup schedule: {{ apache_superset_db_backup_schedule if apache_superset_db_backup_enabled else 'N/A' }}"
+      - "Config backup enabled: {{ apache_superset_config_backup_enabled }}"
+      - "Config backup schedule: {{ apache_superset_config_backup_schedule if apache_superset_config_backup_enabled else 'N/A' }}"
+  tags: ['superset', 'apache_superset_backup']

@@ -7,21 +7,21 @@
       - postgresql-client
       - mysql-client
     state: present
-  when: superset_db_validate_connection or superset_db_auto_create
-  tags: ['superset', 'superset_database']
+  when: apache_superset_db_validate_connection or apache_superset_db_auto_create
+  tags: ['superset', 'apache_superset_database']
 
 - name: Parse database URI
   ansible.builtin.set_fact:
-    db_uri_parsed: "{{ superset_database_uri | regex_search('([^:]+)://(?:([^:]+)(?::([^@]+))?@)?([^:/]+)(?::([0-9]+))?/(.+)') }}"
-  when: superset_db_validate_connection or superset_db_auto_create
-  tags: ['superset', 'superset_database']
+    db_uri_parsed: "{{ apache_superset_database_uri | regex_search('([^:]+)://(?:([^:]+)(?::([^@]+))?@)?([^:/]+)(?::([0-9]+))?/(.+)') }}"
+  when: apache_superset_db_validate_connection or apache_superset_db_auto_create
+  tags: ['superset', 'apache_superset_database']
 
 - name: Extract database connection details
   ansible.builtin.set_fact:
-    db_type: "{{ superset_database_uri.split('://')[0] }}"
-    db_connection_string: "{{ superset_database_uri.split('://')[1] }}"
-  when: superset_db_validate_connection or superset_db_auto_create
-  tags: ['superset', 'superset_database']
+    db_type: "{{ apache_superset_database_uri.split('://')[0] }}"
+    db_connection_string: "{{ apache_superset_database_uri.split('://')[1] }}"
+  when: apache_superset_db_validate_connection or apache_superset_db_auto_create
+  tags: ['superset', 'apache_superset_database']
 
 - name: Derive database connection components
   ansible.builtin.set_fact:
@@ -56,8 +56,8 @@
         )
         else ''
       }}
-  when: superset_db_validate_connection or superset_db_auto_create
-  tags: ['superset', 'superset_database']
+  when: apache_superset_db_validate_connection or apache_superset_db_auto_create
+  tags: ['superset', 'apache_superset_database']
 
 - name: Validate PostgreSQL database connection
   community.postgresql.postgresql_ping:
@@ -67,11 +67,11 @@
     login_user: "{{ db_connection_user }}"
     login_password: "{{ db_connection_password }}"
   when:
-    - superset_db_validate_connection
+    - apache_superset_db_validate_connection
     - db_type == 'postgresql'
   register: pg_connection_test
   failed_when: false
-  tags: ['superset', 'superset_database']
+  tags: ['superset', 'apache_superset_database']
 
 - name: Create PostgreSQL database if auto-create is enabled
   community.postgresql.postgresql_db:
@@ -82,10 +82,10 @@
     login_password: "{{ db_connection_password }}"
     state: present
   when:
-    - superset_db_auto_create
+    - apache_superset_db_auto_create
     - db_type == 'postgresql'
     - pg_connection_test is defined and pg_connection_test.failed
-  tags: ['superset', 'superset_database']
+  tags: ['superset', 'apache_superset_database']
 
 - name: Validate MySQL database connection
   community.mysql.mysql_info:
@@ -95,11 +95,11 @@
     login_password: "{{ db_connection_password }}"
     login_db: "{{ db_connection_database }}"
   when:
-    - superset_db_validate_connection
+    - apache_superset_db_validate_connection
     - db_type in ['mysql', 'mysql+pymysql']
   register: mysql_connection_test
   failed_when: false
-  tags: ['superset', 'superset_database']
+  tags: ['superset', 'apache_superset_database']
 
 - name: Create MySQL database if auto-create is enabled
   community.mysql.mysql_db:
@@ -110,10 +110,10 @@
     login_password: "{{ db_connection_password }}"
     state: present
   when:
-    - superset_db_auto_create
+    - apache_superset_db_auto_create
     - db_type in ['mysql', 'mysql+pymysql']
     - mysql_connection_test is defined and mysql_connection_test.failed
-  tags: ['superset', 'superset_database']
+  tags: ['superset', 'apache_superset_database']
 
 - name: Display database connection validation results
   ansible.builtin.debug:
@@ -124,5 +124,5 @@
         and not (mysql_connection_test.failed | default(false))
         else 'failed'
       }}
-  when: superset_db_validate_connection
-  tags: ['superset', 'superset_database']
+  when: apache_superset_db_validate_connection
+  tags: ['superset', 'apache_superset_database']
