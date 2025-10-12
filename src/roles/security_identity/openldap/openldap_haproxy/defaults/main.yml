@@ -1,44 +1,44 @@
 ---
 # HAProxy Configuration for OpenLDAP Load Balancing
-openldap_haproxy_enabled: true
-openldap_haproxy_version: "2.4"
+security_identity_openldap_haproxy_enabled: true
+security_identity_openldap_haproxy_version: "2.4"
 
 # Network Configuration
-openldap_haproxy_bind_address: "0.0.0.0"
-openldap_haproxy_ldap_port: 389
-openldap_haproxy_ldaps_port: 636
-openldap_haproxy_stats_port: 8080
-openldap_haproxy_stats_user: "admin"
-openldap_haproxy_stats_password: "{{ vault_haproxy_stats_password | default('changeme') }}"
+security_identity_openldap_haproxy_bind_address: "0.0.0.0"
+security_identity_openldap_haproxy_ldap_port: 389
+security_identity_openldap_haproxy_ldaps_port: 636
+security_identity_openldap_haproxy_stats_port: 8080
+security_identity_openldap_haproxy_stats_user: "admin"
+security_identity_openldap_haproxy_stats_password: "{{ vault_haproxy_stats_password | default('changeme') }}"
 
 # Load Balancing Configuration
-openldap_haproxy_balance_method: "roundrobin"  # roundrobin, leastconn, source
-openldap_haproxy_max_connections: 1000
-openldap_haproxy_connection_timeout: 30      # seconds
-openldap_haproxy_server_timeout: 30          # seconds
-openldap_haproxy_client_timeout: 60          # seconds
-openldap_haproxy_check_timeout: 10           # seconds
+security_identity_openldap_haproxy_balance_method: "roundrobin"  # roundrobin, leastconn, source
+security_identity_openldap_haproxy_max_connections: 1000
+security_identity_openldap_haproxy_connection_timeout: 30      # seconds
+security_identity_openldap_haproxy_server_timeout: 30          # seconds
+security_identity_openldap_haproxy_client_timeout: 60          # seconds
+security_identity_openldap_haproxy_check_timeout: 10           # seconds
 
 # Connection Pooling
-openldap_haproxy_pool_enabled: true
-openldap_haproxy_pool_max_connections: 200
-openldap_haproxy_pool_idle_timeout: 300
-openldap_haproxy_pool_reuse_connections: true
+security_identity_openldap_haproxy_pool_enabled: true
+security_identity_openldap_haproxy_pool_max_connections: 200
+security_identity_openldap_haproxy_pool_idle_timeout: 300
+security_identity_openldap_haproxy_pool_reuse_connections: true
 
 # Health Check Configuration
-openldap_haproxy_health_check_enabled: true
-openldap_haproxy_health_check_interval: "10s"
-openldap_haproxy_health_check_timeout: "5s"
-openldap_haproxy_health_check_retries: 3
-openldap_haproxy_health_check_rise: 2
-openldap_haproxy_health_check_fall: 3
+security_identity_openldap_haproxy_health_check_enabled: true
+security_identity_openldap_haproxy_health_check_interval: "10s"
+security_identity_openldap_haproxy_health_check_timeout: "5s"
+security_identity_openldap_haproxy_health_check_retries: 3
+security_identity_openldap_haproxy_health_check_rise: 2
+security_identity_openldap_haproxy_health_check_fall: 3
 
 # LDAP Health Check Query
-openldap_haproxy_ldap_health_query: "objectClass=*"
-openldap_haproxy_ldap_health_base_dn: "{{ openldap_server_base_dn }}"
+security_identity_openldap_haproxy_ldap_health_query: "objectClass=*"
+security_identity_openldap_haproxy_ldap_health_base_dn: "{{ openldap_server_base_dn }}"
 
 # Backend LDAP Servers
-openldap_haproxy_servers: []
+security_identity_openldap_haproxy_servers: []
 #  - name: "ldap-primary"
 #    address: "192.168.1.10"
 #    port: 389
@@ -55,31 +55,33 @@ openldap_haproxy_servers: []
 #    backup: true
 
 # SSL/TLS Configuration
-openldap_haproxy_ssl_enabled: false
-openldap_haproxy_ssl_certificate: "/etc/ssl/certs/ldap.pem"
-openldap_haproxy_ssl_dhparam: "/etc/ssl/private/dhparam.pem"
-openldap_haproxy_ssl_ciphers: "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256"
-openldap_haproxy_ssl_redirect: true
+security_identity_openldap_haproxy_ssl_enabled: false
+security_identity_openldap_haproxy_ssl_certificate_dir: "/etc/ssl/certs"
+security_identity_openldap_haproxy_ssl_dhparam_dir: "/etc/ssl/private"
+security_identity_openldap_haproxy_ssl_certificate: "{{ security_identity_openldap_haproxy_ssl_certificate_dir }}/ldap.pem"
+security_identity_openldap_haproxy_ssl_dhparam: "{{ security_identity_openldap_haproxy_ssl_dhparam_dir }}/dhparam.pem"
+security_identity_openldap_haproxy_ssl_ciphers: "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256"
+security_identity_openldap_haproxy_ssl_redirect: true
 
 # Logging Configuration
-openldap_haproxy_logging_enabled: true
-openldap_haproxy_log_level: "info"
-openldap_haproxy_log_facility: "local0"
-openldap_haproxy_access_log: "/var/log/haproxy/ldap-access.log"
-openldap_haproxy_error_log: "/var/log/haproxy/ldap-error.log"
+security_identity_openldap_haproxy_logging_enabled: true
+security_identity_openldap_haproxy_log_level: "info"
+security_identity_openldap_haproxy_log_facility: "local0"
+security_identity_openldap_haproxy_access_log: "/var/log/haproxy/ldap-access.log"
+security_identity_openldap_haproxy_error_log: "/var/log/haproxy/ldap-error.log"
 
 # Monitoring and Metrics
-openldap_haproxy_prometheus_enabled: false
-openldap_haproxy_prometheus_port: 9101
-openldap_haproxy_grafana_dashboard: true
+security_identity_openldap_haproxy_prometheus_enabled: false
+security_identity_openldap_haproxy_prometheus_port: 9101
+security_identity_openldap_haproxy_grafana_dashboard: true
 
 # Rate Limiting
-openldap_haproxy_rate_limit_enabled: false
-openldap_haproxy_rate_limit_requests: 100  # requests per minute
-openldap_haproxy_rate_limit_window: "1m"
+security_identity_openldap_haproxy_rate_limit_enabled: false
+security_identity_openldap_haproxy_rate_limit_requests: 100  # requests per minute
+security_identity_openldap_haproxy_rate_limit_window: "1m"
 
 # Stick Tables for Session Persistence
-openldap_haproxy_stick_table_enabled: false
-openldap_haproxy_stick_table_type: "ip"
-openldap_haproxy_stick_table_size: "100k"
-openldap_haproxy_stick_table_expire: "30m"
+security_identity_openldap_haproxy_stick_table_enabled: false
+security_identity_openldap_haproxy_stick_table_type: "ip"
+security_identity_openldap_haproxy_stick_table_size: "100k"
+security_identity_openldap_haproxy_stick_table_expire: "30m"

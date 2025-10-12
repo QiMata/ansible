@@ -1,0 +1,51 @@
+# Managed by Ansible - HAProxy configuration for OpenLDAP
+
+global
+  log /dev/log local0
+  maxconn {{ security_identity_openldap_haproxy_max_connections }}
+
+defaults
+  log     global
+  mode    tcp
+  option  tcplog
+  timeout connect {{ security_identity_openldap_haproxy_connection_timeout }}s
+  timeout client  {{ security_identity_openldap_haproxy_client_timeout }}s
+  timeout server  {{ security_identity_openldap_haproxy_server_timeout }}s
+  timeout check   {{ security_identity_openldap_haproxy_health_check_timeout }}
+
+frontend ldap_frontend
+  mode tcp
+  bind {{ security_identity_openldap_haproxy_bind_address }}:{{ security_identity_openldap_haproxy_ldap_port }}
+  default_backend ldap_backend
+{% if security_identity_openldap_haproxy_rate_limit_enabled | bool %}
+  stick-table type {{ security_identity_openldap_haproxy_stick_table_type }} size {{ security_identity_openldap_haproxy_stick_table_size }} expire {{ security_identity_openldap_haproxy_stick_table_expire }}
+  tcp-request content track-sc0 src
+  acl rate_abuse sc0_gpc0_rate({{ security_identity_openldap_haproxy_rate_limit_window }}) gt {{ security_identity_openldap_haproxy_rate_limit_requests }}
+  tcp-request content reject if rate_abuse
+{% endif %}
+
+{% if security_identity_openldap_haproxy_ssl_enabled | bool %}
+frontend ldaps_frontend
+  mode tcp
+  bind {{ security_identity_openldap_haproxy_bind_address }}:{{ security_identity_openldap_haproxy_ldaps_port }} ssl crt {{ security_identity_openldap_haproxy_ssl_certificate }}{% if security_identity_openldap_haproxy_ssl_dhparam %} ssl-dh-param-file {{ security_identity_openldap_haproxy_ssl_dhparam }}{% endif %}
+  default_backend ldap_backend
+{% endif %}
+
+backend ldap_backend
+  mode tcp
+  balance {{ security_identity_openldap_haproxy_balance_method }}
+  option tcp-check
+  default-server inter {{ security_identity_openldap_haproxy_health_check_interval }} rise {{ security_identity_openldap_haproxy_health_check_rise }} fall {{ security_identity_openldap_haproxy_health_check_fall }}
+  timeout check {{ security_identity_openldap_haproxy_health_check_timeout }}
+{% for server in security_identity_openldap_haproxy_servers %}
+  server {{ server.name }} {{ server.address }}:{{ server.port | default(security_identity_openldap_haproxy_ldap_port) }} check{% if server.weight is defined %} weight {{ server.weight }}{% endif %}{% if server.maxconn is defined %} maxconn {{ server.maxconn }}{% endif %}{% if server.backup | default(false) %} backup{% endif %}
+{% endfor %}
+{% if security_identity_openldap_haproxy_prometheus_enabled | bool %}
+listen ldap_stats
+  bind {{ security_identity_openldap_haproxy_bind_address }}:{{ security_identity_openldap_haproxy_stats_port }}
+  mode http
+  stats enable
+  stats uri /stats
+  stats refresh 10s
+  stats auth {{ security_identity_openldap_haproxy_stats_user }}:{{ security_identity_openldap_haproxy_stats_password }}
+{% endif %}

@@ -213,8 +213,8 @@ openldap_custom_password_policies:
 
 ```yaml
 # HAProxy configuration
-openldap_haproxy_enabled: true
-openldap_haproxy_servers:
+security_identity_openldap_haproxy_enabled: true
+security_identity_openldap_haproxy_servers:
   - name: "ldap-primary"
     address: "10.0.1.10"
     port: 389

@@ -1,0 +1,31 @@
+---
+- name: Ensure HAProxy log files exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: touch
+    owner: root
+    group: root
+    mode: '0640'
+  loop:
+    - "{{ security_identity_openldap_haproxy_access_log }}"
+    - "{{ security_identity_openldap_haproxy_error_log }}"
+  become: true
+
+- name: Configure rsyslog for HAProxy
+  ansible.builtin.copy:
+    dest: /etc/rsyslog.d/90-haproxy.conf
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      if ($programname == 'haproxy') then -{{ security_identity_openldap_haproxy_access_log }}
+      & stop
+  become: true
+  notify: Restart Rsyslog
+
+- name: Ensure rsyslog is enabled for HAProxy
+  ansible.builtin.service:
+    name: rsyslog
+    state: started
+    enabled: true
+  become: true

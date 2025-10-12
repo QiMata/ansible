@@ -1,24 +1,25 @@
 ---
-- name: restart haproxy
-  service:
+- name: Restart HAProxy
+  ansible.builtin.service:
     name: haproxy
     state: restarted
   become: true
 
-- name: reload haproxy
-  service:
+- name: Reload HAProxy
+  ansible.builtin.service:
     name: haproxy
     state: reloaded
   become: true
 
-- name: restart rsyslog
-  service:
+- name: Restart Rsyslog
+  ansible.builtin.service:
     name: rsyslog
     state: restarted
   become: true
 
-- name: validate haproxy config
-  command: haproxy -c -f /etc/haproxy/haproxy.cfg
+- name: Validate HAProxy configuration
+  ansible.builtin.command: haproxy -c -f /etc/haproxy/haproxy.cfg
   become: true
   register: haproxy_validation
+  changed_when: false
   failed_when: haproxy_validation.rc != 0

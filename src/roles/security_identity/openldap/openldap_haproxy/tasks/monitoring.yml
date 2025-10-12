@@ -1,0 +1,13 @@
+---
+- name: Validate HAProxy statistics credentials
+  ansible.builtin.assert:
+    that:
+      - security_identity_openldap_haproxy_stats_password is defined
+      - security_identity_openldap_haproxy_stats_password | length > 8
+    fail_msg: "HAProxy statistics password must be defined and at least 9 characters long."
+
+- name: Display monitoring endpoint details
+  ansible.builtin.debug:
+    msg: >-
+      HAProxy statistics will be served on http://{{ security_identity_openldap_haproxy_bind_address }}:{{ security_identity_openldap_haproxy_stats_port }}
+      using the {{ security_identity_openldap_haproxy_stats_user }} account.

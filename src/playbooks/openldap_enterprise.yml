@@ -153,8 +153,8 @@
   hosts: haproxy_servers
   become: true
   vars:
-    openldap_haproxy_enabled: true
-    openldap_haproxy_servers:
+    security_identity_openldap_haproxy_enabled: true
+    security_identity_openldap_haproxy_servers:
       - name: "ldap-primary"
         address: "{{ groups['ldap_servers'][0] }}"
         port: 389
@@ -169,10 +169,10 @@
         maxconn: 100
         check: true
         backup: "{{ groups['ldap_servers']|length > 1 }}"
-    openldap_haproxy_ssl_enabled: true
-    openldap_haproxy_health_check_enabled: true
-    openldap_haproxy_prometheus_enabled: true
-    openldap_haproxy_logging_enabled: true
+    security_identity_openldap_haproxy_ssl_enabled: true
+    security_identity_openldap_haproxy_health_check_enabled: true
+    security_identity_openldap_haproxy_prometheus_enabled: true
+    security_identity_openldap_haproxy_logging_enabled: true
 
   roles:
     - role: openldap_haproxy
@@ -184,7 +184,7 @@
         method: GET
         status_code: 200
       register: haproxy_stats
-      when: openldap_haproxy_enabled
+      when: security_identity_openldap_haproxy_enabled
 
     - name: Display HAProxy summary
       debug:

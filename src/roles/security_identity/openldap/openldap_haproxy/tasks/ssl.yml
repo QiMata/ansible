@@ -1,0 +1,36 @@
+---
+- name: Ensure certificate directory exists
+  ansible.builtin.file:
+    path: "{{ security_identity_openldap_haproxy_ssl_certificate_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0750'
+  become: true
+
+- name: Ensure DH parameter directory exists
+  ansible.builtin.file:
+    path: "{{ security_identity_openldap_haproxy_ssl_dhparam_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0750'
+  become: true
+
+- name: Check for configured certificate
+  ansible.builtin.stat:
+    path: "{{ security_identity_openldap_haproxy_ssl_certificate }}"
+  register: security_identity_openldap_haproxy_certificate_stat
+
+- name: Check for configured DH parameters
+  ansible.builtin.stat:
+    path: "{{ security_identity_openldap_haproxy_ssl_dhparam }}"
+  register: security_identity_openldap_haproxy_dhparam_stat
+
+- name: Verify SSL assets exist when TLS is enabled
+  ansible.builtin.assert:
+    that:
+      - security_identity_openldap_haproxy_certificate_stat.stat.exists
+      - security_identity_openldap_haproxy_dhparam_stat.stat.exists
+    fail_msg: "HAProxy TLS is enabled but required certificate or DH parameters are missing."
+  when: security_identity_openldap_haproxy_ssl_enabled | bool
