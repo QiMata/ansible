@@ -35,7 +35,7 @@
     regexp: '^MINIO_OPTS="([^"]*)"'
     replace: 'MINIO_OPTS="\1 --address {{ minio_bind_address }}:{{ minio_server_port }}"'
   when: minio_bind_address != "0.0.0.0"
-  notify: restart minio
+  notify: Restart MinIO service
 
 - name: Create rate limiting configuration
   ansible.builtin.template:
@@ -53,7 +53,7 @@
     regexp: "^MINIO_API_REQUESTS_MAX="
     state: present
   when: minio_rate_limit_enabled
-  notify: restart minio
+  notify: Restart MinIO service
 
 - name: Install and configure fail2ban for MinIO
   ansible.builtin.package:
@@ -74,7 +74,7 @@
     dest: /etc/fail2ban/jail.d/minio.conf
     mode: '0644'
   when: minio_enable_firewall
-  notify: restart fail2ban
+  notify: Restart Fail2Ban
 
 - name: Configure reverse proxy support
   ansible.builtin.template:

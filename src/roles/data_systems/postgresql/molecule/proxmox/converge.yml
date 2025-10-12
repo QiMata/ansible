@@ -29,21 +29,21 @@
     postgresql_configure_firewall: false
     postgresql_use_official_repo: true
   tasks:
-    - name: "Include postgresql role"
+    - name: Include PostgreSQL role
       ansible.builtin.include_role:
-        name: "{{ playbook_dir }}/../.."
+        name: data_systems.postgresql
   handlers:
-    - name: update apt cache
+    - name: Update APT cache
       ansible.builtin.apt:
         update_cache: true
 
-    - name: restart postgresql
+    - name: Restart PostgreSQL service
       ansible.builtin.service:
         name: "postgresql@{{ postgresql_version }}-main"
         state: restarted
         enabled: true
 
-    - name: wait for postgresql
+    - name: Wait for PostgreSQL readiness
       ansible.builtin.wait_for:
         port: "{{ postgresql_port }}"
         host: "{{ postgresql_listen_addresses }}"

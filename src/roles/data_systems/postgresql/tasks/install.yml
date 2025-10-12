@@ -2,7 +2,7 @@
 
 - name: Ensure prerequisites are installed
   ansible.builtin.apt:
-    name: 
+    name:
       - gnupg
       - ca-certificates
       - python3-psycopg2
@@ -40,8 +40,10 @@
 - name: Convert ASCII key to GPG format
   ansible.builtin.shell: |
     gpg --dearmor < /usr/share/keyrings/postgresql.asc > /usr/share/keyrings/postgresql.gpg
+  args:
+    creates: /usr/share/keyrings/postgresql.gpg
   become: true
-  when: 
+  when:
     - postgresql_use_official_repo
     - gpg_key_result is succeeded
   changed_when: true
@@ -84,7 +86,7 @@
           ['postgresql', 'postgresql-contrib'] }}
 
 - name: Verify PostgreSQL installation
-  ansible.builtin.command: 
+  ansible.builtin.command:
     cmd: "psql --version"
   register: psql_version_check
   changed_when: false
@@ -107,10 +109,10 @@
     path: "{{ postgresql_data_dir }}/PG_VERSION"
   register: pg_initialized
 
-- name: Ensure postgres user exists  
+- name: Ensure postgres user exists
   ansible.builtin.user:
     name: postgres
-    system: yes
+    system: true
     shell: /bin/bash
     home: /var/lib/postgresql
     create_home: false
@@ -119,6 +121,8 @@
 - name: Initialize PostgreSQL cluster if not exists
   ansible.builtin.shell: |
     sudo -u postgres /usr/lib/postgresql/{{ postgresql_version }}/bin/initdb -D {{ postgresql_data_dir }}
+  args:
+    creates: "{{ postgresql_data_dir }}/PG_VERSION"
   become: true
   when: not pg_initialized.stat.exists
   register: initdb_result
@@ -141,39 +145,53 @@
     port: "{{ postgresql_port }}"
     timeout: 60
     delay: 5
-  when: 
+  when:
     - not postgresql_use_patroni
     - service_start_result is succeeded
 
 - name: Create users if specified
+  vars:
+    create_user_command: >-
+      sudo -u postgres psql -c "
+      CREATE USER {{ item.name }}{% if item.password is defined %} WITH PASSWORD '{{ item.password }}'{% endif %}
+      {% if item.role_attr_flags is defined %} {{ item.role_attr_flags | default([]) | join(' ') }}{% endif %};
+      "
   ansible.builtin.shell: |
+    set -o pipefail
     sudo -u postgres psql -c "
     SELECT 1 FROM pg_user WHERE usename = '{{ item.name }}';
-    " | grep -q 1 || sudo -u postgres psql -c "
-    CREATE USER {{ item.name }}{% if item.password is defined %} WITH PASSWORD '{{ item.password }}'{% endif %}{% if item.role_attr_flags is defined %} {{ item.role_attr_flags | default([]) | join(' ') }}{% endif %};
-    "
+    " | grep -q 1 || {{ create_user_command }}
   loop: "{{ postgresql_users }}"
   when: postgresql_users | length > 0
   become: true
   register: user_creation_result
-  changed_when: "'CREATE ROLE' in user_creation_result.stdout or user_creation_result.rc == 0"
+  changed_when: >-
+    "CREATE ROLE" in user_creation_result.stdout or user_creation_result.rc == 0
 
 - name: Create databases if specified
+  vars:
+    create_db_command: >-
+      sudo -u postgres createdb
+      {% if item.owner is defined %}-O {{ item.owner }} {% endif %}
+      {% if item.encoding is defined %}-E {{ item.encoding }}{% else %}-E UTF8{% endif %}
+      -T template0 {{ item.name }}
   ansible.builtin.shell: |
+    set -o pipefail
     sudo -u postgres psql -c "
     SELECT 1 FROM pg_database WHERE datname = '{{ item.name }}';
-    " | grep -q 1 || sudo -u postgres createdb {% if item.owner is defined %}-O {{ item.owner }}{% endif %} {% if item.encoding is defined %}-E {{ item.encoding }}{% else %}-E UTF8{% endif %} -T template0 {{ item.name }}
+    " | grep -q 1 || {{ create_db_command }}
   loop: "{{ postgresql_databases }}"
   when: postgresql_databases | length > 0
   become: true
   register: db_creation_result
-  changed_when: "'CREATE DATABASE' in db_creation_result.stdout or db_creation_result.rc == 0"
+  changed_when: >-
+    "CREATE DATABASE" in db_creation_result.stdout or db_creation_result.rc == 0
 
 - name: Grant database privileges to users
   ansible.builtin.shell: |
     sudo -u postgres psql -c "GRANT {{ item.priv.split(':')[1] }} ON DATABASE {{ item.priv.split(':')[0] }} TO {{ item.name }};"
   loop: "{{ postgresql_users }}"
-  when: 
+  when:
     - postgresql_users | length > 0
     - item.priv is defined
   become: true

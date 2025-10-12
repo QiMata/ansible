@@ -12,7 +12,7 @@
     regexp: "^#?shared_preload_libraries = "
     line: "shared_preload_libraries = '{{ postgresql_security_extensions | join(',') }}'"
     backup: true
-  notify: restart postgresql
+  notify: Restart PostgreSQL
   when: postgresql_security_extensions | length > 0
 
 - name: Create pgaudit extension
@@ -34,5 +34,5 @@
     - { regexp: "^#?pgaudit.log_catalog = ", line: "pgaudit.log_catalog = on" }
     - { regexp: "^#?pgaudit.log_parameter = ", line: "pgaudit.log_parameter = {{ postgresql_audit_log_parameter | ternary('on', 'off') }}" }
     - { regexp: "^#?pgaudit.log_statement_once = ", line: "pgaudit.log_statement_once = {{ postgresql_audit_log_statement_once | ternary('on', 'off') }}" }
-  notify: restart postgresql
+  notify: Restart PostgreSQL
   when: "'pgaudit' in postgresql_security_extensions"

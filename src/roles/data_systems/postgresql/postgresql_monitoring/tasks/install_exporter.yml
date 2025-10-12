@@ -74,7 +74,7 @@
     owner: "{{ postgresql_exporter_user }}"
     group: "{{ postgresql_exporter_user }}"
     mode: '0600'
-  notify: restart postgres_exporter
+  notify: Restart postgres_exporter
 
 - name: Create custom queries file
   ansible.builtin.template:
@@ -84,7 +84,7 @@
     group: "{{ postgresql_exporter_user }}"
     mode: '0644'
   when: postgresql_exporter_custom_queries_enabled | bool
-  notify: restart postgres_exporter
+  notify: Restart postgres_exporter
 
 - name: Create postgres_exporter systemd service
   ansible.builtin.template:

@@ -26,6 +26,7 @@ mock_roles:
   - robertdebock.bootstrap
   - robertdebock.fail2ban
   - data_systems.minio
+  - security_identity.letsencrypt.letsencrypt_setup
   - mrlesmithjr.mariadb_galera_cluster
   - base
   - cloudflare
@@ -36,6 +37,7 @@ mock_roles:
   - monitoring_observability.kibana
   - monitoring_observability.logstash
   - monitoring_observability.grafana
+  - monitoring_observability.prometheus
   - haproxy
   - infrastructure/shared/common
   - keycloak

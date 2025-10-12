@@ -21,7 +21,7 @@
 
 - name: Generate self-signed certificate
   when: minio_self_signed and (minio_cert_public | length == 0 or minio_cert_private | length == 0)
-  notify: restart minio
+  notify: Restart MinIO service
   block:
     - name: Generate private key
       community.crypto.openssl_privatekey:

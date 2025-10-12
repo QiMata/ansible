@@ -12,7 +12,7 @@
     - { regexp: "^#?tcp_keepalives_idle = ", line: "tcp_keepalives_idle = 600" }
     - { regexp: "^#?tcp_keepalives_interval = ", line: "tcp_keepalives_interval = 30" }
     - { regexp: "^#?tcp_keepalives_count = ", line: "tcp_keepalives_count = 3" }
-  notify: restart postgresql
+  notify: Restart PostgreSQL
 
 - name: Create password policy function
   community.postgresql.postgresql_query:

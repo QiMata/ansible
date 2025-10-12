@@ -11,4 +11,4 @@
     owner: root
     group: root
     mode: "0640"
-  notify: restart minio
+  notify: Restart MinIO service

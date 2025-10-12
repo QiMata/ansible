@@ -36,7 +36,7 @@
   when:
     - minio_enable_letsencrypt
     - minio_letsencrypt_domains | length > 0
-  notify: restart minio
+  notify: Restart MinIO service
 
 - name: Setup certificate renewal hook
   ansible.builtin.template:
@@ -55,7 +55,7 @@
   when:
     - minio_ca_bundle_path != ""
     - minio_ca_bundle_path is file
-  notify: restart minio
+  notify: Restart MinIO service
 
 - name: Create CAs directory for custom CA bundles
   ansible.builtin.file:
@@ -72,7 +72,7 @@
     line: "MINIO_TLS_CLIENT_AUTH={{ 'on' if minio_enable_client_certs else 'off' }}"
     regexp: "^MINIO_TLS_CLIENT_AUTH="
     state: present
-  notify: restart minio
+  notify: Restart MinIO service
 
 - name: Configure TLS cipher suites
   ansible.builtin.lineinfile:
@@ -80,7 +80,7 @@
     line: "MINIO_TLS_CIPHER_SUITES={{ minio_tls_ciphers }}"
     regexp: "^MINIO_TLS_CIPHER_SUITES="
     state: present
-  notify: restart minio
+  notify: Restart MinIO service
 
 - name: Validate TLS configuration
   ansible.builtin.shell: |
