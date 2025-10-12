@@ -1,11 +1,11 @@
 ---
-- name: restart nifi
+- name: Restart NiFi
   become: true
   ansible.builtin.service:
     name: nifi
     state: restarted
 
-- name: restart filebeat
+- name: Restart Filebeat
   become: true
   ansible.builtin.service:
     name: filebeat

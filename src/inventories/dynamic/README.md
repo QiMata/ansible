@@ -71,10 +71,10 @@ pveum aclmod / -user ansible@pve -role ansible-role
 
 ```bash
 # Run playbook with dynamic inventory
-ansible-playbook -i inventories/dynamic/proxmox.yml playbooks/site.yml
+ansible-playbook -i src/inventories/dynamic/proxmox.yml src/playbooks/site.yml
 
 # With vault
-ansible-playbook -i inventories/dynamic/proxmox-vault.yml --vault-password-file vault_pass.txt playbooks/site.yml
+ansible-playbook -i src/inventories/dynamic/proxmox-vault.yml --vault-password-file vault_pass.txt src/playbooks/site.yml
 ```
 
 ## Inventory Groups

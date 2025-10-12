@@ -11,30 +11,30 @@ certificate authorities (Step CA), databases (PostgreSQL, MariaDB), and many oth
 and playbooks are organized so they can be reused for different clients and environments.
 
 ## Repository Layout
-- `ansible.cfg` – basic configuration pointing Ansible at the bundled roles
-- `requirements.yml` – collection dependencies required to run the playbooks
-- `bin/` – helper scripts for executing Ansible
-  - The `ansible-playbook` wrapper scripts now derive their default paths from the
+- `ansible.cfg` – consolidated configuration that points Ansible at the inventories and roles under `src/`.
+- `requirements.yml` – canonical role and collection dependencies for the entire project.
+- `bin/` – helper scripts for executing Ansible.
+  - The `ansible-playbook` wrapper scripts derive their default paths from the
     repository location, so they work no matter where the repository is cloned.
     Set environment variables (for the Bash script) or pass parameters/environment
     variables (for the PowerShell script) to override any of the defaults when
     needed.
 - `docs/` – documentation files (for example `keycloak-role.md`,
-  `kubeadm-guide.md`, `kong-oss-role.md`, and `proxmox-role.md`)
-- `group_vars/` – group variable files used by the top level playbooks
- - `playbooks/` – simple playbooks demonstrating role usage such as `keycloak.yml`, `kubeadm.yml`, `kong.yml`, and `proxmox.yml`
-- `src/` – primary Ansible project
-  - `ansible.cfg` – configuration for running playbooks in `src`
-  - `requirements.yml` – additional role and collection dependencies
-  - `inventories/` – inventory files for environments such as `prod` and `dev`
-  - `group_vars/` and `host_vars/` – variable definitions
-  - `playbooks/` – service playbooks like `deploy_bind9.yml` and `deploy_step_ca.yml`
+  `kubeadm-guide.md`, `kong-oss-role.md`, and `proxmox-role.md`). Historical project
+  briefs now live under `docs/briefings/`.
+- `tools/windows/maintenance/` – archived PowerShell helpers that capture one-off
+  maintenance scripts and legacy migration snippets.
+- `src/` – primary Ansible project content:
+  - `inventories/` – dynamic inventory scripts plus static sample inventories (including `legacy/` snapshots).
+  - `group_vars/` and `host_vars/` – variable definitions shared across playbooks.
+  - `playbooks/` – service playbooks like `deploy_bind9.yml` and `deploy_step_ca.yml`.
   - role directories organized under category folders, for example
     `infrastructure/linux/roles`, `security/linux/roles`, `databases/linux/roles`,
     `ci_cd/linux/roles`, etc. Each contains the individual service roles (Keycloak,
     Vault, PostgreSQL, Proxmox, and so on).
-  - `molecule/` – test scenarios specific to some roles
-  - `scripts/` – helper utilities for tasks like generating inventories
+  - `molecule/` – test scenarios specific to some roles.
+  - `scripts/` – Python utilities (now packaged as importable modules) for tasks like
+    generating inventories.
 
 Each role is built to be modular and can be tested independently using Molecule.  The playbooks
 combine these roles to configure complete systems. Molecule scenarios in this repository work with
@@ -79,7 +79,9 @@ Notes
 The repository includes a helper script at `src/scripts/create_ansible_inventory.py` that can
 generate environment specific inventory files from a PostgreSQL database. The script now accepts
 CLI options (with environment variable fallbacks) for the SSH user and the privilege escalation
-password that will be written into each host entry.
+password that will be written into each host entry. Input rows are validated (for example IP
+addresses must be parseable) so malformed records raise clear exceptions instead of producing
+broken inventories, and the module is covered by unit tests in `tests/test_create_ansible_inventory.py`.
 
 ```bash
 export ANSIBLE_INVENTORY_USER=ansible
@@ -190,7 +192,7 @@ cross-service credentials and dependencies are wired automatically.
 ### Prerequisites
 1. Install the required community roles and collections before running the playbook:
    ```bash
-   ansible-galaxy install -r src/requirements.yml
+   ansible-galaxy install -r requirements.yml
    ```
 2. Copy the sample inventory and adjust addresses to match your environment. The
    repository ships with `src/inventories/data_product_sample/hosts.ini` which includes

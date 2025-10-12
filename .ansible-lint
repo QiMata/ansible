@@ -1,0 +1,29 @@
+---
+mock_roles:
+  - geerlingguy.clamav
+  - geerlingguy.java
+  - geerlingguy.postgresql
+  - geerlingguy.redis
+  - minio_systemd
+  - airflow_scheduler
+  - airflow_webserver
+  - amundsen_frontend
+  - amundsen_metadata
+  - amundsen_search
+  - apache_airflow
+  - apache_nifi
+  - apache_superset
+  - grafana
+  - minio
+  - postgresql
+  - redis
+  - openldap_server
+  - step_ca
+  - prometheus
+  - rabbitmq
+  - spark_role
+  - robertdebock.auto_update
+  - robertdebock.bootstrap
+  - robertdebock.fail2ban
+warn_list:
+  - experimental  # retain visibility into experimental rules

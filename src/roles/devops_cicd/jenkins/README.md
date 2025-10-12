@@ -36,7 +36,7 @@ Each role includes Molecule scenarios (`default`, `podman`, and `proxmox`). Use 
 
 - Variables live under `defaults/main.yml`; handlers are in `handlers/main.yml` per role.
 - Keep tasks idempotent and use handlers for service restarts/reloads.
-- Ansible collections/roles are centralized in [src/requirements.yml](../../../requirements.yml).
+- Ansible collections/roles are centralized in [requirements.yml](../../../requirements.yml).
 
 ## Where to start
 

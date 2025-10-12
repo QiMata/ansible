@@ -69,17 +69,29 @@ build {
     destination = "/opt/workspace/src"
   }
 
+  // Sync the canonical dependency manifest into the execution tree
+  provisioner "file" {
+    source      = "${path.root}/../requirements.yml"
+    destination = "/opt/workspace/src/requirements.yml"
+  }
+
+  // Provide the consolidated Ansible configuration
+  provisioner "file" {
+    source      = "${path.root}/../ansible.cfg"
+    destination = "/opt/workspace/ansible.cfg"
+  }
+
   // Install Galaxy deps (roles + collections) if requirements.yml exists
   provisioner "shell" {
     inline = [
-      "if [ -f /opt/workspace/src/requirements.yml ]; then ANSIBLE_CONFIG=/opt/workspace/src/ansible.cfg ansible-galaxy role install -r /opt/workspace/src/requirements.yml -p /opt/workspace/src/roles || true; ANSIBLE_CONFIG=/opt/workspace/src/ansible.cfg ansible-galaxy collection install -r /opt/workspace/src/requirements.yml -p /opt/workspace/src/collections || true; fi"
+      "if [ -f /opt/workspace/src/requirements.yml ]; then ANSIBLE_CONFIG=/opt/workspace/ansible.cfg ansible-galaxy role install -r /opt/workspace/src/requirements.yml -p /opt/workspace/src/roles || true; ANSIBLE_CONFIG=/opt/workspace/ansible.cfg ansible-galaxy collection install -r /opt/workspace/src/requirements.yml -p /opt/workspace/src/collections || true; fi"
     ]
   }
 
   // Execute the requested playbook inside the container with Ansible
   provisioner "shell" {
     inline = [
-      "ANSIBLE_CONFIG=/opt/workspace/src/ansible.cfg ANSIBLE_ROLES_PATH=/opt/workspace/src/roles ANSIBLE_COLLECTIONS_PATHS=/opt/workspace/src/collections ansible-playbook /opt/workspace/src/${var.playbook_file} -i 'localhost,' -c local --become"
+      "ANSIBLE_CONFIG=/opt/workspace/ansible.cfg ANSIBLE_ROLES_PATH=/opt/workspace/src/roles ANSIBLE_COLLECTIONS_PATHS=/opt/workspace/src/collections ansible-playbook /opt/workspace/src/${var.playbook_file} -i 'localhost,' -c local --become"
     ]
   }
 }

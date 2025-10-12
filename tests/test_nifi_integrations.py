@@ -58,9 +58,9 @@ def test_filebeat_template_uses_logstash_hosts_variable():
 
 def test_requirements_include_elastic_filebeat():
     root_reqs = load_yaml(REPO_ROOT / 'requirements.yml')
-    src_reqs = load_yaml(REPO_ROOT / 'src/requirements.yml')
     assert any(role.get('name') == 'elastic.filebeat' for role in root_reqs.get('roles', []))
-    assert any(role.get('name') == 'elastic.filebeat' for role in src_reqs.get('roles', []))
+    # Ensure legacy src/requirements.yml has been retired
+    assert not (REPO_ROOT / 'src/requirements.yml').exists()
 
 
 def test_role_defaults_include_new_variables():

@@ -1,0 +1,59 @@
+---
+# Common tasks for orchestrator playbooks that need to resolve shared service endpoints.
+# The include expects the following variables to be provided:
+#   metadata_groups: list of candidate database inventory groups (in order of preference)
+#   metadata_host_fact: name of the hostvar fact to populate with the chosen database host
+#   metadata_port: port to probe for the database service
+#   broker_groups: list of dicts with keys `name` and `port` describing broker groups to probe
+#   broker_host_fact / broker_port_fact: fact names used to expose broker connection data
+
+- name: Record metadata database host from configured groups
+  ansible.builtin.set_fact:
+    "{{ metadata_host_fact }}": "{{ hostvars[groups[group_name][0]].ansible_host | default(groups[group_name][0]) }}"
+  loop: "{{ metadata_groups | default([]) }}"
+  loop_control:
+    loop_var: group_name
+  when:
+    - metadata_groups is defined
+    - group_name in groups
+    - (groups[group_name] | length) > 0
+    - hostvars['localhost'].get(metadata_host_fact) is not defined
+  delegate_to: localhost
+  delegate_facts: true
+  run_once: true  # noqa run-once
+
+- name: Wait for metadata database to accept connections
+  ansible.builtin.wait_for:
+    host: "{{ hostvars['localhost'][metadata_host_fact] }}"
+    port: "{{ metadata_port }}"
+    timeout: 300
+  delegate_to: localhost
+  run_once: true  # noqa run-once
+  when:
+    - metadata_port is defined
+    - hostvars['localhost'].get(metadata_host_fact) is defined
+
+- name: Record message broker endpoint from configured groups
+  ansible.builtin.set_fact:
+    "{{ broker_host_fact }}": "{{ hostvars[groups[item.name][0]].ansible_host | default(groups[item.name][0]) }}"
+    "{{ broker_port_fact }}": "{{ item.port }}"
+  loop: "{{ broker_groups | default([]) }}"
+  loop_control:
+    loop_var: item
+  when:
+    - broker_groups is defined
+    - item.name in groups
+    - (groups[item.name] | length) > 0
+    - hostvars['localhost'].get(broker_host_fact) is not defined
+  delegate_to: localhost
+  delegate_facts: true
+  run_once: true  # noqa run-once
+
+- name: Wait for message broker endpoint to respond
+  ansible.builtin.wait_for:
+    host: "{{ hostvars['localhost'][broker_host_fact] }}"
+    port: "{{ hostvars['localhost'][broker_port_fact] }}"
+    timeout: 300
+  delegate_to: localhost
+  run_once: true  # noqa run-once
+  when: hostvars['localhost'].get(broker_host_fact) is defined

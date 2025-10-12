@@ -36,11 +36,15 @@
       --password {{ keycloak_admin_password }}
       -f {{ keycloak_home }}/imports/{{ item.name }}
   loop: "{{ keycloak_realm_imports }}"
+  loop_control:
+    label: "{{ item.name }}"
+  become: true
   become_user: "{{ keycloak_user }}"
   register: realm_import_result
-  failed_when: 
+  failed_when:
     - realm_import_result.rc != 0
     - "'already exists' not in realm_import_result.stderr"
+  changed_when: "'already exists' not in realm_import_result.stderr"
 
 - name: Create test realm
   ansible.builtin.command:
@@ -53,9 +57,11 @@
       -s realm={{ keycloak_test_realm_name }}
       -s enabled=true
       -s displayName="Test Realm"
+  become: true
   become_user: "{{ keycloak_user }}"
   when: keycloak_create_test_realm | bool
   register: test_realm_result
-  failed_when: 
+  failed_when:
     - test_realm_result.rc != 0
     - "'already exists' not in test_realm_result.stderr"
+  changed_when: "'already exists' not in test_realm_result.stderr"

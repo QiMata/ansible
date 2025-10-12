@@ -38,7 +38,7 @@ services:
       - ANSIBLE_HOST_KEY_CHECKING=False
       - ANSIBLE_STDOUT_CALLBACK=yaml
       - ANSIBLE_FORCE_COLOR=1
-      - ANSIBLE_CONFIG=/ansible/src/ansible.cfg
+      - ANSIBLE_CONFIG=/ansible/ansible.cfg
       - ANSIBLE_COLLECTIONS_PATHS=/ansible/src/collections:/home/ansible/.ansible/collections:/usr/share/ansible/collections
 
     volumes:

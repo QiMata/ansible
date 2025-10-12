@@ -2,8 +2,8 @@
 - name: Join RabbitMQ cluster
   ansible.builtin.command: "rabbitmqctl join_cluster rabbit@{{ rabbitmq_cluster_master_node }}"
   when: inventory_hostname != rabbitmq_cluster_master_node
-  register: join_out
-  changed_when: '"Clustering node" in join_out.stdout'
+  register: rabbitmq_join_out
+  changed_when: '"Clustering node" in rabbitmq_join_out.stdout'
   notify: Restart RabbitMQ
 
 - name: Set HA policy on master

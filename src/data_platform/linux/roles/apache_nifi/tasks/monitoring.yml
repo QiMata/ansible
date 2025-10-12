@@ -12,10 +12,13 @@
 - name: Download Prometheus JMX exporter for NiFi
   become: true
   ansible.builtin.get_url:
-    url: "https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/{{ apache_nifi_prometheus_jmx_exporter_version }}/jmx_prometheus_javaagent-{{ apache_nifi_prometheus_jmx_exporter_version }}.jar"
+    url: >-
+      https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/
+      {{ apache_nifi_prometheus_jmx_exporter_version }}/
+      jmx_prometheus_javaagent-{{ apache_nifi_prometheus_jmx_exporter_version }}.jar
     dest: "{{ apache_nifi_home }}/lib/jmx_prometheus_javaagent.jar"
     mode: '0644'
-  notify: restart nifi
+  notify: Restart NiFi
   tags: [nifi, monitoring, prometheus]
 
 - name: Deploy Prometheus JMX exporter configuration
@@ -26,5 +29,5 @@
     owner: "{{ apache_nifi_user }}"
     group: "{{ apache_nifi_group }}"
     mode: '0640'
-  notify: restart nifi
+  notify: Restart NiFi
   tags: [nifi, monitoring, prometheus]
