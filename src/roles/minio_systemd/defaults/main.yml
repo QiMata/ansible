@@ -1,0 +1,11 @@
+---
+minio_systemd_user: minio
+minio_systemd_group: minio
+minio_systemd_binary: /usr/local/bin/minio
+minio_systemd_config_dir: /etc/minio
+minio_systemd_env_file: /etc/minio/minio.env
+minio_systemd_service_name: minio
+minio_systemd_service_enabled: true
+minio_systemd_service_state: stopped
+minio_systemd_bind_address: ":9000"
+minio_systemd_manage_service: true

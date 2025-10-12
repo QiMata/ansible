@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  author: Internal
+  description: Minimal RabbitMQ role to satisfy lint requirements
+  min_ansible_version: "2.12"
+  platforms:
+    - name: EL
+      versions: ["all"]
+    - name: Debian
+      versions: ["all"]
+  license: MIT
+dependencies: []

@@ -1,0 +1,12 @@
+---
+- name: Reload MinIO unit
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart MinIO service if running
+  ansible.builtin.service:
+    name: "{{ minio_systemd_service_name }}"
+    state: restarted
+  when:
+    - minio_systemd_manage_service
+    - minio_systemd_service_state == 'started'

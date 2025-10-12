@@ -1,0 +1,11 @@
+---
+- name: Ensure Redis package is installed
+  ansible.builtin.package:
+    name: "{{ geerlingguy_redis_package_name }}"
+    state: present
+
+- name: Ensure Redis service is enabled and in desired state
+  ansible.builtin.service:
+    name: "{{ geerlingguy_redis_service_name }}"
+    enabled: "{{ geerlingguy_redis_service_enabled | bool }}"
+    state: "{{ geerlingguy_redis_service_state }}"
