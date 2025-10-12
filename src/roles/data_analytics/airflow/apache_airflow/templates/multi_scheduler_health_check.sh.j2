@@ -15,10 +15,10 @@ log_message "Starting multi-scheduler health check for ${SCHEDULER_INSTANCES} in
 # Check each scheduler instance
 for i in $(seq 1 ${SCHEDULER_INSTANCES}); do
     SERVICE_NAME="airflow-scheduler@${i}"
-    
+
     if systemctl is-active --quiet "${SERVICE_NAME}"; then
         log_message "Scheduler instance ${i} is active"
-        
+
         # Check if scheduler PID file exists and process is running
         PID_FILE="/var/run/airflow/scheduler-${i}.pid"
         if [ -f "${PID_FILE}" ]; then
@@ -32,17 +32,17 @@ for i in $(seq 1 ${SCHEDULER_INSTANCES}); do
         else
             log_message "WARNING: Scheduler instance ${i} PID file missing. Service may be starting up."
         fi
-        
+
         # Check recent heartbeat in database
         if [ -f "${AIRFLOW_HOME}/airflow.db" ]; then
             LAST_HEARTBEAT=$(sqlite3 "${AIRFLOW_HOME}/airflow.db" \
                 "SELECT MAX(latest_heartbeat) FROM job WHERE job_type='SchedulerJob' AND hostname='$(hostname)-${i}';" 2>/dev/null)
-            
+
             if [ -n "$LAST_HEARTBEAT" ]; then
                 CURRENT_TIME=$(date +%s)
                 HEARTBEAT_TIME=$(date -d "$LAST_HEARTBEAT" +%s 2>/dev/null || echo 0)
                 TIME_DIFF=$((CURRENT_TIME - HEARTBEAT_TIME))
-                
+
                 if [ $TIME_DIFF -gt {{ apache_airflow_scheduler_zombie_task_threshold | default(300) }} ]; then
                     log_message "WARNING: Scheduler instance ${i} heartbeat is stale (${TIME_DIFF}s old). Restarting."
                     systemctl restart "${SERVICE_NAME}"

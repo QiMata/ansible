@@ -2,12 +2,16 @@
 # Default variables for airflow_connector role
 
 # Airflow installation paths
-airflow_home: "{{ apache_airflow_home | default('/opt/airflow') }}"
-airflow_binary_path: "{{ apache_airflow_venv_path + '/bin/airflow' if apache_airflow_venv_path else '/usr/local/bin/airflow' }}"
+airflow_connector_home: >-
+  {{ airflow_home | default(apache_airflow_home | default('/opt/airflow')) }}
+airflow_connector_binary_path: >-
+  {{ airflow_binary_path | default(
+    (apache_airflow_venv_path + '/bin/airflow') if apache_airflow_venv_path else '/usr/local/bin/airflow'
+  ) }}
 
 # Airflow connections to create
 # Example:
-# airflow_connections:
+# airflow_connector_connections:
 #   - conn_id: "postgres_default"
 #     conn_type: "postgres"
 #     host: "localhost"
@@ -47,17 +51,17 @@ airflow_binary_path: "{{ apache_airflow_venv_path + '/bin/airflow' if apache_air
 #       key_path: "/path/to/service-account.json"
 #       project: "my-project"
 #       scope: "https://www.googleapis.com/auth/cloud-platform"
-airflow_connections: []
+airflow_connector_connections: []
 
 # Connection IDs to delete
-airflow_connections_to_delete: []
+airflow_connector_connections_to_delete: []
 
 # Import/Export settings
-# airflow_connections_import_file: "/path/to/connections.json"
-# airflow_connections_export_file: "/path/to/connections.json"
-# airflow_connections_export_format: "json"  # json, yaml, env
-# airflow_connections_export_conn_ids: []  # specific connection IDs to export
-airflow_connections_export_secure: true  # Set restrictive permissions on export file
+# airflow_connector_connections_import_file: "/path/to/connections.json"
+# airflow_connector_connections_export_file: "/path/to/connections.json"
+# airflow_connector_connections_export_format: "json"  # json, yaml, env
+# airflow_connector_connections_export_conn_ids: []  # specific connection IDs to export
+airflow_connector_connections_export_secure: true  # Set restrictive permissions on export file
 
 # Role behavior settings
 airflow_connector_list_connections: false  # List connections after creation

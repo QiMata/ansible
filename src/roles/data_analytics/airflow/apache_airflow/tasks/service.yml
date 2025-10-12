@@ -9,7 +9,7 @@
   loop:
     - "{{ apache_airflow_systemd_units_enabled }}"
   notify:
-    - reload systemd
+    - Reload systemd
 
 - name: Enable and start Airflow services
   ansible.builtin.systemd:

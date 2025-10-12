@@ -7,27 +7,18 @@ galaxy_info:
   company: "QiMata Technologies"
   license: "MIT"
   min_ansible_version: "2.9"
-  
+
   platforms:
     - name: Ubuntu
       versions:
-        - 18.04
-        - 20.04
-        - 22.04
+        - bionic
+        - focal
+        - jammy
     - name: Debian
       versions:
-        - 10
-        - 11
-        - 12
-    - name: CentOS
-      versions:
-        - 7
-        - 8
-    - name: RHEL
-      versions:
-        - 7
-        - 8
-        - 9
+        - buster
+        - bullseye
+        - bookworm
 
   galaxy_tags:
     - airflow
@@ -38,10 +29,7 @@ galaxy_info:
     - orchestration
     - etl
 
-dependencies:
-  # This role assumes Apache Airflow is already installed
-  # Optionally depends on apache_airflow role
-  []
+dependencies: []  # This role assumes Apache Airflow is already installed
 
 collections:
   - ansible.builtin

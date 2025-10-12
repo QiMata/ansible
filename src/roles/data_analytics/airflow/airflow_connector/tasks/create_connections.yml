@@ -3,7 +3,7 @@
 
 - name: Create Airflow connections
   ansible.builtin.command: >
-    {{ airflow_binary_path }} connections add
+    {{ airflow_connector_binary_path }} connections add
     {{ item.conn_id }}
     --conn-type {{ item.conn_type }}
     {% if item.host is defined %}--conn-host {{ item.host }}{% endif %}
@@ -14,19 +14,19 @@
     {% if item.extra is defined %}--conn-extra '{{ item.extra | to_json }}'{% endif %}
     {% if item.description is defined %}--conn-description "{{ item.description }}"{% endif %}
   environment:
-    AIRFLOW_HOME: "{{ airflow_home }}"
+    AIRFLOW_HOME: "{{ airflow_connector_home }}"
   register: connection_result
   changed_when: "'successfully added' in connection_result.stdout"
-  failed_when: 
+  failed_when:
     - connection_result.rc != 0
     - "'already exists' not in connection_result.stderr"
-  loop: "{{ airflow_connections }}"
+  loop: "{{ airflow_connector_connections }}"
   loop_control:
     label: "{{ item.conn_id }}"
 
 - name: Update existing Airflow connections
   ansible.builtin.command: >
-    {{ airflow_binary_path }} connections add
+    {{ airflow_connector_binary_path }} connections add
     {{ item.conn_id }}
     --conn-type {{ item.conn_type }}
     {% if item.host is defined %}--conn-host {{ item.host }}{% endif %}
@@ -38,19 +38,23 @@
     {% if item.description is defined %}--conn-description "{{ item.description }}"{% endif %}
     --overwrite
   environment:
-    AIRFLOW_HOME: "{{ airflow_home }}"
-  when: 
-    - item.update_existing is defined 
+    AIRFLOW_HOME: "{{ airflow_connector_home }}"
+  register: update_result
+  changed_when: "'successfully added' in update_result.stdout"
+  failed_when:
+    - update_result.rc != 0
+  when:
+    - item.update_existing is defined
     - item.update_existing | bool
     - "'already exists' in connection_result.stderr"
-  loop: "{{ airflow_connections }}"
+  loop: "{{ airflow_connector_connections }}"
   loop_control:
     label: "{{ item.conn_id }}"
 
 - name: List created connections
-  ansible.builtin.command: "{{ airflow_binary_path }} connections list --output table"
+  ansible.builtin.command: "{{ airflow_connector_binary_path }} connections list --output table"
   environment:
-    AIRFLOW_HOME: "{{ airflow_home }}"
+    AIRFLOW_HOME: "{{ airflow_connector_home }}"
   register: connections_list
   changed_when: false
   when: airflow_connector_list_connections | bool
@@ -58,6 +62,6 @@
 - name: Display connections list
   ansible.builtin.debug:
     var: connections_list.stdout_lines
-  when: 
+  when:
     - airflow_connector_list_connections | bool
     - connections_list is defined

@@ -19,9 +19,9 @@
     group: "{{ apache_airflow_group }}"
     mode: "0600"
   notify:
-    - restart airflow-webserver
-    - restart airflow-scheduler
-    - restart airflow-worker
+    - Restart airflow-webserver
+    - Restart airflow-scheduler
+    - Restart airflow-worker
 
 - name: Deploy environment file for systemd
   ansible.builtin.template:
@@ -30,4 +30,4 @@
     owner: root
     group: root
     mode: "0644"
-  notify: Reload Systemd
+  notify: Reload systemd

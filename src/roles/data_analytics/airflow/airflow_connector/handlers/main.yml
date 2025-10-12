@@ -1,29 +1,29 @@
 ---
 # Handlers for airflow_connector role
 
-- name: restart airflow-webserver
+- name: Restart airflow-webserver
   ansible.builtin.systemd:
     name: airflow-webserver
     state: restarted
     daemon_reload: true
-  when: 
+  when:
     - ansible_service_mgr == "systemd"
     - airflow_connector_restart_services | default(false) | bool
 
-- name: restart airflow-scheduler
+- name: Restart airflow-scheduler
   ansible.builtin.systemd:
     name: airflow-scheduler
     state: restarted
     daemon_reload: true
-  when: 
+  when:
     - ansible_service_mgr == "systemd"
     - airflow_connector_restart_services | default(false) | bool
 
-- name: restart airflow-worker
+- name: Restart airflow-worker
   ansible.builtin.systemd:
     name: airflow-worker
     state: restarted
     daemon_reload: true
-  when: 
+  when:
     - ansible_service_mgr == "systemd"
     - airflow_connector_restart_services | default(false) | bool

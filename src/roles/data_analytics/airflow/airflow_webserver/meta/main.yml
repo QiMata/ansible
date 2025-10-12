@@ -9,13 +9,13 @@ galaxy_info:
   platforms:
     - name: Ubuntu
       versions:
-        - 18.04
-        - 20.04
-        - 22.04
+        - bionic
+        - focal
+        - jammy
     - name: Debian
       versions:
-        - 10
-        - 11
+        - buster
+        - bullseye
 
 dependencies:
   - role: apache_airflow

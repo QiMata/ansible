@@ -17,13 +17,13 @@
     - name: Verify airflow home directory
       ansible.builtin.stat:
         path: /opt/airflow
-      register: airflow_home
+      register: airflow_connector_home
 
     - name: Assert airflow home exists
       ansible.builtin.assert:
         that:
-          - airflow_home.stat.exists
-          - airflow_home.stat.isdir
+          - airflow_connector_home.stat.exists
+          - airflow_connector_home.stat.isdir
 
     - name: Test airflow connections command
       ansible.builtin.command: /usr/local/bin/airflow connections list

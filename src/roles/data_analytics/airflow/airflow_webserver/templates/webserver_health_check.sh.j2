@@ -13,7 +13,7 @@ log_message() {
 # Check if webserver service is running
 if systemctl is-active --quiet airflow-webserver; then
     log_message "Webserver service is active"
-    
+
     # Check if webserver is responding to HTTP requests
     if curl -f -s "http://${WEBSERVER_HOST}:${WEBSERVER_PORT}/health" > /dev/null 2>&1; then
         log_message "Webserver is responding to health checks"

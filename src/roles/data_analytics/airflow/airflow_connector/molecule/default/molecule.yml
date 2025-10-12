@@ -23,7 +23,7 @@ provisioner:
   inventory:
     host_vars:
       instance:
-        apache_airflow_home: /opt/airflow
+        apache_airflow_connector_home: /opt/airflow
         apache_airflow_user: airflow
         apache_airflow_group: airflow
 verifier:

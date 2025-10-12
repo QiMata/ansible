@@ -25,10 +25,10 @@ The `airflow_connector` role provides a comprehensive way to manage Airflow conn
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `airflow_home` | `/opt/airflow` | Airflow home directory |
-| `airflow_binary_path` | `/usr/local/bin/airflow` | Path to Airflow binary |
-| `airflow_connections` | `[]` | List of connections to create |
-| `airflow_connections_to_delete` | `[]` | List of connection IDs to delete |
+| `airflow_connector_home` | `/opt/airflow` | Airflow home directory |
+| `airflow_connector_binary_path` | `/usr/local/bin/airflow` | Path to Airflow binary |
+| `airflow_connector_connections` | `[]` | List of connections to create |
+| `airflow_connector_connections_to_delete` | `[]` | List of connection IDs to delete |
 
 ### Behavior Variables
 
@@ -42,18 +42,18 @@ The `airflow_connector` role provides a comprehensive way to manage Airflow conn
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `airflow_connections_import_file` | undefined | Path to file for importing connections |
-| `airflow_connections_export_file` | undefined | Path to file for exporting connections |
-| `airflow_connections_export_format` | `json` | Export format (json, yaml, env) |
-| `airflow_connections_export_conn_ids` | `[]` | Specific connection IDs to export |
-| `airflow_connections_export_secure` | `true` | Set restrictive permissions on export file |
+| `airflow_connector_connections_import_file` | undefined | Path to file for importing connections |
+| `airflow_connector_connections_export_file` | undefined | Path to file for exporting connections |
+| `airflow_connector_connections_export_format` | `json` | Export format (json, yaml, env) |
+| `airflow_connector_connections_export_conn_ids` | `[]` | Specific connection IDs to export |
+| `airflow_connector_connections_export_secure` | `true` | Set restrictive permissions on export file |
 
 ## Connection Configuration
 
 ### Basic Connection Structure
 
 ```yaml
-airflow_connections:
+airflow_connector_connections:
   - conn_id: "my_connection"
     conn_type: "postgres"
     host: "localhost"
@@ -160,7 +160,7 @@ airflow_connections:
   roles:
     - role: airflow_connector
       vars:
-        airflow_connections:
+        airflow_connector_connections:
           - conn_id: "postgres_dwh"
             conn_type: "postgres"
             host: "{{ postgres_host }}"
@@ -181,7 +181,7 @@ airflow_connections:
       vars:
         airflow_connector_verbose: true
         airflow_connector_list_connections: true
-        airflow_connections:
+        airflow_connector_connections:
           # Database connections
           - conn_id: "postgres_prod"
             conn_type: "postgres"
@@ -192,7 +192,7 @@ airflow_connections:
             schema: "production"
             description: "Production PostgreSQL"
             update_existing: true
-            
+
           # API connections
           - conn_id: "external_api"
             conn_type: "http"
@@ -202,7 +202,7 @@ airflow_connections:
             extra:
               headers:
                 Authorization: "Bearer {{ vault_api_token }}"
-                
+
           # Cloud connections
           - conn_id: "aws_s3"
             conn_type: "aws"
@@ -222,22 +222,22 @@ airflow_connections:
     - role: airflow_connector
       vars:
         # Delete old connections
-        airflow_connections_to_delete:
+        airflow_connector_connections_to_delete:
           - "old_mysql_conn"
           - "deprecated_api"
-          
+
         # Create new connections
-        airflow_connections:
+        airflow_connector_connections:
           - conn_id: "new_mysql_conn"
             conn_type: "mysql"
             host: "new-mysql.example.com"
             port: 3306
             login: "airflow"
             password: "{{ mysql_password }}"
-            
+
         # Export current connections
-        airflow_connections_export_file: "/tmp/airflow_connections_backup.json"
-        airflow_connections_export_format: "json"
+        airflow_connector_connections_export_file: "/tmp/airflow_connector_connections_backup.json"
+        airflow_connector_connections_export_format: "json"
 ```
 
 ## Security Considerations
@@ -261,10 +261,10 @@ This role assumes that Apache Airflow is already installed and configured. It wo
       vars:
         apache_airflow_version: "2.6.3"
         apache_airflow_executor: "CeleryExecutor"
-        
+
     - role: airflow_connector
       vars:
-        airflow_connections:
+        airflow_connector_connections:
           - conn_id: "postgres_airflow"
             conn_type: "postgres"
             host: "{{ apache_airflow_database_host }}"
@@ -276,7 +276,7 @@ This role assumes that Apache Airflow is already installed and configured. It wo
 
 ## Troubleshooting
 
-1. **Airflow not found**: Ensure `airflow_binary_path` points to the correct Airflow installation
+1. **Airflow not found**: Ensure `airflow_connector_binary_path` points to the correct Airflow installation
 2. **Database connection issues**: Verify Airflow database is accessible and initialized
 3. **Permission errors**: Check that the Airflow user has proper permissions
 4. **Connection already exists**: Use `update_existing: true` to overwrite existing connections

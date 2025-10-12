@@ -79,33 +79,33 @@ AUTH_USER_REGISTRATION_ROLE = "{{ apache_airflow_rbac_user_registration_role }}"
 # Security Manager Configuration
 class CustomSecurityManager(AirflowSecurityManager):
     """Custom security manager for Airflow with enhanced RBAC"""
-    
+
     def __init__(self, appbuilder):
         super(CustomSecurityManager, self).__init__(appbuilder)
-    
+
     {% if apache_airflow_ldap_enabled %}
     def auth_user_ldap(self, username, password):
         """Custom LDAP authentication method"""
         try:
             import ldap
-            
+
             # Initialize LDAP connection
             conn = ldap.initialize(AUTH_LDAP_SERVER)
             if AUTH_LDAP_USE_TLS:
                 conn.start_tls_s()
-            
+
             # Bind with service account
             conn.simple_bind_s(AUTH_LDAP_BIND_USER, AUTH_LDAP_BIND_PASSWORD)
-            
+
             # Search for user
             search_filter = f"(&({AUTH_LDAP_UID_FIELD}={username})({AUTH_LDAP_SEARCH_FILTER}))"
             result = conn.search_s(AUTH_LDAP_SEARCH, ldap.SCOPE_SUBTREE, search_filter)
-            
+
             if not result:
                 return None
-            
+
             user_dn = result[0][0]
-            
+
             # Authenticate user
             try:
                 conn.simple_bind_s(user_dn, password)
@@ -114,7 +114,7 @@ class CustomSecurityManager(AirflowSecurityManager):
                 return None
             finally:
                 conn.unbind()
-                
+
         except Exception as e:
             self.log.error(f"LDAP authentication error: {str(e)}")
             return None
