@@ -1,0 +1,7 @@
+---
+offline: false
+use_default_rules: true
+project_dir: .
+exclude_paths:
+  - .git/
+  - .cache/
