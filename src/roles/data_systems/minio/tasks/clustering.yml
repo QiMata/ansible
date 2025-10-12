@@ -18,7 +18,7 @@
 - name: Configure multiple drives for single node
   ansible.builtin.set_fact:
     minio_volumes: "{{ [minio_data_dir] + minio_multiple_drives | join(' ') }}"
-  when: 
+  when:
     - not minio_enable_clustering
     - minio_multiple_drives | length > 0
 
@@ -47,7 +47,7 @@
     - { key: "MINIO_DISTRIBUTED_MODE_ENABLED", value: "{{ minio_enable_clustering | lower }}" }
     - { key: "MINIO_DISTRIBUTED_NODES", value: "{{ minio_cluster_nodes | join(',') }}" }
   when: minio_enable_clustering
-  notify: restart minio
+  notify: Restart MinIO service
 
 - name: Configure storage class
   ansible.builtin.lineinfile:
@@ -55,7 +55,7 @@
     line: "MINIO_STORAGE_CLASS_STANDARD={{ minio_storage_class }}"
     regexp: "^MINIO_STORAGE_CLASS_STANDARD="
     state: present
-  notify: restart minio
+  notify: Restart MinIO service
 
 - name: Setup cluster health check script
   ansible.builtin.template:

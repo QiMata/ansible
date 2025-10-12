@@ -15,7 +15,7 @@
     - { regexp: "^#?log_lock_waits = ", line: "log_lock_waits = on" }
     - { regexp: "^#?log_temp_files = ", line: "log_temp_files = 0" }
     - { regexp: "^#?log_autovacuum_min_duration = ", line: "log_autovacuum_min_duration = 0" }
-  notify: restart postgresql
+  notify: Restart PostgreSQL
 
 - name: Configure log rotation for PostgreSQL audit logs
   ansible.builtin.template:

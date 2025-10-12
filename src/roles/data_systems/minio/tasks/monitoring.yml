@@ -8,7 +8,7 @@
     regexp: "^MINIO_PROMETHEUS_AUTH_TYPE="
     state: present
   when: minio_enable_prometheus
-  notify: restart minio
+  notify: Restart MinIO service
 
 - name: Add MinIO to Prometheus targets
   ansible.builtin.include_role:
@@ -37,7 +37,7 @@
     dest: /etc/systemd/system/minio-health-check.timer
     mode: '0644'
   when: minio_enable_health_checks
-  notify: reload systemd
+  notify: Reload systemd units
 
 - name: Create health check systemd service
   ansible.builtin.template:
@@ -45,7 +45,7 @@
     dest: /etc/systemd/system/minio-health-check.service
     mode: '0644'
   when: minio_enable_health_checks
-  notify: reload systemd
+  notify: Reload systemd units
 
 - name: Enable health check timer
   ansible.builtin.systemd:
@@ -65,7 +65,7 @@
     - { key: "MINIO_AUDIT_WEBHOOK_ENABLE", value: "{{ minio_enable_audit_logging | lower }}" }
     - { key: "MINIO_AUDIT_WEBHOOK_ENDPOINT", value: "file://{{ minio_audit_log_path }}" }
   when: minio_enable_audit_logging
-  notify: restart minio
+  notify: Restart MinIO service
 
 - name: Create audit log file
   ansible.builtin.file:
@@ -82,7 +82,7 @@
     line: "MINIO_LOG_LEVEL={{ minio_log_level }}"
     regexp: "^MINIO_LOG_LEVEL="
     state: present
-  notify: restart minio
+  notify: Restart MinIO service
 
 - name: Create disk usage monitoring script
   ansible.builtin.template:

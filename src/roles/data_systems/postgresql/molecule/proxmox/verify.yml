@@ -104,8 +104,8 @@
       become_user: postgres
       community.postgresql.postgresql_query:
         query: |
-          SELECT name, setting, unit, context 
-          FROM pg_settings 
+          SELECT name, setting, unit, context
+          FROM pg_settings
           WHERE name IN ('listen_addresses', 'max_connections', 'shared_buffers', 'port');
       register: pg_config_check
 
@@ -133,7 +133,7 @@
       become_user: postgres
       community.postgresql.postgresql_query:
         query: |
-          SELECT 
+          SELECT
             datname,
             numbackends as active_connections,
             xact_commit as transactions_committed,
@@ -141,7 +141,7 @@
             blks_read,
             blks_hit,
             ROUND((blks_hit::float / (blks_hit + blks_read + 1)) * 100, 2) as cache_hit_ratio
-          FROM pg_stat_database 
+          FROM pg_stat_database
           WHERE datname NOT IN ('template0', 'template1');
       register: pg_stats_check
 
@@ -201,8 +201,10 @@
     # ============================================================================
     - name: Check disk space usage
       ansible.builtin.shell: |
+        set -o pipefail
         df -h /var/lib/postgresql | tail -1 | awk '{print $5}' | sed 's/%//'
       register: disk_usage
+      changed_when: false
 
     - name: Display disk usage
       ansible.builtin.debug:

@@ -5,7 +5,7 @@
     regexp: "^#?listen_addresses = "
     line: "listen_addresses = 'localhost'"
     backup: true
-  notify: restart postgresql
+  notify: Restart PostgreSQL
   when: postgresql_restrict_network_access | bool
 
 - name: Configure restrictive pg_hba.conf

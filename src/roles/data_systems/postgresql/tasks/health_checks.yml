@@ -22,6 +22,7 @@
   ansible.builtin.shell: |
     sudo -u postgres psql -c "SELECT version();"
   register: pg_version_check
+  changed_when: false
   retries: "{{ postgresql_health_check_retries }}"
   delay: "{{ postgresql_health_check_delay }}"
   until: pg_version_check is succeeded
@@ -39,11 +40,11 @@
 - name: Check PostgreSQL cluster health
   ansible.builtin.shell: |
     sudo -u postgres psql -c "
-    SELECT 
+    SELECT
       current_database() as database_name,
       pg_postmaster_start_time() as start_time,
       pg_is_in_recovery() as is_replica,
-      CASE 
+      CASE
         WHEN pg_is_in_recovery() THEN 'Secondary'
         ELSE 'Primary'
       END as role_status,
@@ -51,6 +52,7 @@
     "
   become: true
   register: cluster_health_result
+  changed_when: false
   when: postgresql_validate_config
   environment:
     ANSIBLE_PIPELINING: "false"
@@ -60,7 +62,7 @@
     msg: |
       Cluster Health Status:
       {{ cluster_health_result.stdout }}
-  when: 
+  when:
     - postgresql_validate_config
     - cluster_health_result is defined
 
@@ -76,7 +78,7 @@
 - name: Check database connections and activity
   ansible.builtin.shell: |
     sudo -u postgres psql -c "
-    SELECT 
+    SELECT
       datname,
       numbackends as active_connections,
       xact_commit as transactions_committed,
@@ -84,11 +86,12 @@
       blks_read,
       blks_hit,
       ROUND(CAST((blks_hit::float / NULLIF(blks_hit + blks_read, 0)) * 100 AS numeric), 2) as cache_hit_ratio
-    FROM pg_stat_database 
+    FROM pg_stat_database
     WHERE datname NOT IN ('template0', 'template1');
     "
   become: true
   register: db_activity_result
+  changed_when: false
   environment:
     ANSIBLE_PIPELINING: "false"
 
@@ -97,14 +100,14 @@
     msg: |
       Connection Statistics:
       {{ db_activity_result.stdout }}
-  when: 
+  when:
     - postgresql_validate_config
     - db_activity_result is defined
 
 - name: Check for high connection usage
   ansible.builtin.debug:
     msg: "WARNING: High connection usage detected - check database activity"
-  when: 
+  when:
     - postgresql_validate_config
     - db_activity_result is defined
     - db_activity_result.rc == 0
@@ -113,7 +116,7 @@
   ansible.builtin.shell: |
     sudo -u postgres psql -c "
     SELECT name, setting, unit, context, source
-    FROM pg_settings 
+    FROM pg_settings
     WHERE name IN (
       'max_connections', 'shared_buffers', 'effective_cache_size',
       'work_mem', 'maintenance_work_mem', 'listen_addresses',
@@ -123,6 +126,7 @@
     "
   become: true
   register: config_check_result
+  changed_when: false
 
 - name: Display configuration settings
   ansible.builtin.debug:
@@ -136,7 +140,7 @@
 - name: Check replication status (if enabled)
   ansible.builtin.shell: |
     sudo -u postgres psql -c "
-    SELECT 
+    SELECT
       client_addr,
       state,
       sent_lsn,
@@ -148,6 +152,7 @@
     "
   become: true
   register: replication_status_result
+  changed_when: false
   when: postgresql_enable_replication | default(false)
 
 - name: Display replication status
@@ -159,15 +164,17 @@
         State: {{ replica.state }}
         Sync State: {{ replica.sync_state }}
       {% endfor %}
-  when: 
+  when:
     - postgresql_enable_replication
     - replication_status is defined
     - replication_status.query_result is defined
 
 - name: Check disk space usage on data directory
   ansible.builtin.shell: |
+    set -o pipefail
     df -h {{ postgresql_data_dir }} | tail -1 | awk '{print $5}' | sed 's/%//'
   register: data_disk_usage
+  changed_when: false
 
 - name: Display disk usage
   ansible.builtin.debug:
@@ -181,7 +188,7 @@
 - name: Check for locks and blocking queries
   ansible.builtin.shell: |
     sudo -u postgres psql -c "
-    SELECT 
+    SELECT
       blocked_locks.pid AS blocked_pid,
       blocked_activity.usename AS blocked_user,
       blocking_locks.pid AS blocking_pid,
@@ -190,7 +197,7 @@
       blocking_activity.query AS current_statement_in_blocking_process
     FROM pg_catalog.pg_locks blocked_locks
     JOIN pg_catalog.pg_stat_activity blocked_activity ON blocked_activity.pid = blocked_locks.pid
-    JOIN pg_catalog.pg_locks blocking_locks 
+    JOIN pg_catalog.pg_locks blocking_locks
       ON blocking_locks.locktype = blocked_locks.locktype
         AND blocking_locks.database IS NOT DISTINCT FROM blocked_locks.database
         AND blocking_locks.relation IS NOT DISTINCT FROM blocked_locks.relation
@@ -207,24 +214,25 @@
     "
   become: true
   register: blocking_queries_result
+  changed_when: false
 
 - name: Display blocking queries
   ansible.builtin.debug:
     msg: |
       Blocking Queries:
       {{ blocking_queries_result.stdout }}
-  when: 
+  when:
     - postgresql_validate_config
     - blocking_queries_result is defined
 
 - name: Warning for blocking queries
   ansible.builtin.debug:
     msg: "WARNING: Blocking queries detected - performance may be impacted"
-  when: 
+  when:
     - postgresql_validate_config
     - blocking_queries_result is defined
     - blocking_queries_result.rc == 0
-    - '"blocked_pid" in blocking_queries_result.stdout' 
+    - '"blocked_pid" in blocking_queries_result.stdout'
     - blocking_queries is defined
     - blocking_queries.query_result | length > 0
 
@@ -247,9 +255,11 @@
 
 - name: Check log file for errors
   ansible.builtin.shell: |
+    set -o pipefail
     find /var/log/postgresql -name "*.log" -mtime -1 -exec grep -l "ERROR\|FATAL\|PANIC" {} \; | head -5
   register: error_logs
-  ignore_errors: true
+  changed_when: false
+  failed_when: false
 
 - name: Display recent errors
   ansible.builtin.debug:

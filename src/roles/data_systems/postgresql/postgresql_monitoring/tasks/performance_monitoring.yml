@@ -5,7 +5,7 @@
     regexp: "^#?log_min_duration_statement"
     line: "log_min_duration_statement = {{ postgresql_slow_query_threshold }}"
     backup: true
-  notify: restart postgresql
+  notify: Restart PostgreSQL
 
 - name: Enable query logging
   ansible.builtin.lineinfile:
@@ -13,7 +13,7 @@
     regexp: "^#?log_statement"
     line: "log_statement = 'all'"
     backup: true
-  notify: restart postgresql
+  notify: Restart PostgreSQL
 
 - name: Configure log line prefix for better parsing
   ansible.builtin.lineinfile:
@@ -21,7 +21,7 @@
     regexp: "^#?log_line_prefix"
     line: "log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '"
     backup: true
-  notify: restart postgresql
+  notify: Restart PostgreSQL
 
 - name: Enable statistics collector
   ansible.builtin.lineinfile:
@@ -29,7 +29,7 @@
     regexp: "^#?track_activities"
     line: "track_activities = on"
     backup: true
-  notify: restart postgresql
+  notify: Restart PostgreSQL
 
 - name: Enable statement statistics
   ansible.builtin.lineinfile:
@@ -37,7 +37,7 @@
     regexp: "^#?track_counts"
     line: "track_counts = on"
     backup: true
-  notify: restart postgresql
+  notify: Restart PostgreSQL
 
 - name: Configure shared_preload_libraries for pg_stat_statements
   ansible.builtin.lineinfile:
@@ -45,7 +45,7 @@
     regexp: "^#?shared_preload_libraries"
     line: "shared_preload_libraries = 'pg_stat_statements'"
     backup: true
-  notify: restart postgresql
+  notify: Restart PostgreSQL
 
 - name: Create pg_stat_statements extension
   community.postgresql.postgresql_ext:

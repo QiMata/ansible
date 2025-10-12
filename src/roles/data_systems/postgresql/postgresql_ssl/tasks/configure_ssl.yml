@@ -13,7 +13,7 @@
     - { regexp: "^#?ssl_protocols = ", line: "ssl_protocols = '{{ postgresql_ssl_protocols }}'" }
     - { regexp: "^#?ssl_ciphers = ", line: "ssl_ciphers = '{{ postgresql_ssl_ciphers }}'" }
     - { regexp: "^#?ssl_prefer_server_ciphers = ", line: "ssl_prefer_server_ciphers = {{ postgresql_ssl_prefer_server_ciphers | ternary('on', 'off') }}" }
-  notify: restart postgresql
+  notify: Restart PostgreSQL
 
 - name: Configure SSL-only mode if enabled
   ansible.builtin.lineinfile:
@@ -22,7 +22,7 @@
     line: "ssl_min_protocol_version = 'TLSv1.2'"
     backup: true
   when: postgresql_ssl_only | bool
-  notify: restart postgresql
+  notify: Restart PostgreSQL
 
 - name: Update pg_hba.conf for SSL connections
   ansible.builtin.blockinfile:

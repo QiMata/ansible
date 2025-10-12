@@ -7,8 +7,8 @@
     group: root
     mode: "0644"
   notify:
-    - daemon-reload
-    - restart minio
+    - Reload systemd daemon
+    - Restart MinIO service
 
 - name: Ensure minio service enabled and started
   ansible.builtin.service:
