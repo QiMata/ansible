@@ -3,30 +3,30 @@
 
 - name: Ensure export directory exists
   ansible.builtin.file:
-    path: "{{ airflow_connections_export_file | dirname }}"
+    path: "{{ airflow_connector_connections_export_file | dirname }}"
     state: directory
     mode: '0755'
-  when: airflow_connections_export_file | dirname != airflow_connections_export_file
+  when: airflow_connector_connections_export_file | dirname != airflow_connector_connections_export_file
 
 - name: Export connections to file
   ansible.builtin.command: >
-    {{ airflow_binary_path }} connections export {{ airflow_connections_export_file }}
-    {% if airflow_connections_export_format is defined %}--format {{ airflow_connections_export_format }}{% endif %}
-    {% if airflow_connections_export_conn_ids is defined %}--conn-ids {{ airflow_connections_export_conn_ids | join(',') }}{% endif %}
+    {{ airflow_connector_binary_path }} connections export {{ airflow_connector_connections_export_file }}
+    {% if airflow_connector_connections_export_format is defined %}--format {{ airflow_connector_connections_export_format }}{% endif %}
+    {% if airflow_connector_connections_export_conn_ids is defined %}--conn-ids {{ airflow_connector_connections_export_conn_ids | join(',') }}{% endif %}
   environment:
-    AIRFLOW_HOME: "{{ airflow_home }}"
+    AIRFLOW_HOME: "{{ airflow_connector_home }}"
   register: export_result
   changed_when: true
 
 - name: Display export results
   ansible.builtin.debug:
-    msg: "Connections exported to {{ airflow_connections_export_file }}"
+    msg: "Connections exported to {{ airflow_connector_connections_export_file }}"
   when: export_result.rc == 0
 
 - name: Set proper file permissions for exported file
   ansible.builtin.file:
-    path: "{{ airflow_connections_export_file }}"
+    path: "{{ airflow_connector_connections_export_file }}"
     mode: '0600'
-  when: 
+  when:
     - export_result.rc == 0
-    - airflow_connections_export_secure | bool
+    - airflow_connector_connections_export_secure | bool

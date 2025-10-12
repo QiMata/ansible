@@ -13,16 +13,16 @@ log_message() {
 # Check if scheduler process is running
 if systemctl is-active --quiet airflow-scheduler; then
     log_message "Scheduler service is active"
-    
+
     # Check if scheduler is responsive by checking recent heartbeat
     if [ -f "${AIRFLOW_HOME}/airflow.db" ]; then
         LAST_HEARTBEAT=$(sqlite3 "${AIRFLOW_HOME}/airflow.db" "SELECT MAX(latest_heartbeat) FROM job WHERE job_type='SchedulerJob';" 2>/dev/null)
         CURRENT_TIME=$(date +%s)
-        
+
         if [ -n "$LAST_HEARTBEAT" ]; then
             HEARTBEAT_TIME=$(date -d "$LAST_HEARTBEAT" +%s 2>/dev/null || echo 0)
             TIME_DIFF=$((CURRENT_TIME - HEARTBEAT_TIME))
-            
+
             if [ $TIME_DIFF -gt {{ airflow_scheduler_zombie_task_threshold }} ]; then
                 log_message "WARNING: Scheduler heartbeat is stale (${TIME_DIFF}s old). Restarting scheduler."
                 systemctl restart airflow-scheduler

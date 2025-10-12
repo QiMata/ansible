@@ -10,6 +10,9 @@
   when: apache_airflow_ssl_enabled
 
 - name: Setup SSL certificates using Step CA
+  when:
+    - apache_airflow_ssl_enabled
+    - apache_airflow_ssl_use_step_ca
   block:
     - name: Include step-ca role for internal certificates
       ansible.builtin.include_role:
@@ -31,30 +34,24 @@
         apache_airflow_ssl_cert_path: "{{ apache_airflow_home }}/ssl/airflow.crt"
         apache_airflow_ssl_key_path: "{{ apache_airflow_home }}/ssl/airflow.key"
         apache_airflow_ssl_ca_cert_path: "{{ apache_airflow_home }}/ssl/ca.crt"
-  when: 
-    - apache_airflow_ssl_enabled
-    - apache_airflow_ssl_use_step_ca
-
 - name: Setup SSL certificates using Let's Encrypt
+  when:
+    - apache_airflow_ssl_enabled
+    - apache_airflow_ssl_use_letsencrypt
   block:
     - name: Include letsencrypt role for public certificates
       ansible.builtin.include_role:
         name: letsencrypt_setup
       vars:
-        letsencrypt_domains:
-          - "airflow.{{ ansible_domain }}"
-        letsencrypt_cert_path: "{{ apache_airflow_home }}/ssl"
-        letsencrypt_cert_owner: "{{ apache_airflow_user }}"
-        letsencrypt_cert_group: "{{ apache_airflow_group }}"
+        letsencrypt_domains: "{{ apache_airflow_letsencrypt_domains }}"  # noqa var-naming
+        letsencrypt_cert_path: "{{ apache_airflow_letsencrypt_cert_path }}"  # noqa var-naming
+        letsencrypt_cert_owner: "{{ apache_airflow_letsencrypt_cert_owner }}"  # noqa var-naming
+        letsencrypt_cert_group: "{{ apache_airflow_letsencrypt_cert_group }}"  # noqa var-naming
 
     - name: Set certificate paths for Let's Encrypt
       ansible.builtin.set_fact:
         apache_airflow_ssl_cert_path: "{{ apache_airflow_home }}/ssl/fullchain.pem"
         apache_airflow_ssl_key_path: "{{ apache_airflow_home }}/ssl/privkey.pem"
-  when: 
-    - apache_airflow_ssl_enabled
-    - apache_airflow_ssl_use_letsencrypt
-
 - name: Copy custom SSL certificate
   ansible.builtin.copy:
     src: "{{ apache_airflow_ssl_cert_file }}"
@@ -62,12 +59,12 @@
     owner: "{{ apache_airflow_user }}"
     group: "{{ apache_airflow_group }}"
     mode: '0644'
-  when: 
+  when:
     - apache_airflow_ssl_enabled
     - not apache_airflow_ssl_use_step_ca
     - not apache_airflow_ssl_use_letsencrypt
     - apache_airflow_ssl_cert_file is defined
-  notify: restart airflow services
+  notify: Restart airflow services
 
 - name: Copy custom SSL private key
   ansible.builtin.copy:
@@ -76,12 +73,12 @@
     owner: "{{ apache_airflow_user }}"
     group: "{{ apache_airflow_group }}"
     mode: '0600'
-  when: 
+  when:
     - apache_airflow_ssl_enabled
     - not apache_airflow_ssl_use_step_ca
     - not apache_airflow_ssl_use_letsencrypt
     - apache_airflow_ssl_key_file is defined
-  notify: restart airflow services
+  notify: Restart airflow services
 
 - name: Copy custom CA certificate
   ansible.builtin.copy:
@@ -90,12 +87,12 @@
     owner: "{{ apache_airflow_user }}"
     group: "{{ apache_airflow_group }}"
     mode: '0644'
-  when: 
+  when:
     - apache_airflow_ssl_enabled
     - not apache_airflow_ssl_use_step_ca
     - not apache_airflow_ssl_use_letsencrypt
     - apache_airflow_ssl_ca_cert_file is defined
-  notify: restart airflow services
+  notify: Restart airflow services
 
 - name: Verify SSL certificate
   ansible.builtin.command:
@@ -107,6 +104,6 @@
 - name: Display SSL certificate information
   ansible.builtin.debug:
     msg: "SSL certificate valid for: {{ ssl_cert_info.stdout | regex_search('DNS:([^,\\s]+)', '\\1') | join(', ') }}"
-  when: 
+  when:
     - apache_airflow_ssl_enabled
     - ssl_cert_info is defined

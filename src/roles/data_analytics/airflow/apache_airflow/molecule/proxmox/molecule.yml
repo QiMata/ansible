@@ -29,15 +29,15 @@ provisioner:
         ansible_connection: ssh
         ansible_ssh_pass: molecule123
         ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
-        ansible_become: yes
-        ansible_become_method: sudo
+        ansible_become: true
+        ansible_become_method: ansible.builtin.sudo
   config_options:
     defaults:
       host_key_checking: false
       stdout_callback: yaml
       bin_ansible_callbacks: true
-      role_name_check: False
-      roles_path: /ansible/src/roles:/ansible/src/roles/data_analytics/airflow:/ansible/src/roles/data_analytics/amundsen:/ansible/src/roles/data_analytics:/ansible/src/roles/data_systems:/ansible/src/roles/devops_cicd:/ansible/src/roles/infrastructure:/ansible/src/roles/load_balancing_ha:/ansible/src/roles/monitoring_observability:/ansible/src/roles/networking:/ansible/src/roles/operations_management:/ansible/src/roles/security_identity
+      role_name_check: false
+      roles_path: /ansible/src/roles:/ansible/src/roles/data_analytics:/ansible/src/roles/data_analytics/airflow:/ansible/src/roles/infrastructure
 verifier:
   name: ansible
 scenario:
@@ -55,4 +55,3 @@ scenario:
     - verify
     - cleanup
     - destroy
-

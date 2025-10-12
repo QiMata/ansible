@@ -61,7 +61,7 @@
   roles:
     - role: airflow_connector
       vars:
-        airflow_connections:
+        airflow_connector_connections:
           - conn_id: "test_postgres"
             conn_type: "postgres"
             host: "localhost"
@@ -70,11 +70,11 @@
             password: "test_password"
             schema: "test_db"
             description: "Test PostgreSQL connection"
-            
+
           - conn_id: "test_http"
             conn_type: "http"
             host: "httpbin.org"
             description: "Test HTTP connection"
-            
+
         airflow_connector_list_connections: true
         airflow_connector_verbose: true

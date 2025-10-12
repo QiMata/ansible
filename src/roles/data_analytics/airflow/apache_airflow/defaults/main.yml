@@ -8,7 +8,8 @@ apache_airflow_python: "/usr/bin/python3"           # Change if using a venv
 apache_airflow_venv_path: ""                        # e.g. /opt/airflow/venv (leave blank for system python)
 
 # Executor Configuration
-apache_airflow_executor: "CeleryExecutor"           # Options: SequentialExecutor, LocalExecutor, CeleryExecutor, KubernetesExecutor
+# Options: SequentialExecutor, LocalExecutor, CeleryExecutor, KubernetesExecutor
+apache_airflow_executor: "CeleryExecutor"
 apache_airflow_parallelism: 32                      # Max number of task instances that can run simultaneously
 apache_airflow_max_active_runs_per_dag: 16          # Max number of active runs per DAG
 apache_airflow_max_active_tasks_per_dag: 16         # Max number of active tasks per DAG
@@ -35,7 +36,10 @@ apache_airflow_database_port: 5432
 apache_airflow_database_name: "airflow"
 apache_airflow_database_user: "airflow"
 apache_airflow_database_password: "airflow"
-apache_airflow_database_url: "{{ apache_airflow_database_type }}://{{ apache_airflow_database_user }}:{{ apache_airflow_database_password }}@{{ apache_airflow_database_host }}:{{ apache_airflow_database_port }}/{{ apache_airflow_database_name }}"
+apache_airflow_database_url: >-
+  {{ apache_airflow_database_type ~ '://' ~ apache_airflow_database_user ~ ':' ~ apache_airflow_database_password
+     ~ '@' ~ apache_airflow_database_host ~ ':' ~ (apache_airflow_database_port | string)
+     ~ '/' ~ apache_airflow_database_name }}
 
 # Database Pool Settings
 apache_airflow_database_pool_size: 5
@@ -44,11 +48,14 @@ apache_airflow_database_pool_pre_ping: true
 apache_airflow_database_max_overflow: 10
 
 # Message Broker Configuration (for CeleryExecutor)
-apache_airflow_broker_type: "redis"                 # Options: redis, rabbitmq
+# Options: redis, rabbitmq
+apache_airflow_broker_type: "redis"
 apache_airflow_broker_host: "localhost"
 apache_airflow_broker_port: 6379
 apache_airflow_broker_vhost: "0"
-apache_airflow_broker_url: "{{ apache_airflow_broker_type }}://{{ apache_airflow_broker_host }}:{{ apache_airflow_broker_port }}/{{ apache_airflow_broker_vhost }}"
+apache_airflow_broker_url: >-
+  {{ apache_airflow_broker_type ~ '://' ~ apache_airflow_broker_host ~ ':' ~ (apache_airflow_broker_port | string)
+     ~ '/' ~ apache_airflow_broker_vhost }}
 
 # Multiple Scheduler Configuration (Airflow 2.0+)
 apache_airflow_scheduler_instances: 1               # Number of scheduler instances for HA
@@ -92,6 +99,11 @@ apache_airflow_ssl_ca_cert_path: "{{ apache_airflow_home }}/ssl/ca.crt"
 apache_airflow_ssl_verify_certs: true
 apache_airflow_ssl_use_step_ca: false               # Use step-ca for internal certificates
 apache_airflow_ssl_use_letsencrypt: false           # Use Let's Encrypt for public certificates
+apache_airflow_letsencrypt_domains:
+  - "airflow.{{ ansible_domain | default('local') }}"
+apache_airflow_letsencrypt_cert_path: "{{ apache_airflow_home }}/ssl"
+apache_airflow_letsencrypt_cert_owner: "{{ apache_airflow_user }}"
+apache_airflow_letsencrypt_cert_group: "{{ apache_airflow_group }}"
 
 # Separate Worker Nodes Configuration
 apache_airflow_worker_nodes_enabled: "{{ apache_airflow_executor == 'CeleryExecutor' }}"

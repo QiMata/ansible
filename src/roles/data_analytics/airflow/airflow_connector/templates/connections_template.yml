@@ -1,7 +1,7 @@
 # Airflow Connections Configuration Template
 # Copy this file and customize for your environment
 
-airflow_connections:
+airflow_connector_connections:
   # PostgreSQL Connections
   - conn_id: "postgres_default"
     conn_type: "postgres"
@@ -15,7 +15,7 @@ airflow_connections:
     extra:
       sslmode: "prefer"
 
-  # MySQL Connections  
+  # MySQL Connections
   - conn_id: "mysql_default"
     conn_type: "mysql"
     host: "localhost"
@@ -123,14 +123,14 @@ airflow_connections:
     description: "SSH connection to remote server"
 
 # Connections to delete (if needed)
-airflow_connections_to_delete: []
+airflow_connector_connections_to_delete: []
   # - "old_connection_id"
   # - "deprecated_api"
 
 # Import/Export settings
-# airflow_connections_import_file: "/path/to/connections.json"
-# airflow_connections_export_file: "/path/to/backup/connections.json"
-# airflow_connections_export_format: "json"  # json, yaml, env
+# airflow_connector_connections_import_file: "/path/to/connections.json"
+# airflow_connector_connections_export_file: "/path/to/backup/connections.json"
+# airflow_connector_connections_export_format: "json"  # json, yaml, env
 
 # Role behavior
 airflow_connector_list_connections: false

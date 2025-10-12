@@ -12,7 +12,7 @@
   ansible.builtin.package:
     name: redis-server
     state: present
-  when: 
+  when:
     - apache_airflow_executor == "CeleryExecutor"
     - apache_airflow_broker_type == "redis"
     - apache_airflow_install_broker | default(false)
@@ -22,7 +22,7 @@
     name: redis-server
     state: started
     enabled: true
-  when: 
+  when:
     - apache_airflow_executor == "CeleryExecutor"
     - apache_airflow_broker_type == "redis"
     - apache_airflow_install_broker | default(false)
@@ -31,7 +31,7 @@
   ansible.builtin.package:
     name: rabbitmq-server
     state: present
-  when: 
+  when:
     - apache_airflow_executor == "CeleryExecutor"
     - apache_airflow_broker_type == "rabbitmq"
     - apache_airflow_install_broker | default(false)
@@ -41,7 +41,7 @@
     name: rabbitmq-server
     state: started
     enabled: true
-  when: 
+  when:
     - apache_airflow_executor == "CeleryExecutor"
     - apache_airflow_broker_type == "rabbitmq"
     - apache_airflow_install_broker | default(false)
@@ -61,28 +61,28 @@
     src: airflow-flower.service.j2
     dest: /etc/systemd/system/airflow-flower.service
     mode: '0644'
-  when: 
+  when:
     - apache_airflow_executor == "CeleryExecutor"
     - "'flower' in apache_airflow_systemd_units_enabled"
   notify:
-    - reload systemd
-    - restart airflow flower
+    - Reload systemd
+    - Restart airflow flower
 
 - name: Wait for message broker to be ready (Redis)
-  wait_for:
+  ansible.builtin.wait_for:
     host: "{{ apache_airflow_broker_host }}"
     port: "{{ apache_airflow_broker_port }}"
     timeout: 300
-  when: 
+  when:
     - apache_airflow_executor == "CeleryExecutor"
     - apache_airflow_broker_type == "redis"
 
 - name: Wait for message broker to be ready (RabbitMQ)
-  wait_for:
+  ansible.builtin.wait_for:
     host: "{{ apache_airflow_broker_host }}"
     port: 5672
     timeout: 300
-  when: 
+  when:
     - apache_airflow_executor == "CeleryExecutor"
     - apache_airflow_broker_type == "rabbitmq"
 

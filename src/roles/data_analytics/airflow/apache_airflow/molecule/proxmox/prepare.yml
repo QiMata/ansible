@@ -5,38 +5,36 @@
   gather_facts: false
   tasks:
     - name: Debug connection parameters
-      debug:
+      ansible.builtin.debug:
         msg:
           - "ansible_host: {{ ansible_host | default('not set') }}"
           - "inventory_hostname: {{ inventory_hostname }}"
           - "ansible_user: {{ ansible_user | default('not set') }}"
           - "ansible_connection: {{ ansible_connection | default('not set') }}"
       delegate_to: localhost
-      run_once: true
 
     - name: Wait for container to be ready (extended)
-      wait_for:
+      ansible.builtin.wait_for:
         host: "{{ ansible_host }}"
         port: 22
         delay: 10
         timeout: 120
         state: started
       delegate_to: localhost
-      run_once: true
 
     - name: Test SSH connectivity
-      ping:
+      ansible.builtin.ping:
         data: "Test from apache_airflow prepare"
 
     - name: Gather facts
-      setup:
+      ansible.builtin.setup:
 
     - name: Update package cache
       ansible.builtin.apt:
         update_cache: true
         cache_valid_time: 3600
       when: ansible_os_family == "Debian"
-    
+
     - name: Install basic packages
       ansible.builtin.apt:
         name:

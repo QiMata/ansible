@@ -1,9 +1,9 @@
 ---
-- name: reload systemd
+- name: Reload systemd
   ansible.builtin.systemd:
     daemon_reload: true
 
-- name: restart airflow webserver
+- name: Restart airflow webserver
   ansible.builtin.systemd:
     name: airflow-webserver
     state: restarted

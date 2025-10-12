@@ -23,24 +23,24 @@
       ansible.builtin.apt:
         name: python3-venv
         state: present
-        update_cache: yes
-      become: yes
+        update_cache: true
+      become: true
 
     - name: "Create airflow group for testing"
       ansible.builtin.group:
         name: "{{ apache_airflow_group }}"
-        system: yes
-      become: yes
-        
+        system: true
+      become: true
+
     - name: "Create airflow user for testing"
       ansible.builtin.user:
         name: "{{ apache_airflow_user }}"
         group: "{{ apache_airflow_group }}"
-        system: yes
+        system: true
         shell: /bin/bash
         home: "{{ apache_airflow_home }}"
-        createhome: yes
-      become: yes
+        createhome: true
+      become: true
 
     - name: "Create Airflow home directory with correct ownership"
       ansible.builtin.file:
@@ -49,43 +49,44 @@
         owner: "{{ apache_airflow_user }}"
         group: "{{ apache_airflow_group }}"
         mode: '0755'
-      become: yes
+      become: true
 
     - name: "Install sudo package"
       ansible.builtin.apt:
         name: sudo
         state: present
-        update_cache: yes
-      become: yes
+        update_cache: true
+      become: true
 
     - name: "Install compatible pendulum version first"
       ansible.builtin.pip:
         name: "pendulum==2.1.2"
         virtualenv: "{{ apache_airflow_venv_path }}"
         virtualenv_command: "python3 -m venv"
-      become: yes
+      become: true
       become_user: "{{ apache_airflow_user }}"
-      become_method: sudo
+      become_method: ansible.builtin.sudo
       become_flags: "--set-home"
 
     - name: "Install minimal Airflow for testing"
       ansible.builtin.pip:
-        name: 
+        name:
           - "apache-airflow=={{ apache_airflow_version }}"
           - "flask-session"
         virtualenv: "{{ apache_airflow_venv_path }}"
-      become: yes
+      become: true
       become_user: "{{ apache_airflow_user }}"
-      become_method: sudo
+      become_method: ansible.builtin.sudo
       become_flags: "--set-home"
-        
+
     - name: "Verify Airflow installation"
-      ansible.builtin.shell:
-        cmd: "AIRFLOW_HOME={{ apache_airflow_home }} {{ apache_airflow_venv_path }}/bin/airflow version"
+      ansible.builtin.command: "{{ apache_airflow_venv_path }}/bin/airflow version"
+      environment:
+        AIRFLOW_HOME: "{{ apache_airflow_home }}"
       register: airflow_version_result
-      become: yes
+      become: true
       become_user: "{{ apache_airflow_user }}"
-      become_method: sudo
+      become_method: ansible.builtin.sudo
       become_flags: "--set-home"
       changed_when: false
 
@@ -96,7 +97,7 @@
     - name: "Test completed successfully"
       ansible.builtin.debug:
         msg: "✅ Security hardening test completed successfully! Molecule user authentication, sudo privileges, and Airflow installation all working."
-      
+
     - name: "Display Airflow version"
       ansible.builtin.debug:
         msg: "Airflow installed successfully: {{ airflow_version_result.stdout }}"

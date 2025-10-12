@@ -8,53 +8,53 @@
   when: apache_airflow_database_type != "sqlite"
 
 - name: Create airflow database user (PostgreSQL)
-  postgresql_user:
+  community.postgresql.postgresql_user:
     name: "{{ apache_airflow_database_user }}"
     password: "{{ apache_airflow_database_password }}"
     role_attr_flags: CREATEDB
     state: present
   become: true
   become_user: postgres
-  when: 
+  when:
     - apache_airflow_database_type == "postgresql"
     - apache_airflow_manage_database | default(true)
   delegate_to: "{{ apache_airflow_database_host }}"
 
 - name: Create airflow database (PostgreSQL)
-  postgresql_db:
+  community.postgresql.postgresql_db:
     name: "{{ apache_airflow_database_name }}"
     owner: "{{ apache_airflow_database_user }}"
     state: present
   become: true
   become_user: postgres
-  when: 
+  when:
     - apache_airflow_database_type == "postgresql"
     - apache_airflow_manage_database | default(true)
   delegate_to: "{{ apache_airflow_database_host }}"
 
 - name: Create airflow database user (MySQL)
-  mysql_user:
+  community.mysql.mysql_user:
     name: "{{ apache_airflow_database_user }}"
     password: "{{ apache_airflow_database_password }}"
     priv: "{{ apache_airflow_database_name }}.*:ALL"
     host: "%"
     state: present
-  when: 
+  when:
     - apache_airflow_database_type == "mysql"
     - apache_airflow_manage_database | default(true)
   delegate_to: "{{ apache_airflow_database_host }}"
 
 - name: Create airflow database (MySQL)
-  mysql_db:
+  community.mysql.mysql_db:
     name: "{{ apache_airflow_database_name }}"
     state: present
-  when: 
+  when:
     - apache_airflow_database_type == "mysql"
     - apache_airflow_manage_database | default(true)
   delegate_to: "{{ apache_airflow_database_host }}"
 
 - name: Wait for database to be ready
-  wait_for:
+  ansible.builtin.wait_for:
     host: "{{ apache_airflow_database_host }}"
     port: "{{ apache_airflow_database_port }}"
     timeout: 300

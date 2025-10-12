@@ -15,7 +15,7 @@
     owner: "{{ apache_airflow_user }}"
     group: "{{ apache_airflow_group }}"
     mode: '0644'
-  notify: restart airflow webserver
+  notify: Restart airflow webserver (systemd)
 
 - name: Create RBAC role definitions
   ansible.builtin.template:
@@ -61,8 +61,8 @@
   become_user: "{{ apache_airflow_user }}"
   register: admin_user_create
   changed_when: "'User admin created' in admin_user_create.stdout"
-  failed_when: 
-    - admin_user_create.rc != 0 
+  failed_when:
+    - admin_user_create.rc != 0
     - "'already exists' not in admin_user_create.stderr"
   when: not apache_airflow_ldap_enabled
 

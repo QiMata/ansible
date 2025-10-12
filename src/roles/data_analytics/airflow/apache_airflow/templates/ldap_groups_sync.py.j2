@@ -52,9 +52,9 @@ def get_ldap_groups(conn):
     groups = {}
     try:
         search_filter = f"(&{LDAP_GROUP_FILTER})"
-        results = conn.search_s(LDAP_BASE_DN, ldap.SCOPE_SUBTREE, search_filter, 
+        results = conn.search_s(LDAP_BASE_DN, ldap.SCOPE_SUBTREE, search_filter,
                                ['cn', LDAP_GROUP_MEMBER_ATTR])
-        
+
         for dn, attrs in results:
             if 'cn' in attrs:
                 group_name = attrs['cn'][0].decode('utf-8')
@@ -62,7 +62,7 @@ def get_ldap_groups(conn):
                 if LDAP_GROUP_MEMBER_ATTR in attrs:
                     members = [member.decode('utf-8') for member in attrs[LDAP_GROUP_MEMBER_ATTR]]
                 groups[group_name] = members
-                
+
         return groups
     except Exception as e:
         print(f"Error getting LDAP groups: {e}")
@@ -73,42 +73,42 @@ def sync_user_roles():
     conn = connect_ldap()
     if not conn:
         return False
-    
+
     try:
         ldap_groups = get_ldap_groups(conn)
         session = settings.Session()
-        
+
         # Get all users from Airflow database
         users = session.query(User).all()
-        
+
         for user in users:
             username = user.username
             user_roles = set()
-            
+
             # Check which groups the user belongs to
             for group_name, members in ldap_groups.items():
                 if username in members and group_name in ROLE_MAPPINGS:
                     role_name = ROLE_MAPPINGS[group_name]
                     user_roles.add(role_name)
-            
+
             # Update user roles
             if user_roles:
                 # Clear existing roles
                 user.roles = []
-                
+
                 # Add new roles
                 for role_name in user_roles:
                     role = session.query(Role).filter_by(name=role_name).first()
                     if role:
                         user.roles.append(role)
-                
+
                 session.commit()
                 print(f"Updated roles for user {username}: {', '.join(user_roles)}")
-            
+
         session.close()
         conn.unbind()
         return True
-        
+
     except Exception as e:
         print(f"Error syncing user roles: {e}")
         return False
