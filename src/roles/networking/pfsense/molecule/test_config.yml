@@ -10,12 +10,12 @@ pfsense_mock_responses:
     version: "23.09"
     platform: "pfSense"
     hostname: "test-pfsense"
-  
+
   interfaces:
     - name: "wan"
       enable: true
       type: "dhcp"
-    - name: "lan" 
+    - name: "lan"
       enable: true
       type: "static"
       ipaddr: "192.168.1.1"
@@ -38,7 +38,7 @@ test_networks:
     dhcp_range:
       start: "192.168.100.10"
       end: "192.168.100.50"
-  
+
   enterprise:
     lan_network: "10.0.1.0/24"
     lan_gateway: "10.0.1.1"
@@ -46,7 +46,7 @@ test_networks:
     dmz_gateway: "10.0.100.1"
     mgmt_network: "10.0.200.0/24"
     mgmt_gateway: "10.0.200.1"
-  
+
   vpn:
     lan_network: "192.168.1.0/24"
     openvpn_network: "10.8.0.0/24"
@@ -59,7 +59,7 @@ expected_results:
     interface_count: 2
     dhcp_server_count: 1
     firewall_rule_count: 1
-  
+
   enterprise_config:
     interface_count: 4
     vlan_count: 3
@@ -67,7 +67,7 @@ expected_results:
     alias_count: 3
     firewall_rule_count: 5
     nat_rule_count: 2
-  
+
   vpn_config:
     openvpn_server_count: 2
     openvpn_client_count: 1
@@ -84,28 +84,28 @@ validation_tasks:
       - hostname_set
       - domain_configured
       - timezone_correct
-  
+
   - name: "network_interfaces"
     description: "Validate network interface configuration"
     checks:
       - interfaces_configured
       - ip_addresses_assigned
       - interface_descriptions_set
-  
+
   - name: "dhcp_services"
     description: "Validate DHCP server configuration"
     checks:
       - dhcp_ranges_configured
       - dns_servers_assigned
       - lease_times_set
-  
+
   - name: "firewall_security"
     description: "Validate firewall rules and security"
     checks:
       - rules_configured
       - default_deny_policy
       - logging_enabled
-  
+
   - name: "vpn_connectivity"
     description: "Validate VPN configuration"
     checks:

@@ -7,7 +7,7 @@
     port: "{{ item.port }}"
     timeout: "{{ item.timeout | default(60) }}"
   loop: "{{ neo4j_depends_on_services }}"
-  when: 
+  when:
     - neo4j_wait_for_services
     - item.type | default('port') == 'port'
 
@@ -21,7 +21,7 @@
   retries: "{{ neo4j_health_check_retries }}"
   delay: "{{ neo4j_health_check_delay }}"
   loop: "{{ neo4j_depends_on_services }}"
-  when: 
+  when:
     - neo4j_wait_for_services
     - item.type | default('port') == 'http'
 
@@ -32,7 +32,7 @@
   retries: "{{ neo4j_health_check_retries }}"
   delay: "{{ neo4j_health_check_delay }}"
   loop: "{{ neo4j_depends_on_services }}"
-  when: 
+  when:
     - neo4j_wait_for_services
     - item.type | default('port') == 'command'
 
@@ -43,7 +43,7 @@
     regexp: "^After="
     line: "After={{ neo4j_depends_on_services | selectattr('systemd_service', 'defined') | map(attribute='systemd_service') | join(' ') }}"
   when: neo4j_depends_on_services | selectattr('systemd_service', 'defined') | list | length > 0
-  notify: 
+  notify:
     - reload systemd
     - restart neo4j
 
@@ -59,7 +59,7 @@
     create: true
     regexp: "^TimeoutStartSec="
     line: "TimeoutStartSec={{ neo4j_service_start_timeout }}"
-  notify: 
+  notify:
     - reload systemd
     - restart neo4j
 
@@ -78,6 +78,6 @@
     regexp: "^ExecStartPre="
     line: "ExecStartPre=/usr/local/bin/neo4j-pre-start-check.sh"
   when: neo4j_depends_on_services | length > 0
-  notify: 
+  notify:
     - reload systemd
     - restart neo4j

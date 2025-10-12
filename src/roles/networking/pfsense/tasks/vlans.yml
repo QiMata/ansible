@@ -20,7 +20,7 @@
     ipaddr: "{{ item.ipaddr | default(omit) }}"
     subnet: "{{ item.subnet | default(omit) }}"
   loop: "{{ pfsense_vlans }}"
-  when: 
+  when:
     - pfsense_vlans is defined
     - item.configure_interface | default(false)
   notify: reload pfsense interfaces

@@ -33,7 +33,7 @@
     group: neo4j
     mode: '0644'
   loop: "{{ neo4j_import_sources }}"
-  when: 
+  when:
     - neo4j_import_enabled
     - item.type | default('file') == 'file'
 
@@ -45,7 +45,7 @@
     group: neo4j
     mode: '0644'
   loop: "{{ neo4j_import_sources }}"
-  when: 
+  when:
     - neo4j_import_enabled
     - item.type | default('file') == 'url'
 
@@ -61,10 +61,10 @@
 
 - name: Execute data seeding
   ansible.builtin.command: >
-    cypher-shell -u neo4j -p "{{ neo4j_initial_password }}" 
+    cypher-shell -u neo4j -p "{{ neo4j_initial_password }}"
     -f "{{ neo4j_import_dir }}/seed_data_{{ item.name }}.cypher"
   loop: "{{ neo4j_data_seeding }}"
-  when: 
+  when:
     - neo4j_data_seeding | length > 0
     - neo4j_initial_password | length > 0
     - item.execute | default(true)

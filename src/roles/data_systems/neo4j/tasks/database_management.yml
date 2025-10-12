@@ -14,7 +14,7 @@
         - statement: "CREATE DATABASE {{ item.name }} IF NOT EXISTS"
     status_code: 200
   loop: "{{ neo4j_databases }}"
-  when: 
+  when:
     - neo4j_initial_password | length > 0
     - item.name != "system"
     - item.name != "neo4j"
@@ -40,7 +40,7 @@
     regexp: "^#?dbms.backup.enabled="
     line: "dbms.backup.enabled={{ neo4j_database_backup_individual | lower }}"
   notify: restart neo4j
-  when: 
+  when:
     - neo4j_edition == 'enterprise'
     - neo4j_database_backup_individual
 
@@ -51,7 +51,7 @@
     mode: '0755'
     owner: root
     group: root
-  when: 
+  when:
     - neo4j_database_backup_individual
     - neo4j_backup_enabled
 
@@ -63,7 +63,7 @@
     job: "/usr/local/bin/neo4j-database-backup.sh {{ item.name }}"
     user: neo4j
   loop: "{{ neo4j_databases }}"
-  when: 
+  when:
     - neo4j_database_backup_individual
     - neo4j_backup_cron_enabled
     - item.name != "system"

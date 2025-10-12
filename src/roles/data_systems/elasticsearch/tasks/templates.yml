@@ -13,7 +13,7 @@
       Content-Type: "application/json"
     status_code: [200, 201]
   loop: "{{ es_component_templates }}"
-  when: 
+  when:
     - es_wait_for_cluster
   delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
@@ -37,7 +37,7 @@
       Content-Type: "application/json"
     status_code: [200, 201]
   loop: "{{ es_index_templates }}"
-  when: 
+  when:
     - es_wait_for_cluster
   delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
@@ -55,7 +55,7 @@
       Content-Type: "application/json"
     status_code: [200, 201]
   loop: "{{ es_index_lifecycle_policies }}"
-  when: 
+  when:
     - es_wait_for_cluster
   delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
@@ -75,7 +75,7 @@
     headers:
       Content-Type: "application/json"
     status_code: [200, 400]
-  when: 
+  when:
     - es_custom_analyzers | length > 0 or es_custom_filters | length > 0 or es_custom_tokenizers | length > 0
     - es_wait_for_cluster
   ignore_errors: true
@@ -102,7 +102,7 @@
     status_code: [200, 404]
   loop: "{{ es_index_templates }}"
   register: template_verification
-  when: 
+  when:
     - es_wait_for_cluster
   delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
@@ -121,7 +121,7 @@
       Content-Type: "application/json"
     status_code: [200]
   register: all_templates
-  when: 
+  when:
     - es_wait_for_cluster
   delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
@@ -133,7 +133,7 @@
     owner: root
     group: elasticsearch
     mode: '0640'
-  when: 
+  when:
     - all_templates is defined
     - all_templates.json is defined
   delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"

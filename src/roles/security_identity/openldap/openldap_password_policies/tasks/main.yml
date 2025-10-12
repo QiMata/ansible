@@ -32,7 +32,7 @@
 
 - name: Create custom password policies
   include_tasks: custom_policies.yml
-  when: 
+  when:
     - openldap_password_policies_enabled
     - openldap_custom_password_policies | length > 0
 
@@ -42,6 +42,6 @@
 
 - name: Setup password policy monitoring
   include_tasks: monitoring.yml
-  when: 
+  when:
     - openldap_password_policies_enabled
     - openldap_password_policy_alerts

@@ -18,7 +18,7 @@
           - dissect:
               tokenizer: '%{clientip} %{ident} %{auth} [%{timestamp}] "%{verb} %{request} %{httpversion}" %{response} %{bytes}'
               field: "message"
-      
+
       - type: log
         id: nginx-error
         enabled: true
@@ -28,7 +28,7 @@
           service: nginx
           log_type: error
           severity: error
-      
+
       - type: log
         id: application-logs
         enabled: true
@@ -41,7 +41,7 @@
           pattern: '^\d{4}-\d{2}-\d{2}'
           negate: true
           match: after
-    
+
     # SSL Configuration
     filebeat_ssl_enabled: true
     filebeat_ssl_certificate: "{{ ssl_cert_path }}/filebeat.crt"
@@ -49,7 +49,7 @@
     filebeat_ssl_certificate_authorities:
       - "{{ ssl_ca_path }}/ca.crt"
     filebeat_ssl_verification_mode: "full"
-    
+
     # Output to Elasticsearch with authentication
     filebeat_output_type: elasticsearch
     filebeat_elasticsearch_hosts:
@@ -59,18 +59,18 @@
     filebeat_elasticsearch_username: "filebeat_writer"
     filebeat_elasticsearch_password: "{{ vault_elasticsearch_password }}"
     filebeat_elasticsearch_index: "filebeat-prod-%{+yyyy.MM.dd}"
-    
+
     # Performance tuning
     filebeat_queue_mem_events: 8192
     filebeat_queue_mem_flush_min_events: 1024
     filebeat_harvester_buffer_size: 32768
     filebeat_logstash_bulk_max_size: 4096
-    
+
     # Monitoring and health checks
     filebeat_monitoring_enabled: true
     filebeat_http_enabled: true
     filebeat_health_check_enabled: true
-    
+
     # Global processors
     filebeat_global_processors:
       - add_host_metadata:
@@ -80,7 +80,7 @@
           when:
             regexp:
               message: "^$"  # Drop empty messages
-    
+
     # Module configuration
     filebeat_modules_enabled:
       - name: nginx
@@ -93,14 +93,14 @@
             enabled: true
             var:
               paths: ["/var/log/nginx/error.log*"]
-    
+
     # Backup and operational features
     filebeat_config_backup_enabled: true
     filebeat_config_validate_before_restart: true
-    
+
   roles:
     - monitoring_observability.filebeat
-  
+
   tags:
     - monitoring
     - logging

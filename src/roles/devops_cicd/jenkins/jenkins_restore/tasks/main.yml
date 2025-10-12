@@ -11,20 +11,20 @@
   ansible.builtin.pause:
     prompt: |
       WARNING: This will restore Jenkins from backup and overwrite current data.
-      
+
       Backup source: {{ jenkins_restore_backup_file or jenkins_restore_backup_url }}
       Target directory: {{ jenkins_restore_home }}
-      
+
       Are you sure you want to continue? (yes/no)
   register: restore_confirmation
-  when: 
+  when:
     - jenkins_restore_enabled
     - not jenkins_restore_force
 
 - name: Abort if not confirmed
   ansible.builtin.fail:
     msg: "Restore operation cancelled by user"
-  when: 
+  when:
     - jenkins_restore_enabled
     - not jenkins_restore_force
     - restore_confirmation.user_input | lower != "yes"
@@ -41,7 +41,7 @@
     dest: "/tmp/jenkins-restore-backup.tar.gz"
     mode: '0644'
     timeout: 300
-  when: 
+  when:
     - jenkins_restore_enabled
     - jenkins_restore_backup_url != ""
     - jenkins_restore_backup_file == ""
@@ -49,7 +49,7 @@
 - name: Set backup file path for URL download
   ansible.builtin.set_fact:
     jenkins_restore_backup_file: "/tmp/jenkins-restore-backup.tar.gz"
-  when: 
+  when:
     - jenkins_restore_enabled
     - jenkins_restore_backup_url != ""
 
@@ -62,7 +62,7 @@
 - name: Fail if backup file doesn't exist
   ansible.builtin.fail:
     msg: "Backup file {{ jenkins_restore_backup_file }} does not exist"
-  when: 
+  when:
     - jenkins_restore_enabled
     - not backup_file_stat.stat.exists
 
@@ -70,7 +70,7 @@
   ansible.builtin.command: tar -tzf "{{ jenkins_restore_backup_file }}"
   register: backup_integrity_check
   changed_when: false
-  when: 
+  when:
     - jenkins_restore_enabled
     - jenkins_restore_verify_integrity
 
@@ -82,7 +82,7 @@
     owner: root
     group: root
     mode: "0644"
-  when: 
+  when:
     - jenkins_restore_enabled
     - jenkins_restore_backup_current
 
@@ -93,7 +93,7 @@
     remote_src: true
     mode: preserve
   loop: "{{ jenkins_restore_preserve_configs }}"
-  when: 
+  when:
     - jenkins_restore_enabled
     - jenkins_restore_preserve_configs | length > 0
 
@@ -132,7 +132,7 @@
     group: jenkins
     mode: preserve
   loop: "{{ jenkins_restore_preserve_configs }}"
-  when: 
+  when:
     - jenkins_restore_enabled
     - jenkins_restore_preserve_configs | length > 0
 
@@ -141,7 +141,7 @@
     path: "/tmp/jenkins-preserve-{{ item | basename }}"
     state: absent
   loop: "{{ jenkins_restore_preserve_configs }}"
-  when: 
+  when:
     - jenkins_restore_enabled
     - jenkins_restore_preserve_configs | length > 0
 
@@ -179,7 +179,7 @@
     password: "{{ jenkins_admin_password }}"
     return_content: true
   register: jenkins_config_validation
-  when: 
+  when:
     - jenkins_restore_enabled
     - jenkins_restore_validate_config
 
@@ -191,7 +191,7 @@
     password: "{{ jenkins_admin_password }}"
     return_content: true
   register: jenkins_plugins_validation
-  when: 
+  when:
     - jenkins_restore_enabled
     - jenkins_restore_validate_plugins
 
@@ -214,6 +214,6 @@
   ansible.builtin.file:
     path: "/tmp/jenkins-restore-backup.tar.gz"
     state: absent
-  when: 
+  when:
     - jenkins_restore_enabled
     - jenkins_restore_backup_url != ""

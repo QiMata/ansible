@@ -34,7 +34,7 @@
 
     - name: Assert configuration file has correct permissions
       ansible.builtin.assert:
-        that: 
+        that:
           - fb_cfg_perms.stat.mode == "0600"
           - fb_cfg_perms.stat.pw_name == "root"
           - fb_cfg_perms.stat.gr_name == "root"

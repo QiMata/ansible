@@ -64,7 +64,7 @@
     owner: root
     group: root
     mode: "0644"
-  when: 
+  when:
     - keepalived_create_vlan_interfaces
     - keepalived_vlan_interfaces | length > 0
     - ansible_facts.os_family == 'Debian'
@@ -83,7 +83,7 @@
     owner: root
     group: root
     mode: "0644"
-  when: 
+  when:
     - keepalived_backup_config
     - ansible_stat.stat.exists is defined and ansible_stat.stat.exists
   failed_when: false
@@ -143,7 +143,7 @@
 - name: Display validation results
   ansible.builtin.debug:
     msg: "Keepalived configuration validation: {{ keepalived_validation.stdout | default('OK') }}"
-  when: 
+  when:
     - keepalived_validate_config
     - keepalived_validation is defined
   tags:

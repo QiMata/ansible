@@ -59,19 +59,19 @@
     login_password: "{{ mariadb_root_password }}"
     login_host: localhost
     query: |
-      SELECT 
+      SELECT
         'Connections' as variable_name, VARIABLE_VALUE as value
-      FROM INFORMATION_SCHEMA.GLOBAL_STATUS 
+      FROM INFORMATION_SCHEMA.GLOBAL_STATUS
       WHERE VARIABLE_NAME = 'Connections'
       UNION ALL
-      SELECT 
+      SELECT
         'Threads_connected', VARIABLE_VALUE
-      FROM INFORMATION_SCHEMA.GLOBAL_STATUS 
+      FROM INFORMATION_SCHEMA.GLOBAL_STATUS
       WHERE VARIABLE_NAME = 'Threads_connected'
       UNION ALL
-      SELECT 
+      SELECT
         'Uptime', VARIABLE_VALUE
-      FROM INFORMATION_SCHEMA.GLOBAL_STATUS 
+      FROM INFORMATION_SCHEMA.GLOBAL_STATUS
       WHERE VARIABLE_NAME = 'Uptime'
   register: mariadb_status
 

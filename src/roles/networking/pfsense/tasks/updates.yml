@@ -9,7 +9,7 @@
 - name: Display available updates
   debug:
     var: update_check.updates
-  when: 
+  when:
     - pfsense_updates.check_for_updates | default(false)
     - update_check.updates is defined
 
@@ -20,7 +20,7 @@
       enabled: true
       local_path: "/tmp/pfsense_pre_update_backup.xml"
       cleanup_local: false
-  when: 
+  when:
     - pfsense_updates.auto_update | default(false)
     - pfsense_updates.backup_before_update | default(true)
     - update_check.updates is defined
@@ -31,7 +31,7 @@
     install: true
     reboot: "{{ pfsense_updates.reboot_after_update | default(false) }}"
   register: update_result
-  when: 
+  when:
     - pfsense_updates.auto_update | default(false)
     - update_check.updates is defined
     - update_check.updates | length > 0
@@ -39,7 +39,7 @@
 - name: Display update results
   debug:
     var: update_result
-  when: 
+  when:
     - pfsense_updates.auto_update | default(false)
     - update_result is defined
 
@@ -49,7 +49,7 @@
     sleep: 5
     delay: 60
     timeout: 300
-  when: 
+  when:
     - pfsense_updates.auto_update | default(false)
     - pfsense_updates.reboot_after_update | default(false)
     - update_result is succeeded

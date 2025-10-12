@@ -23,24 +23,24 @@
     db: postgres
     query: |
       CREATE OR REPLACE VIEW security_failed_logins AS
-      SELECT 
+      SELECT
         EXTRACT(EPOCH FROM log_time) as timestamp,
         user_name,
         database_name,
         connection_from,
         message
-      FROM pg_log 
+      FROM pg_log
       WHERE message LIKE '%authentication failed%'
       ORDER BY log_time DESC;
-      
+
       CREATE OR REPLACE VIEW security_suspicious_queries AS
-      SELECT 
+      SELECT
         EXTRACT(EPOCH FROM log_time) as timestamp,
         user_name,
         database_name,
         query,
         message
-      FROM pg_log 
+      FROM pg_log
       WHERE message LIKE '%DROP%' OR message LIKE '%DELETE%' OR message LIKE '%TRUNCATE%'
       ORDER BY log_time DESC;
   become_user: postgres

@@ -146,7 +146,7 @@
     owner: "{{ apache_nifi_user }}"
     group: "{{ apache_nifi_group }}"
     mode: '0644'
-  when: 
+  when:
     - apache_nifi_alerting_enabled
     - apache_nifi_alerting_rules | length > 0
   tags: [nifi, monitoring, alerting]

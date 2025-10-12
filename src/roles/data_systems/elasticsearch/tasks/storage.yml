@@ -79,7 +79,7 @@
   ansible.builtin.debug:
     msg: "WARNING: Disk usage on {{ item.item }} is {{ item.stdout }}%"
   loop: "{{ disk_usage.results }}"
-  when: 
+  when:
     - item.stdout is defined
     - item.stdout | int > 80
 

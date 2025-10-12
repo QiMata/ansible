@@ -51,7 +51,7 @@
     status_code: [200, 302]
   register: ssh_credential_result
   failed_when: false
-  when: 
+  when:
     - jenkins_credentials_enabled
     - jenkins_credentials_ssh_private_key | length > 0
 
@@ -70,7 +70,7 @@
   register: credential_results
   failed_when: false
   loop: "{{ jenkins_credentials_list }}"
-  when: 
+  when:
     - jenkins_credentials_enabled
     - jenkins_credentials_list | length > 0
 
@@ -91,14 +91,14 @@
     password: "{{ jenkins_admin_password }}"
     return_content: true
   register: current_credentials
-  when: 
+  when:
     - jenkins_credentials_enabled
     - jenkins_credentials_verify | default(true)
 
 - name: Display created credentials
   ansible.builtin.debug:
     msg: "Created credentials: {{ current_credentials.json.credentials | map(attribute='id') | list }}"
-  when: 
+  when:
     - jenkins_credentials_enabled
     - jenkins_credentials_verify | default(true)
     - current_credentials.json is defined

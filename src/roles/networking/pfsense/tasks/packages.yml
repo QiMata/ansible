@@ -33,7 +33,7 @@
         custom_list: "{{ item.custom_list | default([]) }}"
         action: "{{ item.action | default('unbound') }}"
       loop: "{{ pfsense_pfblockerng.dnsbl_feeds | default([]) }}"
-      when: 
+      when:
         - pfsense_pfblockerng is defined
         - pfsense_pfblockerng.dnsbl_feeds is defined
   when: "'pfBlockerNG' in pfsense_packages.install | default([])"
@@ -51,7 +51,7 @@
         kill_states: "{{ item.kill_states | default(false) }}"
         mtu: "{{ item.mtu | default(1500) }}"
       loop: "{{ pfsense_suricata.interfaces | default([]) }}"
-      when: 
+      when:
         - pfsense_suricata is defined
         - pfsense_suricata.interfaces is defined
   when: "'Suricata' in pfsense_packages.install | default([])"

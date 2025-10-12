@@ -16,11 +16,11 @@
 
 - name: Install additional packages for Prometheus metrics
   ansible.builtin.apt:
-    name: 
+    name:
       - prometheus-haproxy-exporter
     state: present
   become: true
-  when: 
+  when:
     - ansible_facts.os_family == 'Debian'
     - haproxy_prometheus.enable | default(false)
   ignore_errors: true
@@ -91,7 +91,7 @@
     owner: root
     group: root
     mode: "0644"
-  when: 
+  when:
     - haproxy_config_validation.backup_config | default(true)
     - ansible_check_mode == false
   ignore_errors: true
@@ -191,7 +191,7 @@
   loop:
     - "{{ haproxy_frontend_port | default(80) }}"
     - "{{ haproxy_stats_port | default(9000) }}"
-  when: 
+  when:
     - ansible_facts.os_family == 'Debian'
     - haproxy_firewall_configure | default(false)
   ignore_errors: true

@@ -90,7 +90,7 @@
     mode: '0755'
     owner: root
     group: root
-  when: 
+  when:
     - neo4j_alerting_enabled
     - neo4j_alerting_webhook | length > 0
 

@@ -43,7 +43,7 @@
   ansible.builtin.shell: |
     echo "{{ item.value }}" | filebeat keystore add {{ item.key }} --stdin --force
   loop: "{{ filebeat_keystore_keys | dict2items }}"
-  when: 
+  when:
     - filebeat_use_keystore
     - filebeat_keystore_keys | length > 0
   no_log: true
@@ -60,7 +60,7 @@
   loop:
     - { src: "{{ filebeat_ssl_certificate }}", dest: "{{ filebeat_config_dir }}/{{ filebeat_ssl_certificate | basename }}" }
     - { src: "{{ filebeat_ssl_key }}", dest: "{{ filebeat_config_dir }}/{{ filebeat_ssl_key | basename }}" }
-  when: 
+  when:
     - filebeat_ssl_enabled
     - item.src != ""
   notify:
@@ -74,7 +74,7 @@
     group: root
     mode: '0444'
   loop: "{{ filebeat_ssl_certificate_authorities }}"
-  when: 
+  when:
     - filebeat_ssl_enabled
     - filebeat_ssl_certificate_authorities | length > 0
   notify:

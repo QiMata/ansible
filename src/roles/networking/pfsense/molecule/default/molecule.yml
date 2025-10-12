@@ -3,10 +3,10 @@ dependency:
   name: galaxy
   options:
     requirements-file: requirements.yml
-    
+
 driver:
   name: docker
-  
+
 platforms:
   - name: pfsense-test
     image: quay.io/ansible/molecule-docker-runner-image:latest

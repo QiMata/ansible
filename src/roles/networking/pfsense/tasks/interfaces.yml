@@ -24,7 +24,7 @@
     interface: "{{ item.interface }}"
     enable: true
   loop: "{{ pfsense_interfaces }}"
-  when: 
+  when:
     - pfsense_interfaces is defined
     - item.enable | default(true)
   notify: reload pfsense interfaces

@@ -5,32 +5,32 @@ rules:
   line-length:
     max: 120
     level: warning
-  
+
   indentation:
     spaces: 2
     indent-sequences: true
     check-multi-line-strings: false
-  
+
   truthy:
     allowed-values: ['true', 'false', 'yes', 'no']
     check-keys: true
-  
+
   comments:
     min-spaces-from-content: 1
-  
+
   comments-indentation: disable
-  
+
   document-start: disable
-  
+
   empty-lines:
     max: 2
     max-start: 1
     max-end: 1
-  
+
   brackets:
     max-spaces-inside: 1
     max-spaces-inside-empty: 0
-  
+
   braces:
     max-spaces-inside: 1
     max-spaces-inside-empty: 0

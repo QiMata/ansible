@@ -5,31 +5,31 @@
 - name: Deploy iTop ITSM Production Environment
   hosts: itop_production
   become: yes
-  
+
   vars:
     # Version and paths
     itop_version: "2.7.5"
     itop_root_dir: "/var/www/html/itop"
-    
+
     # Database configuration (use vault for passwords)
     itop_db_name: "itop_production"
     itop_db_user: "itop_prod_user"
     itop_db_password: "{{ vault_itop_db_password }}"
     itop_db_host: "{{ vault_itop_db_host | default('localhost') }}"
-    
+
     # SSL Configuration
     itop_enable_ssl: true
     itop_ssl_redirect_http: true
     itop_ssl_cert_path: "/etc/ssl/certs/{{ ansible_fqdn }}.crt"
     itop_ssl_key_path: "/etc/ssl/private/{{ ansible_fqdn }}.key"
-    
+
     # Automated Installation
     itop_auto_install: true
     itop_admin_user: "admin"
     itop_admin_password: "{{ vault_itop_admin_password }}"
     itop_admin_email: "{{ itop_admin_email | default('admin@' + ansible_domain) }}"
     itop_organization: "{{ organization_name | default('My Organization') }}"
-    
+
     # Module selection for production
     itop_modules:
       - "itop-config-mgmt"
@@ -42,14 +42,14 @@
       - "itop-datacenter-mgmt"
       - "itop-virtualization-mgmt"
       - "itop-storage-mgmt"
-    
+
     # Configuration settings
     itop_config_mode: "production"
     itop_timezone: "{{ system_timezone | default('UTC') }}"
     itop_language: "EN US"
     itop_log_level: "Error"
     itop_session_timeout: 7200  # 2 hours
-    
+
     # LDAP Authentication (if enabled)
     itop_enable_ldap: "{{ enable_ldap_auth | default(false) }}"
     itop_ldap_host: "{{ vault_ldap_host | default('') }}"
@@ -58,18 +58,18 @@
     itop_ldap_bind_password: "{{ vault_ldap_bind_password | default('') }}"
     itop_ldap_base_dn: "{{ ldap_base_dn | default('') }}"
     itop_ldap_user_filter: "{{ ldap_user_filter | default('') }}"
-    
+
     # Performance tuning
     itop_max_execution_time: 600
     itop_memory_limit: "1024M"
     itop_max_file_upload: "100M"
-    
+
     # Monitoring and logging
     itop_enable_monitoring: true
     itop_health_check_url: "/itop/health.php"
     itop_log_rotation: true
     itop_log_retention_days: 90
-    
+
   pre_tasks:
     - name: Validate required variables
       assert:
@@ -78,7 +78,7 @@
           - vault_itop_admin_password is defined
           - ansible_fqdn is defined
         fail_msg: "Required vault variables are not defined"
-        
+
     - name: Install prerequisite packages
       apt:
         name:
@@ -99,7 +99,7 @@
           - logrotate
         state: present
         update_cache: yes
-        
+
     - name: Configure MySQL for production
       mysql_variables:
         variable: "{{ item.variable }}"
@@ -109,7 +109,7 @@
         - { variable: 'max_connections', value: '200' }
         - { variable: 'query_cache_size', value: '64M' }
       notify: restart mysql
-        
+
     - name: Start and enable services
       service:
         name: "{{ item }}"
@@ -118,7 +118,7 @@
       loop:
         - apache2
         - mysql
-        
+
     - name: Configure firewall
       ufw:
         rule: allow
@@ -128,18 +128,18 @@
         - "80"
         - "443"
       when: configure_firewall | default(true)
-  
+
   roles:
     - role: operations_management/itop
       tags: ['itop']
-  
+
   post_tasks:
     - name: Verify SSL certificate
       openssl_certificate_info:
         path: "{{ itop_ssl_cert_path }}"
       register: cert_info
       when: itop_enable_ssl
-      
+
     - name: Test iTop health endpoint
       uri:
         url: "http{% if itop_enable_ssl %}s{% endif %}://{{ ansible_fqdn }}/itop/health.php"
@@ -149,44 +149,44 @@
       register: health_check
       retries: 3
       delay: 10
-      
+
     - name: Display deployment summary
       debug:
         msg: |
           =========================================
           iTop Production Deployment Complete
           =========================================
-          
+
           Access URL: http{% if itop_enable_ssl %}s{% endif %}://{{ ansible_fqdn }}/itop
-          
+
           {% if itop_auto_install %}
           Admin Credentials:
           - Username: {{ itop_admin_user }}
           - Password: [VAULT PROTECTED]
-          
+
           IMPORTANT: Change admin password immediately!
           {% endif %}
-          
+
           SSL: {{ 'ENABLED' if itop_enable_ssl else 'DISABLED' }}
           {% if itop_enable_ssl and cert_info is defined %}
           Certificate: {{ cert_info.subject.commonName }}
           Valid Until: {{ cert_info.not_after }}
           {% endif %}
-          
+
           LDAP Auth: {{ 'ENABLED' if itop_enable_ldap else 'DISABLED' }}
           Monitoring: {{ 'ENABLED' if itop_enable_monitoring else 'DISABLED' }}
-          
+
           Health Check: {{ 'PASSED' if health_check.status == 200 else 'FAILED' }}
-          
+
           Database: {{ itop_db_name }} on {{ itop_db_host }}
-          
+
           Next Steps:
           1. Review security settings
           2. Configure backup procedures
           3. Set up monitoring alerts
           4. Train administrators
           ========================================
-          
+
   handlers:
     - name: restart mysql
       service:

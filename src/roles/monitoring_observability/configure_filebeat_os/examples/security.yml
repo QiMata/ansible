@@ -20,11 +20,11 @@
 
     # Output configuration
     filebeat_output_elasticsearch_hosts: ["https://elk.example.com:9200"]
-    
+
     # Enhanced security
     filebeat_config_file_mode: "0600"
     filebeat_monitoring_enabled: true
-    
+
     # Log paths
     filebeat_paths:
       - "/var/log/*.log"

@@ -53,17 +53,17 @@
     content: |
       # iTop Security Configuration
       RewriteEngine On
-      
+
       # Protect config files
       <FilesMatch "^(config.*\.php|.*\.xml)$">
           Require all denied
       </FilesMatch>
-      
+
       # Protect log files
       <FilesMatch "\.log$">
           Require all denied
       </FilesMatch>
-      
+
       # Set security headers
       Header always set X-Content-Type-Options nosniff
       Header always set X-Frame-Options DENY

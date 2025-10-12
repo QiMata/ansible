@@ -40,7 +40,7 @@
     owner: "{{ apache_nifi_user }}"
     group: "{{ apache_nifi_group }}"
     mode: '0600'
-  when: 
+  when:
     - apache_nifi_backup_enabled
     - apache_nifi_backup_encrypt
     - apache_nifi_backup_encryption_key != ""
@@ -132,7 +132,7 @@
       ansible.builtin.debug:
         var: restore_result.stdout_lines
 
-  when: 
+  when:
     - apache_nifi_restore_enabled
     - apache_nifi_restore_source != ""
   tags: [nifi, restore]

@@ -38,7 +38,7 @@
           bindpass: "{{ vault_ldap_password }}"
           userattr: "uid"
           groupattr: "memberUid"
-          
+
       - name: "oidc"
         type: "oidc"
         config:
@@ -61,7 +61,7 @@
         path: "secret"
         max_versions: 10
         cas_required: false
-        
+
       - name: "database"
         type: "database"
         path: "database"
@@ -72,23 +72,23 @@
             allowed_roles: ["readonly", "readwrite"]
             username: "vault"
             password: "{{ vault_db_password }}"
-            
+
       - name: "aws"
         type: "aws"
         path: "aws"
         access_key: "{{ vault_aws_access_key }}"
         secret_key: "{{ vault_aws_secret_key }}"
         region: "us-west-2"
-        
+
       - name: "pki"
         type: "pki"
         path: "pki"
-        
+
       - name: "ssh"
         type: "ssh"
         path: "ssh"
         generate_signing_key: true
-        
+
       - name: "transit"
         type: "transit"
         path: "transit"
@@ -106,7 +106,7 @@
           path "*" {
             capabilities = ["create", "read", "update", "delete", "list", "sudo"]
           }
-          
+
       - name: "app-dev"
         policy: |
           # Development application policy
@@ -122,7 +122,7 @@
           path "transit/decrypt/app-encryption" {
             capabilities = ["update"]
           }
-          
+
       - name: "app-prod"
         policy: |
           # Production application policy
@@ -142,7 +142,7 @@
     # Monitoring & Telemetry
     vault_enable_telemetry: true
     vault_telemetry_prometheus_retention: "24h"
-    
+
     # Audit Logging
     vault_audit_devices:
       - name: "file"
@@ -180,19 +180,19 @@
       debug:
         msg: |
           Vault deployment completed!
-          
+
           Next steps:
           1. Initialize Vault: vault operator init
           2. Unseal Vault (if not using auto-unseal): vault operator unseal
           3. Configure authentication methods and policies
           4. Test backup and restore procedures
-          
+
           Useful commands:
           - Health check: /usr/local/bin/vault_health_check.sh
           - Create backup: /usr/local/bin/vault_backup.sh
           - Verify backups: /usr/local/bin/vault_backup_verify.sh
           - Restore: /usr/local/bin/vault_restore.sh <backup_file>
-          
+
           Monitoring:
           - Prometheus metrics: http://{{ ansible_default_ipv4.address }}:8200/v1/sys/metrics?format=prometheus
           - Audit logs: /var/log/vault/audit.log

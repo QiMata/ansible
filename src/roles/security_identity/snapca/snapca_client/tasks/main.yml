@@ -3,7 +3,7 @@
 
 - name: Include installation tasks
   ansible.builtin.include_tasks: install.yml
-  tags: 
+  tags:
     - snapca_install
     - snapca_client
 

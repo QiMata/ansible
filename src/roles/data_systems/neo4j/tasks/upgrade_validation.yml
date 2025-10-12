@@ -43,7 +43,7 @@
     force_basic_auth: true
     status_code: 200
   register: cluster_health_check
-  when: 
+  when:
     - neo4j_cluster_enabled
     - neo4j_initial_password | length > 0
 
@@ -60,7 +60,7 @@
         - statement: "CALL dbms.procedures() YIELD name WHERE name STARTS WITH 'apoc' RETURN count(name) as apoc_procedures"
     status_code: 200
   register: plugin_check
-  when: 
+  when:
     - neo4j_initial_password | length > 0
     - neo4j_plugins | selectattr('name', 'equalto', 'apoc') | selectattr('enabled', 'equalto', true) | list | length > 0
 

@@ -14,16 +14,16 @@ jenkins_casc_config:
     labelString: "controller master"
     quietPeriod: 5
     scmCheckoutRetryCount: 0
-    
+
   security:
     globalJobDslSecurityConfiguration:
       useScriptSecurity: true
-    
+
   unclassified:
     location:
       url: "{{ jenkins_root_url | default('http://localhost:8080/') }}"
       adminAddress: "{{ jenkins_admin_email | default('admin@localhost') }}"
-    
+
     gitSCM:
       createAccountBasedOnEmail: false
       showEntireCommitSummaryInChanges: false

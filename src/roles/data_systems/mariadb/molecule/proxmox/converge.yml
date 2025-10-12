@@ -9,29 +9,29 @@
     mariadb_bind_address: "{{ mariadb_bind_address | default('0.0.0.0') }}"
     mariadb_port: "{{ mariadb_port | default(3306) }}"
     mariadb_environment: "{{ mariadb_environment | default('test') }}"
-    
+
     # Container-aware performance settings
     mariadb_max_connections: "{{ mariadb_max_connections | default(50) }}"
     mariadb_innodb_buffer_pool_size: "{{ mariadb_innodb_buffer_pool_size | default('128M') }}"
     mariadb_query_cache_size: "{{ mariadb_query_cache_size | default('32M') }}"
-    
+
     # Test database configuration
     mariadb_create_test_db: "{{ mariadb_create_test_db | default(true) }}"
     mariadb_test_db_name: "{{ mariadb_test_db_name | default('test_database') }}"
     mariadb_test_user: "{{ mariadb_test_user | default('test_user') }}"
     mariadb_test_password: "{{ mariadb_test_password | default('test_user_pass') }}"
-    
+
     # Security settings for testing
     mariadb_enable_security: "{{ mariadb_enable_security | default(false) }}"
     mariadb_remove_anonymous_users: true
     mariadb_remove_test_database: false
     mariadb_disallow_root_login_remotely: false
-    
+
     # Health check configuration
     mariadb_health_check_enabled: "{{ mariadb_health_check_enabled | default(true) }}"
     mariadb_health_check_retries: "{{ mariadb_health_check_retries | default(30) }}"
     mariadb_health_check_delay: "{{ mariadb_health_check_delay | default(5) }}"
-    
+
   pre_tasks:
     # Container-specific preparations
     - name: Update package cache

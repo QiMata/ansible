@@ -15,7 +15,7 @@
     # ============================================================================
     # PHASE 1: SERVICE VALIDATION
     # ============================================================================
-    
+
     - name: Check MariaDB service status
       ansible.builtin.service:
         name: mariadb
@@ -44,7 +44,7 @@
     # ============================================================================
     # PHASE 2: PORT AND CONNECTIVITY VALIDATION
     # ============================================================================
-    
+
     - name: Wait for MariaDB to be responsive on port
       ansible.builtin.wait_for:
         port: "{{ mariadb_port }}"
@@ -63,7 +63,7 @@
     # ============================================================================
     # PHASE 3: DATABASE CONNECTION AND AUTHENTICATION
     # ============================================================================
-    
+
     - name: Test root connection to MariaDB
       community.mysql.mysql_info:
         login_user: root
@@ -86,7 +86,7 @@
     # ============================================================================
     # PHASE 4: DATABASE AND USER VALIDATION
     # ============================================================================
-    
+
     - name: Check if test database exists
       community.mysql.mysql_db:
         name: "{{ mariadb_test_db_name }}"
@@ -123,7 +123,7 @@
     # ============================================================================
     # PHASE 5: FUNCTIONAL DATABASE OPERATIONS
     # ============================================================================
-    
+
     - name: Create test table
       community.mysql.mysql_query:
         login_user: "{{ mariadb_test_user }}"
@@ -145,7 +145,7 @@
         login_host: localhost
         login_db: "{{ mariadb_test_db_name }}"
         query: |
-          INSERT INTO health_check_table (test_data) 
+          INSERT INTO health_check_table (test_data)
           VALUES ('Health check test - {{ ansible_date_time.iso8601 }}')
       register: insert_test_result
 
@@ -171,7 +171,7 @@
     # ============================================================================
     # PHASE 6: PERFORMANCE AND RESOURCE MONITORING
     # ============================================================================
-    
+
     - name: Get MariaDB status variables
       community.mysql.mysql_query:
         login_user: root
@@ -208,7 +208,7 @@
     # ============================================================================
     # PHASE 7: SECURITY VALIDATION
     # ============================================================================
-    
+
     - name: Check for anonymous users
       community.mysql.mysql_query:
         login_user: root
@@ -244,23 +244,23 @@
     # ============================================================================
     # PHASE 8: CONFIGURATION VALIDATION
     # ============================================================================
-    
+
     - name: Get MariaDB configuration variables
       community.mysql.mysql_query:
         login_user: root
         login_password: "{{ mariadb_root_password }}"
         login_host: localhost
         query: |
-          SELECT 
+          SELECT
             'max_connections' as variable_name, @@max_connections as value
           UNION ALL
-          SELECT 
+          SELECT
             'innodb_buffer_pool_size', @@innodb_buffer_pool_size
           UNION ALL
-          SELECT 
+          SELECT
             'query_cache_size', @@query_cache_size
           UNION ALL
-          SELECT 
+          SELECT
             'port', @@port
       register: config_variables
 
@@ -276,7 +276,7 @@
     # ============================================================================
     # PHASE 9: CLEANUP TEST DATA
     # ============================================================================
-    
+
     - name: Cleanup test table
       community.mysql.mysql_query:
         login_user: "{{ mariadb_test_user }}"
@@ -289,7 +289,7 @@
     # ============================================================================
     # PHASE 10: FINAL HEALTH SUMMARY
     # ============================================================================
-    
+
     - name: Final MariaDB health summary
       ansible.builtin.debug:
         msg: |

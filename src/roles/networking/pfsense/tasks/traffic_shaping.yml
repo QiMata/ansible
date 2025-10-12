@@ -15,7 +15,7 @@
     descr: "{{ item.descr | default(omit) }}"
     state: present
   loop: "{{ pfsense_traffic_shaping.limiters | default([]) }}"
-  when: 
+  when:
     - pfsense_traffic_shaping.enable | default(false)
     - pfsense_traffic_shaping.limiters is defined
   notify: reload firewall
@@ -32,7 +32,7 @@
     priority: "{{ item.priority | default(omit) }}"
     state: present
   loop: "{{ pfsense_traffic_shaping.queues | default([]) }}"
-  when: 
+  when:
     - pfsense_traffic_shaping.enable | default(false)
     - pfsense_traffic_shaping.queues is defined
   notify: reload firewall
@@ -54,7 +54,7 @@
     descr: "{{ item.descr | default(omit) }}"
     state: present
   loop: "{{ pfsense_traffic_shaping.rules | default([]) }}"
-  when: 
+  when:
     - pfsense_traffic_shaping.enable | default(false)
     - pfsense_traffic_shaping.rules is defined
   notify: reload firewall filter

@@ -7,7 +7,7 @@
     vault_enable_telemetry: true
     vault_enable_backup: true
     vault_log_level: "DEBUG"
-    
+
     # Test basic auth method
     vault_auth_methods:
       - name: "userpass"
@@ -16,13 +16,13 @@
           - username: "testuser"
             password: "testpass"
             policies: ["default"]
-    
+
     # Test basic secrets engine
     vault_secrets_engines:
       - name: "kv"
         type: "kv-v2"
         path: "secret"
-    
+
     # Test policies
     vault_policies:
       - name: "test-policy"
@@ -30,12 +30,12 @@
           path "secret/data/test/*" {
             capabilities = ["create", "read", "update", "delete", "list"]
           }
-    
+
     # Test audit device
     vault_audit_devices:
       - name: "file"
         type: "file"
         path: "/var/log/vault/audit.log"
-    
+
   roles:
     - vault

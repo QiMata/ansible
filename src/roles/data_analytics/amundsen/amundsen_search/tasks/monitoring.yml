@@ -67,7 +67,7 @@
     tasks_from: dashboard.yml
   vars:
     grafana_dashboard_file: "amundsen_search_dashboard.json"
-  when: 
+  when:
     - amundsen_search_metrics_enabled
     - amundsen_search_metrics_type == "prometheus"
     - "'monitoring_observability.grafana' in ansible_role_names | default([])"

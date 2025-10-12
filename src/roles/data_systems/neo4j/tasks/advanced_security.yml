@@ -23,7 +23,7 @@
       dbms.security.ldap.authorization.hostname={{ neo4j_ldap_server }}
       dbms.security.ldap.authorization.port={{ neo4j_ldap_port }}
       dbms.security.ldap.authorization.use_starttls={{ neo4j_ldap_use_starttls | lower }}
-  when: 
+  when:
     - neo4j_ldap_enabled
     - neo4j_ldap_authorization_enabled
   notify: restart neo4j
@@ -82,7 +82,7 @@
     block: |
       dbms.security.ldap.authentication.use_starttls={{ neo4j_ldap_use_starttls | lower }}
       dbms.security.ldap.authorization.use_starttls={{ neo4j_ldap_use_starttls | lower }}
-  when: 
+  when:
     - neo4j_ldap_enabled
     - neo4j_ldap_use_starttls
   notify: restart neo4j

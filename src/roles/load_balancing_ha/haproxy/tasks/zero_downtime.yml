@@ -16,14 +16,14 @@
   register: config_test_result
   changed_when: false
   failed_when: config_test_result.rc != 0
-  when: 
+  when:
     - haproxy_zero_downtime.enable | default(false)
     - ansible_check_mode == false
 
 - name: Perform zero-downtime reload
   ansible.builtin.shell: |
     /usr/local/bin/haproxy-zero-downtime-reload.sh
-  when: 
+  when:
     - haproxy_zero_downtime.enable | default(false)
     - config_test_result.rc == 0
     - ansible_check_mode == false

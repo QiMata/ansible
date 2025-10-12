@@ -159,7 +159,7 @@
 
     - name: Assert current symlink exists and is a link
       ansible.builtin.assert:
-        that: 
+        that:
           - current_link.stat.exists
           - current_link.stat.islnk
 

@@ -44,7 +44,7 @@
     owner: "{{ apache_nifi_user }}"
     group: "{{ apache_nifi_group }}"
     mode: '0600'
-  when: 
+  when:
     - apache_nifi_version_control
     - apache_nifi_git_username != ""
     - apache_nifi_git_token != ""
@@ -58,7 +58,7 @@
     version: "{{ apache_nifi_git_branch }}"
     force: true
   become_user: "{{ apache_nifi_user }}"
-  when: 
+  when:
     - apache_nifi_version_control
     - apache_nifi_git_repository != ""
   tags: [nifi, git, clone]

@@ -21,7 +21,7 @@
               when:
                 regexp:
                   message: "CRON"  # Filter out cron job logs
-      
+
       - type: log
         id: audit-logs
         enabled: true
@@ -32,7 +32,7 @@
           log_type: security
           security_category: audit
           compliance: true
-      
+
       - type: log
         id: firewall-logs
         enabled: true
@@ -43,18 +43,18 @@
           service: firewall
           log_type: security
           security_category: network
-    
+
     # Secure output configuration
     filebeat_output_type: elasticsearch
     filebeat_elasticsearch_hosts:
       - "https://security-es1.example.com:9200"
       - "https://security-es2.example.com:9200"
-    
+
     # API Key authentication for security
     filebeat_api_key_enabled: true
     filebeat_api_key_id: "{{ vault_security_api_key_id }}"
     filebeat_api_key_value: "{{ vault_security_api_key_value }}"
-    
+
     # SSL with strict verification
     filebeat_ssl_enabled: true
     filebeat_ssl_verification_mode: "strict"
@@ -62,7 +62,7 @@
     filebeat_ssl_key: "{{ security_ssl_key }}"
     filebeat_ssl_certificate_authorities:
       - "{{ security_ca_cert }}"
-    
+
     # Security-focused processors
     filebeat_global_processors:
       - add_host_metadata:
@@ -80,30 +80,30 @@
                 event.Put("security.alert_level", "high");
               }
             }
-    
+
     # Enhanced monitoring for security
     filebeat_monitoring_enabled: true
     filebeat_http_enabled: true
     filebeat_health_check_enabled: true
-    
+
     # Security-specific global fields
     filebeat_global_fields:
       security_zone: "dmz"
       compliance_required: true
       data_classification: "sensitive"
-    
+
     # Performance tuning for high-volume security logs
     filebeat_queue_mem_events: 16384
     filebeat_harvester_buffer_size: 65536
     filebeat_elasticsearch_index: "security-logs-%{+yyyy.MM.dd}"
-    
+
     # Backup critical for security configurations
     filebeat_config_backup_enabled: true
     filebeat_config_validate_before_restart: true
-    
+
   roles:
     - monitoring_observability.filebeat
-  
+
   tags:
     - monitoring
     - logging

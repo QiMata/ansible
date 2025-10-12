@@ -6,7 +6,7 @@
   vars:
     # Environment-specific configuration
     filebeat_environment: "{{ env_name | default('production') }}"
-    
+
     # Common input configuration
     common_inputs:
       - type: log
@@ -17,7 +17,7 @@
         fields:
           service: system
           log_type: syslog
-    
+
     # Environment-specific inputs
     dev_inputs:
       - type: log
@@ -28,7 +28,7 @@
         fields:
           service: debug
           environment: development
-    
+
     prod_inputs:
       - type: log
         id: audit-logs
@@ -39,7 +39,7 @@
           service: audit
           environment: production
           security_level: high
-    
+
     # Combine inputs based on environment
     filebeat_inputs: >-
       {{
@@ -47,35 +47,35 @@
         (dev_inputs if env_name == 'development' else []) +
         (prod_inputs if env_name == 'production' else [])
       }}
-    
+
     # Environment-specific outputs
     filebeat_output_type: "{{ 'file' if env_name == 'development' else 'elasticsearch' }}"
-    
+
     # Development settings
     filebeat_file_path: "/tmp/filebeat-dev"
     filebeat_file_filename: "filebeat-{{ ansible_hostname }}.json"
-    
+
     # Production settings
     filebeat_elasticsearch_hosts:
       - "{{ elasticsearch_cluster_url }}"
     filebeat_elasticsearch_index: "filebeat-{{ env_name }}-%{+yyyy.MM.dd}"
-    
+
     # SSL only in production
     filebeat_ssl_enabled: "{{ env_name == 'production' }}"
-    
+
     # Monitoring configuration
     filebeat_monitoring_enabled: "{{ env_name == 'production' }}"
     filebeat_health_check_enabled: true
-    
+
     # Environment-specific global fields
     filebeat_global_fields:
       environment: "{{ env_name }}"
       datacenter: "{{ datacenter | default('unknown') }}"
       cluster: "{{ cluster_name | default('default') }}"
-    
+
   roles:
     - monitoring_observability.filebeat
-  
+
   tags:
     - monitoring
     - logging
