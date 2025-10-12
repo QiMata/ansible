@@ -57,7 +57,7 @@
   become: true
   tags: [message_broker, redis]
   roles:
-    - role: geerlingguy.redis
+    - role: geerlingguy_redis
       vars:
         redis_bind: "{{ data_product_redis_bind }}"
         redis_port: "{{ data_product_redis_port | default(6379) }}"

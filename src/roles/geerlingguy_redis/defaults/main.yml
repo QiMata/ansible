@@ -1,0 +1,5 @@
+---
+geerlingguy_redis_package_name: redis-server
+geerlingguy_redis_service_name: redis-server
+geerlingguy_redis_service_enabled: true
+geerlingguy_redis_service_state: started

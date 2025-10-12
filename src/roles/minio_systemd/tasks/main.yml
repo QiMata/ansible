@@ -1,0 +1,80 @@
+---
+- name: Derive MinIO data volume list
+  ansible.builtin.set_fact:
+    minio_systemd_volume_list: "{{ minio_volumes.split() }}"
+  when: minio_volumes is defined and minio_volumes | length > 0
+
+- name: Ensure MinIO group exists
+  ansible.builtin.group:
+    name: "{{ minio_systemd_group }}"
+    system: true
+
+- name: Ensure MinIO user exists
+  ansible.builtin.user:
+    name: "{{ minio_systemd_user }}"
+    group: "{{ minio_systemd_group }}"
+    shell: /usr/sbin/nologin
+    system: true
+    create_home: false
+
+- name: Ensure MinIO data directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ minio_systemd_user }}"
+    group: "{{ minio_systemd_group }}"
+    mode: "0750"
+  loop: "{{ minio_systemd_volume_list | default([]) }}"
+
+- name: Ensure MinIO configuration directory exists
+  ansible.builtin.file:
+    path: "{{ minio_systemd_config_dir }}"
+    state: directory
+    owner: "{{ minio_systemd_user }}"
+    group: "{{ minio_systemd_group }}"
+    mode: "0750"
+
+- name: Write MinIO environment configuration
+  ansible.builtin.copy:
+    dest: "{{ minio_systemd_env_file }}"
+    owner: "{{ minio_systemd_user }}"
+    group: "{{ minio_systemd_group }}"
+    mode: "0600"
+    content: |
+      MINIO_ROOT_USER={{ minio_root_user | default(minio_systemd_user) }}
+      MINIO_ROOT_PASSWORD={{ minio_root_password | default('') }}
+      MINIO_VOLUMES={{ minio_volumes | default('') }}
+      MINIO_ADDRESS={{ minio_systemd_bind_address }}
+  notify: Reload MinIO unit
+
+- name: Install systemd unit for MinIO
+  ansible.builtin.copy:
+    dest: "/etc/systemd/system/{{ minio_systemd_service_name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=MinIO Object Storage
+      Documentation=https://min.io/docs/minio/linux/index.html
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      User={{ minio_systemd_user }}
+      Group={{ minio_systemd_group }}
+      EnvironmentFile={{ minio_systemd_env_file }}
+      ExecStart={{ minio_systemd_binary }} server $MINIO_VOLUMES
+      Restart=on-failure
+      LimitNOFILE=65536
+
+      [Install]
+      WantedBy=multi-user.target
+  notify: Reload MinIO unit
+
+- name: Ensure MinIO service is enabled and in desired state
+  ansible.builtin.service:
+    name: "{{ minio_systemd_service_name }}"
+    enabled: "{{ minio_systemd_service_enabled | bool }}"
+    state: "{{ minio_systemd_service_state }}"
+  when: minio_systemd_manage_service

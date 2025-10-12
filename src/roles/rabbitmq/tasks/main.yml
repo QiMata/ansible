@@ -1,0 +1,11 @@
+---
+- name: Ensure RabbitMQ package is installed
+  ansible.builtin.package:
+    name: "{{ rabbitmq_package_name }}"
+    state: present
+
+- name: Ensure RabbitMQ service is enabled and in desired state
+  ansible.builtin.service:
+    name: "{{ rabbitmq_service_name }}"
+    enabled: "{{ rabbitmq_service_enabled | bool }}"
+    state: "{{ rabbitmq_service_state }}"
