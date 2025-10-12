@@ -33,7 +33,7 @@
     line: "provider_config = {{ grafana_session_provider_config }}"
     insertafter: '^\[session\]'
   notify: Restart Grafana
-  when: 
+  when:
     - grafana_session_provider == 'redis'
     - grafana_session_provider_config != ""
 
@@ -94,7 +94,7 @@
 
 - name: Display HA configuration status
   ansible.builtin.debug:
-    msg: 
+    msg:
       - "HA mode enabled with {{ grafana_database.type }} database"
       - "Session provider: {{ grafana_session_provider }}"
       - "Load balancer health check: {{ 'enabled' if grafana_lb_enabled else 'disabled' }}"

@@ -16,7 +16,7 @@
     from_ip: "{{ item }}"
     comment: "Superset access from {{ item }}"
   loop: "{{ superset_firewall_allowed_ips }}"
-  when: 
+  when:
     - superset_firewall_enabled
     - superset_firewall_allowed_ips | length > 0
   tags: ['superset', 'superset_security']

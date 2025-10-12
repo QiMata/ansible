@@ -6,7 +6,7 @@
   notify: Restart Grafana
   register: plugin_install_result
   changed_when: "'Already installed' not in plugin_install_result.stdout"
-  failed_when: 
+  failed_when:
     - plugin_install_result.rc != 0
     - "'Already installed' not in plugin_install_result.stdout"
 

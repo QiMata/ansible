@@ -25,7 +25,7 @@
     src: "{{ item }}"
   become: true
   loop: "{{ prometheus_firewall_allowed_ips }}"
-  when: 
+  when:
     - prometheus_enable_firewall
     - prometheus_firewall_allowed_ips | length > 0
   tags: firewall
@@ -38,7 +38,7 @@
     src: "{{ item }}"
   become: true
   loop: "{{ prometheus_firewall_allowed_ips }}"
-  when: 
+  when:
     - prometheus_enable_firewall
     - prometheus_firewall_allowed_ips | length > 0
     - "'node_exporter' in prometheus_install_exporters"
@@ -52,7 +52,7 @@
     src: "{{ item }}"
   become: true
   loop: "{{ prometheus_firewall_allowed_ips }}"
-  when: 
+  when:
     - prometheus_enable_firewall
     - prometheus_firewall_allowed_ips | length > 0
     - "'blackbox_exporter' in prometheus_install_exporters"
@@ -66,7 +66,7 @@
     src: "{{ item }}"
   become: true
   loop: "{{ prometheus_firewall_allowed_ips }}"
-  when: 
+  when:
     - prometheus_enable_firewall
     - prometheus_firewall_allowed_ips | length > 0
     - "'process_exporter' in prometheus_install_exporters"
@@ -78,7 +78,7 @@
     port: '9090'
     proto: tcp
   become: true
-  when: 
+  when:
     - prometheus_enable_firewall
     - prometheus_firewall_allowed_ips | length > 0
   tags: firewall

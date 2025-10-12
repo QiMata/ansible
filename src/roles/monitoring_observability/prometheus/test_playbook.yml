@@ -8,32 +8,32 @@
     prometheus_enable_tls: false  # Set to true when you have certificates
     prometheus_tls_cert_file: "/etc/ssl/certs/prometheus.crt"
     prometheus_tls_key_file: "/etc/ssl/private/prometheus.key"
-    
+
     # Authentication
     prometheus_basic_auth_users:
       admin: "$2b$12$hNf2lSsxfm0.i4a.1kVpSOVyBCfIB51VRjgBUyv6kdnyTlgWj81Ay"  # admin123
-    
+
     # Multiple Exporters
     prometheus_install_exporters:
       - "node_exporter"
       - "blackbox_exporter"
       - "process_exporter"
-    
+
     # Blackbox monitoring
     prometheus_blackbox_targets:
       - name: "example"
         url: "https://example.com"
         module: "http_2xx"
-    
+
     # Service Discovery
     prometheus_file_sd_configs:
       - files: ["/etc/prometheus/targets/*.json"]
         refresh_interval: "30s"
-    
+
     # Federation
     prometheus_enable_federation: false
     prometheus_federation_targets: []
-    
+
     # Recording Rules
     prometheus_recording_rules: |
       groups:
@@ -41,39 +41,39 @@
           rules:
             - record: test:up_sum
               expr: sum(up)
-    
+
     # Backup Configuration
     prometheus_enable_backup: true
     prometheus_backup_destination: "/tmp/prometheus-backup"
     prometheus_backup_retention_days: 7
-    
+
     # Firewall (disabled for testing)
     prometheus_enable_firewall: false
     prometheus_firewall_allowed_ips:
       - "127.0.0.1"
       - "10.0.0.0/8"
-    
+
     # Logging
     prometheus_enable_log_rotation: true
     prometheus_log_level: "info"
     prometheus_log_format: "logfmt"
-    
+
   roles:
     - prometheus
-    
+
   post_tasks:
     - name: Verify Prometheus is running
       ansible.builtin.service:
         name: prometheus
         state: started
       register: prometheus_service
-      
+
     - name: Check Prometheus configuration
       ansible.builtin.uri:
         url: http://localhost:9090/-/healthy
         method: GET
       register: prometheus_health
-      
+
     - name: Display test results
       ansible.builtin.debug:
         msg: |

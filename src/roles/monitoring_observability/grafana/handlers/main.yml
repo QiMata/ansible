@@ -4,12 +4,12 @@
     name: "{{ grafana_service_name }}"
     state: restarted
 
-- name: restart grafana-server
+- name: Restart Grafana Server
   ansible.builtin.systemd:
     name: grafana-server
     state: restarted
-    daemon_reload: yes
+    daemon_reload: true
 
-- name: reload systemd
+- name: Reload Systemd
   ansible.builtin.systemd:
-    daemon_reload: yes
+    daemon_reload: true

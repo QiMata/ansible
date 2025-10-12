@@ -27,7 +27,7 @@
     url: "ldap://{{ superset_ldap_server }}"
     method: GET
     timeout: 10
-  when: 
+  when:
     - superset_ldap_enabled
     - superset_ldap_server != ""
   register: ldap_test
@@ -37,7 +37,7 @@
 - name: Display LDAP connection test result
   ansible.builtin.debug:
     msg: "LDAP server {{ superset_ldap_server }} is {{ 'reachable' if ldap_test.status is defined else 'unreachable' }}"
-  when: 
+  when:
     - superset_ldap_enabled
     - ldap_test is defined
   tags: ['superset', 'superset_auth']

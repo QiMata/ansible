@@ -5,7 +5,7 @@
     method: POST
     user: "{{ grafana_admin_user }}"
     password: "{{ grafana_admin_password }}"
-    force_basic_auth: yes
+    force_basic_auth: true
     body_format: json
     body:
       uid: "{{ item.uid }}"
@@ -20,7 +20,7 @@
     method: GET
     user: "{{ grafana_admin_user }}"
     password: "{{ grafana_admin_password }}"
-    force_basic_auth: yes
+    force_basic_auth: true
     status_code: 200
   register: existing_folders
 
@@ -41,7 +41,7 @@
     group: grafana
     mode: '0755'
   loop: "{{ grafana_dashboard_providers }}"
-  when: 
+  when:
     - item.type == 'file'
     - item.options.path is defined
 
@@ -50,10 +50,11 @@
     repo: "{{ item.options.url }}"
     dest: "/var/lib/grafana/dashboards/{{ item.name }}"
     version: "{{ item.options.branch | default('main') }}"
-    force: yes
+    force: true
   become_user: grafana
+  become: true
   loop: "{{ grafana_dashboard_providers }}"
-  when: 
+  when:
     - item.type == 'git'
     - item.options.url is defined
 
@@ -64,7 +65,7 @@
     job: "cd /var/lib/grafana/dashboards/{{ item.name }} && git pull"
     user: grafana
   loop: "{{ grafana_dashboard_providers }}"
-  when: 
+  when:
     - item.type == 'git'
     - item.options.auto_update | default(true)
 
@@ -85,7 +86,7 @@
     method: POST
     user: "{{ grafana_admin_user }}"
     password: "{{ grafana_admin_password }}"
-    force_basic_auth: yes
+    force_basic_auth: true
     body_format: json
     body:
       dashboard: "{{ lookup('file', item) | from_json }}"

@@ -23,14 +23,50 @@
   when: superset_db_validate_connection or superset_db_auto_create
   tags: ['superset', 'superset_database']
 
+- name: Derive database connection components
+  ansible.builtin.set_fact:
+    db_connection_database: "{{ db_connection_string.split('/')[-1] }}"
+    db_connection_host: >-
+      {{
+        db_connection_string.split('@')[-1].split('/')[0].split(':')[0]
+        if '@' in db_connection_string
+        else 'localhost'
+      }}
+    db_connection_port: >-
+      {{
+        db_connection_string.split('@')[-1].split('/')[0].split(':')[1]
+        if (
+          '@' in db_connection_string
+          and ':' in db_connection_string.split('@')[-1].split('/')[0]
+        )
+        else (5432 if db_type == 'postgresql' else 3306)
+      }}
+    db_connection_user: >-
+      {{
+        db_connection_string.split('@')[0].split(':')[0]
+        if '@' in db_connection_string
+        else ('postgres' if db_type == 'postgresql' else 'root')
+      }}
+    db_connection_password: >-
+      {{
+        db_connection_string.split('@')[0].split(':')[1]
+        if (
+          '@' in db_connection_string
+          and ':' in db_connection_string.split('@')[0]
+        )
+        else ''
+      }}
+  when: superset_db_validate_connection or superset_db_auto_create
+  tags: ['superset', 'superset_database']
+
 - name: Validate PostgreSQL database connection
   community.postgresql.postgresql_ping:
-    db: "{{ db_connection_string.split('/')[-1] }}"
-    login_host: "{{ db_connection_string.split('@')[-1].split('/')[0].split(':')[0] if '@' in db_connection_string else 'localhost' }}"
-    login_port: "{{ db_connection_string.split('@')[-1].split('/')[0].split(':')[1] if '@' in db_connection_string and ':' in db_connection_string.split('@')[-1].split('/')[0] else 5432 }}"
-    login_user: "{{ db_connection_string.split('@')[0].split(':')[0] if '@' in db_connection_string else 'postgres' }}"
-    login_password: "{{ db_connection_string.split('@')[0].split(':')[1] if '@' in db_connection_string and ':' in db_connection_string.split('@')[0] else '' }}"
-  when: 
+    db: "{{ db_connection_database }}"
+    login_host: "{{ db_connection_host }}"
+    login_port: "{{ db_connection_port }}"
+    login_user: "{{ db_connection_user }}"
+    login_password: "{{ db_connection_password }}"
+  when:
     - superset_db_validate_connection
     - db_type == 'postgresql'
   register: pg_connection_test
@@ -39,11 +75,11 @@
 
 - name: Create PostgreSQL database if auto-create is enabled
   community.postgresql.postgresql_db:
-    name: "{{ db_connection_string.split('/')[-1] }}"
-    login_host: "{{ db_connection_string.split('@')[-1].split('/')[0].split(':')[0] if '@' in db_connection_string else 'localhost' }}"
-    login_port: "{{ db_connection_string.split('@')[-1].split('/')[0].split(':')[1] if '@' in db_connection_string and ':' in db_connection_string.split('@')[-1].split('/')[0] else 5432 }}"
-    login_user: "{{ db_connection_string.split('@')[0].split(':')[0] if '@' in db_connection_string else 'postgres' }}"
-    login_password: "{{ db_connection_string.split('@')[0].split(':')[1] if '@' in db_connection_string and ':' in db_connection_string.split('@')[0] else '' }}"
+    name: "{{ db_connection_database }}"
+    login_host: "{{ db_connection_host }}"
+    login_port: "{{ db_connection_port }}"
+    login_user: "{{ db_connection_user }}"
+    login_password: "{{ db_connection_password }}"
     state: present
   when:
     - superset_db_auto_create
@@ -53,11 +89,11 @@
 
 - name: Validate MySQL database connection
   community.mysql.mysql_info:
-    login_host: "{{ db_connection_string.split('@')[-1].split('/')[0].split(':')[0] if '@' in db_connection_string else 'localhost' }}"
-    login_port: "{{ db_connection_string.split('@')[-1].split('/')[0].split(':')[1] if '@' in db_connection_string and ':' in db_connection_string.split('@')[-1].split('/')[0] else 3306 }}"
-    login_user: "{{ db_connection_string.split('@')[0].split(':')[0] if '@' in db_connection_string else 'root' }}"
-    login_password: "{{ db_connection_string.split('@')[0].split(':')[1] if '@' in db_connection_string and ':' in db_connection_string.split('@')[0] else '' }}"
-    login_db: "{{ db_connection_string.split('/')[-1] }}"
+    login_host: "{{ db_connection_host }}"
+    login_port: "{{ db_connection_port }}"
+    login_user: "{{ db_connection_user }}"
+    login_password: "{{ db_connection_password }}"
+    login_db: "{{ db_connection_database }}"
   when:
     - superset_db_validate_connection
     - db_type in ['mysql', 'mysql+pymysql']
@@ -67,11 +103,11 @@
 
 - name: Create MySQL database if auto-create is enabled
   community.mysql.mysql_db:
-    name: "{{ db_connection_string.split('/')[-1] }}"
-    login_host: "{{ db_connection_string.split('@')[-1].split('/')[0].split(':')[0] if '@' in db_connection_string else 'localhost' }}"
-    login_port: "{{ db_connection_string.split('@')[-1].split('/')[0].split(':')[1] if '@' in db_connection_string and ':' in db_connection_string.split('@')[-1].split('/')[0] else 3306 }}"
-    login_user: "{{ db_connection_string.split('@')[0].split(':')[0] if '@' in db_connection_string else 'root' }}"
-    login_password: "{{ db_connection_string.split('@')[0].split(':')[1] if '@' in db_connection_string and ':' in db_connection_string.split('@')[0] else '' }}"
+    name: "{{ db_connection_database }}"
+    login_host: "{{ db_connection_host }}"
+    login_port: "{{ db_connection_port }}"
+    login_user: "{{ db_connection_user }}"
+    login_password: "{{ db_connection_password }}"
     state: present
   when:
     - superset_db_auto_create
@@ -81,6 +117,12 @@
 
 - name: Display database connection validation results
   ansible.builtin.debug:
-    msg: "Database connection validation {{ 'successful' if not (pg_connection_test.failed | default(false)) and not (mysql_connection_test.failed | default(false)) else 'failed' }}"
+    msg: >-
+      Database connection validation {{
+        'successful'
+        if not (pg_connection_test.failed | default(false))
+        and not (mysql_connection_test.failed | default(false))
+        else 'failed'
+      }}
   when: superset_db_validate_connection
   tags: ['superset', 'superset_database']

@@ -81,7 +81,7 @@
 
 - name: Display SSL certificate information
   ansible.builtin.debug:
-    msg: 
+    msg:
       - "SSL Certificate Subject: {{ ssl_cert_info.subject }}"
       - "SSL Certificate Valid From: {{ ssl_cert_info.not_before }}"
       - "SSL Certificate Valid Until: {{ ssl_cert_info.not_after }}"

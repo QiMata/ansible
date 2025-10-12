@@ -15,7 +15,7 @@
     dest: "/etc/systemd/system/airflow-scheduler@.service"
     mode: '0644'
   when: apache_airflow_scheduler_ha_enabled
-  notify: reload systemd
+  notify: Reload Systemd
 
 - name: Create scheduler instance-specific directories
   ansible.builtin.file:

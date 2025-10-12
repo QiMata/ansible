@@ -5,7 +5,7 @@
     method: GET
     user: "{{ grafana_admin_user }}"
     password: "{{ grafana_admin_password }}"
-    force_basic_auth: yes
+    force_basic_auth: true
     status_code: 200
   register: existing_users
 
@@ -15,7 +15,7 @@
     method: POST
     user: "{{ grafana_admin_user }}"
     password: "{{ grafana_admin_password }}"
-    force_basic_auth: yes
+    force_basic_auth: true
     body_format: json
     body:
       name: "{{ item.name }}"
@@ -34,7 +34,7 @@
     method: GET
     user: "{{ grafana_admin_user }}"
     password: "{{ grafana_admin_password }}"
-    force_basic_auth: yes
+    force_basic_auth: true
     status_code: 200
   register: updated_users
 
@@ -44,7 +44,7 @@
     method: PATCH
     user: "{{ grafana_admin_user }}"
     password: "{{ grafana_admin_password }}"
-    force_basic_auth: yes
+    force_basic_auth: true
     body_format: json
     body:
       role: "{{ item.role | default('Viewer') }}"
@@ -66,7 +66,7 @@
     method: PUT
     user: "{{ grafana_admin_user }}"
     password: "{{ grafana_admin_password }}"
-    force_basic_auth: yes
+    force_basic_auth: true
     body_format: json
     body:
       password: "{{ item.password }}"
@@ -74,7 +74,7 @@
   loop: "{{ grafana_users }}"
   vars:
     user_lookup: "{{ updated_users.json | selectattr('login', 'equalto', item.login) | first }}"
-  when: 
+  when:
     - user_lookup is defined
     - item.update_password | default(false)
   no_log: true

@@ -14,7 +14,7 @@
   tasks:
     - name: "Install Python and development tools"
       ansible.builtin.apt:
-        name: 
+        name:
           - python3
           - python3-pip
           - python3-venv
@@ -23,22 +23,22 @@
           - libssl-dev
           - libffi-dev
         state: present
-        update_cache: yes
-        
+        update_cache: true
+
     - name: "Create superset group"
       ansible.builtin.group:
         name: "{{ apache_superset_group }}"
-        system: yes
-        
+        system: true
+
     - name: "Create superset user"
       ansible.builtin.user:
         name: "{{ apache_superset_user }}"
         group: "{{ apache_superset_group }}"
-        system: yes
+        system: true
         shell: /bin/bash
         home: "{{ apache_superset_home }}"
-        createhome: no
-        
+        createhome: false
+
     - name: "Create Superset directories"
       ansible.builtin.file:
         path: "{{ item }}"
@@ -50,28 +50,28 @@
         - "{{ apache_superset_home }}"
         - "{{ apache_superset_home }}/config"
         - "{{ apache_superset_home }}/logs"
-        
+
     - name: "Create Python virtual environment"
       ansible.builtin.command:
         cmd: "python3 -m venv {{ apache_superset_venv_path }}"
         creates: "{{ apache_superset_venv_path }}/bin/activate"
-      
+
     - name: "Set ownership of virtual environment"
       ansible.builtin.file:
         path: "{{ apache_superset_venv_path }}"
         owner: "{{ apache_superset_user }}"
         group: "{{ apache_superset_group }}"
-        recurse: yes
-      
+        recurse: true
+
     - name: "Test Python installation"
       ansible.builtin.command: python3 --version
       register: python_version_result
       changed_when: false
-      
+
     - name: "Display Python version"
       ansible.builtin.debug:
         var: python_version_result.stdout
-        
+
     - name: "Test completed successfully"
       ansible.builtin.debug:
         msg: "✅ Apache Superset basic setup test completed successfully!"

@@ -63,7 +63,7 @@
   loop: "{{ grafana_datasources }}"
   register: datasource_connectivity
   failed_when: false
-  when: 
+  when:
     - item.type == 'prometheus'
     - item.url is defined
     - not item.url.startswith('http://prometheus:')  # Skip Docker internal URLs
@@ -72,6 +72,6 @@
   ansible.builtin.debug:
     msg: "Datasource {{ item.item.name }} connectivity: {{ 'OK' if item.status == 200 else 'Check required' }}"
   loop: "{{ datasource_connectivity.results }}"
-  when: 
+  when:
     - item.status is defined
     - ansible_verbosity >= 1

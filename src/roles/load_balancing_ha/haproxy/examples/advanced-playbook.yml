@@ -270,7 +270,7 @@
         method: GET
         user: "{{ haproxy_stats_user }}"
         password: "{{ haproxy_stats_password }}"
-        force_basic_auth: yes
+        force_basic_auth: true
       when: haproxy_stats_enable
 
     - name: Display runtime management information

@@ -8,11 +8,11 @@
   ansible.builtin.copy:
     src: /var/lib/grafana/grafana.db
     dest: "{{ grafana_backup_path }}/grafana-pre-migration-{{ ansible_date_time.epoch }}.db"
-    remote_src: yes
+    remote_src: true
     owner: grafana
     group: grafana
     mode: '0640'
-  when: 
+  when:
     - grafana_database_backup_before_migration
     - sqlite_db_check.stat.exists
     - grafana_database.type != 'sqlite3'
@@ -27,7 +27,9 @@
   ansible.builtin.shell: |
     sqlite3 /var/lib/grafana/grafana.db .dump > {{ grafana_backup_path }}/grafana-export-{{ ansible_date_time.epoch }}.sql
   become_user: grafana
-  when: 
+  become: true
+  changed_when: false
+  when:
     - sqlite_db_check.stat.exists
     - grafana_database.type != 'sqlite3'
 
@@ -39,7 +41,7 @@
     login_port: "{{ grafana_database.host.split(':')[1] | default('3306') }}"
     login_user: "{{ grafana_database.user }}"
     login_password: "{{ grafana_database.password }}"
-  when: 
+  when:
     - grafana_database.type == 'mysql'
     - sqlite_db_check.stat.exists
 
@@ -51,7 +53,7 @@
     login_port: "{{ grafana_database.host.split(':')[1] | default('5432') }}"
     login_user: "{{ grafana_database.user }}"
     login_password: "{{ grafana_database.password }}"
-  when: 
+  when:
     - grafana_database.type == 'postgres'
     - sqlite_db_check.stat.exists
 
@@ -59,13 +61,15 @@
   ansible.builtin.command:
     cmd: grafana-server --config=/etc/grafana/grafana.ini --homepath=/usr/share/grafana cfg:default.paths.data=/var/lib/grafana
   become_user: grafana
+  become: true
+  changed_when: false
   environment:
     GF_DATABASE_TYPE: "{{ grafana_database.type }}"
     GF_DATABASE_HOST: "{{ grafana_database.host }}"
     GF_DATABASE_NAME: "{{ grafana_database.name }}"
     GF_DATABASE_USER: "{{ grafana_database.user }}"
     GF_DATABASE_PASSWORD: "{{ grafana_database.password }}"
-  when: 
+  when:
     - grafana_database.type != 'sqlite3'
     - sqlite_db_check.stat.exists
 
@@ -73,7 +77,7 @@
   ansible.builtin.file:
     path: /var/lib/grafana/grafana.db
     state: absent
-  when: 
+  when:
     - grafana_database.type != 'sqlite3'
     - sqlite_db_check.stat.exists
 

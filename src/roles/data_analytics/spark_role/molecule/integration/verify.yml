@@ -11,7 +11,7 @@
       loop:
         - spark-master
         - spark-worker
-      when: 
+      when:
         - item == "spark-master" and inventory_hostname in groups['spark_masters']
         - item == "spark-worker" and inventory_hostname in groups['spark_workers']
 
@@ -105,7 +105,7 @@
       ansible.builtin.stat:
         path: "{{ item }}"
       register: log_dirs
-      failed_when: 
+      failed_when:
         - not log_dirs.stat.exists
         - log_dirs.stat.pw_name != "spark"
       loop:
@@ -134,7 +134,7 @@
 
     - name: Verify environment-specific configuration
       ansible.builtin.shell: |
-        grep -q "staging" /opt/spark/conf/performance_tuning.conf || 
+        grep -q "staging" /opt/spark/conf/performance_tuning.conf ||
         grep -q "1g" /opt/spark/current/conf/spark-defaults.conf
       register: env_config
       changed_when: false
@@ -145,7 +145,7 @@
       ansible.builtin.stat:
         path: /opt/spark/scripts/backup_spark.sh
       register: backup_script
-      failed_when: 
+      failed_when:
         - not backup_script.stat.exists
         - not backup_script.stat.executable
 
@@ -153,7 +153,7 @@
       ansible.builtin.stat:
         path: /opt/spark/scripts/restore_spark.sh
       register: restore_script
-      failed_when: 
+      failed_when:
         - not restore_script.stat.exists
         - not restore_script.stat.executable
 
@@ -162,7 +162,7 @@
       ansible.builtin.stat:
         path: "{{ item }}"
       register: update_scripts
-      failed_when: 
+      failed_when:
         - not update_scripts.stat.exists
         - not update_scripts.stat.executable
       loop:
@@ -175,7 +175,7 @@
       block:
         - name: Submit a simple test job
           ansible.builtin.shell: |
-            echo 'sc.parallelize(1 to 100).sum()' | 
+            echo 'sc.parallelize(1 to 100).sum()' |
             timeout 120 /opt/spark/current/bin/spark-shell \
               --master spark://{{ groups['spark_masters'][0] }}:7077 \
               --conf spark.app.name="IntegrationTest" \
@@ -183,7 +183,7 @@
               --conf spark.executor.cores=1
           register: test_job
           changed_when: false
-          failed_when: 
+          failed_when:
             - test_job.rc != 0
             - "'5050' not in test_job.stdout"
           timeout: 180
