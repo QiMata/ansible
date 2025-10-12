@@ -29,7 +29,7 @@ provisioner:
         ansible_connection: ssh
         ansible_ssh_pass: molecule123
         ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
-        ansible_become: yes
+        ansible_become: true
         ansible_become_method: sudo
         # Neo4j-specific testing configuration
         neo4j_initial_password: "test_password_123"
@@ -55,7 +55,7 @@ provisioner:
       host_key_checking: false
       stdout_callback: yaml
       bin_ansible_callbacks: true
-      role_name_check: False
+      role_name_check: false
 verifier:
   name: ansible
 scenario:

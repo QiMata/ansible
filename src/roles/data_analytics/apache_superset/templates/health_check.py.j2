@@ -9,8 +9,8 @@ import sys
 import json
 from datetime import datetime
 
-SUPERSET_URL = "http://{{ superset_gunicorn_bind.split(':')[0] if superset_gunicorn_bind.split(':')[0] != '0.0.0.0' else '127.0.0.1' }}:{{ superset_gunicorn_bind.split(':')[1] }}"
-HEALTH_ENDPOINT = "{{ superset_health_check_path }}"
+SUPERSET_URL = "http://{{ apache_superset_gunicorn_bind.split(':')[0] if apache_superset_gunicorn_bind.split(':')[0] != '0.0.0.0' else '127.0.0.1' }}:{{ apache_superset_gunicorn_bind.split(':')[1] }}"
+HEALTH_ENDPOINT = "{{ apache_superset_health_check_path }}"
 TIMEOUT = 30
 
 def check_health():

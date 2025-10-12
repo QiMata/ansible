@@ -7,40 +7,40 @@
     name:
       - flask-appbuilder[ldap]
       - python-ldap
-    virtualenv: "{{ superset_venv_dir }}"
+    virtualenv: "{{ apache_superset_venv_dir }}"
     virtualenv_command: python3 -m venv
-  when: superset_ldap_enabled
-  tags: ['superset', 'superset_auth']
+  when: apache_superset_ldap_enabled
+  tags: ['superset', 'apache_superset_auth']
 
 - name: Install OAuth authentication dependencies
   ansible.builtin.pip:
     name:
       - flask-appbuilder[oauth]
       - authlib
-    virtualenv: "{{ superset_venv_dir }}"
+    virtualenv: "{{ apache_superset_venv_dir }}"
     virtualenv_command: python3 -m venv
-  when: superset_oauth_enabled
-  tags: ['superset', 'superset_auth']
+  when: apache_superset_oauth_enabled
+  tags: ['superset', 'apache_superset_auth']
 
 - name: Test LDAP connection
   ansible.builtin.uri:
-    url: "ldap://{{ superset_ldap_server }}"
+    url: "ldap://{{ apache_superset_ldap_server }}"
     method: GET
     timeout: 10
   when:
-    - superset_ldap_enabled
-    - superset_ldap_server != ""
+    - apache_superset_ldap_enabled
+    - apache_superset_ldap_server != ""
   register: ldap_test
   failed_when: false
-  tags: ['superset', 'superset_auth']
+  tags: ['superset', 'apache_superset_auth']
 
 - name: Display LDAP connection test result
   ansible.builtin.debug:
-    msg: "LDAP server {{ superset_ldap_server }} is {{ 'reachable' if ldap_test.status is defined else 'unreachable' }}"
+    msg: "LDAP server {{ apache_superset_ldap_server }} is {{ 'reachable' if ldap_test.status is defined else 'unreachable' }}"
   when:
-    - superset_ldap_enabled
+    - apache_superset_ldap_enabled
     - ldap_test is defined
-  tags: ['superset', 'superset_auth']
+  tags: ['superset', 'apache_superset_auth']
 
 - name: Validate OAuth provider configuration
   ansible.builtin.assert:
@@ -49,15 +49,15 @@
       - item.client_id is defined
       - item.client_secret is defined
     msg: "OAuth provider must have name, client_id, and client_secret defined"
-  loop: "{{ superset_oauth_providers }}"
-  when: superset_oauth_enabled
-  tags: ['superset', 'superset_auth']
+  loop: "{{ apache_superset_oauth_providers }}"
+  when: apache_superset_oauth_enabled
+  tags: ['superset', 'apache_superset_auth']
 
 - name: Display configured authentication methods
   ansible.builtin.debug:
     msg:
-      - "Authentication type: {{ superset_auth_type }}"
-      - "LDAP enabled: {{ superset_ldap_enabled }}"
-      - "OAuth enabled: {{ superset_oauth_enabled }}"
-      - "OAuth providers: {{ superset_oauth_providers | map(attribute='name') | list if superset_oauth_enabled else [] }}"
-  tags: ['superset', 'superset_auth']
+      - "Authentication type: {{ apache_superset_auth_type }}"
+      - "LDAP enabled: {{ apache_superset_ldap_enabled }}"
+      - "OAuth enabled: {{ apache_superset_oauth_enabled }}"
+      - "OAuth providers: {{ apache_superset_oauth_providers | map(attribute='name') | list if apache_superset_oauth_enabled else [] }}"
+  tags: ['superset', 'apache_superset_auth']

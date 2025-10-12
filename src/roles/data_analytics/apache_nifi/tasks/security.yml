@@ -21,6 +21,8 @@
 
 - name: Apply security hardening
   become: true
+  when: apache_nifi_security_hardening
+  tags: [nifi, security, hardening]
   block:
     - name: Set strict file permissions on config directory
       ansible.builtin.file:
@@ -59,14 +61,12 @@
         path: /etc/security/limits.conf
         line: "{{ apache_nifi_user }} {{ item.type }} {{ item.item }} {{ item.value }}"
         create: true
+        mode: '0644'
       loop:
         - { type: "soft", item: "nofile", value: "65536" }
         - { type: "hard", item: "nofile", value: "65536" }
         - { type: "soft", item: "nproc", value: "32768" }
         - { type: "hard", item: "nproc", value: "32768" }
-
-  when: apache_nifi_security_hardening
-  tags: [nifi, security, hardening]
 
 - name: Include Vault integration tasks
   ansible.builtin.include_tasks: vault_integration.yml

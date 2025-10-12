@@ -43,4 +43,3 @@ zookeeper_max_session_timeout: 40000
 
 # Additional configuration properties (dictionary of key/value pairs)
 zookeeper_additional_properties: {}
-

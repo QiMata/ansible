@@ -2,7 +2,9 @@
 - name: Converge
   hosts: all
   become: true
+  vars:
+    ansible_roles_path: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/src/roles"
   roles:
-    - role: apache_spark
+    - role: spark_role
       vars:
-        apache_spark_history_enabled: true
+        spark_role_history_enabled: true

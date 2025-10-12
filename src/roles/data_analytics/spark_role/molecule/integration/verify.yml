@@ -172,9 +172,11 @@
 
     # Cluster connectivity test (only on master)
     - name: Test cluster connectivity
+      when: inventory_hostname in groups['spark_masters']
       block:
         - name: Submit a simple test job
           ansible.builtin.shell: |
+            set -o pipefail
             echo 'sc.parallelize(1 to 100).sum()' |
             timeout 120 /opt/spark/current/bin/spark-shell \
               --master spark://{{ groups['spark_masters'][0] }}:7077 \
@@ -194,7 +196,6 @@
               - test_job.rc == 0
               - "'5050' in test_job.stdout or 'res' in test_job.stdout"
             fail_msg: "Test job failed to execute or return expected result"
-      when: inventory_hostname in groups['spark_masters']
 
     # Final health verification
     - name: Final comprehensive health check

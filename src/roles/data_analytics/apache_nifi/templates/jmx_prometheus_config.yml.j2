@@ -8,29 +8,29 @@ lowercaseOutputLabelNames: false
 rules:
   # Processor metrics
   - pattern: "org.apache.nifi.processors<type=ProcessorMetrics, name=(.+)><>(.+)"
-    name: nifi_processor_$2
+    name: apache_nifi_processor_$2
     labels:
       processor: $1
     type: GAUGE
 
   # Flow file metrics
   - pattern: "org.apache.nifi<type=FlowFileRepository><>(.+)"
-    name: nifi_flowfile_repository_$1
+    name: apache_nifi_flowfile_repository_$1
     type: GAUGE
 
   # Content repository metrics
   - pattern: "org.apache.nifi<type=ContentRepository><>(.+)"
-    name: nifi_content_repository_$1
+    name: apache_nifi_content_repository_$1
     type: GAUGE
 
   # Provenance repository metrics
   - pattern: "org.apache.nifi<type=ProvenanceRepository><>(.+)"
-    name: nifi_provenance_repository_$1
+    name: apache_nifi_provenance_repository_$1
     type: GAUGE
 
   # Connection metrics
   - pattern: "org.apache.nifi.connections<type=ConnectionMetrics, name=(.+)><>(.+)"
-    name: nifi_connection_$2
+    name: apache_nifi_connection_$2
     labels:
       connection: $1
     type: GAUGE
@@ -52,18 +52,18 @@ rules:
 
   # NiFi cluster metrics
   - pattern: "org.apache.nifi.cluster<type=(.+)><>(.+)"
-    name: nifi_cluster_$1_$2
+    name: apache_nifi_cluster_$1_$2
     type: GAUGE
 
   # NiFi bulletin metrics
   - pattern: "org.apache.nifi.bulletin<type=BulletinRepository><>(.+)"
-    name: nifi_bulletin_$1
+    name: apache_nifi_bulletin_$1
     type: GAUGE
 
   # Custom application metrics
   {% if apache_nifi_prometheus_custom_metrics %}
   - pattern: "nifi.custom<type=(.+), name=(.+)><>(.+)"
-    name: nifi_custom_$1_$3
+    name: apache_nifi_custom_$1_$3
     labels:
       metric_name: $2
     type: GAUGE

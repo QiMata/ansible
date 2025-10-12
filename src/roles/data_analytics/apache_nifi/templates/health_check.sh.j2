@@ -4,7 +4,7 @@
 set -euo pipefail
 
 # Configuration
-NIFI_URL="{% if nifi_enable_https %}https://localhost:{{ nifi_secure_port }}{% else %}http://localhost:{{ nifi_listen_port }}{% endif %}"
+NIFI_URL="{% if apache_nifi_enable_https %}https://localhost:{{ apache_nifi_secure_port }}{% else %}http://localhost:{{ apache_nifi_listen_port }}{% endif %}"
 NIFI_API="${NIFI_URL}/nifi-api"
 CHECK_TIMEOUT="{{ apache_nifi_health_check_timeout }}"
 LOG_FILE="{{ apache_nifi_home }}/logs/health_check.log"
@@ -41,7 +41,7 @@ check_api_availability() {
     response_code=$(curl -s -o /dev/null -w "%{http_code}" \
         --connect-timeout "${CHECK_TIMEOUT}" \
         --max-time "${CHECK_TIMEOUT}" \
-        {% if nifi_enable_https %}--insecure{% endif %} \
+        {% if apache_nifi_enable_https %}--insecure{% endif %} \
         "${NIFI_API}/access/config" || echo "000")
     
     if [[ "${response_code}" != "200" ]]; then
@@ -90,13 +90,13 @@ check_system_resources() {
 
 # Check NiFi cluster status (if clustering enabled)
 check_cluster_status() {
-    {% if nifi_cluster_enabled %}
+    {% if apache_nifi_cluster_enabled %}
     log "Checking NiFi cluster status"
     
     local cluster_response
     cluster_response=$(curl -s --connect-timeout "${CHECK_TIMEOUT}" \
         --max-time "${CHECK_TIMEOUT}" \
-        {% if nifi_enable_https %}--insecure{% endif %} \
+        {% if apache_nifi_enable_https %}--insecure{% endif %} \
         "${NIFI_API}/controller/cluster" || echo '{"cluster":null}')
     
     if command -v jq &> /dev/null; then
@@ -128,7 +128,7 @@ check_flow_queues() {
     local flow_response
     flow_response=$(curl -s --connect-timeout "${CHECK_TIMEOUT}" \
         --max-time "${CHECK_TIMEOUT}" \
-        {% if nifi_enable_https %}--insecure{% endif %} \
+        {% if apache_nifi_enable_https %}--insecure{% endif %} \
         "${NIFI_API}/flow/status" || echo '{"controllerStatus":null}')
     
     if command -v jq &> /dev/null; then
@@ -201,7 +201,7 @@ $(printf '        "%s"' "${HEALTH_ISSUES[@]}" | sed 's/$/,/' | sed '$s/,$//')
         "service_status",
         "api_availability",
         "system_resources",
-        {% if nifi_cluster_enabled %}"cluster_status",{% endif %}
+        {% if apache_nifi_cluster_enabled %}"cluster_status",{% endif %}
         "flow_queues",
         "log_errors"
     ]

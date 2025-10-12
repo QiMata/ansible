@@ -33,7 +33,7 @@ groups:
           description: "NiFi instance {{ $labels.instance }} is using {{ $value | humanizePercentage }} of available heap memory."
       
       - alert: NiFiHighQueueCount
-        expr: nifi_connection_QueuedCount > 10000
+        expr: apache_nifi_connection_QueuedCount > 10000
         for: 15m
         labels:
           severity: warning
@@ -42,7 +42,7 @@ groups:
           description: "NiFi connection {{ $labels.connection }} has {{ $value }} queued flow files."
       
       - alert: NiFiClusterNodeDown
-        expr: nifi_cluster_connected_nodes < nifi_cluster_total_nodes
+        expr: apache_nifi_cluster_connected_nodes < apache_nifi_cluster_total_nodes
         for: 5m
         labels:
           severity: critical
@@ -51,7 +51,7 @@ groups:
           description: "NiFi cluster has {{ $value }} connected nodes out of {{ $labels.total_nodes }} total nodes."
       
       - alert: NiFiHighErrorRate
-        expr: increase(nifi_processor_errors_total[5m]) > 50
+        expr: increase(apache_nifi_processor_errors_total[5m]) > 50
         for: 5m
         labels:
           severity: warning

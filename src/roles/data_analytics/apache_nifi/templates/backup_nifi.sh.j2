@@ -93,9 +93,9 @@ create_metadata() {
     cat > "${BACKUP_DIR}/backup_metadata.json" << EOF
 {
     "backup_date": "${BACKUP_DATE}",
-    "nifi_version": "{{ apache_nifi_version }}",
+    "apache_nifi_version": "{{ apache_nifi_version }}",
     "hostname": "$(hostname)",
-    "nifi_home": "${NIFI_HOME}",
+    "apache_nifi_home": "${NIFI_HOME}",
     "backup_components": {
         "config": {{ apache_nifi_backup_config | lower }},
         "flows": {{ apache_nifi_backup_flows | lower }},

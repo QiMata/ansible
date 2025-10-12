@@ -3,44 +3,44 @@
 
 set -e
 
-BACKUP_DIR="{{ superset_db_backup_path }}"
+BACKUP_DIR="{{ apache_superset_db_backup_path }}"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-BACKUP_FILE="${BACKUP_DIR}/superset_db_${TIMESTAMP}.sql"
+BACKUP_FILE="${BACKUP_DIR}/apache_superset_db_${TIMESTAMP}.sql"
 
 # Create backup directory if it doesn't exist
 mkdir -p "${BACKUP_DIR}"
 
-{% if superset_database_uri.startswith('sqlite') %}
+{% if apache_superset_database_uri.startswith('sqlite') %}
 # SQLite backup
-SQLITE_PATH="{{ superset_database_uri.split('://')[1] }}"
+SQLITE_PATH="{{ apache_superset_database_uri.split('://')[1] }}"
 echo "Backing up SQLite database: ${SQLITE_PATH}"
 sqlite3 "${SQLITE_PATH}" ".backup ${BACKUP_FILE%.sql}.db"
 gzip "${BACKUP_FILE%.sql}.db"
 echo "SQLite backup completed: ${BACKUP_FILE%.sql}.db.gz"
 
-{% elif superset_database_uri.startswith('postgresql') %}
+{% elif apache_superset_database_uri.startswith('postgresql') %}
 # PostgreSQL backup
 echo "Backing up PostgreSQL database"
-export PGPASSWORD="{{ superset_database_uri.split('@')[0].split(':')[1] if '@' in superset_database_uri and ':' in superset_database_uri.split('@')[0] else '' }}"
+export PGPASSWORD="{{ apache_superset_database_uri.split('@')[0].split(':')[1] if '@' in apache_superset_database_uri and ':' in apache_superset_database_uri.split('@')[0] else '' }}"
 pg_dump \
-  -h "{{ superset_database_uri.split('@')[-1].split('/')[0].split(':')[0] if '@' in superset_database_uri else 'localhost' }}" \
-  -p "{{ superset_database_uri.split('@')[-1].split('/')[0].split(':')[1] if '@' in superset_database_uri and ':' in superset_database_uri.split('@')[-1].split('/')[0] else '5432' }}" \
-  -U "{{ superset_database_uri.split('@')[0].split(':')[0] if '@' in superset_database_uri else 'postgres' }}" \
-  -d "{{ superset_database_uri.split('/')[-1] }}" \
+  -h "{{ apache_superset_database_uri.split('@')[-1].split('/')[0].split(':')[0] if '@' in apache_superset_database_uri else 'localhost' }}" \
+  -p "{{ apache_superset_database_uri.split('@')[-1].split('/')[0].split(':')[1] if '@' in apache_superset_database_uri and ':' in apache_superset_database_uri.split('@')[-1].split('/')[0] else '5432' }}" \
+  -U "{{ apache_superset_database_uri.split('@')[0].split(':')[0] if '@' in apache_superset_database_uri else 'postgres' }}" \
+  -d "{{ apache_superset_database_uri.split('/')[-1] }}" \
   --no-password \
   > "${BACKUP_FILE}"
 gzip "${BACKUP_FILE}"
 echo "PostgreSQL backup completed: ${BACKUP_FILE}.gz"
 
-{% elif superset_database_uri.startswith('mysql') %}
+{% elif apache_superset_database_uri.startswith('mysql') %}
 # MySQL backup
 echo "Backing up MySQL database"
 mysqldump \
-  -h "{{ superset_database_uri.split('@')[-1].split('/')[0].split(':')[0] if '@' in superset_database_uri else 'localhost' }}" \
-  -P "{{ superset_database_uri.split('@')[-1].split('/')[0].split(':')[1] if '@' in superset_database_uri and ':' in superset_database_uri.split('@')[-1].split('/')[0] else '3306' }}" \
-  -u "{{ superset_database_uri.split('@')[0].split(':')[0] if '@' in superset_database_uri else 'root' }}" \
-  {% if superset_database_uri.split('@')[0].split(':')[1] if '@' in superset_database_uri and ':' in superset_database_uri.split('@')[0] else '' %}-p"{{ superset_database_uri.split('@')[0].split(':')[1] if '@' in superset_database_uri and ':' in superset_database_uri.split('@')[0] else '' }}"{% endif %} \
-  "{{ superset_database_uri.split('/')[-1] }}" \
+  -h "{{ apache_superset_database_uri.split('@')[-1].split('/')[0].split(':')[0] if '@' in apache_superset_database_uri else 'localhost' }}" \
+  -P "{{ apache_superset_database_uri.split('@')[-1].split('/')[0].split(':')[1] if '@' in apache_superset_database_uri and ':' in apache_superset_database_uri.split('@')[-1].split('/')[0] else '3306' }}" \
+  -u "{{ apache_superset_database_uri.split('@')[0].split(':')[0] if '@' in apache_superset_database_uri else 'root' }}" \
+  {% if apache_superset_database_uri.split('@')[0].split(':')[1] if '@' in apache_superset_database_uri and ':' in apache_superset_database_uri.split('@')[0] else '' %}-p"{{ apache_superset_database_uri.split('@')[0].split(':')[1] if '@' in apache_superset_database_uri and ':' in apache_superset_database_uri.split('@')[0] else '' }}"{% endif %} \
+  "{{ apache_superset_database_uri.split('/')[-1] }}" \
   > "${BACKUP_FILE}"
 gzip "${BACKUP_FILE}"
 echo "MySQL backup completed: ${BACKUP_FILE}.gz"

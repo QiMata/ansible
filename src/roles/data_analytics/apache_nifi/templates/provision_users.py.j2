@@ -16,7 +16,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class NiFiUserProvisioner:
     def __init__(self):
-        self.base_url = "https://localhost:{{ nifi_secure_port if nifi_enable_https else 'http://localhost:' + nifi_listen_port|string }}"
+        self.base_url = "https://localhost:{{ apache_nifi_secure_port if apache_nifi_enable_https else 'http://localhost:' + apache_nifi_listen_port|string }}"
         self.verify_ssl = False  # Set to True in production with proper certificates
         self.session = requests.Session()
         self.session.verify = self.verify_ssl

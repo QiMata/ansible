@@ -4,9 +4,9 @@
   become: true
   tasks:
     - name: Include apache_superset role
-      include_role:
+      ansible.builtin.include_role:
         name: apache_superset
       vars:
-        superset_ssl_enabled: true
-        superset_secret_key: "test-secret-key-for-ssl-testing"
-        superset_admin_password: "TestPassword123!"
+        apache_superset_ssl_enabled: true
+        apache_superset_secret_key: "test-secret-key-for-ssl-testing"
+        apache_superset_admin_password: "TestPassword123!"

@@ -9,7 +9,7 @@
 
 - name: Render Superset configuration
   ansible.builtin.template:
-    src: superset_config.py.j2
+    src: apache_superset_config.py.j2
     dest: "{{ apache_superset_config_path }}"
     owner: "{{ apache_superset_user }}"
     group: "{{ apache_superset_group }}"

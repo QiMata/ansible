@@ -24,7 +24,7 @@
     mode: '0640'
     backup: true
   when: apache_nifi_auto_provision_users
-  notify: restart nifi
+  notify: Restart NiFi service
   tags: [nifi, users, rbac]
 
 - name: Generate initial authorizations configuration
@@ -37,7 +37,7 @@
     mode: '0640'
     backup: true
   when: apache_nifi_auto_provision_users
-  notify: restart nifi
+  notify: Restart NiFi service
   tags: [nifi, users, rbac]
 
 - name: Create RBAC policy templates

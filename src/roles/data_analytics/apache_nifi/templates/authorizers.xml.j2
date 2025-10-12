@@ -10,7 +10,7 @@
     <class>org.apache.nifi.authorization.FileAccessPolicyProvider</class>
     <property name="User Group Provider">file-user-group-provider</property>
     <property name="Authorizations File">./conf/authorizations.xml</property>
-    <property name="Initial Admin Identity">{{ nifi_admin_identity }}</property>
+    <property name="Initial Admin Identity">{{ apache_nifi_admin_identity }}</property>
     <property name="Legacy Authorized Users File"></property>
   </accessPolicyProvider>
   <authorizer>

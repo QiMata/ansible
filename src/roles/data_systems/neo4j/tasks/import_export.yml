@@ -70,6 +70,7 @@
     - item.execute | default(true)
   register: seeding_result
   failed_when: seeding_result.rc != 0
+  changed_when: false
 
 - name: Create export backup script
   ansible.builtin.template:

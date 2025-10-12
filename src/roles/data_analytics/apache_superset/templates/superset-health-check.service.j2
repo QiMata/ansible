@@ -4,8 +4,8 @@ After=network.target
 
 [Service]
 Type=oneshot
-User={{ superset_user }}
-Group={{ superset_group }}
-ExecStart={{ superset_venv_dir }}/bin/python {{ superset_install_dir }}/health_check.py
+User={{ apache_superset_user }}
+Group={{ apache_superset_group }}
+ExecStart={{ apache_superset_venv_dir }}/bin/python {{ apache_superset_install_dir }}/health_check.py
 StandardOutput=journal
 StandardError=journal

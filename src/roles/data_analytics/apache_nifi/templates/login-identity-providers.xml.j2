@@ -2,11 +2,11 @@
   <provider>
     <identifier>ldap-provider</identifier>
     <class>org.apache.nifi.ldap.LdapProvider</class>
-    <property name="Url">{{ nifi_ldap_url }}</property>
-    <property name="Manager DN">{{ nifi_ldap_bind_dn }}</property>
-    <property name="Manager Password">{{ nifi_ldap_bind_password }}</property>
-    <property name="User Search Base">{{ nifi_ldap_user_search_base }}</property>
-    <property name="User Search Filter">{{ nifi_ldap_user_search_filter }}</property>
+    <property name="Url">{{ apache_nifi_ldap_url }}</property>
+    <property name="Manager DN">{{ apache_nifi_ldap_bind_dn }}</property>
+    <property name="Manager Password">{{ apache_nifi_ldap_bind_password }}</property>
+    <property name="User Search Base">{{ apache_nifi_ldap_user_search_base }}</property>
+    <property name="User Search Filter">{{ apache_nifi_ldap_user_search_filter }}</property>
     <property name="Authentication Strategy">SIMPLE</property>
     <property name="Referral Strategy">FOLLOW</property>
   </provider>
