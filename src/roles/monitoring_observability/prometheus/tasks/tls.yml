@@ -69,7 +69,7 @@
     mode: '0640'
   become: true
   when: prometheus_enable_tls or prometheus_basic_auth_users | length > 0
-  notify: restart prometheus
-  tags: 
+  notify: Restart Prometheus
+  tags:
     - tls
     - config

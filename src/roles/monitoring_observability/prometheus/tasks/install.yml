@@ -23,7 +23,7 @@
     state: present
   become: true
   when: exporter_packages is defined
-  tags: 
+  tags:
     - install
     - exporters
 

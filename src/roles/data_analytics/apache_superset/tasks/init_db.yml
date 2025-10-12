@@ -30,6 +30,7 @@
     state: touch
     owner: "{{ superset_user }}"
     group: "{{ superset_group }}"
+    mode: '0640'
   when: not (superset_marker_file is exists)
   become: true
 
@@ -41,6 +42,7 @@
   when: superset_load_examples | bool
   become_user: "{{ superset_user }}"
   become: true
+  changed_when: false
 
 - name: Initialize roles and permissions
   ansible.builtin.command: "{{ superset_venv_dir }}/bin/superset init"

@@ -5,7 +5,7 @@
     method: GET
     user: "{{ grafana_admin_user }}"
     password: "{{ grafana_admin_password }}"
-    force_basic_auth: yes
+    force_basic_auth: true
     status_code: 200
   register: existing_api_keys
 
@@ -15,7 +15,7 @@
     method: POST
     user: "{{ grafana_admin_user }}"
     password: "{{ grafana_admin_password }}"
-    force_basic_auth: yes
+    force_basic_auth: true
     body_format: json
     body:
       name: "{{ item.name }}"
@@ -49,7 +49,7 @@
   ansible.builtin.debug:
     msg: "API key '{{ item.name }}' created with role {{ item.role }}"
   loop: "{{ grafana_api_keys }}"
-  when: 
+  when:
     - ansible_verbosity >= 1
     - item.name not in (existing_api_keys.json | map(attribute='name') | list)
 
@@ -64,7 +64,7 @@
   loop_control:
     loop_var: result
   register: api_key_validation
-  when: 
+  when:
     - result.json is defined
     - result.item.role == 'Admin'
   no_log: true
@@ -75,10 +75,10 @@
     method: DELETE
     user: "{{ grafana_admin_user }}"
     password: "{{ grafana_admin_password }}"
-    force_basic_auth: yes
+    force_basic_auth: true
     status_code: 200
   loop: "{{ existing_api_keys.json }}"
-  when: 
+  when:
     - item.expiration is defined
     - item.expiration < ansible_date_time.epoch|int
   register: expired_key_removal
@@ -87,7 +87,7 @@
   ansible.builtin.debug:
     msg: "Removed expired API key: {{ item.item.name }}"
   loop: "{{ expired_key_removal.results }}"
-  when: 
+  when:
     - item.status is defined
     - item.status == 200
     - ansible_verbosity >= 1

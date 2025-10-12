@@ -3,7 +3,7 @@
 - name: Generate random auth secret if not provided
   ansible.builtin.set_fact:
     spark_role_auth_secret: "{{ ansible_date_time.epoch | hash('sha256') | truncate(32, True, '') }}"
-  when: 
+  when:
     - spark_role_security_enabled
     - spark_role_auth_secret == ""
 
@@ -31,14 +31,14 @@
     creates: /etc/spark/ssl/spark-keystore.p12
   become: true
   become_user: "{{ spark_role_user }}"
-  when: 
+  when:
     - spark_role_ssl_enabled
     - spark_role_ssl_keystore_path == ""
 
 - name: Set keystore path if generated
   ansible.builtin.set_fact:
     spark_role_ssl_keystore_path: "/etc/spark/ssl/spark-keystore.p12"
-  when: 
+  when:
     - spark_role_ssl_enabled
     - spark_role_ssl_keystore_path == ""
 
@@ -58,7 +58,7 @@
     owner: "{{ spark_role_user }}"
     group: "{{ spark_role_group }}"
     mode: '0600'
-  when: 
+  when:
     - spark_role_kerberos_enabled
     - spark_role_kerberos_keytab != ""
 

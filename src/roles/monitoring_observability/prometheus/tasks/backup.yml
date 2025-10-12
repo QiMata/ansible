@@ -15,7 +15,7 @@
     group: prometheus
     mode: '0755'
   become: true
-  when: 
+  when:
     - prometheus_enable_backup
     - prometheus_backup_destination is match('^/')  # Local path
   tags: backup

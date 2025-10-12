@@ -56,29 +56,49 @@
   tags: ['superset', 'superset_backup']
 
 - name: Schedule database backup cron job
+  vars:
+    superset_db_backup_schedule_parts: "{{ superset_db_backup_schedule.split() }}"
   ansible.builtin.cron:
     name: "Superset database backup"
-    cron: "{{ superset_db_backup_schedule }}"
+    minute: "{{ superset_db_backup_schedule_parts[0] }}"
+    hour: "{{ superset_db_backup_schedule_parts[1] }}"
+    day: "{{ superset_db_backup_schedule_parts[2] }}"
+    month: "{{ superset_db_backup_schedule_parts[3] }}"
+    weekday: "{{ superset_db_backup_schedule_parts[4] }}"
     user: "{{ superset_user }}"
     job: "{{ superset_install_dir }}/backup_database.sh"
     state: present
-  when: superset_db_backup_enabled
+  when:
+    - superset_db_backup_enabled
+    - superset_db_backup_schedule_parts | length == 5
   tags: ['superset', 'superset_backup']
 
 - name: Schedule configuration backup cron job
+  vars:
+    superset_config_backup_schedule_parts: "{{ superset_config_backup_schedule.split() }}"
   ansible.builtin.cron:
     name: "Superset configuration backup"
-    cron: "{{ superset_config_backup_schedule }}"
+    minute: "{{ superset_config_backup_schedule_parts[0] }}"
+    hour: "{{ superset_config_backup_schedule_parts[1] }}"
+    day: "{{ superset_config_backup_schedule_parts[2] }}"
+    month: "{{ superset_config_backup_schedule_parts[3] }}"
+    weekday: "{{ superset_config_backup_schedule_parts[4] }}"
     user: "{{ superset_user }}"
     job: "{{ superset_install_dir }}/backup_config.sh"
     state: present
-  when: superset_config_backup_enabled
+  when:
+    - superset_config_backup_enabled
+    - superset_config_backup_schedule_parts | length == 5
   tags: ['superset', 'superset_backup']
 
 - name: Schedule database backup cleanup cron job
   ansible.builtin.cron:
     name: "Superset database backup cleanup"
-    cron: "30 3 * * *"  # Daily at 3:30 AM
+    minute: '30'
+    hour: '3'
+    day: '*'
+    month: '*'
+    weekday: '*'
     user: "{{ superset_user }}"
     job: "{{ superset_install_dir }}/cleanup_db_backups.sh"
     state: present
@@ -88,7 +108,11 @@
 - name: Schedule config backup cleanup cron job
   ansible.builtin.cron:
     name: "Superset config backup cleanup"
-    cron: "35 3 * * *"  # Daily at 3:35 AM
+    minute: '35'
+    hour: '3'
+    day: '*'
+    month: '*'
+    weekday: '*'
     user: "{{ superset_user }}"
     job: "{{ superset_install_dir }}/cleanup_config_backups.sh"
     state: present

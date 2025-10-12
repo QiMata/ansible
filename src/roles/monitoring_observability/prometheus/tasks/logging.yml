@@ -8,7 +8,7 @@
     mode: '0644'
   become: true
   when: prometheus_enable_log_rotation
-  tags: 
+  tags:
     - config
     - logs
 
@@ -21,7 +21,7 @@
     mode: '0755'
   become: true
   when: prometheus_enable_log_rotation
-  tags: 
+  tags:
     - config
     - logs
 
@@ -34,6 +34,6 @@
     mode: '0644'
   become: true
   when: prometheus_enable_log_rotation
-  tags: 
+  tags:
     - config
     - logs

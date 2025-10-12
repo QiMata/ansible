@@ -17,7 +17,7 @@
   when: spark_role_resource_isolation_enabled
 
 - name: Configure network optimization
-  ansible.builtin.sysctl:
+  ansible.posix.sysctl:
     name: "{{ item.name }}"
     value: "{{ item.value }}"
     state: present

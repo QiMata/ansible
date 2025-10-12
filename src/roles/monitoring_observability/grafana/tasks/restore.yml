@@ -11,9 +11,12 @@
     state: stopped
 
 - name: Create pre-restore backup
-  ansible.builtin.command:
-    cmd: tar -czf "{{ grafana_backup_path }}/pre-restore-backup-{{ ansible_date_time.epoch }}.tar.gz" -C /var/lib/grafana .
+  community.general.archive:
+    path: /var/lib/grafana
+    dest: "{{ grafana_backup_path }}/pre-restore-backup-{{ ansible_date_time.epoch }}.tar.gz"
+    format: gz
   become_user: grafana
+  become: true
 
 - name: Restore Grafana database (SQLite)
   ansible.builtin.copy:
@@ -22,8 +25,8 @@
     owner: grafana
     group: grafana
     mode: '0640'
-    backup: yes
-  when: 
+    backup: true
+  when:
     - grafana_database.type == 'sqlite3'
     - restore_source_check.stat.exists
 
@@ -43,7 +46,7 @@
         login_port: "{{ grafana_database.host.split(':')[1] | default('5432') }}"
         login_user: "{{ grafana_database.user }}"
         login_password: "{{ grafana_database.password }}"
-      when: 
+      when:
         - grafana_database.type == 'postgres'
         - sql_dump_check.stat.exists
 
@@ -56,7 +59,7 @@
         login_port: "{{ grafana_database.host.split(':')[1] | default('3306') }}"
         login_user: "{{ grafana_database.user }}"
         login_password: "{{ grafana_database.password }}"
-      when: 
+      when:
         - grafana_database.type == 'mysql'
         - sql_dump_check.stat.exists
 
@@ -69,7 +72,7 @@
     owner: grafana
     group: grafana
     mode: preserve
-    backup: yes
+    backup: true
   when: restore_source_check.stat.isdir
 
 - name: Restore Grafana data directory
@@ -79,7 +82,7 @@
     owner: grafana
     group: grafana
     mode: preserve
-    backup: yes
+    backup: true
   when: restore_source_check.stat.isdir
 
 - name: Restore Grafana plugins
@@ -89,7 +92,7 @@
     owner: grafana
     group: grafana
     mode: preserve
-  when: 
+  when:
     - restore_source_check.stat.isdir
     - grafana_plugins_enabled
 
@@ -98,7 +101,7 @@
     path: "{{ item }}"
     owner: grafana
     group: grafana
-    recurse: yes
+    recurse: true
   loop:
     - /var/lib/grafana
     - /etc/grafana
@@ -107,7 +110,7 @@
   ansible.builtin.systemd:
     name: grafana-server
     state: started
-    daemon_reload: yes
+    daemon_reload: true
 
 - name: Wait for Grafana to be available after restore
   ansible.builtin.uri:
@@ -125,7 +128,7 @@
     method: GET
     user: "{{ grafana_admin_user }}"
     password: "{{ grafana_admin_password }}"
-    force_basic_auth: yes
+    force_basic_auth: true
     status_code: 200
   register: admin_verification
 
@@ -156,7 +159,7 @@
     method: GET
     user: "{{ grafana_admin_user }}"
     password: "{{ grafana_admin_password }}"
-    force_basic_auth: yes
+    force_basic_auth: true
     status_code: 200
   register: restored_dashboards
 

@@ -30,7 +30,7 @@
   loop:
     - "{{ grafana_cert_file }}"
     - "{{ grafana_cert_key }}"
-  when: 
+  when:
     - grafana_https_enabled
     - cert_file_check.stat.exists
     - cert_key_check.stat.exists
@@ -48,9 +48,9 @@
 - name: Configure firewall rules for Grafana
   ansible.posix.firewalld:
     port: "{{ grafana_http_port }}/tcp"
-    permanent: yes
+    permanent: true
     state: enabled
-    immediate: yes
+    immediate: true
   when: ansible_facts['os_family'] == "RedHat"
 
 - name: Configure UFW firewall rules for Grafana

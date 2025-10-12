@@ -21,14 +21,14 @@
       ansible.builtin.systemd:
         name: redis-server
         state: started
-        enabled: yes
+        enabled: true
       when: grafana_caching_config.type == 'redis'
 
     - name: Start and enable Memcached service
       ansible.builtin.systemd:
         name: memcached
         state: started
-        enabled: yes
+        enabled: true
       when: grafana_caching_config.type == 'memcached'
 
     - name: Test Redis connectivity

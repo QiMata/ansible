@@ -49,12 +49,12 @@
     owner: root
     group: prometheus
     mode: '0644'
-  notify: restart blackbox exporter
+  notify: Restart Blackbox Exporter
   become: true
-  when: 
+  when:
     - "'blackbox_exporter' in prometheus_install_exporters"
     - prometheus_blackbox_targets | length > 0
-  tags: 
+  tags:
     - config
     - exporters
 
@@ -65,12 +65,12 @@
     owner: root
     group: prometheus
     mode: '0644'
-  notify: restart process exporter
+  notify: Restart Process Exporter
   become: true
-  when: 
+  when:
     - "'process_exporter' in prometheus_install_exporters"
     - prometheus_process_exporter_config | length > 0
-  tags: 
+  tags:
     - config
     - exporters
 

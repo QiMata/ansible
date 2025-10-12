@@ -12,6 +12,7 @@
   args:
     creates: "{{ superset_venv_dir }}/bin/activate"
   become_user: "{{ superset_user }}"
+  become: true
 
 - name: Upgrade pip and setuptools
   ansible.builtin.pip:
@@ -21,6 +22,7 @@
       - setuptools
     state: present
   become_user: "{{ superset_user }}"
+  become: true
 
 - name: Install Superset
   ansible.builtin.pip:
@@ -28,6 +30,7 @@
     name: "apache-superset=={{ superset_version }}"
     state: present
   become_user: "{{ superset_user }}"
+  become: true
 
 - name: Install additional Python packages
   ansible.builtin.pip:
@@ -36,3 +39,4 @@
     state: present
   when: superset_additional_python_packages | length > 0
   become_user: "{{ superset_user }}"
+  become: true
