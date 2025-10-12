@@ -5,19 +5,19 @@
 
 - name: Include self-signed certificate tasks
   ansible.builtin.include_tasks: self_signed_certs.yml
-  when: 
+  when:
     - postgresql_ssl_enabled | bool
     - postgresql_ssl_self_signed | bool
 
 - name: Include Let's Encrypt certificate tasks
   ansible.builtin.include_tasks: letsencrypt_certs.yml
-  when: 
+  when:
     - postgresql_ssl_enabled | bool
     - postgresql_ssl_letsencrypt | bool
 
 - name: Include custom certificate tasks
   ansible.builtin.include_tasks: custom_certs.yml
-  when: 
+  when:
     - postgresql_ssl_enabled | bool
     - postgresql_ssl_custom_certs | bool
 
@@ -27,6 +27,6 @@
 
 - name: Include certificate rotation tasks
   ansible.builtin.include_tasks: cert_rotation.yml
-  when: 
+  when:
     - postgresql_ssl_enabled | bool
     - postgresql_ssl_cert_rotation_enabled | bool

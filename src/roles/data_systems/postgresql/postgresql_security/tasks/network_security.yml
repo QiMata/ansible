@@ -25,6 +25,6 @@
     src: "{{ item }}"
     proto: tcp
   loop: "{{ postgresql_allowed_networks }}"
-  when: 
+  when:
     - postgresql_configure_firewall | default(false)
     - ansible_facts['os_family'] == "Debian"

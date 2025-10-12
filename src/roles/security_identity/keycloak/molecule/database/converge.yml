@@ -19,20 +19,20 @@
         keycloak_db_user: keycloak_user
         keycloak_db_password: keycloak_pass
         keycloak_hostname: keycloak-db-test
-        
+
         # Database creation
         keycloak_db_create: true
         keycloak_db_admin_user: postgres
         keycloak_db_admin_password: postgres
-        
+
         # Admin user
         keycloak_create_admin: true
         keycloak_admin_user: admin
         keycloak_admin_password: admin123
-        
+
         # Disable firewall for testing
         keycloak_configure_firewall: false
-        
+
         # Enable validation
         keycloak_validate_config: true
         keycloak_preflight_checks: true

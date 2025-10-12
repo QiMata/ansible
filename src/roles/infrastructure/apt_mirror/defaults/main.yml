@@ -22,7 +22,7 @@ apt_mirror_gpg_keys: []
 #   - name: "ubuntu-archive-keyring"
 #     keyserver: "keyserver.ubuntu.com"
 #     key_id: "871920D1991BC93C"
-#   - name: "debian-archive-keyring" 
+#   - name: "debian-archive-keyring"
 #     url: "https://ftp-master.debian.org/keys/archive-key-11.asc"
 
 # Health Checks

@@ -69,18 +69,18 @@
         keycloak_db_user: keycloak
         keycloak_db_password: keycloak
         keycloak_hostname: keycloak-tls
-        
+
         # TLS configuration
         keycloak_enable_https: true
         keycloak_https_port: 8443
         keycloak_cert_file: /etc/ssl/keycloak/server.crt
         keycloak_key_file: /etc/ssl/keycloak/server.key
         keycloak_keystore_password: testpassword
-        
+
         # Admin user
         keycloak_create_admin: true
         keycloak_admin_user: admin
         keycloak_admin_password: admin123
-        
+
         # Disable firewall for testing
         keycloak_configure_firewall: false

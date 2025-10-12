@@ -9,7 +9,7 @@
   vars:
     # Global configuration
     keepalived_global_defs:
-      notification_email: 
+      notification_email:
         - admin@example.com
         - ops@example.com
       notification_email_from: "keepalived@{{ ansible_fqdn }}"
@@ -53,7 +53,7 @@
         notify_backup: "/etc/keepalived/scripts/web_backup.sh"
         notify_fault: "/etc/keepalived/scripts/web_fault.sh"
 
-      # Database service cluster  
+      # Database service cluster
       - name: "VI_DB"
         state: "{{ 'MASTER' if inventory_hostname == groups['loadbalancers'][1] else 'BACKUP' }}"
         interface: "{{ ansible_default_ipv4.interface }}"

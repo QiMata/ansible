@@ -73,7 +73,7 @@
     headers:
       Content-Type: "application/json"
     status_code: [200, 201, 400]
-  when: 
+  when:
     - es_snapshot_repositories | length > 0
     - es_backup_before_upgrade
   ignore_errors: true

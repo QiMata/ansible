@@ -12,7 +12,7 @@
     mode: '0750'
     recurse: true
   loop: "{{ es_snapshot_repositories }}"
-  when: 
+  when:
     - item.type == "fs"
     - item.settings.location is defined
 
@@ -28,7 +28,7 @@
       Content-Type: "application/json"
     status_code: [200, 201]
   loop: "{{ es_snapshot_repositories }}"
-  when: 
+  when:
     - es_wait_for_cluster
   delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
@@ -42,7 +42,7 @@
     status_code: [200, 400]
   loop: "{{ es_snapshot_repositories }}"
   register: repo_verification
-  when: 
+  when:
     - es_wait_for_cluster
   ignore_errors: true
   delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
@@ -69,7 +69,7 @@
       Content-Type: "application/json"
     status_code: [200, 201]
   loop: "{{ es_snapshot_policies }}"
-  when: 
+  when:
     - es_wait_for_cluster
   delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
@@ -115,7 +115,7 @@
     headers:
       Content-Type: "application/json"
     status_code: [200, 201, 400]
-  when: 
+  when:
     - es_snapshot_repositories | length > 0
     - es_wait_for_cluster
   register: test_snapshot
@@ -130,7 +130,7 @@
     headers:
       Content-Type: "application/json"
     status_code: [200, 404]
-  when: 
+  when:
     - test_snapshot is defined
     - test_snapshot.status in [200, 201]
     - es_wait_for_cluster
@@ -145,7 +145,7 @@
     headers:
       Content-Type: "application/json"
     status_code: [200, 404]
-  when: 
+  when:
     - test_snapshot is defined
     - test_snapshot.status in [200, 201]
     - es_wait_for_cluster

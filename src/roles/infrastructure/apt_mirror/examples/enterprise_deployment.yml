@@ -7,11 +7,11 @@
 - name: Deploy Enterprise APT Mirror
   hosts: apt_mirror_servers
   become: true
-  
+
   vars:
     # Use complex deployment profile for enterprise features
     deployment_profile: "complex"
-    
+
     # Basic mirror configuration
     apt_mirror_base_path: "/var/spool/apt-mirror"
     apt_mirror_mirrors:
@@ -36,11 +36,11 @@
           - "main"
           - "contrib"
           - "non-free"
-    
+
     apt_mirror_architectures:
       - "amd64"
       - "arm64"
-    
+
     # GPG Key Management
     apt_mirror_gpg_management_enabled: true
     apt_mirror_gpg_keys:
@@ -50,12 +50,12 @@
       - name: "debian-archive-keyring"
         url: "https://ftp-master.debian.org/keys/archive-key-12.asc"
         key_id: "73A4F27B8DD47936"
-    
+
     # Health Monitoring
     apt_mirror_health_checks_enabled: true
     apt_mirror_health_check_port: 8080
     apt_mirror_health_check_interval: "*/5 * * * *"
-    
+
     # Alerting Configuration
     apt_mirror_alerting_enabled: true
     apt_mirror_alert_email: "sysadmin@company.com"
@@ -63,19 +63,19 @@
     apt_mirror_alert_on_sync_failure: true
     apt_mirror_alert_on_storage_threshold: true
     apt_mirror_storage_alert_threshold: 80
-    
+
     # Performance Monitoring
     apt_mirror_performance_monitoring_enabled: true
     apt_mirror_metrics_port: 9090
     apt_mirror_track_sync_duration: true
     apt_mirror_track_bandwidth_usage: true
     apt_mirror_track_client_access: true
-    
+
     # Bandwidth Control
     apt_mirror_bandwidth_throttling_enabled: true
     apt_mirror_bandwidth_limit: "50M"
     apt_mirror_bandwidth_limit_unit: "M"
-    
+
     # Selective Mirroring
     apt_mirror_selective_mirroring_enabled: true
     apt_mirror_package_filters:
@@ -85,11 +85,11 @@
         pattern: ".*-dev$"      # Exclude development packages
       - type: "exclude"
         pattern: ".*-doc$"      # Exclude documentation packages
-    
+
     apt_mirror_size_filters:
       - max_size: "500M"
         action: "exclude"       # Exclude packages larger than 500MB
-    
+
     # Mirror Prioritization with Failover
     apt_mirror_prioritization_enabled: true
     apt_mirror_upstream_mirrors:
@@ -102,35 +102,35 @@
       - url: "http://mirror.math.princeton.edu/pub/ubuntu/"
         priority: 3
         timeout: 30
-    
+
     apt_mirror_failover_enabled: true
     apt_mirror_mirror_health_check_interval: 60
-    
+
     # Client Discovery
     apt_mirror_client_discovery_enabled: true
     apt_mirror_discovery_method: "dns"
     apt_mirror_discovery_domain: "mirror.company.local"
     apt_mirror_client_registration_enabled: true
-    
+
     # Analytics and Metrics
     apt_mirror_client_metrics_enabled: true
     apt_mirror_analytics_enabled: true
     apt_mirror_analytics_retention_days: 90
     apt_mirror_generate_usage_reports: true
     apt_mirror_usage_report_schedule: "0 8 * * 1"  # Monday at 8 AM
-    
+
     # Cron Configuration
     apt_mirror_cron_enabled: true
     apt_mirror_cron_schedule: "0 2 * * *"  # Daily at 2 AM
-    
+
     # Other features
     apt_mirror_include_sources: true
     apt_mirror_prune: true
     apt_mirror_dr_backup_enabled: true
-    
+
   roles:
     - role: infrastructure/apt_mirror
-  
+
   post_tasks:
     - name: Display mirror information
       debug:
@@ -140,7 +140,7 @@
           - "Health check endpoint: http://{{ ansible_default_ipv4.address }}:{{ apt_mirror_health_check_port }}/health"
           - "Metrics endpoint: http://{{ ansible_default_ipv4.address }}:{{ apt_mirror_metrics_port }}/metrics"
           - "Mirror URL: http://{{ ansible_default_ipv4.address }}/apt-mirror/"
-    
+
     - name: Test health endpoint
       uri:
         url: "http://localhost:{{ apt_mirror_health_check_port }}/health"
@@ -148,12 +148,12 @@
         timeout: 10
       register: health_check
       ignore_errors: true
-    
+
     - name: Display health status
       debug:
         var: health_check.json
       when: health_check.json is defined
-    
+
     - name: Configure firewall for mirror services
       ufw:
         rule: allow

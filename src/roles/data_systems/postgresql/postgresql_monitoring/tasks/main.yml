@@ -13,6 +13,6 @@
 
 - name: Include replication monitoring
   ansible.builtin.include_tasks: replication_monitoring.yml
-  when: 
+  when:
     - postgresql_replication_monitoring_enabled | bool
     - postgresql_enable_replication | default(false) | bool

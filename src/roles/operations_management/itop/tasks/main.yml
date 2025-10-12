@@ -42,12 +42,12 @@
       SSL Enabled: {{ itop_enable_ssl }}
       Auto Install: {{ itop_auto_install }}
       Monitoring: {{ itop_enable_monitoring }}
-      
+
       {% if not itop_auto_install %}
       MANUAL SETUP REQUIRED:
       Please visit http{% if itop_enable_ssl %}s{% endif %}://{{ ansible_fqdn }}/itop
       to complete the installation wizard.
-      
+
       Database Details:
       - Host: {{ itop_db_host }}
       - Database: {{ itop_db_name }}
@@ -56,7 +56,7 @@
       {% else %}
       Installation completed automatically.
       Access iTop at: http{% if itop_enable_ssl %}s{% endif %}://{{ ansible_fqdn }}/itop
-      
+
       Default Admin Credentials:
       - Username: {{ itop_admin_user }}
       - Password: {{ itop_admin_password }}

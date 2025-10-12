@@ -63,7 +63,7 @@
     regexp: "^#?dbms.cluster.discovery.endpoints="
     line: "dbms.cluster.discovery.endpoints={{ groups['neo4j_core'] | map('extract', hostvars, 'ansible_default_ipv4') | map(attribute='address') | map('regex_replace', '^(.*)$', '\\1:5000') | join(',') }}"
   notify: restart neo4j
-  when: 
+  when:
     - neo4j_cluster_enabled
     - neo4j_cluster_discovery_type == "LIST"
     - groups['neo4j_core'] is defined
@@ -80,6 +80,6 @@
   until: cluster_health.status == 200
   retries: 5
   delay: 10
-  when: 
+  when:
     - neo4j_cluster_enabled
     - neo4j_initial_password | length > 0

@@ -15,17 +15,17 @@
   tasks:
     - name: "Install Java (OpenJDK 17)"
       ansible.builtin.apt:
-        name: 
+        name:
           - openjdk-17-jdk
           - unzip
         state: present
         update_cache: yes
-        
+
     - name: "Create nifi group"
       ansible.builtin.group:
         name: "{{ apache_nifi_group }}"
         system: yes
-        
+
     - name: "Create nifi user"
       ansible.builtin.user:
         name: "{{ apache_nifi_user }}"
@@ -34,7 +34,7 @@
         shell: /bin/bash
         home: "{{ apache_nifi_home }}"
         createhome: no
-        
+
     - name: "Create NiFi directories"
       ansible.builtin.file:
         path: "{{ item }}"
@@ -46,16 +46,16 @@
         - "{{ apache_nifi_home }}"
         - "{{ apache_nifi_home }}/conf"
         - "{{ apache_nifi_home }}/logs"
-        
+
     - name: "Test Java installation"
       ansible.builtin.command: java -version
       register: java_version_result
       changed_when: false
-      
+
     - name: "Display Java version"
       ansible.builtin.debug:
         var: java_version_result.stderr
-        
+
     - name: "Test completed successfully"
       ansible.builtin.debug:
         msg: "✅ Apache NiFi basic setup test completed successfully!"

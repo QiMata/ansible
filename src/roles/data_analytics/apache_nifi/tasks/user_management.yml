@@ -78,7 +78,7 @@
   ansible.builtin.command:
     cmd: python3 "{{ apache_nifi_conf_dir }}/scripts/provision_users.py"
   become_user: "{{ apache_nifi_user }}"
-  when: 
+  when:
     - apache_nifi_auto_provision_users
     - apache_nifi_users | length > 0
   register: user_provision_result

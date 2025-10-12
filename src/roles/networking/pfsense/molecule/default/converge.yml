@@ -10,10 +10,10 @@
     pfsense_configure_dns: true
     pfsense_configure_firewall_rules: true
     pfsense_configure_nat: true
-    
+
     # Mock pfSense API responses for testing
     pfsense_mock_mode: true
-    
+
     # System settings
     pfsense_system_settings:
       hostname: pfsense-test
@@ -24,7 +24,7 @@
         - 1.1.1.1
       ntp_servers:
         - pool.ntp.org
-    
+
     # Interface configuration
     pfsense_interfaces:
       - interface: wan
@@ -37,7 +37,7 @@
         type: static
         ipaddr: 192.168.1.1
         subnet: 24
-    
+
     # DHCP configuration
     pfsense_dhcp_servers:
       - interface: lan
@@ -47,13 +47,13 @@
         dns_servers:
           - "192.168.1.1"
         default_lease_time: 7200
-    
+
     # DNS configuration
     pfsense_dns_resolver:
       enable: true
       dhcp_registration: true
       static_dhcp_registration: true
-    
+
     # Basic firewall rules
     pfsense_firewall_rules:
       - interface: lan
@@ -68,7 +68,7 @@
         source: any
         destination: any
         descr: "Block all WAN traffic"
-    
+
     # Basic NAT rules
     pfsense_nat_rules:
       - interface: wan

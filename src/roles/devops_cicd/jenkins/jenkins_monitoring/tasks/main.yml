@@ -69,7 +69,7 @@
     minute: "*/10"
     job: "/usr/local/bin/jenkins-monitoring/metrics.py >> /var/log/jenkins-metrics.log 2>&1"
     user: root
-  when: 
+  when:
     - jenkins_monitoring_enabled
     - jenkins_monitoring_metrics_enabled
 

@@ -41,42 +41,42 @@
       <?php
       // iTop Monitoring Endpoint
       header('Content-Type: application/json');
-      
+
       $status = array(
           'status' => 'ok',
           'timestamp' => date('Y-m-d H:i:s'),
           'checks' => array()
       );
-      
+
       // Check database connectivity
       try {
-          $pdo = new PDO('mysql:host={{ itop_db_host }};dbname={{ itop_db_name }}', 
+          $pdo = new PDO('mysql:host={{ itop_db_host }};dbname={{ itop_db_name }}',
                         '{{ itop_db_user }}', '{{ itop_db_password }}');
           $status['checks']['database'] = 'ok';
       } catch (Exception $e) {
           $status['checks']['database'] = 'error';
           $status['status'] = 'error';
       }
-      
+
       // Check config file
       $config_file = __DIR__ . '/conf/{{ itop_config_mode }}/config-itop.php';
       $status['checks']['config'] = file_exists($config_file) ? 'ok' : 'error';
       if (!file_exists($config_file)) {
           $status['status'] = 'error';
       }
-      
+
       // Check disk space
       $free_space = disk_free_space(__DIR__);
       $total_space = disk_total_space(__DIR__);
       $usage_percent = (($total_space - $free_space) / $total_space) * 100;
       $status['checks']['disk_usage'] = $usage_percent;
-      
+
       if ($usage_percent > 90) {
           $status['checks']['disk'] = 'warning';
       } else {
           $status['checks']['disk'] = 'ok';
       }
-      
+
       echo json_encode($status, JSON_PRETTY_PRINT);
       ?>
     dest: "{{ itop_root_dir }}/health.php"

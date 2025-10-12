@@ -173,7 +173,7 @@ haproxy_external_monitoring:
   enable: false
   agent_check: false
   agent_port: 9999
-  
+
 # Peer Synchronization
 haproxy_peers:
   enable: false
@@ -182,7 +182,7 @@ haproxy_peers:
   # peers:
   #   - name: "haproxy1"
   #     address: "192.168.1.10:1024"
-  #   - name: "haproxy2" 
+  #   - name: "haproxy2"
   #     address: "192.168.1.11:1024"
 
 # Server Configuration Enhancements
@@ -244,7 +244,7 @@ haproxy_hsts:
   include_subdomains: true
   preload: false
 
-# SSL Redirect Configuration  
+# SSL Redirect Configuration
 haproxy_ssl_redirect:
   enable: false
   redirect_code: 301

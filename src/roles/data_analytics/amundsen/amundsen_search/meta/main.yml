@@ -1,12 +1,10 @@
 ---
 galaxy_info:
   role_name: amundsen_search
-  namespace: data_analytics
   author: Amundsen Team
   description: Enhanced Amundsen Search service with authentication, TLS, monitoring, and more
-  company: 
   license: Apache-2.0
-  min_ansible_version: 2.9
+  min_ansible_version: "2.9"
   platforms:
     - name: Ubuntu
       versions:
@@ -14,8 +12,7 @@ galaxy_info:
         - jammy
     - name: EL
       versions:
-        - 8
-        - 9
+        - all
   galaxy_tags:
     - amundsen
     - search
@@ -27,32 +24,8 @@ galaxy_info:
     - authentication
     - tls
 
-dependencies:
-  # Optional dependencies - these roles can be used if available
-  # but are not strictly required for basic functionality
-  
-  # For Elasticsearch authentication and TLS features
-  - role: data_analytics.elasticsearch
-    when: amundsen_search_es_auth_enabled or amundsen_search_es_tls_enabled
-    vars:
-      es_auth_enabled: "{{ amundsen_search_es_auth_enabled }}"
-      es_tls_enabled: "{{ amundsen_search_es_tls_enabled }}"
-    optional: true
-
-  # For load balancing features
-  - role: load_balancing_ha.haproxy
-    when: amundsen_search_behind_lb and amundsen_search_lb_type == "haproxy"
-    optional: true
-
-  # For monitoring integration
-  - role: monitoring_observability.prometheus
-    when: amundsen_search_metrics_enabled and amundsen_search_metrics_type == "prometheus"
-    optional: true
-
-  # For centralized logging
-  - role: monitoring_observability.filebeat
-    when: amundsen_search_log_shipping_enabled | default(false)
-    optional: true
+# Optional supporting roles can be referenced from documentation or playbooks as needed.
+dependencies: []
 
 collections:
   - community.general

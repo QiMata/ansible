@@ -11,16 +11,16 @@
     neo4j_server_memory_pagecache_size: "{{ neo4j_server_memory_pagecache_size | default('256m') }}"
     neo4j_environment: "{{ neo4j_environment | default('test') }}"
     neo4j_edition: "{{ neo4j_edition | default('community') }}"
-    
+
     # Container-aware network settings
     neo4j_server_default_listen_address: "{{ neo4j_server_default_listen_address | default('0.0.0.0') }}"
     neo4j_server_bolt_listen_address: "{{ neo4j_server_bolt_listen_address | default('0.0.0.0:7687') }}"
     neo4j_server_http_listen_address: "{{ neo4j_server_http_listen_address | default('0.0.0.0:7474') }}"
-    
+
     # Security settings for testing
     neo4j_enable_security: "{{ neo4j_enable_security | default(false) }}"
     neo4j_server_auth_enabled: false
-    
+
     # Health check configuration
     neo4j_health_check_enabled: "{{ neo4j_health_check_enabled | default(true) }}"
     neo4j_health_check_retries: "{{ neo4j_health_check_retries | default(30) }}"

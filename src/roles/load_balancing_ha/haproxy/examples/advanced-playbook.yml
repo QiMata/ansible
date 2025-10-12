@@ -19,7 +19,7 @@
         use_backends:
           - condition: "is_static"
             backend: "static_backend"
-      
+
       - name: ssl_frontend
         bind_address: "*"
         port: 443
@@ -62,7 +62,7 @@
             weight: 50
             backup: true
             check: true
-      
+
       - name: api_backend
         mode: "http"
         balance_method: "leastconn"
@@ -76,7 +76,7 @@
             address: "192.168.1.21:8080"
             weight: 100
             maxconn: 200
-      
+
       - name: admin_backend
         mode: "http"
         balance_method: "source"
@@ -84,7 +84,7 @@
           - name: admin1
             address: "192.168.1.30:9000"
             weight: 100
-      
+
       - name: static_backend
         mode: "http"
         balance_method: "roundrobin"
@@ -147,7 +147,7 @@
     haproxy_compression:
       enable: true
       algorithms: ["gzip", "deflate"]
-      types: 
+      types:
         - "text/html"
         - "text/plain"
         - "text/css"
@@ -284,14 +284,14 @@
           {% if haproxy_prometheus.enable %}
           - Prometheus metrics: http://{{ haproxy_prometheus.bind_address }}:{{ haproxy_prometheus.port }}{{ haproxy_prometheus.uri }}
           {% endif %}
-          
+
           Runtime management examples:
           # Show statistics
           /usr/local/bin/haproxy-runtime-manager.sh stats
-          
+
           # Enable/disable server
           /usr/local/bin/haproxy-runtime-manager.sh enable web_backend web1
           /usr/local/bin/haproxy-runtime-manager.sh disable web_backend web1
-          
+
           # Set server weight
           /usr/local/bin/haproxy-runtime-manager.sh weight web_backend web1 50

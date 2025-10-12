@@ -41,6 +41,6 @@
     password: "{{ neo4j_initial_password }}"
     force_basic_auth: true
     status_code: 200
-  when: 
+  when:
     - neo4j_cluster_enabled
     - neo4j_initial_password | length > 0

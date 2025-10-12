@@ -27,7 +27,7 @@
     headers:
       Content-Type: "application/json"
     status_code: [200, 400]
-  when: 
+  when:
     - es_enable_monitoring
     - es_wait_for_cluster
   ignore_errors: true
@@ -47,7 +47,7 @@
     headers:
       Content-Type: "application/json"
     status_code: [200, 400]
-  when: 
+  when:
     - es_enable_monitoring
     - es_monitoring_exporters | length > 0
     - es_wait_for_cluster
@@ -68,7 +68,7 @@
     headers:
       Content-Type: "application/json"
     status_code: [200, 400]
-  when: 
+  when:
     - es_watcher_enabled
     - es_wait_for_cluster
   ignore_errors: true
@@ -88,7 +88,7 @@
     headers:
       Content-Type: "application/json"
     status_code: [200, 400]
-  when: 
+  when:
     - es_watcher_enabled
     - es_wait_for_cluster
   ignore_errors: true
@@ -105,7 +105,7 @@
       Content-Type: "application/json"
     status_code: [200, 201, 400]
   loop: "{{ es_monitoring_watches | default([]) }}"
-  when: 
+  when:
     - es_watcher_enabled
     - es_wait_for_cluster
   ignore_errors: true
@@ -128,7 +128,7 @@
     headers:
       Content-Type: "application/json"
     status_code: [200, 201, 400]
-  when: 
+  when:
     - es_watcher_enabled
     - es_wait_for_cluster
   ignore_errors: true

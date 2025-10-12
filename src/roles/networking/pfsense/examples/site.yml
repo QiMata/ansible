@@ -9,7 +9,7 @@
     # Connection settings (use vault for sensitive data)
     pfsense_username: admin
     pfsense_password: "{{ vault_pfsense_password }}"
-    
+
     # Enable components you want to configure
     pfsense_configure_system_settings: true
     pfsense_configure_interfaces: true
@@ -21,7 +21,7 @@
     pfsense_configure_firewall_rules: true
     pfsense_configure_openvpn: true
     pfsense_perform_backup: true
-    
+
     # System configuration
     pfsense_system_settings:
       hostname: fw01
@@ -36,7 +36,7 @@
         protocol: https
         port: 8443
         redirect_http: true
-    
+
     # Network interfaces
     pfsense_interfaces:
       - interface: wan
@@ -57,7 +57,7 @@
         type: static
         ipaddr: 10.1.1.1
         subnet: 24
-    
+
     # VLANs
     pfsense_vlans:
       - tag: 10
@@ -74,7 +74,7 @@
         type: static
         ipaddr: 192.168.20.1
         subnet: 24
-    
+
     # DHCP servers
     pfsense_dhcp_servers:
       - interface: lan
@@ -96,19 +96,19 @@
         range_to: "10.1.1.150"
         dns_servers:
           - "10.1.1.1"
-    
+
     # DNS configuration
     pfsense_dns_resolver:
       enable: true
       dhcp_registration: true
       static_dhcp_registration: true
-    
+
     pfsense_dns_host_overrides:
       - host: "router"
         domain: "company.local"
         ip: "192.168.1.1"
         descr: "Router management"
-    
+
     # Firewall aliases
     pfsense_aliases:
       - name: "RFC1918_Networks"
@@ -131,7 +131,7 @@
           - "192.168.1.11"
           - "192.168.1.12"
         descr: "Internal server IPs"
-    
+
     # NAT rules
     pfsense_nat_rules:
       - interface: wan
@@ -152,7 +152,7 @@
         target: "192.168.1.11"
         local_port: "22"
         descr: "SSH to internal server"
-    
+
     # Firewall rules
     pfsense_firewall_rules:
       # LAN rules
@@ -162,7 +162,7 @@
         source: lan_net
         destination: any
         descr: "Allow LAN to any"
-      
+
       # DMZ rules
       - interface: opt1
         action: pass
@@ -184,7 +184,7 @@
         source: opt1_net
         destination: "RFC1918_Networks"
         descr: "Block DMZ to private networks"
-      
+
       # WAN rules
       - interface: wan
         action: pass
@@ -200,7 +200,7 @@
         destination: wan_address
         destination_port: "2222"
         descr: "Allow SSH to internal server"
-    
+
     # OpenVPN server
     pfsense_openvpn:
       servers:
@@ -218,7 +218,7 @@
           gwredir: true
           compression: "adaptive"
           client2client: false
-    
+
     # Backup configuration
     pfsense_backup:
       enabled: true
@@ -239,7 +239,7 @@
         validate_certs: "{{ pfsense_validate_certs }}"
         timeout: 10
       delegate_to: localhost
-      
+
     - name: Display completion message
       debug:
         msg: "pfSense configuration completed successfully for {{ inventory_hostname }}"

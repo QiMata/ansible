@@ -24,7 +24,7 @@
     headers:
       Content-Type: "application/json"
     status_code: [200, 400]
-  when: 
+  when:
     - es_thread_pool_settings | length > 0
     - es_wait_for_cluster
   ignore_errors: true
@@ -43,7 +43,7 @@
     headers:
       Content-Type: "application/json"
     status_code: [200, 400]
-  when: 
+  when:
     - es_circuit_breaker_settings | length > 0
     - es_wait_for_cluster
   ignore_errors: true
@@ -60,7 +60,7 @@
     headers:
       Content-Type: "application/json"
     status_code: [200, 400]
-  when: 
+  when:
     - es_cache_settings | length > 0
     - es_wait_for_cluster
   ignore_errors: true
@@ -118,7 +118,7 @@
     line: "LimitMEMLOCK=infinity"
     create: true
   when: es_bootstrap_memory_lock
-  notify: 
+  notify:
     - Reload systemd
     - Restart elasticsearch
 

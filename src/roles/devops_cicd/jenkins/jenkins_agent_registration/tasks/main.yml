@@ -44,7 +44,7 @@
       Jenkins-Crumb: "{{ jenkins_crumb.json.crumb }}"
     status_code: [200, 302]
   delegate_to: localhost
-  when: 
+  when:
     - jenkins_agent_registration_enabled
     - agent_exists_check.status == 200
     - jenkins_agent_replace_existing | default(false)
@@ -79,7 +79,7 @@
 - name: Add environment variables to agent config
   ansible.builtin.set_fact:
     agent_config: "{{ agent_config | combine({'nodeProperties': [{'stapler-class': 'hudson.slaves.EnvironmentVariablesNodeProperty', 'envVars': jenkins_agent_env_vars}]}, recursive=true) }}"
-  when: 
+  when:
     - jenkins_agent_registration_enabled
     - jenkins_agent_env_vars | length > 0
 
@@ -100,7 +100,7 @@
     status_code: [200, 302]
   register: agent_creation_result
   delegate_to: localhost
-  when: 
+  when:
     - jenkins_agent_registration_enabled
     - agent_exists_check.status == 404 or jenkins_agent_replace_existing | default(false)
 
@@ -116,7 +116,7 @@
   retries: 12
   delay: 10
   delegate_to: localhost
-  when: 
+  when:
     - jenkins_agent_registration_enabled
     - agent_creation_result is succeeded
 
@@ -129,6 +129,6 @@
       - Executors: {{ jenkins_agent_executors }}
       - Labels: {{ jenkins_agent_labels }}
       - Remote FS: {{ jenkins_agent_remote_fs }}
-  when: 
+  when:
     - jenkins_agent_registration_enabled
     - agent_status is defined

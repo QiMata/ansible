@@ -27,7 +27,7 @@
     mode: '0600'
   loop: "{{ jenkins_casc_additional_configs }}"
   notify: reload jenkins config
-  when: 
+  when:
     - jenkins_casc_enabled
     - jenkins_casc_additional_configs | length > 0
 
@@ -64,6 +64,6 @@
   register: casc_validation
   retries: 3
   delay: 10
-  when: 
+  when:
     - jenkins_casc_enabled
     - jenkins_casc_validate | default(true)

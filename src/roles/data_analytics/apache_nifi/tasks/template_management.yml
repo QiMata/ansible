@@ -27,7 +27,7 @@
     mode: '0644'
     backup: true
   loop: "{{ apache_nifi_templates }}"
-  when: 
+  when:
     - apache_nifi_template_deployment
     - apache_nifi_templates | length > 0
   tags: [nifi, templates, deploy]
@@ -48,7 +48,7 @@
   ansible.builtin.command:
     cmd: python3 "{{ apache_nifi_conf_dir }}/scripts/deploy_templates.py"
   become_user: "{{ apache_nifi_user }}"
-  when: 
+  when:
     - apache_nifi_template_deployment
     - apache_nifi_templates | selectattr('auto_deploy', 'equalto', true) | list | length > 0
   register: template_deploy_result
@@ -79,7 +79,7 @@
 - name: Display validation results
   ansible.builtin.debug:
     var: config_validation_result.stdout_lines
-  when: 
+  when:
     - apache_nifi_config_validation
     - config_validation_result is defined
   tags: [nifi, config, validation]
@@ -108,7 +108,7 @@
 - name: Display connectivity test results
   ansible.builtin.debug:
     var: connectivity_test_result.stdout_lines
-  when: 
+  when:
     - apache_nifi_connectivity_tests | length > 0
     - connectivity_test_result is defined
   tags: [nifi, connectivity, tests]

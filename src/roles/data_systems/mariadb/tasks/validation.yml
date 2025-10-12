@@ -41,7 +41,7 @@
       Available Memory: {{ ansible_memory_mb.real.total }}MB
       InnoDB Buffer Pool: {{ mariadb_innodb_buffer_pool_size }}
       Please ensure buffer pool size is appropriate for available memory
-  when: 
+  when:
     - ansible_virtualization_type in ['docker', 'container', 'lxc']
     - ansible_memory_mb.real.total | int < 1024
 

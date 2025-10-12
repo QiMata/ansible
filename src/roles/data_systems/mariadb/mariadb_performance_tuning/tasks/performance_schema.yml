@@ -14,8 +14,8 @@
   community.mysql.mysql_query:
     login_unix_socket: /var/run/mysqld/mysqld.sock
     query: |
-      UPDATE performance_schema.setup_instruments 
-      SET ENABLED = 'YES', TIMED = 'YES' 
+      UPDATE performance_schema.setup_instruments
+      SET ENABLED = 'YES', TIMED = 'YES'
       WHERE NAME LIKE 'statement/%' OR NAME LIKE 'stage/%'
   ignore_errors: true
 
@@ -23,8 +23,8 @@
   community.mysql.mysql_query:
     login_unix_socket: /var/run/mysqld/mysqld.sock
     query: |
-      UPDATE performance_schema.setup_consumers 
-      SET ENABLED = 'YES' 
+      UPDATE performance_schema.setup_consumers
+      SET ENABLED = 'YES'
       WHERE NAME IN ('events_statements_current', 'events_statements_history', 'events_statements_history_long')
   ignore_errors: true
 
@@ -33,14 +33,14 @@
     login_unix_socket: /var/run/mysqld/mysqld.sock
     query: |
       CREATE OR REPLACE VIEW performance_summary AS
-      SELECT 
+      SELECT
         EVENT_NAME,
         COUNT_STAR as COUNT,
         ROUND(SUM_TIMER_WAIT/1000000000000, 2) as TOTAL_TIME_SEC,
         ROUND(AVG_TIMER_WAIT/1000000000000, 6) as AVG_TIME_SEC,
         ROUND(MAX_TIMER_WAIT/1000000000000, 6) as MAX_TIME_SEC
-      FROM performance_schema.events_statements_summary_by_event_name 
-      WHERE COUNT_STAR > 0 
-      ORDER BY SUM_TIMER_WAIT DESC 
+      FROM performance_schema.events_statements_summary_by_event_name
+      WHERE COUNT_STAR > 0
+      ORDER BY SUM_TIMER_WAIT DESC
       LIMIT 20
   ignore_errors: true

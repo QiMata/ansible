@@ -61,7 +61,7 @@
       - (es_heap_size | regex_replace('[kmgKMG]', '') | int) * 2 <= (ansible_memtotal_mb)
     fail_msg: "Heap size should not exceed 50% of available memory. Current: {{ es_heap_size }}, Available: {{ ansible_memtotal_mb }}MB"
     success_msg: "Memory allocation validation passed"
-  when: 
+  when:
     - es_heap_size is match("^[0-9]+[mgMG]$")
     - ansible_memtotal_mb is defined
 
@@ -73,7 +73,7 @@
       - ldap_user_base_dn | length > 0
     fail_msg: "LDAP configuration is incomplete when security is enabled"
     success_msg: "LDAP configuration validation passed"
-  when: 
+  when:
     - es_enable_security
     - ldap_url is defined
 

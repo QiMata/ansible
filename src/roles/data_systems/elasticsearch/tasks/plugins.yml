@@ -8,7 +8,7 @@
     /usr/share/elasticsearch/bin/elasticsearch-plugin remove {{ item }}
   loop: "{{ es_plugins_remove }}"
   register: plugin_remove_result
-  failed_when: 
+  failed_when:
     - plugin_remove_result.rc != 0
     - "'not found' not in plugin_remove_result.stderr"
   changed_when: plugin_remove_result.rc == 0
@@ -74,7 +74,7 @@
     headers:
       Content-Type: "application/json"
     status_code: [200, 400]
-  when: 
+  when:
     - "'repository-s3' in (es_plugins | map(attribute='name') | list)"
     - s3_access_key is defined
     - s3_secret_key is defined
@@ -98,7 +98,7 @@
     headers:
       Content-Type: "application/json"
     status_code: [200, 400]
-  when: 
+  when:
     - "'analysis-icu' in (es_plugins | map(attribute='name') | list)"
     - es_wait_for_cluster
   ignore_errors: true

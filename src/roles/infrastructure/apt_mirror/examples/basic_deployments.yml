@@ -6,11 +6,11 @@
 - name: Deploy Basic APT Mirror
   hosts: mirror_server
   become: true
-  
+
   vars:
     # Simple deployment profile (default)
     deployment_profile: "simple"
-    
+
     # Basic mirror configuration
     apt_mirror_mirrors:
       - name: "ubuntu_jammy"
@@ -21,17 +21,17 @@
         components:
           - "main"
           - "restricted"
-    
+
     # Enable essential features for production use
     apt_mirror_health_checks_enabled: true
     apt_mirror_alerting_enabled: true
     apt_mirror_alert_email: "admin@example.com"
-    
+
     # Basic monitoring
     apt_mirror_performance_monitoring_enabled: false
     apt_mirror_bandwidth_throttling_enabled: true
     apt_mirror_bandwidth_limit: "10M"
-  
+
   roles:
     - role: infrastructure/apt_mirror
 
@@ -43,10 +43,10 @@
 - name: Deploy Space-Efficient APT Mirror
   hosts: mirror_server
   become: true
-  
+
   vars:
     deployment_profile: "simple"
-    
+
     apt_mirror_mirrors:
       - name: "ubuntu_server"
         base_url: "http://archive.ubuntu.com/ubuntu"
@@ -55,7 +55,7 @@
         components:
           - "main"
           - "restricted"
-    
+
     # Enable selective mirroring to reduce storage
     apt_mirror_selective_mirroring_enabled: true
     apt_mirror_package_filters:
@@ -72,25 +72,25 @@
         pattern: "thunderbird.*"     # Thunderbird
       - type: "exclude"
         pattern: "firefox.*"         # Firefox
-      
+
       # Include only essential server packages
       - type: "include"
         pattern: "^(apache2|nginx|mysql|postgresql|php|python3|openssh).*"
-    
+
     # Size-based filtering
     apt_mirror_size_filters:
       - max_size: "100M"
         action: "exclude"
-    
+
     # Bandwidth management
     apt_mirror_bandwidth_throttling_enabled: true
     apt_mirror_bandwidth_limit: "5M"
-    
+
     # Basic alerting
     apt_mirror_alerting_enabled: true
     apt_mirror_alert_email: "admin@example.com"
     apt_mirror_storage_alert_threshold: 75
-  
+
   roles:
     - role: infrastructure/apt_mirror
 
@@ -102,10 +102,10 @@
 - name: Deploy Multi-Architecture APT Mirror
   hosts: mirror_server
   become: true
-  
+
   vars:
     deployment_profile: "complex"
-    
+
     apt_mirror_mirrors:
       - name: "ubuntu_multi_arch"
         base_url: "http://ports.ubuntu.com/ubuntu-ports"
@@ -114,26 +114,26 @@
         components:
           - "main"
           - "universe"
-    
+
     # Multiple architectures
     apt_mirror_architectures:
       - "amd64"
       - "arm64"
       - "armhf"
-    
+
     # Enhanced features for multi-arch
     apt_mirror_performance_monitoring_enabled: true
     apt_mirror_client_metrics_enabled: true
     apt_mirror_analytics_enabled: true
-    
+
     # Bandwidth control per architecture
     apt_mirror_bandwidth_throttling_enabled: true
     apt_mirror_bandwidth_limit: "20M"
-    
+
     # Comprehensive monitoring
     apt_mirror_health_checks_enabled: true
     apt_mirror_alerting_enabled: true
     apt_mirror_alert_email: "ops@example.com"
-  
+
   roles:
     - role: infrastructure/apt_mirror

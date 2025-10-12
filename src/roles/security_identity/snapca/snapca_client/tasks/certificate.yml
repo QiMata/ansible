@@ -66,7 +66,7 @@
   environment:
     STEPPATH: "{{ snapca_client_step_config_dir }}"
   become_user: "{{ snapca_client_step_user }}"
-  when: 
+  when:
     - snapca_client_provisioner_type == "jwk"
     - cert_check.stdout != "0" or snapca_client_force_renewal
     - snapca_client_token != ""
@@ -86,7 +86,7 @@
   environment:
     STEPPATH: "{{ snapca_client_step_config_dir }}"
   become_user: "{{ snapca_client_step_user }}"
-  when: 
+  when:
     - snapca_client_provisioner_type == "password"
     - cert_check.stdout != "0" or snapca_client_force_renewal
     - snapca_client_password != ""
@@ -106,7 +106,7 @@
   environment:
     STEPPATH: "{{ snapca_client_step_config_dir }}"
   become_user: "{{ snapca_client_step_user }}"
-  when: 
+  when:
     - snapca_client_provisioner_type == "oidc"
     - cert_check.stdout != "0" or snapca_client_force_renewal
     - snapca_client_oidc_client_id != ""
@@ -125,7 +125,7 @@
   environment:
     STEPPATH: "{{ snapca_client_step_config_dir }}"
   become_user: "{{ snapca_client_step_user }}"
-  when: 
+  when:
     - snapca_client_provisioner_type == "acme"
     - cert_check.stdout != "0" or snapca_client_force_renewal
 

@@ -9,7 +9,7 @@
 
 - name: Pre-upgrade validation checks
   ansible.builtin.include_tasks: upgrade_checks.yml
-  when: 
+  when:
     - neo4j_upgrade_enabled
     - neo4j_pre_upgrade_checks
 
@@ -17,7 +17,7 @@
   ansible.builtin.include_tasks: backup.yml
   vars:
     backup_name: "pre-upgrade-{{ ansible_date_time.epoch }}"
-  when: 
+  when:
     - neo4j_upgrade_enabled
     - neo4j_backup_before_upgrade
 
@@ -25,7 +25,7 @@
   ansible.builtin.service:
     name: neo4j
     state: stopped
-  when: 
+  when:
     - neo4j_upgrade_enabled
     - neo4j_upgrade_strategy in ['stop_start', 'blue_green']
 
@@ -41,7 +41,7 @@
   ansible.builtin.dpkg_selections:
     name: "{{ neo4j_package_name }}"
     selection: hold
-  when: 
+  when:
     - neo4j_upgrade_enabled
     - neo4j_version_pin
 
@@ -49,7 +49,7 @@
   ansible.builtin.service:
     name: neo4j
     state: started
-  when: 
+  when:
     - neo4j_upgrade_enabled
     - neo4j_upgrade_strategy in ['stop_start', 'blue_green']
 
@@ -69,7 +69,7 @@
 
 - name: Post-upgrade validation
   ansible.builtin.include_tasks: upgrade_validation.yml
-  when: 
+  when:
     - neo4j_upgrade_enabled
     - neo4j_post_upgrade_validation
 

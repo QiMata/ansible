@@ -13,7 +13,7 @@
     static_dhcp_registration: "{{ pfsense_dns_resolver.static_dhcp_registration | default(true) }}"
     regdhcpstatic: "{{ pfsense_dns_resolver.static_dhcp_registration | default(true) }}"
     custom_options: "{{ pfsense_dns_resolver.custom_options | default([]) }}"
-  when: 
+  when:
     - pfsense_dns_resolver is defined
     - pfsense_dns_resolver.enable | default(true)
   notify: restart unbound
@@ -43,7 +43,7 @@
 - name: Disable DNS Forwarder if resolver is enabled
   pfsensible.core.pfsense_dnsmasq:
     enable: false
-  when: 
+  when:
     - pfsense_dns_resolver is defined
     - pfsense_dns_resolver.enable | default(true)
   notify: stop dnsmasq

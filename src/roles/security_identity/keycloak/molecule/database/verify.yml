@@ -18,7 +18,7 @@
 
     - name: Check database tables were created
       ansible.builtin.command: >
-        psql -h postgres-db-test -U keycloak_user -d keycloak_test 
+        psql -h postgres-db-test -U keycloak_user -d keycloak_test
         -c "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
       environment:
         PGPASSWORD: keycloak_pass

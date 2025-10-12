@@ -45,6 +45,6 @@
     regexp: "^UMask="
     line: "UMask=0027"
     insertafter: "\\[Service\\]"
-  notify: 
+  notify:
     - reload systemd
     - restart postgresql

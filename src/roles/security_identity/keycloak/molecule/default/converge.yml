@@ -39,32 +39,32 @@
         keycloak_db_user: keycloak
         keycloak_db_password: keycloak
         keycloak_hostname: localhost
-        
+
         # Admin user
         keycloak_create_admin: true
         keycloak_admin_user: admin
         keycloak_admin_password: admin123
-        
+
         # Monitoring and logging
         keycloak_monitoring_enabled: true
         keycloak_metrics_enabled: true
         keycloak_log_level: INFO
-        
+
         # Backup
         keycloak_backup_enabled: true
         keycloak_backup_retention_days: 3
-        
+
         # Development features
         keycloak_dev_mode: true
         keycloak_create_test_realm: true
-        
+
         # Configuration validation
         keycloak_validate_config: true
         keycloak_preflight_checks: true
-        
+
         # Version management
         keycloak_cleanup_old_versions: false
-        
+
         # Resource management
         keycloak_jvm_heap_min: "256m"
         keycloak_jvm_heap_max: "512m"

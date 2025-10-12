@@ -4,7 +4,7 @@
 # SSL/TLS Configuration
 mariadb_ssl_enabled: true
 mariadb_ssl_ca_cert: "/etc/mysql/ssl/ca-cert.pem"
-mariadb_ssl_server_cert: "/etc/mysql/ssl/server-cert.pem" 
+mariadb_ssl_server_cert: "/etc/mysql/ssl/server-cert.pem"
 mariadb_ssl_server_key: "/etc/mysql/ssl/server-key.pem"
 mariadb_ssl_client_cert: "/etc/mysql/ssl/client-cert.pem"
 mariadb_ssl_client_key: "/etc/mysql/ssl/client-key.pem"

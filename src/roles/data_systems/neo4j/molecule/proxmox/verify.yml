@@ -13,7 +13,7 @@
     # ============================================================================
     # PHASE 1: SERVICE VALIDATION
     # ============================================================================
-    
+
     - name: Check Neo4j service status
       ansible.builtin.service:
         name: neo4j
@@ -42,7 +42,7 @@
     # ============================================================================
     # PHASE 2: PORT AND CONNECTIVITY VALIDATION
     # ============================================================================
-    
+
     - name: Wait for Neo4j HTTP port to be accessible
       ansible.builtin.wait_for:
         port: "{{ neo4j_http_port }}"
@@ -70,7 +70,7 @@
     # ============================================================================
     # PHASE 3: HTTP API VALIDATION
     # ============================================================================
-    
+
     - name: Test Neo4j HTTP API connectivity
       ansible.builtin.uri:
         url: "http://localhost:{{ neo4j_http_port }}"
@@ -107,7 +107,7 @@
     # ============================================================================
     # PHASE 4: CYPHER QUERY TESTING (if authentication disabled)
     # ============================================================================
-    
+
     - name: Test basic Cypher query via HTTP API
       ansible.builtin.uri:
         url: "http://localhost:{{ neo4j_http_port }}/db/data/transaction/commit"
@@ -133,7 +133,7 @@
     # ============================================================================
     # PHASE 5: DATABASE OPERATIONS TESTING
     # ============================================================================
-    
+
     - name: Create test node via Cypher
       ansible.builtin.uri:
         url: "http://localhost:{{ neo4j_http_port }}/db/data/transaction/commit"
@@ -173,7 +173,7 @@
     # ============================================================================
     # PHASE 6: PERFORMANCE AND RESOURCE MONITORING
     # ============================================================================
-    
+
     - name: Get Neo4j version and configuration
       ansible.builtin.uri:
         url: "http://localhost:{{ neo4j_http_port }}/db/manage/server/version"
@@ -203,7 +203,7 @@
     # ============================================================================
     # PHASE 7: LOG FILE VALIDATION
     # ============================================================================
-    
+
     - name: Check Neo4j log files exist
       ansible.builtin.stat:
         path: "{{ item }}"
@@ -224,7 +224,7 @@
     # ============================================================================
     # PHASE 8: CLEANUP TEST DATA
     # ============================================================================
-    
+
     - name: Cleanup test nodes
       ansible.builtin.uri:
         url: "http://localhost:{{ neo4j_http_port }}/db/data/transaction/commit"
@@ -241,7 +241,7 @@
     # ============================================================================
     # PHASE 9: FINAL HEALTH SUMMARY
     # ============================================================================
-    
+
     - name: Final Neo4j health summary
       ansible.builtin.debug:
         msg: |

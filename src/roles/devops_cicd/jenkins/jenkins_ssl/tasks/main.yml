@@ -104,7 +104,7 @@
     rule: allow
     port: "{{ jenkins_ssl_port }}"
     comment: "Jenkins HTTPS"
-  when: 
+  when:
     - jenkins_ssl_enabled
     - jenkins_configure_firewall | default(false)
 
@@ -116,6 +116,6 @@
     group: jenkins
     mode: '0644'
   notify: restart jenkins
-  when: 
+  when:
     - jenkins_ssl_enabled
     - jenkins_behind_proxy | default(false)

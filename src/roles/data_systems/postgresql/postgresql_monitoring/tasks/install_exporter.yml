@@ -91,7 +91,7 @@
     src: postgres_exporter.service.j2
     dest: /etc/systemd/system/postgres_exporter.service
     mode: '0644'
-  notify: 
+  notify:
     - reload systemd
     - restart postgres_exporter
 

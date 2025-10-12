@@ -14,7 +14,7 @@
   ansible.builtin.shell: |
     echo "enable server {{ item.backend }}/{{ item.server }}" | socat stdio {{ haproxy_runtime_api.socket_path | default('/run/haproxy/admin.sock') }}
   loop: "{{ haproxy_runtime_enable_servers | default([]) }}"
-  when: 
+  when:
     - haproxy_runtime_api.enable | default(true)
     - haproxy_runtime_enable_servers is defined
   changed_when: true
@@ -23,7 +23,7 @@
   ansible.builtin.shell: |
     echo "disable server {{ item.backend }}/{{ item.server }}" | socat stdio {{ haproxy_runtime_api.socket_path | default('/run/haproxy/admin.sock') }}
   loop: "{{ haproxy_runtime_disable_servers | default([]) }}"
-  when: 
+  when:
     - haproxy_runtime_api.enable | default(true)
     - haproxy_runtime_disable_servers is defined
   changed_when: true
@@ -32,7 +32,7 @@
   ansible.builtin.shell: |
     echo "set weight {{ item.backend }}/{{ item.server }} {{ item.weight }}" | socat stdio {{ haproxy_runtime_api.socket_path | default('/run/haproxy/admin.sock') }}
   loop: "{{ haproxy_runtime_set_weights | default([]) }}"
-  when: 
+  when:
     - haproxy_runtime_api.enable | default(true)
     - haproxy_runtime_set_weights is defined
   changed_when: true

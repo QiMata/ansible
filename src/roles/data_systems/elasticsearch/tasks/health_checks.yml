@@ -41,7 +41,7 @@
       - Relocating Shards: {{ cluster_health.json.relocating_shards | default('N/A') }}
       - Initializing Shards: {{ cluster_health.json.initializing_shards | default('N/A') }}
       - Unassigned Shards: {{ cluster_health.json.unassigned_shards | default('N/A') }}
-  when: 
+  when:
     - cluster_health is defined
     - cluster_health.json is defined
 
@@ -51,7 +51,7 @@
       - cluster_health.json.status != "red"
     fail_msg: "Cluster health is RED - there are critical issues"
     success_msg: "Cluster health is {{ cluster_health.json.status | upper }}"
-  when: 
+  when:
     - cluster_health is defined
     - cluster_health.json is defined
     - es_validate_cluster_health
@@ -71,7 +71,7 @@
       - Node Roles: {{ node_info.json.nodes[node_info.json.nodes.keys()[0]].roles | default([]) | join(', ') }}
       - ES Version: {{ node_info.json.nodes[node_info.json.nodes.keys()[0]].version | default('N/A') }}
       - JVM Version: {{ node_info.json.nodes[node_info.json.nodes.keys()[0]].jvm.version | default('N/A') }}
-  when: 
+  when:
     - node_info is defined
     - node_info.json is defined
 
@@ -90,7 +90,7 @@
 - name: Check for red indices
   ansible.builtin.fail:
     msg: "Found indices in RED status: {{ indices_health.content }}"
-  when: 
+  when:
     - indices_health is defined
     - indices_health.status == 200
     - indices_health.content is defined
@@ -113,7 +113,7 @@
 - name: Warning for high disk usage
   ansible.builtin.debug:
     msg: "WARNING: High disk usage detected on some nodes"
-  when: 
+  when:
     - disk_allocation is defined
     - disk_allocation.content is search('[89][0-9]%|100%')
 
@@ -171,14 +171,14 @@
       {% for node_id, node_data in jvm_stats.json.nodes.items() %}
       - {{ node_data.name }}: {{ (node_data.jvm.mem.heap_used_percent) }}% used
       {% endfor %}
-  when: 
+  when:
     - jvm_stats is defined
     - jvm_stats.json is defined
 
 - name: Warning for high JVM heap usage
   ansible.builtin.debug:
     msg: "WARNING: High JVM heap usage detected (>85%)"
-  when: 
+  when:
     - jvm_stats is defined
     - jvm_stats.json is defined
     - jvm_stats.json.nodes.values() | map(attribute='jvm.mem.heap_used_percent') | max > 85

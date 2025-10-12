@@ -17,14 +17,14 @@ jenkins_credentials_list: []
 #     description: "GitHub Personal Access Token"
 #     secret: "{{ vault_github_token }}"
 #     scope: "GLOBAL"
-#   
+#
 #   - id: "docker-registry"
 #     type: "username_password"
 #     description: "Docker Registry Credentials"
 #     username: "docker-user"
 #     password: "{{ vault_docker_password }}"
 #     scope: "GLOBAL"
-#   
+#
 #   - id: "ssh-deploy-key"
 #     type: "ssh_private_key"
 #     description: "SSH Deploy Key"

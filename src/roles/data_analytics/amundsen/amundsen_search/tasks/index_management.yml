@@ -73,7 +73,7 @@
     password: "{{ amundsen_search_es_password if amundsen_search_es_auth_enabled else omit }}"
     force_basic_auth: "{{ amundsen_search_es_auth_enabled and amundsen_search_es_auth_type == 'basic' }}"
     validate_certs: "{{ amundsen_search_es_verify_certs }}"
-  when: 
+  when:
     - amundsen_search_index_lifecycle_policy != ""
     - amundsen_search_data_retention_enabled
   delegate_to: localhost

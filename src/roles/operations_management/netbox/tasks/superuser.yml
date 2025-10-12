@@ -20,7 +20,7 @@
     DJANGO_SUPERUSER_PASSWORD: "{{ netbox_superuser_password }}"
   become: true
   become_user: "{{ netbox_user }}"
-  when: 
+  when:
     - netbox_create_superuser | bool
     - superuser_exists.stdout.strip() == "False"
   no_log: true

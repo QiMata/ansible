@@ -129,7 +129,7 @@
       - "search-1.example.com:5001"
       - "search-2.example.com:5001"
       - "search-3.example.com:5001"
-    
+
     # Instance-specific configuration
     amundsen_search_instance_id: "{{ inventory_hostname.split('.')[0] }}"
     amundsen_search_port: "{{ 5001 + groups['amundsen_search_cluster'].index(inventory_hostname) }}"
@@ -146,12 +146,12 @@
     amundsen_search_environment: "development"
     amundsen_search_debug: true
     amundsen_search_log_level: "DEBUG"
-    
+
     # Relaxed security for development
     amundsen_search_auth_enabled: false
     amundsen_search_tls_enabled: false
     amundsen_search_es_verify_certs: false
-    
+
     # Development conveniences
     amundsen_search_analytics_enabled: true
     amundsen_search_query_logging_enabled: true

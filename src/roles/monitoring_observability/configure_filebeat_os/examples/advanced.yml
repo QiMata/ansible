@@ -14,7 +14,7 @@
 
     # Multiple output types example - using Logstash
     filebeat_output_type: "logstash"
-    filebeat_output_logstash_hosts: 
+    filebeat_output_logstash_hosts:
       - "logstash1.example.com:5044"
       - "logstash2.example.com:5044"
     filebeat_load_balance: true
@@ -43,7 +43,7 @@
     filebeat_paths:
       - "/var/log/*.log"
       - "/var/log/applications/*.log"
-    
+
     filebeat_journald_enabled: true
     filebeat_journald_id: "systemd-journal"
 

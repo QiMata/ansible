@@ -19,8 +19,8 @@
 - name: Bootstrap Step CA connection
   ansible.builtin.command:
     cmd: >-
-      step ca bootstrap 
-      --ca-url {{ snapca_client_ca_url }} 
+      step ca bootstrap
+      --ca-url {{ snapca_client_ca_url }}
       --root {{ snapca_client_step_config_dir }}/certs/root_ca.crt
       {% if snapca_client_ca_fingerprint %}--fingerprint {{ snapca_client_ca_fingerprint }}{% endif %}
       {% if snapca_client_insecure %}--insecure{% endif %}

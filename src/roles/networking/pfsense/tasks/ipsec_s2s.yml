@@ -73,7 +73,7 @@
     bypass: "{{ pfsense_ipsec.bypass | default(false) }}"
     maxmss_enable: "{{ pfsense_ipsec.maxmss_enable | default(false) }}"
     maxmss: "{{ pfsense_ipsec.maxmss | default(1400) }}"
-  when: 
+  when:
     - pfsense_ipsec is defined
     - pfsense_ipsec.phase1 is defined or pfsense_ipsec.phase2 is defined
   notify: restart ipsec

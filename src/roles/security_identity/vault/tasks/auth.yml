@@ -30,7 +30,7 @@
       config: "{{ item.config | default({}) }}"
     status_code: [200, 204, 400]
   loop: "{{ vault_auth_methods }}"
-  when: 
+  when:
     - vault_init_status.json.initialized | default(false)
     - vault_root_token is defined
   ignore_errors: true
