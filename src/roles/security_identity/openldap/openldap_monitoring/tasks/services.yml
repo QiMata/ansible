@@ -1,0 +1,47 @@
+---
+- name: Deploy OpenLDAP monitoring service unit
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/openldap-monitoring.service
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=OpenLDAP health check
+      After=network.target
+
+      [Service]
+      Type=oneshot
+      ExecStart={{ security_identity_openldap_monitoring_health_check_script }}
+      SuccessExitStatus=0 1
+
+      [Install]
+      WantedBy=multi-user.target
+  become: true
+
+- name: Deploy OpenLDAP monitoring timer unit
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/openldap-monitoring.timer
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=Run OpenLDAP monitoring service periodically
+
+      [Timer]
+      OnBootSec=1min
+      OnUnitActiveSec={{ security_identity_openldap_monitoring_health_check_interval }}s
+      AccuracySec=30s
+
+      [Install]
+      WantedBy=timers.target
+  become: true
+
+- name: Ensure OpenLDAP monitoring timer is enabled
+  ansible.builtin.systemd:
+    name: openldap-monitoring.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+  become: true

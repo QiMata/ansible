@@ -1,7 +1,7 @@
 ---
 - name: Copy TLS cert
   ansible.builtin.copy:
-    src: "{{ openldap_server_tls_cert }}"
+    src: "{{ security_identity_openldap_server_tls_cert }}"
     dest: /etc/ldap/ssl/ldap.crt
     owner: root
     group: root
@@ -9,7 +9,7 @@
 
 - name: Copy TLS key
   ansible.builtin.copy:
-    src: "{{ openldap_server_tls_key }}"
+    src: "{{ security_identity_openldap_server_tls_key }}"
     dest: /etc/ldap/ssl/ldap.key
     owner: root
     group: root
@@ -17,7 +17,7 @@
 
 - name: Copy CA cert
   ansible.builtin.copy:
-    src: "{{ openldap_server_tls_ca }}"
+    src: "{{ security_identity_openldap_server_tls_ca }}"
     dest: /etc/ldap/ssl/ca.crt
     owner: root
     group: root

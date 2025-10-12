@@ -1,0 +1,21 @@
+---
+- name: Persist performance monitoring configuration
+  ansible.builtin.copy:
+    dest: /etc/openldap/monitoring/performance.yml
+    owner: openldap
+    group: openldap
+    mode: "0644"
+    content: |
+      enabled: {{ security_identity_openldap_monitoring_metrics_enabled | ternary('true', 'false') }}
+      collection_interval: {{ security_identity_openldap_monitoring_metrics_collection_interval }}
+      retention_days: {{ security_identity_openldap_monitoring_metrics_retention_days }}
+      collect_connection_metrics: {{ security_identity_openldap_monitoring_collect_connection_metrics | ternary('true', 'false') }}
+      collect_operation_metrics: {{ security_identity_openldap_monitoring_collect_operation_metrics | ternary('true', 'false') }}
+      collect_replication_metrics: {{ security_identity_openldap_monitoring_collect_replication_metrics | ternary('true', 'false') }}
+      collect_cache_metrics: {{ security_identity_openldap_monitoring_collect_cache_metrics | ternary('true', 'false') }}
+      collect_database_metrics: {{ security_identity_openldap_monitoring_collect_database_metrics | ternary('true', 'false') }}
+      collect_schema_metrics: {{ security_identity_openldap_monitoring_collect_schema_metrics | ternary('true', 'false') }}
+      slow_query_monitoring: {{ security_identity_openldap_monitoring_slow_query_monitoring | ternary('true', 'false') }}
+      slow_query_threshold: {{ security_identity_openldap_monitoring_slow_query_threshold }}
+      slow_query_log: "{{ security_identity_openldap_monitoring_slow_query_log }}"
+  become: true

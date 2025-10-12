@@ -1,0 +1,27 @@
+---
+- name: Ensure Prometheus configuration directory exists
+  ansible.builtin.file:
+    path: /etc/openldap/monitoring/prometheus
+    state: directory
+    owner: openldap
+    group: openldap
+    mode: "0755"
+  become: true
+
+- name: Render Prometheus scrape configuration
+  ansible.builtin.copy:
+    dest: /etc/openldap/monitoring/prometheus/openldap.yml
+    owner: openldap
+    group: openldap
+    mode: "0644"
+    content: |
+      global:
+        scrape_interval: "{{ security_identity_openldap_monitoring_prometheus_scrape_interval }}"
+        evaluation_interval: "{{ security_identity_openldap_monitoring_prometheus_evaluation_interval }}"
+      scrape_configs:
+        - job_name: "{{ security_identity_openldap_monitoring_prometheus_job_name }}"
+          metrics_path: "{{ security_identity_openldap_monitoring_prometheus_endpoint }}"
+          static_configs:
+            - targets:
+                - "localhost:{{ security_identity_openldap_monitoring_prometheus_port }}"
+  become: true

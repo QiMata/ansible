@@ -6,9 +6,9 @@
     value: "{{ item.value }}"
     vtype: "{{ item.vtype }}"
   loop:
-    - { question: "slapd/domain", value: "{{ openldap_server_domain }}", vtype: "string" }
-    - { question: "slapd/password1", value: "{{ openldap_server_admin_password }}", vtype: "password" }
-    - { question: "slapd/password2", value: "{{ openldap_server_admin_password }}", vtype: "password" }
+    - { question: "slapd/domain", value: "{{ security_identity_openldap_server_domain }}", vtype: "string" }
+    - { question: "slapd/password1", value: "{{ security_identity_openldap_server_admin_password }}", vtype: "password" }
+    - { question: "slapd/password2", value: "{{ security_identity_openldap_server_admin_password }}", vtype: "password" }
     - { question: "slapd/no_configuration", value: "false", vtype: "boolean" }
 
 - name: Install OpenLDAP server packages

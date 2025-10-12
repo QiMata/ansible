@@ -1,0 +1,21 @@
+---
+- name: Persist alerting configuration
+  ansible.builtin.copy:
+    dest: /etc/openldap/monitoring/alerting.yml
+    owner: openldap
+    group: openldap
+    mode: "0644"
+    content: |
+      enabled: {{ security_identity_openldap_monitoring_alerting_enabled | ternary('true', 'false') }}
+      email: "{{ security_identity_openldap_monitoring_alert_email }}"
+      slack_webhook: "{{ security_identity_openldap_monitoring_alert_slack_webhook }}"
+      pagerduty_key: "{{ security_identity_openldap_monitoring_alert_pagerduty_key }}"
+      thresholds:
+        high_cpu: {{ security_identity_openldap_monitoring_alert_high_cpu }}
+        high_memory: {{ security_identity_openldap_monitoring_alert_high_memory }}
+        disk_usage: {{ security_identity_openldap_monitoring_alert_disk_usage }}
+        high_connections: {{ security_identity_openldap_monitoring_alert_high_connections }}
+        replication_lag: {{ security_identity_openldap_monitoring_alert_replication_lag }}
+        failed_operations: {{ security_identity_openldap_monitoring_alert_failed_operations }}
+        response_time: {{ security_identity_openldap_monitoring_alert_response_time }}
+  become: true

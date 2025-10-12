@@ -1,103 +1,140 @@
 ---
-# OpenLDAP Monitoring Configuration
-openldap_monitoring_enabled: true
+# OpenLDAP monitoring defaults with security_identity_ prefix
+security_identity_openldap_monitoring_enabled: >-
+  {{ openldap_monitoring_enabled | default(true) }}
 
 # Prometheus Integration
-openldap_monitoring_prometheus: true
-openldap_prometheus_port: 9330
-openldap_prometheus_endpoint: "/metrics"
-openldap_prometheus_job_name: "openldap"
-openldap_prometheus_scrape_interval: "30s"
-openldap_prometheus_evaluation_interval: "30s"
+security_identity_openldap_monitoring_prometheus_enabled: >-
+  {{ openldap_monitoring_prometheus | default(true) }}
+security_identity_openldap_monitoring_prometheus_port: >-
+  {{ openldap_prometheus_port | default(9330) }}
+security_identity_openldap_monitoring_prometheus_endpoint: >-
+  {{ openldap_prometheus_endpoint | default('/metrics') }}
+security_identity_openldap_monitoring_prometheus_job_name: >-
+  {{ openldap_prometheus_job_name | default('openldap') }}
+security_identity_openldap_monitoring_prometheus_scrape_interval: >-
+  {{ openldap_prometheus_scrape_interval | default('30s') }}
+security_identity_openldap_monitoring_prometheus_evaluation_interval: >-
+  {{ openldap_prometheus_evaluation_interval | default('30s') }}
 
 # Grafana Integration
-openldap_monitoring_grafana: true
-openldap_grafana_dashboard_enabled: true
-openldap_grafana_datasource_name: "prometheus"
-openldap_grafana_dashboard_folder: "LDAP"
+security_identity_openldap_monitoring_grafana_enabled: >-
+  {{ openldap_monitoring_grafana | default(true) }}
+security_identity_openldap_monitoring_grafana_dashboard_enabled: >-
+  {{ openldap_grafana_dashboard_enabled | default(true) }}
+security_identity_openldap_monitoring_grafana_datasource_name: >-
+  {{ openldap_grafana_datasource_name | default('prometheus') }}
+security_identity_openldap_monitoring_grafana_dashboard_folder: >-
+  {{ openldap_grafana_dashboard_folder | default('LDAP') }}
 
 # Health Check Configuration
-openldap_health_checks_enabled: true
-openldap_health_check_interval: 60    # seconds
-openldap_health_check_timeout: 10     # seconds
-openldap_health_check_retries: 3
-openldap_health_check_script: "/usr/local/bin/ldap-health-check"
+security_identity_openldap_monitoring_health_checks_enabled: >-
+  {{ openldap_health_checks_enabled | default(true) }}
+security_identity_openldap_monitoring_health_check_interval: >-
+  {{ openldap_health_check_interval | default(60) }}
+security_identity_openldap_monitoring_health_check_timeout: >-
+  {{ openldap_health_check_timeout | default(10) }}
+security_identity_openldap_monitoring_health_check_retries: >-
+  {{ openldap_health_check_retries | default(3) }}
+security_identity_openldap_monitoring_health_check_script: >-
+  {{ openldap_health_check_script | default('/usr/local/bin/ldap-health-check') }}
 
 # Performance Metrics
-openldap_metrics_enabled: true
-openldap_metrics_collection_interval: 30  # seconds
-openldap_metrics_retention_days: 30
+security_identity_openldap_monitoring_metrics_enabled: >-
+  {{ openldap_metrics_enabled | default(true) }}
+security_identity_openldap_monitoring_metrics_collection_interval: >-
+  {{ openldap_metrics_collection_interval | default(30) }}
+security_identity_openldap_monitoring_metrics_retention_days: >-
+  {{ openldap_metrics_retention_days | default(30) }}
 
 # Collected Metrics
-openldap_collect_connection_metrics: true
-openldap_collect_operation_metrics: true
-openldap_collect_replication_metrics: true
-openldap_collect_cache_metrics: true
-openldap_collect_database_metrics: true
-openldap_collect_schema_metrics: true
+security_identity_openldap_monitoring_collect_connection_metrics: >-
+  {{ openldap_collect_connection_metrics | default(true) }}
+security_identity_openldap_monitoring_collect_operation_metrics: >-
+  {{ openldap_collect_operation_metrics | default(true) }}
+security_identity_openldap_monitoring_collect_replication_metrics: >-
+  {{ openldap_collect_replication_metrics | default(true) }}
+security_identity_openldap_monitoring_collect_cache_metrics: >-
+  {{ openldap_collect_cache_metrics | default(true) }}
+security_identity_openldap_monitoring_collect_database_metrics: >-
+  {{ openldap_collect_database_metrics | default(true) }}
+security_identity_openldap_monitoring_collect_schema_metrics: >-
+  {{ openldap_collect_schema_metrics | default(true) }}
 
 # Query Performance Monitoring
-openldap_slow_query_monitoring: true
-openldap_slow_query_threshold: 5000   # milliseconds
-openldap_slow_query_log: "/var/log/openldap/slow-queries.log"
+security_identity_openldap_monitoring_slow_query_monitoring: >-
+  {{ openldap_slow_query_monitoring | default(true) }}
+security_identity_openldap_monitoring_slow_query_threshold: >-
+  {{ openldap_slow_query_threshold | default(5000) }}
+security_identity_openldap_monitoring_slow_query_log: >-
+  {{ openldap_slow_query_log | default('/var/log/openldap/slow-queries.log') }}
 
 # Capacity Planning
-openldap_capacity_monitoring: true
-openldap_capacity_check_interval: 300 # seconds
-openldap_capacity_disk_threshold: 80  # percentage
-openldap_capacity_memory_threshold: 85 # percentage
-openldap_capacity_connection_threshold: 80 # percentage of max connections
+security_identity_openldap_monitoring_capacity_monitoring: >-
+  {{ openldap_capacity_monitoring | default(true) }}
+security_identity_openldap_monitoring_capacity_check_interval: >-
+  {{ openldap_capacity_check_interval | default(300) }}
+security_identity_openldap_monitoring_capacity_disk_threshold: >-
+  {{ openldap_capacity_disk_threshold | default(80) }}
+security_identity_openldap_monitoring_capacity_memory_threshold: >-
+  {{ openldap_capacity_memory_threshold | default(85) }}
+security_identity_openldap_monitoring_capacity_connection_threshold: >-
+  {{ openldap_capacity_connection_threshold | default(80) }}
 
 # Alerting Configuration
-openldap_alerting_enabled: true
-openldap_alert_email: "admin@{{ openldap_server_domain }}"
-openldap_alert_slack_webhook: ""
-openldap_alert_pagerduty_key: ""
+security_identity_openldap_monitoring_alerting_enabled: >-
+  {{ openldap_alerting_enabled | default(true) }}
+security_identity_openldap_monitoring_alert_email: >-
+  {{ openldap_alert_email | default('admin@' + (security_identity_openldap_server_domain | default(openldap_server_domain | default('example.com')))) }}
+security_identity_openldap_monitoring_alert_slack_webhook: >-
+  {{ openldap_alert_slack_webhook | default('') }}
+security_identity_openldap_monitoring_alert_pagerduty_key: >-
+  {{ openldap_alert_pagerduty_key | default('') }}
 
 # Alert Thresholds
-openldap_alert_high_cpu: 80           # percentage
-openldap_alert_high_memory: 85        # percentage
-openldap_alert_disk_usage: 90         # percentage
-openldap_alert_high_connections: 80   # percentage
-openldap_alert_replication_lag: 300   # seconds
-openldap_alert_failed_operations: 50  # per minute
-openldap_alert_response_time: 5000    # milliseconds
+security_identity_openldap_monitoring_alert_high_cpu: >-
+  {{ openldap_alert_high_cpu | default(80) }}
+security_identity_openldap_monitoring_alert_high_memory: >-
+  {{ openldap_alert_high_memory | default(85) }}
+security_identity_openldap_monitoring_alert_disk_usage: >-
+  {{ openldap_alert_disk_usage | default(90) }}
+security_identity_openldap_monitoring_alert_high_connections: >-
+  {{ openldap_alert_high_connections | default(80) }}
+security_identity_openldap_monitoring_alert_replication_lag: >-
+  {{ openldap_alert_replication_lag | default(300) }}
+security_identity_openldap_monitoring_alert_failed_operations: >-
+  {{ openldap_alert_failed_operations | default(50) }}
+security_identity_openldap_monitoring_alert_response_time: >-
+  {{ openldap_alert_response_time | default(5000) }}
 
 # Log Monitoring
-openldap_log_monitoring: true
-openldap_log_analysis_enabled: true
-openldap_log_error_patterns:
-  - "connection_read"
-  - "ber_get_next"
-  - "connection_closing"
-  - "send_ldap_result"
+security_identity_openldap_monitoring_log_monitoring: >-
+  {{ openldap_log_monitoring | default(true) }}
+security_identity_openldap_monitoring_log_analysis_enabled: >-
+  {{ openldap_log_analysis_enabled | default(true) }}
+security_identity_openldap_monitoring_log_error_patterns: >-
+  {{ openldap_log_error_patterns | default(['connection_read', 'ber_get_next', 'connection_closing', 'send_ldap_result']) }}
 
 # Performance Baselines
-openldap_performance_baseline_enabled: true
-openldap_baseline_collection_period: 7  # days
-openldap_baseline_update_frequency: 24  # hours
+security_identity_openldap_monitoring_performance_baseline_enabled: >-
+  {{ openldap_performance_baseline_enabled | default(true) }}
+security_identity_openldap_monitoring_baseline_collection_period: >-
+  {{ openldap_baseline_collection_period | default(7) }}
+security_identity_openldap_monitoring_baseline_update_frequency: >-
+  {{ openldap_baseline_update_frequency | default(24) }}
 
 # Custom Monitoring Scripts
-openldap_custom_monitoring_scripts: []
-#  - name: "connection_monitor"
-#    script: "/usr/local/bin/ldap-connection-monitor.sh"
-#    interval: 60
-#    enabled: true
-#  - name: "replication_monitor"
-#    script: "/usr/local/bin/ldap-replication-monitor.py"
-#    interval: 120
-#    enabled: true
+security_identity_openldap_monitoring_custom_scripts: >-
+  {{ openldap_custom_monitoring_scripts | default([]) }}
 
 # SNMP Monitoring (optional)
-openldap_snmp_monitoring: false
-openldap_snmp_community: "public"
-openldap_snmp_port: 161
+security_identity_openldap_monitoring_snmp_enabled: >-
+  {{ openldap_snmp_monitoring | default(false) }}
+security_identity_openldap_monitoring_snmp_community: >-
+  {{ openldap_snmp_community | default('public') }}
+security_identity_openldap_monitoring_snmp_port: >-
+  {{ openldap_snmp_port | default(161) }}
 
 # External Monitoring Integration
-openldap_external_monitoring: []
-#  - type: "nagios"
-#    server: "monitoring.example.com"
-#    config_file: "/etc/nagios/conf.d/ldap.cfg"
-#  - type: "zabbix"
-#    server: "zabbix.example.com"
-#    agent_config: "/etc/zabbix/zabbix_agentd.d/ldap.conf"
+security_identity_openldap_monitoring_external_monitoring: >-
+  {{ openldap_external_monitoring | default([]) }}

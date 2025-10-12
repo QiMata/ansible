@@ -1,0 +1,9 @@
+---
+- name: Persist custom monitoring script configuration
+  ansible.builtin.copy:
+    dest: /etc/openldap/monitoring/custom-scripts.yml
+    owner: openldap
+    group: openldap
+    mode: "0644"
+    content: "{{ security_identity_openldap_monitoring_custom_scripts | to_nice_yaml }}"
+  become: true
