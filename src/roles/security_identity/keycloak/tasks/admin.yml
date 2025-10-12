@@ -20,6 +20,7 @@
   register: admin_check
   failed_when: false
   changed_when: false
+  become: true
   become_user: "{{ keycloak_user }}"
 
 - name: Create initial admin user
@@ -33,6 +34,9 @@
       -s username={{ keycloak_admin_user }}
       -s enabled=true
       -s emailVerified=true
+  register: admin_create
+  changed_when: admin_check.rc != 0
+  become: true
   become_user: "{{ keycloak_user }}"
   when: admin_check.rc != 0
 
@@ -46,6 +50,8 @@
       --password {{ keycloak_admin_password }}
       --username {{ keycloak_admin_user }}
       --new-password {{ keycloak_admin_password }}
+  changed_when: admin_check.rc != 0
+  become: true
   become_user: "{{ keycloak_user }}"
   when: admin_check.rc != 0
 
@@ -58,6 +64,8 @@
       --user {{ keycloak_admin_user }}
       --password {{ keycloak_admin_password }}
   register: admin_verify
+  changed_when: false
+  become: true
   become_user: "{{ keycloak_user }}"
 
 - name: Display admin user creation result

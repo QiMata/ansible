@@ -20,6 +20,6 @@
 - name: Enable RabbitMQ plugins
   ansible.builtin.command: "rabbitmq-plugins enable --quiet {{ item }}"
   loop: "{{ rabbitmq_plugins }}"
-  register: plugin_result
-  changed_when: plugin_result.rc == 0 and 'already enabled' not in plugin_result.stdout
+  register: rabbitmq_plugin_result
+  changed_when: rabbitmq_plugin_result.rc == 0 and 'already enabled' not in rabbitmq_plugin_result.stdout
   notify: Restart RabbitMQ

@@ -75,7 +75,7 @@ Set the `base_image` Packer variable via wrappers:
 
 ## Notes and tips
 - The playbook path is relative to `src/`. For example, `playbooks/site.yml` or `playbooks/setup-redis.yml`.
-- Ansible uses your project config from `/opt/src/ansible.cfg` and roles from `/opt/src/roles`.
+- Ansible uses your project config from `/opt/workspace/ansible.cfg` and roles from `/opt/workspace/src/roles`.
 - Inventory is a generated `localhost` target with local connection. This is ideal for roles/playbooks that can run locally inside a vanilla Ubuntu container.
 - If your playbook requires remote hosts or cloud credentials, this pattern is not a fit—use Molecule or your normal runner.
 
@@ -86,7 +86,7 @@ For Proxmox:
 
 ## Troubleshooting
 - Permission denied to Docker socket: ensure the socket mount works. On Windows/macOS Docker Desktop, `/var/run/docker.sock` inside Linux containers is supported by default.
-- Ansible collection/role dependencies: add them to `src/requirements.yml` and ensure your tasks don't rely on external state.
+- Ansible collection/role dependencies: add them to `requirements.yml` and ensure your tasks don't rely on external state.
 - For detailed logs, the wrappers set `PACKER_LOG=1`.
 
 Proxmox:

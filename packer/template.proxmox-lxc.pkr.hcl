@@ -217,7 +217,7 @@ build {
 
     // Set project context so roles/config resolve correctly
     ansible_env_vars = [
-      "ANSIBLE_CONFIG=${path.root}/../src/ansible.cfg",
+      "ANSIBLE_CONFIG=${path.root}/../ansible.cfg",
       "ANSIBLE_ROLES_PATH=${path.root}/../src/roles",
       "ANSIBLE_COLLECTIONS_PATHS=${path.root}/../src/collections"
     ]

@@ -110,14 +110,14 @@ Write-Host ""
 # Step 8: Usage instructions
 Write-Host "`n=== Next Steps ===" -ForegroundColor Green
 Write-Host "1. Download and install the community.general and community.proxmox collections manually (see above)" -ForegroundColor White
-Write-Host "2. Configure your Proxmox credentials in inventories\dynamic\proxmox.yml" -ForegroundColor White
+Write-Host "2. Configure your Proxmox credentials in src\inventories\dynamic\proxmox.yml" -ForegroundColor White
 Write-Host "3. Test the connection:" -ForegroundColor White
 Write-Host "   python -c `"from proxmoxer import ProxmoxAPI; print('Proxmoxer OK')`"" -ForegroundColor Cyan
 Write-Host "4. Test inventory listing:" -ForegroundColor White
-Write-Host "   python -c `"import yaml; print(yaml.safe_load(open('inventories/dynamic/proxmox.yml')))`"" -ForegroundColor Cyan
+Write-Host "   python -c `"import yaml; print(yaml.safe_load(open('src/inventories/dynamic/proxmox.yml')))`"" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "5. Use with ansible-playbook:" -ForegroundColor White
-Write-Host "   ansible-playbook -i inventories/dynamic/proxmox.yml playbooks/site.yml" -ForegroundColor Cyan
+Write-Host "   ansible-playbook -i src/inventories/dynamic/proxmox.yml src/playbooks/site.yml" -ForegroundColor Cyan
 Write-Host ""
 
 Write-Host "Setup completed! Please follow the manual steps above." -ForegroundColor Green

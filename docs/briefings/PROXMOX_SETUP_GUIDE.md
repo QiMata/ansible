@@ -98,10 +98,10 @@ ansible-inventory -i inventories/dynamic/proxmox-env.yml --list
 ansible-inventory -i inventories/dynamic/proxmox-env.yml --graph
 
 # Test with a simple ping
-ansible all -i inventories/dynamic/proxmox-env.yml -m ping
+ansible all -i src/inventories/dynamic/proxmox-env.yml -m ping
 
 # Run a playbook with dynamic inventory
-ansible-playbook -i inventories/dynamic/proxmox-env.yml playbooks/site.yml
+ansible-playbook -i src/inventories/dynamic/proxmox-env.yml src/playbooks/site.yml
 ```
 
 ## Troubleshooting

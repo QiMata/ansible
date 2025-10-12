@@ -1,141 +1,225 @@
+"""CLI utility for generating INI-style Ansible inventories from PostgreSQL."""
+from __future__ import annotations
+
 import argparse
 import os
 import shlex
-import psycopg2
+from collections import defaultdict
+from dataclasses import dataclass
+from ipaddress import ip_address, ip_interface
+from pathlib import Path
+from typing import Iterable, Mapping, Sequence
+
+try:
+    import psycopg2
+except ImportError:  # pragma: no cover - exercised when psycopg2 is absent
+    psycopg2 = None  # type: ignore[assignment]
 
 
-def create_ansible_inventory_server_string(env, cat, ss, app, cont, management_ip, service_ip, ansible_user=None, become_pass=None):
-    inventory_str = f'{cont} ansible_host={management_ip.split("/")[0]} service_ip={service_ip.split("/")[0]} '
-    if 'MARIADB_DATABASE' in app:
-        inventory_str += f'galera_cluster_bind_address={service_ip.split("/")[0]} galera_cluster_address={service_ip.split("/")[0]} '
+@dataclass(frozen=True)
+class ContainerRecord:
+    """Normalized representation of a container row returned from the database."""
 
-    inventory_str += 'ansible_become=true ansible_become_method=sudo'
+    environment: str
+    category: str
+    system: str
+    application: str
+    container: str
+    management_ip: str
+    service_ip: str
+
+    @classmethod
+    def from_row(cls, row: Sequence[str]) -> "ContainerRecord":
+        env, cat, system, container, management_ip, service_ip, application = row
+        return cls(
+            environment=_normalize_token(env),
+            category=_normalize_token(cat),
+            system=_normalize_token(system),
+            application=_normalize_token(application),
+            container=_normalize_token(container),
+            management_ip=_sanitize_ip(management_ip),
+            service_ip=_sanitize_ip(service_ip),
+        )
+
+
+def _normalize_token(value: str) -> str:
+    """Collapse spaces/dashes and strip whitespace to create inventory-safe names."""
+
+    return value.strip().replace(" ", "_").replace("-", "_")
+
+
+def _sanitize_ip(raw: str) -> str:
+    """Return the canonical host IP address from an IP or CIDR string."""
+
+    candidate = raw.strip()
+    if not candidate:
+        raise ValueError("Encountered empty IP address value when building inventory")
+
+    try:
+        return str(ip_interface(candidate).ip)
+    except ValueError:
+        # Not a CIDR value – fall back to validating a single IP address
+        return str(ip_address(candidate))
+
+
+def _render_host_entry(record: ContainerRecord, ansible_user: str | None, become_pass: str | None) -> str:
+    parts = [
+        f"{record.container}",
+        f"ansible_host={record.management_ip}",
+        f"service_ip={record.service_ip}",
+        "ansible_become=true",
+        "ansible_become_method=sudo",
+    ]
+
+    if "MARIADB_DATABASE" in record.application.upper():
+        parts.append(f"galera_cluster_bind_address={record.service_ip}")
+        parts.append(f"galera_cluster_address={record.service_ip}")
 
     if ansible_user:
-        inventory_str += f' ansible_user={ansible_user}'
+        parts.append(f"ansible_user={ansible_user}")
     if become_pass:
-        inventory_str += f' ansible_become_pass={shlex.quote(str(become_pass))}'
+        parts.append(f"ansible_become_pass={shlex.quote(str(become_pass))}")
 
-    return inventory_str
+    return " ".join(parts)
 
-def create_ansible_ini_file(db_conn_str, output_directory, ansible_user=None, become_pass=None):
-    # Connect to the PostgreSQL database
-    conn = psycopg2.connect(db_conn_str)
 
-    cur = conn.cursor()
+def _build_inventory_graph(
+    records: Iterable[ContainerRecord],
+    ansible_user: str | None,
+    become_pass: str | None,
+) -> Mapping[str, dict[str, set[str]]]:
+    envs: dict[str, set[str]] = defaultdict(set)
+    categories: dict[str, set[str]] = defaultdict(set)
+    systems: dict[str, set[str]] = defaultdict(set)
+    app_groups: dict[str, list[str]] = defaultdict(list)
 
-    # Fetch data from the database
-    cur.execute("""
-        SELECT e.name as env_name, c.name as cat_name, ss.name as ss_name, 
-               cont.container_name as cont_name, cont.ip_address_management, 
-               cont.ip_address_services, cont.application_type
+    for record in records:
+        environment = record.environment
+        category = record.category
+        system = record.system
+        application_group = f"{system}_{record.application}"
+
+        envs[environment].add(category)
+        categories[category].add(system)
+        systems[system].add(application_group)
+        app_groups[application_group].append(_render_host_entry(record, ansible_user, become_pass))
+
+    if not envs:
+        raise ValueError("No inventory data was returned from the database query")
+
+    return {
+        "envs": envs,
+        "categories": categories,
+        "systems": systems,
+        "app_groups": app_groups,
+    }
+
+
+def _write_inventory(graph: Mapping[str, dict[str, set[str]]], output_directory: Path) -> None:
+    envs = graph["envs"]
+    categories = graph["categories"]
+    systems = graph["systems"]
+    app_groups = graph["app_groups"]
+
+    output_directory.mkdir(parents=True, exist_ok=True)
+
+    for environment, category_names in envs.items():
+        env_path = output_directory / f"{environment}.ini"
+        with env_path.open("w", encoding="utf-8") as configfile:
+            configfile.write("[all:children]\n")
+            for category in sorted(category_names):
+                configfile.write(f"{category}\n")
+            configfile.write("\n")
+
+            system_names: set[str] = set()
+            for category in sorted(category_names):
+                if category not in categories:
+                    continue
+                system_names.update(categories[category])
+                configfile.write(f"[{category}:children]\n")
+                for system in sorted(categories[category]):
+                    configfile.write(f"{system}\n")
+                configfile.write("\n")
+
+            application_groups: set[str] = set()
+            for system in sorted(system_names):
+                if system not in systems:
+                    continue
+                application_groups.update(systems[system])
+                configfile.write(f"[{system}:children]\n")
+                for app_group in sorted(systems[system]):
+                    configfile.write(f"{app_group}\n")
+                configfile.write("\n")
+
+            for app_group in sorted(application_groups):
+                entries = app_groups.get(app_group)
+                if not entries:
+                    continue
+                configfile.write(f"[{app_group}]\n")
+                for entry in entries:
+                    configfile.write(f"{entry}\n")
+                configfile.write("\n")
+
+
+def generate_inventory(
+    rows: Iterable[Sequence[str]],
+    output_directory: Path,
+    ansible_user: str | None = None,
+    become_pass: str | None = None,
+) -> None:
+    records = [ContainerRecord.from_row(row) for row in rows]
+    graph = _build_inventory_graph(records, ansible_user, become_pass)
+    _write_inventory(graph, output_directory)
+
+
+def fetch_inventory_rows(connection) -> Iterable[Sequence[str]]:
+    query = """
+        SELECT e.name as env_name,
+               c.name as cat_name,
+               ss.name as ss_name,
+               cont.container_name as cont_name,
+               cont.ip_address_management,
+               cont.ip_address_services,
+               cont.application_type
         FROM containers cont
         JOIN server_systems ss ON cont.server_system_id = ss.id
         JOIN categories c ON ss.category_id = c.id
         JOIN environments e ON c.environment_id = e.id;
-    """)
+    """
 
-    data = cur.fetchall()
-
-    # Generate ini file structure
-    sss = {}
-    apps = {}
-    cats = {}
-    envs = {}
-
-    for row in data:
-        env, cat, ss, cont, management_ip, service_ip, app = row
-        # Replace spaces or "-" with "_"
-        env = env.replace(" ", "_").replace("-", "_")
-        cat = cat.replace(" ", "_").replace("-", "_")
-        ss = ss.replace(" ", "_").replace("-", "_")
-        cont = cont.replace(" ", "_").replace("-", "_")
-        app = app.replace(" ", "_").replace("-", "_")
-
-        # Define the group name for application type
-        app_group_name = f"{ss}_{app}"
-
-        # Add to ini_structure
-        if ss not in sss:
-            sss[ss] = set()
-        if app_group_name not in apps:
-            apps[app_group_name] = []
-        if cat not in cats:
-            cats[cat] = set()
-        if env not in envs:
-            envs[env] = set()
-
-        apps[app_group_name].append(
-            create_ansible_inventory_server_string(
-                env,
-                cat,
-                ss,
-                app,
-                cont,
-                management_ip,
-                service_ip,
-                ansible_user,
-                become_pass,
-            )
-        )
-        sss[ss].add(app_group_name)
-        cats[cat].add(ss)
-        envs[env].add(cat)
-
-    # Write to the ini file
-    os.makedirs(output_directory, exist_ok=True)
-    for env, cat_set in envs.items():
-        with open(os.path.join(output_directory, f'{env}.ini'), 'w') as configfile:
-            configfile.write('[all:children]\n')
-            for cat in cat_set:
-                configfile.write(f'{cat}\n')
-            configfile.write("\n")
-
-            cat_ss_set = set()
-            for cat, ss_set in cats.items():
-                if cat in cat_set:
-                    configfile.write(f'[{cat}:children]\n')
-                    for ss in ss_set:
-                        cat_ss_set.add(ss)
-                        configfile.write(f'{ss}\n')
-                    configfile.write("\n")
-
-            cat_app_group_set = set()
-            for ss, app_group_set in sss.items():
-                if ss in cat_ss_set:
-                    configfile.write(f'[{ss}:children]\n')
-                    for app_group_name in app_group_set:
-                        cat_app_group_set.add(app_group_name)
-                        configfile.write(f'{app_group_name}\n')
-                    configfile.write("\n")
-
-            for app_group_name, cont_list in apps.items():
-                if app_group_name in cat_app_group_set:
-                    configfile.write(f'[{app_group_name}]\n')
-                    for cont in cont_list:
-                        configfile.write(f'{cont}\n')
-                    configfile.write("\n")
-
-    # Close the cursor and the connection
-    cur.close()
-    conn.close()
+    with connection.cursor() as cursor:
+        cursor.execute(query)
+        return cursor.fetchall()
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Generate Ansible ini file from PostgreSQL database.')
-    parser.add_argument('--db_conn_str', required=True, help='Database connection string.')
-    parser.add_argument('--output_directory', required=True, help='Output directory path.')
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Generate Ansible inventories from a PostgreSQL data source.")
+    parser.add_argument("--db_conn_str", required=True, help="Database connection string.")
+    parser.add_argument("--output_directory", required=True, help="Directory where INI files will be written.")
     parser.add_argument(
-        '--ansible-user',
-        default=os.environ.get('ANSIBLE_INVENTORY_USER'),
-        help='SSH user for generated inventory entries (can also be set with the ANSIBLE_INVENTORY_USER environment variable).',
+        "--ansible-user",
+        default=os.environ.get("ANSIBLE_INVENTORY_USER"),
+        help="SSH user for generated inventory entries (overrides ANSIBLE_INVENTORY_USER).",
     )
     parser.add_argument(
-        '--become-pass',
-        default=os.environ.get('ANSIBLE_BECOME_PASS'),
-        help='Privilege escalation password for generated inventory entries (can also be set with the ANSIBLE_BECOME_PASS environment variable).',
+        "--become-pass",
+        default=os.environ.get("ANSIBLE_BECOME_PASS"),
+        help="Privilege escalation password for generated inventory entries (overrides ANSIBLE_BECOME_PASS).",
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
-    create_ansible_ini_file(args.db_conn_str, args.output_directory, args.ansible_user, args.become_pass)
+    output_directory = Path(args.output_directory)
+
+    if psycopg2 is None:
+        raise RuntimeError("psycopg2 is required to connect to PostgreSQL. Install it before running the CLI.")
+
+    with psycopg2.connect(args.db_conn_str) as connection:  # type: ignore[union-attr]
+        rows = fetch_inventory_rows(connection)
+
+    generate_inventory(rows, output_directory, args.ansible_user, args.become_pass)
+    return 0
+
+
+if __name__ == "__main__":  # pragma: no cover - exercised via unit tests
+    raise SystemExit(main())

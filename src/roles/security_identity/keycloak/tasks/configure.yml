@@ -40,6 +40,7 @@
   ansible.builtin.command:
     cmd: "{{ keycloak_install_dir }}/bin/kc.sh build"
     chdir: "{{ keycloak_install_dir }}"
+  become: true
   become_user: "{{ keycloak_user }}"
   register: keycloak_build
   changed_when: "'Updated' in keycloak_build.stdout"

@@ -4,7 +4,7 @@ dependency:
 driver:
   name: delegated
 lint: |
-  ansible-lint --offline -x var-naming,run-once,no-changed-when ../../src/playbooks/data_product.yml
+  ansible-lint --offline ../../src/playbooks/data_product.yml
 platforms:
   - name: localhost
 provisioner:

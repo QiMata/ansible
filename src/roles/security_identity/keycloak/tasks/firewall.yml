@@ -14,7 +14,7 @@
     port: "{{ keycloak_https_port }}"
     proto: tcp
     comment: "Keycloak HTTPS"
-  when: 
+  when:
     - keycloak_firewall_backend == "ufw"
     - keycloak_enable_https | bool
 
@@ -32,7 +32,7 @@
     permanent: true
     state: enabled
     immediate: true
-  when: 
+  when:
     - keycloak_firewall_backend == "firewalld"
     - keycloak_enable_https | bool
 
@@ -52,7 +52,7 @@
     destination_port: "{{ keycloak_https_port }}"
     jump: ACCEPT
     comment: "Keycloak HTTPS"
-  when: 
+  when:
     - keycloak_firewall_backend == "iptables"
     - keycloak_enable_https | bool
 
