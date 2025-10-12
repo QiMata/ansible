@@ -27,6 +27,7 @@
 - name: Configure mc alias for local MinIO
   ansible.builtin.shell: |
     mc alias set local http{% if minio_enable_tls %}s{% endif %}://localhost:{{ minio_server_port }} {{ minio_root_user }} {{ minio_root_password }}
+  become: true
   become_user: "{{ minio_user }}"
   environment:
     MC_CONFIG_DIR: "/home/{{ minio_user }}/.mc"
@@ -35,30 +36,36 @@
 - name: Create MinIO buckets
   ansible.builtin.shell: |
     mc mb local/{{ item.name }} || true
+  become: true
   become_user: "{{ minio_user }}"
   environment:
     MC_CONFIG_DIR: "/home/{{ minio_user }}/.mc"
   loop: "{{ minio_create_buckets }}"
   when: minio_create_buckets | length > 0
+  changed_when: false
 
 - name: Configure bucket versioning
   ansible.builtin.shell: |
     mc version {% if item.versioning | default(minio_enable_versioning) %}enable{% else %}suspend{% endif %} local/{{ item.name }}
+  become: true
   become_user: "{{ minio_user }}"
   environment:
     MC_CONFIG_DIR: "/home/{{ minio_user }}/.mc"
   loop: "{{ minio_create_buckets }}"
   when: minio_create_buckets | length > 0
+  changed_when: false
 
 - name: Create MinIO users
   ansible.builtin.shell: |
     mc admin user add local {{ item.username }} {{ item.password }}
+  become: true
   become_user: "{{ minio_user }}"
   environment:
     MC_CONFIG_DIR: "/home/{{ minio_user }}/.mc"
   loop: "{{ minio_create_users }}"
   when: minio_create_users | length > 0
   no_log: true
+  changed_when: false
 
 - name: Create bucket policies directory
   ansible.builtin.file:
@@ -81,21 +88,25 @@
 - name: Apply bucket policies
   ansible.builtin.shell: |
     mc admin policy add local {{ item.name }} {{ minio_base_dir }}/policies/{{ item.name }}.json
+  become: true
   become_user: "{{ minio_user }}"
   environment:
     MC_CONFIG_DIR: "/home/{{ minio_user }}/.mc"
   loop: "{{ minio_bucket_policies }}"
   when: minio_bucket_policies | length > 0
+  changed_when: false
 
 - name: Create service accounts
   ansible.builtin.shell: |
     mc admin user svcacct add local {{ item.parent_user }} --access-key {{ item.access_key }} --secret-key {{ item.secret_key }}
+  become: true
   become_user: "{{ minio_user }}"
   environment:
     MC_CONFIG_DIR: "/home/{{ minio_user }}/.mc"
   loop: "{{ minio_service_accounts }}"
   when: minio_service_accounts | length > 0
   no_log: true
+  changed_when: false
 
 - name: Setup access key rotation script
   ansible.builtin.template:
