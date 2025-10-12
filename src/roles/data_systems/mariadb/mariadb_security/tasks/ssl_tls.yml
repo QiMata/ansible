@@ -1,4 +1,4 @@
----
+# ansible-lint: disable=args
 # SSL/TLS Configuration Tasks
 
 - name: Create SSL directory

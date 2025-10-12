@@ -5,3 +5,15 @@ project_dir: .
 exclude_paths:
   - .git/
   - .cache/
+skip_list:
+  - args
+mock_modules:
+  - community.crypto.openssl_privatekey
+  - community.crypto.openssl_csr
+  - community.crypto.x509_certificate
+  - openssl_privatekey
+  - openssl_csr
+  - x509_certificate
+  - ansible_collections.community.crypto.plugins.modules.openssl_privatekey
+  - ansible_collections.community.crypto.plugins.modules.openssl_csr
+  - ansible_collections.community.crypto.plugins.modules.x509_certificate

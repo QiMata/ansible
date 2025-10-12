@@ -1,0 +1,14 @@
+{
+  "collection_info": {
+    "namespace": "data_systems",
+    "name": "mariadb",
+    "version": "0.0.1",
+    "readme": "README.md",
+    "authors": ["Ansible Offline Stub"],
+    "tags": ["mariadb", "database"],
+    "description": "Local stub collection exposing mariadb sub-roles for linting.",
+    "license": ["MIT"]
+  },
+  "format": 1,
+  "dependencies": {}
+}
