@@ -1,0 +1,29 @@
+---
+- name: Ensure Grafana configuration directory exists
+  ansible.builtin.file:
+    path: /etc/openldap/monitoring/grafana
+    state: directory
+    owner: openldap
+    group: openldap
+    mode: "0755"
+  become: true
+
+- name: Render Grafana dashboard definition
+  ansible.builtin.copy:
+    dest: /etc/openldap/monitoring/grafana/dashboard.json
+    owner: openldap
+    group: openldap
+    mode: "0644"
+    content: |
+      {
+        "folder": "{{ security_identity_openldap_monitoring_grafana_dashboard_folder }}",
+        "enabled": {{ security_identity_openldap_monitoring_grafana_dashboard_enabled | ternary('true', 'false') }},
+        "datasource": "{{ security_identity_openldap_monitoring_grafana_datasource_name }}",
+        "dashboard": {
+          "title": "OpenLDAP Overview",
+          "refresh": "30s",
+          "tags": ["openldap"],
+          "timezone": "browser"
+        }
+      }
+  become: true

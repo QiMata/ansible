@@ -29,14 +29,14 @@ provisioner:
         ansible_connection: ssh
         ansible_ssh_pass: molecule123
         ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
-        ansible_become: yes
-        ansible_become_method: sudo
+        ansible_become: true
+        ansible_become_method: ansible.builtin.sudo
   config_options:
     defaults:
       host_key_checking: false
       stdout_callback: yaml
       bin_ansible_callbacks: true
-      role_name_check: False
+      role_name_check: false
 verifier:
   name: ansible
 scenario:

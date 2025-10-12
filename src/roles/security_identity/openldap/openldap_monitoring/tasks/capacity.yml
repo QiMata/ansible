@@ -1,0 +1,14 @@
+---
+- name: Persist capacity monitoring configuration
+  ansible.builtin.copy:
+    dest: /etc/openldap/monitoring/capacity.yml
+    owner: openldap
+    group: openldap
+    mode: "0644"
+    content: |
+      enabled: {{ security_identity_openldap_monitoring_capacity_monitoring | ternary('true', 'false') }}
+      check_interval: {{ security_identity_openldap_monitoring_capacity_check_interval }}
+      disk_threshold: {{ security_identity_openldap_monitoring_capacity_disk_threshold }}
+      memory_threshold: {{ security_identity_openldap_monitoring_capacity_memory_threshold }}
+      connection_threshold: {{ security_identity_openldap_monitoring_capacity_connection_threshold }}
+  become: true

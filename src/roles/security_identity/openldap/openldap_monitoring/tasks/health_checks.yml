@@ -1,0 +1,39 @@
+---
+- name: Ensure health check script directory exists
+  ansible.builtin.file:
+    path: "{{ security_identity_openldap_monitoring_health_check_script | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+
+- name: Install OpenLDAP health check script
+  ansible.builtin.copy:
+    dest: "{{ security_identity_openldap_monitoring_health_check_script }}"
+    owner: root
+    group: root
+    mode: "0755"
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+      ldapsearch \
+        -x \
+        -H ldap://localhost \
+        -b "{{ security_identity_openldap_server_base_dn | default(openldap_server_base_dn | default('dc=example,dc=com')) }}" \
+        -s base \
+        -LLL dn >/dev/null
+  become: true
+
+- name: Persist health check configuration
+  ansible.builtin.copy:
+    dest: /etc/openldap/monitoring/health-checks.yml
+    owner: openldap
+    group: openldap
+    mode: "0644"
+    content: |
+      interval: {{ security_identity_openldap_monitoring_health_check_interval }}
+      timeout: {{ security_identity_openldap_monitoring_health_check_timeout }}
+      retries: {{ security_identity_openldap_monitoring_health_check_retries }}
+      script: {{ security_identity_openldap_monitoring_health_check_script }}
+  become: true
