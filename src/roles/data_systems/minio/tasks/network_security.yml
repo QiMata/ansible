@@ -2,7 +2,7 @@
 # Network Security Configuration Tasks
 
 - name: Configure firewall rules for MinIO
-  ansible.builtin.ufw:
+  community.general.ufw:
     rule: allow
     port: "{{ item }}"
     proto: tcp
@@ -10,7 +10,7 @@
   loop:
     - "{{ minio_server_port }}"
     - "{{ minio_console_port }}"
-  when: 
+  when:
     - minio_enable_firewall
     - ansible_os_family == "Debian"
 
@@ -25,7 +25,7 @@
   loop:
     - "{{ minio_server_port }}"
     - "{{ minio_console_port }}"
-  when: 
+  when:
     - minio_enable_firewall
     - ansible_os_family == "RedHat"
 
@@ -83,7 +83,7 @@
     owner: "{{ minio_user }}"
     group: "{{ minio_group }}"
     mode: '0644'
-  when: 
+  when:
     - minio_enable_reverse_proxy
     - minio_reverse_proxy_config.type is defined
 

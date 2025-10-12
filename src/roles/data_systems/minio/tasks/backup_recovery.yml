@@ -62,25 +62,29 @@
   ansible.builtin.shell: |
     mc admin bucket remote add local/{{ item.source_bucket }} {{ item.target_url }} \
       --service replication --region {{ item.region | default('us-east-1') }}
+  become: true
   become_user: "{{ minio_user }}"
   environment:
     MC_CONFIG_DIR: "/home/{{ minio_user }}/.mc"
   loop: "{{ minio_replication_targets }}"
-  when: 
+  when:
     - minio_enable_replication
     - minio_replication_targets | length > 0
+  changed_when: false
 
 - name: Enable bucket replication
   ansible.builtin.shell: |
     mc replicate add local/{{ item.source_bucket }} --remote-bucket {{ item.target_bucket | default(item.source_bucket) }} \
       --replicate "delete,delete-marker,replica-metadata-sync"
+  become: true
   become_user: "{{ minio_user }}"
   environment:
     MC_CONFIG_DIR: "/home/{{ minio_user }}/.mc"
   loop: "{{ minio_replication_targets }}"
-  when: 
+  when:
     - minio_enable_replication
     - minio_replication_targets | length > 0
+  changed_when: false
 
 - name: Create point-in-time recovery script
   ansible.builtin.template:
