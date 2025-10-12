@@ -1,0 +1,14 @@
+---
+- name: Ensure backend servers are defined for health checks
+  ansible.builtin.assert:
+    that:
+      - (security_identity_openldap_haproxy_servers | length) > 0
+    fail_msg: "At least one backend server must be defined for HAProxy health checks."
+
+- name: Summarize LDAP health check configuration
+  ansible.builtin.debug:
+    msg: |-
+      Health checks run every {{ security_identity_openldap_haproxy_health_check_interval }}
+      with timeout {{ security_identity_openldap_haproxy_health_check_timeout }}.
+      Base DN: {{ security_identity_openldap_haproxy_ldap_health_base_dn }}
+      Filter: {{ security_identity_openldap_haproxy_ldap_health_query }}

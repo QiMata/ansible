@@ -118,3 +118,10 @@ The following list captures the first 100 ansible-lint findings detected in `src
 - Eliminated formatting violations (trailing spaces, excessive line length, blank lines, truthy values) across connector and apache_airflow roles.
 - Replaced bare module names with fully qualified collection names and added explicit `changed_when`/`failed_when` guards for command tasks.
 - Ensured shell usage is minimized by relying on `ansible.builtin.command` with environment overrides.
+
+## Validation
+
+- `ansible-lint src/roles/data_analytics/airflow/airflow_connector -p`
+- `ansible-lint src/roles/data_analytics/airflow/apache_airflow -p`
+- `ansible-lint src/roles/data_analytics/airflow/airflow_scheduler -p`
+- `ansible-lint src/roles/data_analytics/airflow/airflow_webserver -p`

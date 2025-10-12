@@ -139,23 +139,23 @@ openldap_custom_password_policies:
 # =============================================================================
 # HIGH AVAILABILITY - HAPROXY LOAD BALANCING
 # =============================================================================
-openldap_haproxy_enabled: true
-openldap_haproxy_bind_address: "0.0.0.0"
-openldap_haproxy_ldap_port: 389
-openldap_haproxy_ldaps_port: 636
-openldap_haproxy_stats_port: 8080
-openldap_haproxy_stats_user: "admin"
-openldap_haproxy_stats_password: "{{ vault_haproxy_stats_password }}"
+security_identity_openldap_haproxy_enabled: true
+security_identity_openldap_haproxy_bind_address: "0.0.0.0"
+security_identity_openldap_haproxy_ldap_port: 389
+security_identity_openldap_haproxy_ldaps_port: 636
+security_identity_openldap_haproxy_stats_port: 8080
+security_identity_openldap_haproxy_stats_user: "admin"
+security_identity_openldap_haproxy_stats_password: "{{ vault_haproxy_stats_password }}"
 
 # Load Balancing Configuration
-openldap_haproxy_balance_method: "roundrobin"
-openldap_haproxy_max_connections: 2000
-openldap_haproxy_connection_timeout: 30
-openldap_haproxy_server_timeout: 30
-openldap_haproxy_client_timeout: 60
+security_identity_openldap_haproxy_balance_method: "roundrobin"
+security_identity_openldap_haproxy_max_connections: 2000
+security_identity_openldap_haproxy_connection_timeout: 30
+security_identity_openldap_haproxy_server_timeout: 30
+security_identity_openldap_haproxy_client_timeout: 60
 
 # Backend LDAP Servers
-openldap_haproxy_servers:
+security_identity_openldap_haproxy_servers:
   - name: "ldap-primary"
     address: "10.0.1.10"
     port: 389
@@ -179,15 +179,15 @@ openldap_haproxy_servers:
     backup: true
 
 # Health Check Configuration
-openldap_haproxy_health_check_enabled: true
-openldap_haproxy_health_check_interval: "10s"
-openldap_haproxy_health_check_timeout: "5s"
-openldap_haproxy_health_check_retries: 3
+security_identity_openldap_haproxy_health_check_enabled: true
+security_identity_openldap_haproxy_health_check_interval: "10s"
+security_identity_openldap_haproxy_health_check_timeout: "5s"
+security_identity_openldap_haproxy_health_check_retries: 3
 
 # SSL/TLS Configuration
-openldap_haproxy_ssl_enabled: true
-openldap_haproxy_ssl_certificate: "/etc/ssl/certs/ldap.pem"
-openldap_haproxy_ssl_redirect: true
+security_identity_openldap_haproxy_ssl_enabled: true
+security_identity_openldap_haproxy_ssl_certificate: "/etc/ssl/certs/ldap.pem"
+security_identity_openldap_haproxy_ssl_redirect: true
 
 # =============================================================================
 # PERFORMANCE MONITORING

@@ -21,25 +21,25 @@ This role configures HAProxy for OpenLDAP load balancing and high availability, 
 
 ### HAProxy Configuration
 ```yaml
-openldap_haproxy_enabled: true
-openldap_haproxy_version: "2.4"
-openldap_haproxy_bind_address: "0.0.0.0"
-openldap_haproxy_ldap_port: 389
-openldap_haproxy_ldaps_port: 636
-openldap_haproxy_stats_port: 8080
+security_identity_openldap_haproxy_enabled: true
+security_identity_openldap_haproxy_version: "2.4"
+security_identity_openldap_haproxy_bind_address: "0.0.0.0"
+security_identity_openldap_haproxy_ldap_port: 389
+security_identity_openldap_haproxy_ldaps_port: 636
+security_identity_openldap_haproxy_stats_port: 8080
 ```
 
 ### Load Balancing
 ```yaml
-openldap_haproxy_balance_method: "roundrobin"
-openldap_haproxy_max_connections: 1000
-openldap_haproxy_connection_timeout: 30
-openldap_haproxy_server_timeout: 30
+security_identity_openldap_haproxy_balance_method: "roundrobin"
+security_identity_openldap_haproxy_max_connections: 1000
+security_identity_openldap_haproxy_connection_timeout: 30
+security_identity_openldap_haproxy_server_timeout: 30
 ```
 
 ### LDAP Servers
 ```yaml
-openldap_haproxy_servers:
+security_identity_openldap_haproxy_servers:
   - name: "ldap1"
     address: "10.0.1.10"
     port: 389
@@ -50,6 +50,15 @@ openldap_haproxy_servers:
     port: 389
     weight: 100
     check: true
+```
+
+### SSL Termination
+```yaml
+security_identity_openldap_haproxy_ssl_enabled: false
+security_identity_openldap_haproxy_ssl_certificate_dir: "/etc/ssl/certs"
+security_identity_openldap_haproxy_ssl_dhparam_dir: "/etc/ssl/private"
+security_identity_openldap_haproxy_ssl_certificate: "{{ security_identity_openldap_haproxy_ssl_certificate_dir }}/ldap.pem"
+security_identity_openldap_haproxy_ssl_dhparam: "{{ security_identity_openldap_haproxy_ssl_dhparam_dir }}/dhparam.pem"
 ```
 
 ## Dependencies
@@ -63,7 +72,7 @@ openldap_haproxy_servers:
 - hosts: haproxy_servers
   roles:
     - role: openldap_haproxy
-      openldap_haproxy_servers:
+      security_identity_openldap_haproxy_servers:
         - name: "ldap-primary"
           address: "192.168.1.10"
           port: 389
