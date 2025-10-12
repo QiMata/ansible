@@ -17,10 +17,10 @@
 
     # Enable observability so Prometheus can scrape MinIO cluster metrics.
     minio_enable_prometheus: true
-    minio_prometheus_port: {{ minio_cluster_prometheus_port | default(9000) }}
+    minio_prometheus_port: "{{ minio_cluster_prometheus_port | default(9000) | int }}"
 
     # Replication credentials should also come from Vault if disaster recovery buckets are configured.
-    minio_enable_replication: {{ minio_cluster_enable_replication | default(true) }}
+    minio_enable_replication: "{{ minio_cluster_enable_replication | default(true) | bool }}"
     minio_replication_targets:
       - target_url: "https://dr-minio.example.com"
         access_key: "{{ vault_minio_dr_access_key | default('CHANGEME-access') }}"

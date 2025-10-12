@@ -25,5 +25,26 @@ mock_roles:
   - robertdebock.auto_update
   - robertdebock.bootstrap
   - robertdebock.fail2ban
+  - data_systems.minio
+  - mrlesmithjr.mariadb_galera_cluster
+  - base
+  - cloudflare
+  - netbox
+  - common
+  - apt_mirror
+  - bind9
+  - monitoring_observability.kibana
+  - monitoring_observability.logstash
+  - monitoring_observability.grafana
+  - haproxy
+  - infrastructure/shared/common
+  - keycloak
+  - postgresql_client
+  - kong
+  - kubeadm
+  - openldap_client
+  - openldap_content
+  - rocketchat
 warn_list:
   - experimental  # retain visibility into experimental rules
+offline: true
