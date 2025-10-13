@@ -4,6 +4,6 @@
   become: true
   gather_facts: true
   tasks:
-    - name: "Include backup_netbox role"
-      ansible.builtin.include_role:
-        name: backup_netbox
+    - name: Apply NetBox backup role
+      ansible.builtin.import_role:
+        name: ..

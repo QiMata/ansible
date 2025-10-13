@@ -2,5 +2,7 @@
 - name: Converge
   hosts: all
   become: true
-  roles:
-    - role: netbox
+  tasks:
+    - name: Apply NetBox role
+      ansible.builtin.import_role:
+        name: ..

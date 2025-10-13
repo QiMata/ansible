@@ -2,7 +2,7 @@
 # NetBox Health Check Script
 
 NETBOX_URL="${1:-http://localhost:8000}"
-HEALTH_ENDPOINT="${NETBOX_URL}{{ netbox_health_check_path }}"
+HEALTH_ENDPOINT="${NETBOX_URL}{{ operations_management_netbox_health_check_path }}"
 TIMEOUT=10
 MAX_RETRIES=3
 
@@ -31,7 +31,7 @@ check_endpoint() {
 }
 
 check_database() {
-    {{ netbox_venv }}/bin/python {{ netbox_install_dir }}/netbox/manage.py shell << EOF
+    {{ operations_management_netbox_venv }}/bin/python {{ operations_management_netbox_install_dir }}/netbox/manage.py shell << EOF
 try:
     from django.db import connection
     cursor = connection.cursor()
@@ -44,7 +44,7 @@ EOF
 }
 
 check_redis() {
-    {{ netbox_venv }}/bin/python {{ netbox_install_dir }}/netbox/manage.py shell << EOF
+    {{ operations_management_netbox_venv }}/bin/python {{ operations_management_netbox_install_dir }}/netbox/manage.py shell << EOF
 try:
     import redis
     r = redis.Redis(host='{{ redis_host }}', port={{ redis_port }}, db=0)
@@ -64,10 +64,10 @@ main() {
     
     # Check services
     check_service "netbox" || exit_code=1
-{% if netbox_rq_enabled %}
+{% if operations_management_netbox_rq_enabled %}
     check_service "netbox-rq" || exit_code=1
 {% endif %}
-{% if netbox_nginx_enabled %}
+{% if operations_management_netbox_nginx_enabled %}
     check_service "nginx" || exit_code=1
 {% endif %}
     
