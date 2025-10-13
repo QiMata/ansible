@@ -2,6 +2,8 @@
 
 The **Letsencrypt Setup** role installs and configures the Certbot client (for Let's Encrypt) on a host, obtains an SSL/TLS certificate for a given domain, and sets up automated renewals. It supports two challenge methods for certificate issuance: **HTTP-01 (webroot)** and **DNS-01 (using GoDaddy's DNS API)**. This role will **install necessary packages**, **request a certificate from Let's Encrypt**, and **create a cron job** for renewing certificates. It does *not* configure your web server or application to use the certificate (that should be done in your web server's role or playbook), but it leaves the certificate files in place for you to reference. Key capabilities include:
 
+> **Note:** Variables for this role now follow the `security_identity_letsencrypt_setup_` prefix to satisfy ansible-lint checks. Existing playbooks that use the legacy variable names (`letsencrypt_setup_domain_name`, `letsencrypt_setup_email_address`, etc.) continue to work because the role maps them to the new names internally.
+
 ## When to Use This Role vs. Alternative
 
 This repository contains two Let's Encrypt roles for different use cases. Choose the appropriate one based on your requirements:

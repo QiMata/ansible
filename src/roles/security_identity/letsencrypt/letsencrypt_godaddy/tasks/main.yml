@@ -1,4 +1,47 @@
 ---
+- name: Normalize letsencrypt_godaddy variables
+  ansible.builtin.set_fact:
+    __letsencrypt_godaddy_cert_domains: >-
+      {{ security_identity_letsencrypt_godaddy_cert_domains
+         | default(letsencrypt_godaddy_cert_domains | default(cert_domains | default([]))) | list }}
+    __letsencrypt_godaddy_account_email: >-
+      {{ security_identity_letsencrypt_godaddy_account_email
+         | default(letsencrypt_godaddy_account_email | default(letsencrypt_account_email | default(''))) }}
+    __letsencrypt_godaddy_api_key: >-
+      {{ security_identity_letsencrypt_godaddy_api_key
+         | default(godaddy_api_key | default('')) }}
+    __letsencrypt_godaddy_api_secret: >-
+      {{ security_identity_letsencrypt_godaddy_api_secret
+         | default(godaddy_api_secret | default('')) }}
+    __letsencrypt_godaddy_cert_install_path: >-
+      {{ security_identity_letsencrypt_godaddy_cert_install_path
+         | default(cert_install_path | default('/etc/letsencrypt/live')) }}
+    __letsencrypt_godaddy_service_reload_command: >-
+      {{ security_identity_letsencrypt_godaddy_service_reload_command
+         | default(service_reload_command | default('')) }}
+    __letsencrypt_godaddy_use_staging: >-
+      {{ security_identity_letsencrypt_godaddy_use_staging
+         | default(use_staging | default(false)) | bool }}
+    __letsencrypt_godaddy_propagation_wait: >-
+      {{ security_identity_letsencrypt_godaddy_propagation_wait
+         | default(propagation_wait | default(600)) | int }}
+    __letsencrypt_godaddy_acme_sh_install_dir: >-
+      {{ security_identity_letsencrypt_godaddy_acme_sh_install_dir
+         | default(letsencrypt_godaddy_acme_sh_install_dir
+                   | default(acme_sh_install_dir | default('/etc/acme'))) }}
+    __letsencrypt_godaddy_acme_sh_git_url: >-
+      {{ security_identity_letsencrypt_godaddy_acme_sh_git_url
+         | default(acme_sh_git_url | default('https://github.com/acmesh-official/acme.sh')) }}
+    __letsencrypt_godaddy_acme_install_cron: >-
+      {{ security_identity_letsencrypt_godaddy_acme_install_cron
+         | default(acme_install_cron | default(true)) | bool }}
+    __letsencrypt_godaddy_force_renew: >-
+      {{ security_identity_letsencrypt_godaddy_force_renew
+         | default(force_renew | default(false)) | bool }}
+    __letsencrypt_godaddy_acme_sh_auto_upgrade: >-
+      {{ security_identity_letsencrypt_godaddy_acme_sh_auto_upgrade
+         | default(acme_sh_auto_upgrade | default(false)) | bool }}
+
 - name: Import install tasks
   ansible.builtin.import_tasks: install.yml
 - name: Import obtain tasks

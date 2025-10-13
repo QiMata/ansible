@@ -1,15 +1,15 @@
 ---
 # Required variables (no defaults)
-letsencrypt_domains: []
-letsencrypt_email: ""
+security_identity_letsencrypt_unified_domains: []
+security_identity_letsencrypt_unified_email: ""
 
 # Client and challenge configuration
-letsencrypt_client: "auto"  # auto, certbot, or acme.sh
-letsencrypt_challenge_method: "dns"  # dns or http
+security_identity_letsencrypt_unified_client: "auto"  # auto, certbot, or acme.sh
+security_identity_letsencrypt_unified_challenge_method: "dns"  # dns or http
 
 # GoDaddy API credentials (required for DNS challenges)
-godaddy_api_key: ""
-godaddy_api_secret: ""
+security_identity_letsencrypt_unified_godaddy_api_key: ""
+security_identity_letsencrypt_unified_godaddy_api_secret: ""
 
 # HTTP challenge configuration (certbot only)
-webroot_path: "/var/www/html"
+security_identity_letsencrypt_unified_webroot_path: "/var/www/html"

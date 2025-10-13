@@ -41,12 +41,15 @@
   block:
     - name: Include letsencrypt role for public certificates
       ansible.builtin.include_role:
-        name: letsencrypt_setup
+        name: security_identity.letsencrypt.letsencrypt_setup
       vars:
-        letsencrypt_domains: "{{ apache_airflow_letsencrypt_domains }}"  # noqa var-naming
-        letsencrypt_cert_path: "{{ apache_airflow_letsencrypt_cert_path }}"  # noqa var-naming
-        letsencrypt_cert_owner: "{{ apache_airflow_letsencrypt_cert_owner }}"  # noqa var-naming
-        letsencrypt_cert_group: "{{ apache_airflow_letsencrypt_cert_group }}"  # noqa var-naming
+        security_identity_letsencrypt_setup_domain_name: >-
+          {{ (apache_airflow_letsencrypt_domains | default([])) | first }}
+        security_identity_letsencrypt_setup_email_address: "{{ apache_airflow_letsencrypt_email_address }}"
+        security_identity_letsencrypt_setup_use_godaddy: "{{ apache_airflow_letsencrypt_use_godaddy }}"
+        security_identity_letsencrypt_setup_godaddy_api_key: "{{ apache_airflow_letsencrypt_godaddy_api_key }}"
+        security_identity_letsencrypt_setup_godaddy_api_secret: "{{ apache_airflow_letsencrypt_godaddy_api_secret }}"
+        security_identity_letsencrypt_setup_webroot_path: "{{ apache_airflow_letsencrypt_webroot_path }}"
 
     - name: Set certificate paths for Let's Encrypt
       ansible.builtin.set_fact:
