@@ -19,7 +19,7 @@
 
 - name: Archive NetBox media
   community.general.archive:
-    path: "{{ netbox_media_root }}"
+    path: "{{ operations_management_netbox_media_root }}"
     dest: "/var/backups/netbox/netbox_media_{{ ansible_date_time.iso8601_basic_short }}.tgz"
     format: gz
     mode: "0600"

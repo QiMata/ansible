@@ -5,12 +5,12 @@ Wants=postgresql.service redis.service
 
 [Service]
 Type=simple
-User={{ netbox_user }}
-Group={{ netbox_user }}
-WorkingDirectory={{ netbox_install_dir }}/netbox
-ExecStart={{ netbox_venv }}/bin/python {{ netbox_install_dir }}/netbox/manage.py rqworker {{ netbox_rq_queues }}
+User={{ operations_management_netbox_user }}
+Group={{ operations_management_netbox_user }}
+WorkingDirectory={{ operations_management_netbox_install_dir }}/netbox
+ExecStart={{ operations_management_netbox_venv }}/bin/python {{ operations_management_netbox_install_dir }}/netbox/manage.py rqworker {{ operations_management_netbox_rq_queues }}
 Environment="DJANGO_SETTINGS_MODULE=netbox.settings"
-Environment="PYTHONPATH={{ netbox_install_dir }}/netbox"
+Environment="PYTHONPATH={{ operations_management_netbox_install_dir }}/netbox"
 Restart=always
 RestartSec=5
 TimeoutStopSec=30
@@ -20,7 +20,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths={{ netbox_install_dir }} /var/log/netbox {{ netbox_media_root }}
+ReadWritePaths={{ operations_management_netbox_install_dir }} /var/log/netbox {{ operations_management_netbox_media_root }}
 
 # Resource limits
 LimitNOFILE=65536

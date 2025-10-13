@@ -1,103 +1,97 @@
 ---
-# NetBox Installation Settings
-netbox_git_repo: "https://github.com/netbox-community/netbox.git"
-netbox_branch: "master"
-netbox_systemd_unit: "/etc/systemd/system/netbox.service"
-netbox_python: "python3"
-netbox_venv: "/opt/netbox/venv"
-netbox_uwsgi_socket: "/run/netbox/netbox.sock"
-netbox_media_root: "{{ netbox_install_dir }}/netbox/media"
-netbox_static_root: "{{ netbox_install_dir }}/netbox/static"
+# Core NetBox paths and ownership
+operations_management_netbox_install_dir: "{{ netbox_install_dir | default('/opt/netbox') }}"
+operations_management_netbox_user: "{{ netbox_user | default('netbox') }}"
 
-# RQ Worker Settings
-netbox_rq_enabled: true
-netbox_rq_systemd_unit: "/etc/systemd/system/netbox-rq.service"
-netbox_rq_workers: 2
-netbox_rq_queues: "default,high,low"
+# NetBox installation source
+operations_management_netbox_git_repo: "{{ netbox_git_repo | default('https://github.com/netbox-community/netbox.git') }}"
+operations_management_netbox_branch: "{{ netbox_branch | default('master') }}"
 
-# Performance Settings
-netbox_gunicorn_workers: 4
-netbox_gunicorn_threads: 1
-netbox_gunicorn_timeout: 120
-netbox_gunicorn_keepalive: 20
-netbox_gunicorn_max_requests: 5000
-netbox_gunicorn_max_requests_jitter: 500
+# Service units and runtime locations
+operations_management_netbox_systemd_unit: "{{ netbox_systemd_unit | default('/etc/systemd/system/netbox.service') }}"
+operations_management_netbox_python: "{{ netbox_python | default('python3') }}"
+operations_management_netbox_venv: "{{ netbox_venv | default('/opt/netbox/venv') }}"
+operations_management_netbox_uwsgi_socket: "{{ netbox_uwsgi_socket | default('/run/netbox/netbox.sock') }}"
+operations_management_netbox_media_root: "{{ netbox_media_root | default(operations_management_netbox_install_dir ~ '/netbox/media') }}"
+operations_management_netbox_static_root: "{{ netbox_static_root | default(operations_management_netbox_install_dir ~ '/netbox/static') }}"
 
-# Initial Admin User
-netbox_create_superuser: false
-netbox_superuser_username: "admin"
-netbox_superuser_email: "admin@example.com"
-# netbox_superuser_password: ""  # Should be set in vault or group vars
+# RQ worker configuration
+operations_management_netbox_rq_enabled: "{{ netbox_rq_enabled | default(true) }}"
+operations_management_netbox_rq_systemd_unit: "{{ netbox_rq_systemd_unit | default('/etc/systemd/system/netbox-rq.service') }}"
+operations_management_netbox_rq_workers: "{{ netbox_rq_workers | default(2) }}"
+operations_management_netbox_rq_queues: "{{ netbox_rq_queues | default('default,high,low') }}"
 
-# Nginx Proxy Settings
-netbox_nginx_enabled: false
-netbox_nginx_server_name: "{{ inventory_hostname }}"
-netbox_nginx_ssl_enabled: false
-netbox_nginx_ssl_cert_path: "/etc/ssl/certs/netbox.crt"
-netbox_nginx_ssl_key_path: "/etc/ssl/private/netbox.key"
-netbox_nginx_client_max_body_size: "25m"
+# Gunicorn runtime tuning
+operations_management_netbox_gunicorn_workers: "{{ netbox_gunicorn_workers | default(4) }}"
+operations_management_netbox_gunicorn_threads: "{{ netbox_gunicorn_threads | default(1) }}"
+operations_management_netbox_gunicorn_timeout: "{{ netbox_gunicorn_timeout | default(120) }}"
+operations_management_netbox_gunicorn_keepalive: "{{ netbox_gunicorn_keepalive | default(20) }}"
+operations_management_netbox_gunicorn_max_requests: "{{ netbox_gunicorn_max_requests | default(5000) }}"
+operations_management_netbox_gunicorn_max_requests_jitter: "{{ netbox_gunicorn_max_requests_jitter | default(500) }}"
 
-# LDAP/SSO Settings
-netbox_ldap_enabled: false
-netbox_ldap_server_uri: ""
-netbox_ldap_bind_dn: ""
-netbox_ldap_bind_password: ""
-netbox_ldap_user_search_base: ""
-netbox_ldap_group_search_base: ""
+# Initial administrative user
+operations_management_netbox_create_superuser: "{{ netbox_create_superuser | default(false) }}"
+operations_management_netbox_superuser_username: "{{ netbox_superuser_username | default('admin') }}"
+operations_management_netbox_superuser_email: "{{ netbox_superuser_email | default('admin@example.com') }}"
+# operations_management_netbox_superuser_password is intentionally undefined; supply via inventory or vault when required.
 
-# Email Settings
-netbox_email_enabled: false
-netbox_email_server: "localhost"
-netbox_email_port: 587
-netbox_email_use_ssl: false
-netbox_email_use_tls: true
-netbox_email_username: ""
-netbox_email_password: ""
-netbox_email_from: "netbox@{{ inventory_hostname }}"
+# Nginx proxy settings
+operations_management_netbox_nginx_enabled: "{{ netbox_nginx_enabled | default(false) }}"
+operations_management_netbox_nginx_server_name: "{{ netbox_nginx_server_name | default(inventory_hostname) }}"
+operations_management_netbox_nginx_ssl_enabled: "{{ netbox_nginx_ssl_enabled | default(false) }}"
+operations_management_netbox_nginx_ssl_cert_path: "{{ netbox_nginx_ssl_cert_path | default('/etc/ssl/certs/netbox.crt') }}"
+operations_management_netbox_nginx_ssl_key_path: "{{ netbox_nginx_ssl_key_path | default('/etc/ssl/private/netbox.key') }}"
+operations_management_netbox_nginx_client_max_body_size: "{{ netbox_nginx_client_max_body_size | default('25m') }}"
 
-# Plugin Settings
-netbox_plugins: []
-# Example:
-# netbox_plugins:
-#   - name: "netbox_plugin_example"
-#     config:
-#       setting1: "value1"
-#       setting2: "value2"
+# LDAP/SSO integration
+operations_management_netbox_ldap_enabled: "{{ netbox_ldap_enabled | default(false) }}"
+operations_management_netbox_ldap_server_uri: "{{ netbox_ldap_server_uri | default('') }}"
+operations_management_netbox_ldap_bind_dn: "{{ netbox_ldap_bind_dn | default('') }}"
+operations_management_netbox_ldap_bind_password: "{{ netbox_ldap_bind_password | default('') }}"
+operations_management_netbox_ldap_user_search_base: "{{ netbox_ldap_user_search_base | default('') }}"
+operations_management_netbox_ldap_group_search_base: "{{ netbox_ldap_group_search_base | default('') }}"
 
-# Custom Field Settings
-netbox_custom_fields: []
+# Email delivery
+operations_management_netbox_email_enabled: "{{ netbox_email_enabled | default(false) }}"
+operations_management_netbox_email_server: "{{ netbox_email_server | default('localhost') }}"
+operations_management_netbox_email_port: "{{ netbox_email_port | default(587) }}"
+operations_management_netbox_email_use_ssl: "{{ netbox_email_use_ssl | default(false) }}"
+operations_management_netbox_email_use_tls: "{{ netbox_email_use_tls | default(true) }}"
+operations_management_netbox_email_username: "{{ netbox_email_username | default('') }}"
+operations_management_netbox_email_password: "{{ netbox_email_password | default('') }}"
+operations_management_netbox_email_from: "{{ netbox_email_from | default('netbox@' ~ inventory_hostname) }}"
 
-# Webhook Settings
-netbox_webhooks_enabled: true
-netbox_webhook_timeout: 30
+# Extensibility
+operations_management_netbox_plugins: "{{ netbox_plugins | default('[]') | from_yaml }}"
+operations_management_netbox_custom_fields: "{{ netbox_custom_fields | default('[]') | from_yaml }}"
 
-# Health Check Settings
-netbox_health_check_enabled: true
-netbox_health_check_path: "/api/status/"
+# Webhooks
+operations_management_netbox_webhooks_enabled: "{{ netbox_webhooks_enabled | default(true) }}"
+operations_management_netbox_webhook_timeout: "{{ netbox_webhook_timeout | default(30) }}"
 
-# Backup Settings
-netbox_backup_enabled: false
-netbox_backup_schedule: "0 2 * * *"  # Daily at 2 AM
-netbox_backup_retention_days: 7
-netbox_backup_dir: "/opt/netbox/backups"
+# Health checks and monitoring
+operations_management_netbox_health_check_enabled: "{{ netbox_health_check_enabled | default(true) }}"
+operations_management_netbox_health_check_path: "{{ netbox_health_check_path | default('/api/status/') }}"
+operations_management_netbox_backup_enabled: "{{ netbox_backup_enabled | default(false) }}"
+operations_management_netbox_backup_schedule: "{{ netbox_backup_schedule | default('0 2 * * *') }}"
+operations_management_netbox_backup_retention_days: "{{ netbox_backup_retention_days | default(7) }}"
+operations_management_netbox_backup_dir: "{{ netbox_backup_dir | default('/opt/netbox/backups') }}"
+operations_management_netbox_prometheus_enabled: "{{ netbox_prometheus_enabled | default(false) }}"
+operations_management_netbox_prometheus_port: "{{ netbox_prometheus_port | default(9000) }}"
 
-# Monitoring Settings
-netbox_prometheus_enabled: false
-netbox_prometheus_port: 9000
+# Security hardening
+operations_management_netbox_cors_enabled: "{{ netbox_cors_enabled | default(false) }}"
+operations_management_netbox_cors_origins: "{{ netbox_cors_origins | default('[]') | from_yaml }}"
+operations_management_netbox_session_cookie_secure: "{{ netbox_session_cookie_secure | default(true) }}"
+operations_management_netbox_csrf_cookie_secure: "{{ netbox_csrf_cookie_secure | default(true) }}"
+operations_management_netbox_secure_ssl_redirect: "{{ netbox_secure_ssl_redirect | default(false) }}"
 
-# Security Settings
-netbox_cors_enabled: false
-netbox_cors_origins: []
-netbox_session_cookie_secure: true
-netbox_csrf_cookie_secure: true
-netbox_secure_ssl_redirect: false
-
-# Advanced Configuration
-netbox_debug: false
-netbox_time_zone: "UTC"
-netbox_date_format: "Y-m-d"
-netbox_short_date_format: "Y-m-d"
-netbox_time_format: "g:i A"
-netbox_short_time_format: "H:i:s"
-netbox_datetime_format: "Y-m-d g:i A"
-netbox_short_datetime_format: "Y-m-d H:i"
+# Presentation
+operations_management_netbox_debug: "{{ netbox_debug | default(false) }}"
+operations_management_netbox_time_zone: "{{ netbox_time_zone | default('UTC') }}"
+operations_management_netbox_date_format: "{{ netbox_date_format | default('Y-m-d') }}"
+operations_management_netbox_short_date_format: "{{ netbox_short_date_format | default('Y-m-d') }}"
+operations_management_netbox_time_format: "{{ netbox_time_format | default('g:i A') }}"
+operations_management_netbox_short_time_format: "{{ netbox_short_time_format | default('H:i:s') }}"
+operations_management_netbox_datetime_format: "{{ netbox_datetime_format | default('Y-m-d g:i A') }}"
+operations_management_netbox_short_datetime_format: "{{ netbox_short_datetime_format | default('Y-m-d H:i') }}"

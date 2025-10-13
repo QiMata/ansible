@@ -1,8 +1,8 @@
 #!/bin/bash
 # NetBox Backup Script
 
-BACKUP_DIR="{{ netbox_backup_dir }}"
-RETENTION_DAYS="{{ netbox_backup_retention_days }}"
+BACKUP_DIR="{{ operations_management_netbox_backup_dir }}"
+RETENTION_DAYS="{{ operations_management_netbox_backup_retention_days }}"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_NAME="netbox_backup_${TIMESTAMP}"
 LOG_FILE="/var/log/netbox/backup.log"
@@ -22,7 +22,7 @@ log_message() {
 create_backup_dir() {
     if [ ! -d "$BACKUP_DIR" ]; then
         mkdir -p "$BACKUP_DIR"
-        chown {{ netbox_user }}:{{ netbox_user }} "$BACKUP_DIR"
+        chown {{ operations_management_netbox_user }}:{{ operations_management_netbox_user }} "$BACKUP_DIR"
     fi
 }
 
@@ -43,8 +43,8 @@ backup_media() {
     log_message "Starting media files backup..."
     local media_backup_file="${BACKUP_DIR}/${BACKUP_NAME}_media.tar.gz"
     
-    if [ -d "{{ netbox_media_root }}" ] && [ "$(ls -A {{ netbox_media_root }})" ]; then
-        if tar -czf "$media_backup_file" -C "$(dirname {{ netbox_media_root }})" "$(basename {{ netbox_media_root }})"; then
+    if [ -d "{{ operations_management_netbox_media_root }}" ] && [ "$(ls -A {{ operations_management_netbox_media_root }})" ]; then
+        if tar -czf "$media_backup_file" -C "$(dirname {{ operations_management_netbox_media_root }})" "$(basename {{ operations_management_netbox_media_root }})"; then
             log_message "Media backup completed: $media_backup_file"
             return 0
         else
@@ -62,8 +62,8 @@ backup_configuration() {
     local config_backup_file="${BACKUP_DIR}/${BACKUP_NAME}_config.tar.gz"
     
     if tar -czf "$config_backup_file" \
-        -C "{{ netbox_install_dir }}/netbox/netbox" configuration.py \
-        -C "/etc/systemd/system" netbox.service{% if netbox_rq_enabled %} netbox-rq.service{% endif %}{% if netbox_nginx_enabled %} \
+        -C "{{ operations_management_netbox_install_dir }}/netbox/netbox" configuration.py \
+        -C "/etc/systemd/system" netbox.service{% if operations_management_netbox_rq_enabled %} netbox-rq.service{% endif %}{% if operations_management_netbox_nginx_enabled %} \
         -C "/etc/nginx/sites-available" netbox{% endif %}; then
         log_message "Configuration backup completed: $config_backup_file"
         return 0
@@ -120,7 +120,7 @@ main() {
     fi
     
     # Set proper ownership
-    chown -R {{ netbox_user }}:{{ netbox_user }} "$BACKUP_DIR"
+    chown -R {{ operations_management_netbox_user }}:{{ operations_management_netbox_user }} "$BACKUP_DIR"
     
     return $exit_code
 }

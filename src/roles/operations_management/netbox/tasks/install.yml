@@ -20,7 +20,7 @@
 
 - name: Create netbox system user
   ansible.builtin.user:
-    name: "{{ netbox_user }}"
+    name: "{{ operations_management_netbox_user }}"
     system: true
     create_home: false
     shell: /usr/sbin/nologin
@@ -29,50 +29,51 @@
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
-    owner: "{{ netbox_user }}"
-    group: "{{ netbox_user }}"
+    owner: "{{ operations_management_netbox_user }}"
+    group: "{{ operations_management_netbox_user }}"
     mode: '0755'
   loop:
-    - "{{ netbox_install_dir | dirname }}"
+    - "{{ operations_management_netbox_install_dir | dirname }}"
     - "/var/log/netbox"
     - "/run/netbox"
 
 - name: Clone NetBox repository
   ansible.builtin.git:
-    repo: "{{ netbox_git_repo }}"
-    dest: "{{ netbox_install_dir }}"
-    version: "{{ netbox_branch }}"
+    repo: "{{ operations_management_netbox_git_repo }}"
+    dest: "{{ operations_management_netbox_install_dir }}"
+    version: "{{ operations_management_netbox_branch }}"
     force: true
-  notify: restart netbox
+  notify: Restart NetBox
 
 - name: Set ownership of NetBox directory
   ansible.builtin.file:
-    path: "{{ netbox_install_dir }}"
-    owner: "{{ netbox_user }}"
-    group: "{{ netbox_user }}"
+    path: "{{ operations_management_netbox_install_dir }}"
+    owner: "{{ operations_management_netbox_user }}"
+    group: "{{ operations_management_netbox_user }}"
     recurse: true
 
 - name: Create virtualenv
-  ansible.builtin.command: "{{ netbox_python }} -m venv {{ netbox_venv }}"
+  ansible.builtin.command: "{{ operations_management_netbox_python }} -m venv {{ operations_management_netbox_venv }}"
   args:
-    creates: "{{ netbox_venv }}/bin/activate"
+    creates: "{{ operations_management_netbox_venv }}/bin/activate"
   become: true
-  become_user: "{{ netbox_user }}"
+  become_user: "{{ operations_management_netbox_user }}"
 
 - name: Upgrade pip in virtualenv
   ansible.builtin.pip:
     name: pip
-    state: latest
-    virtualenv: "{{ netbox_venv }}"
+    state: present
+    virtualenv: "{{ operations_management_netbox_venv }}"
+    extra_args: "--upgrade"
   become: true
-  become_user: "{{ netbox_user }}"
+  become_user: "{{ operations_management_netbox_user }}"
 
 - name: Install NetBox requirements
   ansible.builtin.pip:
-    requirements: "{{ netbox_install_dir }}/requirements.txt"
-    virtualenv: "{{ netbox_venv }}"
+    requirements: "{{ operations_management_netbox_install_dir }}/requirements.txt"
+    virtualenv: "{{ operations_management_netbox_venv }}"
   become: true
-  become_user: "{{ netbox_user }}"
+  become_user: "{{ operations_management_netbox_user }}"
 
 - name: Install additional Python packages
   ansible.builtin.pip:
@@ -80,15 +81,15 @@
       - gunicorn
       - django-auth-ldap  # For LDAP support
       - redis
-    virtualenv: "{{ netbox_venv }}"
+    virtualenv: "{{ operations_management_netbox_venv }}"
   become: true
-  become_user: "{{ netbox_user }}"
+  become_user: "{{ operations_management_netbox_user }}"
 
 - name: Install plugin dependencies
   ansible.builtin.pip:
     name: "{{ item.name }}"
-    virtualenv: "{{ netbox_venv }}"
-  loop: "{{ netbox_plugins }}"
-  when: netbox_plugins | length > 0
+    virtualenv: "{{ operations_management_netbox_venv }}"
+  loop: "{{ operations_management_netbox_plugins }}"
+  when: operations_management_netbox_plugins | length > 0
   become: true
-  become_user: "{{ netbox_user }}"
+  become_user: "{{ operations_management_netbox_user }}"

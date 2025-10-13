@@ -1,26 +1,30 @@
 ---
 - name: Check if superuser already exists
   ansible.builtin.command:
-    cmd: "{{ netbox_venv }}/bin/python {{ netbox_install_dir }}/netbox/manage.py shell -c \"from django.contrib.auth.models import User; print(User.objects.filter(username='{{ netbox_superuser_username }}').exists())\""
+    cmd: >-
+      {{ operations_management_netbox_venv }}/bin/python
+      {{ operations_management_netbox_install_dir }}/netbox/manage.py
+      shell -c "from django.contrib.auth.models import User;
+      print(User.objects.filter(username='{{ operations_management_netbox_superuser_username }}').exists())"
   register: superuser_exists
   changed_when: false
-  when: netbox_create_superuser | bool
+  when: operations_management_netbox_create_superuser | bool
 
 - name: Create NetBox superuser
   ansible.builtin.expect:
-    command: "{{ netbox_venv }}/bin/python {{ netbox_install_dir }}/netbox/manage.py createsuperuser --noinput"
+    command: "{{ operations_management_netbox_venv }}/bin/python {{ operations_management_netbox_install_dir }}/netbox/manage.py createsuperuser --noinput"
     responses:
-      (?i)username: "{{ netbox_superuser_username }}"
-      (?i)email: "{{ netbox_superuser_email }}"
+      (?i)username: "{{ operations_management_netbox_superuser_username }}"
+      (?i)email: "{{ operations_management_netbox_superuser_email }}"
       (?i)password: "{{ netbox_superuser_password }}"
     timeout: 30
   environment:
-    DJANGO_SUPERUSER_USERNAME: "{{ netbox_superuser_username }}"
-    DJANGO_SUPERUSER_EMAIL: "{{ netbox_superuser_email }}"
+    DJANGO_SUPERUSER_USERNAME: "{{ operations_management_netbox_superuser_username }}"
+    DJANGO_SUPERUSER_EMAIL: "{{ operations_management_netbox_superuser_email }}"
     DJANGO_SUPERUSER_PASSWORD: "{{ netbox_superuser_password }}"
   become: true
-  become_user: "{{ netbox_user }}"
+  become_user: "{{ operations_management_netbox_user }}"
   when:
-    - netbox_create_superuser | bool
+    - operations_management_netbox_create_superuser | bool
     - superuser_exists.stdout.strip() == "False"
   no_log: true

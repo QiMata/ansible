@@ -5,8 +5,8 @@
   become: true
   vars:
     # Required basic configuration
-    netbox_install_dir: "/opt/netbox"
-    netbox_user: "netbox"
+    operations_management_netbox_install_dir: "/opt/netbox"
+    operations_management_netbox_user: "netbox"
     netbox_allowed_hosts:
       - "netbox.example.com"
       - "{{ inventory_hostname }}"
@@ -25,52 +25,52 @@
     redis_password: "{{ vault_redis_password }}"
 
     # Enhanced features configuration
-    netbox_branch: "v3.6.0"  # Use stable version
+    operations_management_netbox_branch: "v3.6.0"  # Use stable version
 
     # RQ Worker settings
-    netbox_rq_enabled: true
-    netbox_rq_workers: 3
-    netbox_rq_queues: "default,high,low,webhooks"
+    operations_management_netbox_rq_enabled: true
+    operations_management_netbox_rq_workers: 3
+    operations_management_netbox_rq_queues: "default,high,low,webhooks"
 
     # Performance tuning
-    netbox_gunicorn_workers: 8  # 2 × CPU cores
-    netbox_gunicorn_threads: 2
-    netbox_gunicorn_timeout: 180
-    netbox_gunicorn_keepalive: 30
+    operations_management_netbox_gunicorn_workers: 8  # 2 × CPU cores
+    operations_management_netbox_gunicorn_threads: 2
+    operations_management_netbox_gunicorn_timeout: 180
+    operations_management_netbox_gunicorn_keepalive: 30
 
     # Initial admin user
-    netbox_create_superuser: true
-    netbox_superuser_username: "admin"
-    netbox_superuser_email: "admin@example.com"
+    operations_management_netbox_create_superuser: true
+    operations_management_netbox_superuser_username: "admin"
+    operations_management_netbox_superuser_email: "admin@example.com"
     netbox_superuser_password: "{{ vault_netbox_admin_password }}"
 
     # Nginx reverse proxy with SSL
-    netbox_nginx_enabled: true
-    netbox_nginx_server_name: "netbox.example.com"
-    netbox_nginx_ssl_enabled: true
-    netbox_nginx_ssl_cert_path: "/etc/ssl/certs/netbox.example.com.crt"
-    netbox_nginx_ssl_key_path: "/etc/ssl/private/netbox.example.com.key"
-    netbox_nginx_client_max_body_size: "50m"
+    operations_management_netbox_nginx_enabled: true
+    operations_management_netbox_nginx_server_name: "netbox.example.com"
+    operations_management_netbox_nginx_ssl_enabled: true
+    operations_management_netbox_nginx_ssl_cert_path: "/etc/ssl/certs/netbox.example.com.crt"
+    operations_management_netbox_nginx_ssl_key_path: "/etc/ssl/private/netbox.example.com.key"
+    operations_management_netbox_nginx_client_max_body_size: "50m"
 
     # Email configuration
-    netbox_email_enabled: true
-    netbox_email_server: "smtp.example.com"
-    netbox_email_port: 587
-    netbox_email_use_tls: true
-    netbox_email_username: "netbox@example.com"
-    netbox_email_password: "{{ vault_email_password }}"
-    netbox_email_from: "netbox@example.com"
+    operations_management_netbox_email_enabled: true
+    operations_management_netbox_email_server: "smtp.example.com"
+    operations_management_netbox_email_port: 587
+    operations_management_netbox_email_use_tls: true
+    operations_management_netbox_email_username: "netbox@example.com"
+    operations_management_netbox_email_password: "{{ vault_email_password }}"
+    operations_management_netbox_email_from: "netbox@example.com"
 
     # LDAP authentication
-    netbox_ldap_enabled: true
-    netbox_ldap_server_uri: "ldap://ldap.example.com"
-    netbox_ldap_bind_dn: "cn=netbox,ou=services,dc=example,dc=com"
-    netbox_ldap_bind_password: "{{ vault_ldap_password }}"
-    netbox_ldap_user_search_base: "ou=users,dc=example,dc=com"
-    netbox_ldap_group_search_base: "ou=groups,dc=example,dc=com"
+    operations_management_netbox_ldap_enabled: true
+    operations_management_netbox_ldap_server_uri: "ldap://ldap.example.com"
+    operations_management_netbox_ldap_bind_dn: "cn=netbox,ou=services,dc=example,dc=com"
+    operations_management_netbox_ldap_bind_password: "{{ vault_ldap_password }}"
+    operations_management_netbox_ldap_user_search_base: "ou=users,dc=example,dc=com"
+    operations_management_netbox_ldap_group_search_base: "ou=groups,dc=example,dc=com"
 
     # Plugin configuration
-    netbox_plugins:
+    operations_management_netbox_plugins:
       - name: "netbox-secrets"
         config:
           top_level_menu: true
@@ -80,29 +80,31 @@
           device_ext_page: true
 
     # Security settings
-    netbox_debug: false
-    netbox_session_cookie_secure: true
-    netbox_csrf_cookie_secure: true
-    netbox_secure_ssl_redirect: true
+    operations_management_netbox_debug: false
+    operations_management_netbox_session_cookie_secure: true
+    operations_management_netbox_csrf_cookie_secure: true
+    operations_management_netbox_secure_ssl_redirect: true
 
     # Monitoring and health checks
-    netbox_health_check_enabled: true
-    netbox_prometheus_enabled: true
-    netbox_prometheus_port: 9000
+    operations_management_netbox_health_check_enabled: true
+    operations_management_netbox_prometheus_enabled: true
+    operations_management_netbox_prometheus_port: 9000
 
     # Backup configuration
-    netbox_backup_enabled: true
-    netbox_backup_schedule: "0 3 * * *"  # Daily at 3 AM
-    netbox_backup_retention_days: 14
-    netbox_backup_dir: "/opt/netbox/backups"
+    operations_management_netbox_backup_enabled: true
+    operations_management_netbox_backup_schedule: "0 3 * * *"  # Daily at 3 AM
+    operations_management_netbox_backup_retention_days: 14
+    operations_management_netbox_backup_dir: "/opt/netbox/backups"
 
     # Advanced settings
-    netbox_time_zone: "America/New_York"
-    netbox_webhooks_enabled: true
-    netbox_webhook_timeout: 60
+    operations_management_netbox_time_zone: "America/New_York"
+    operations_management_netbox_webhooks_enabled: true
+    operations_management_netbox_webhook_timeout: 60
 
-  roles:
-    - role: operations_management.netbox
+  tasks:
+    - name: Apply NetBox role
+      ansible.builtin.import_role:
+        name: ..
       tags: ['netbox']
 
   post_tasks:
@@ -119,7 +121,7 @@
 
     - name: Wait for NetBox to be ready
       ansible.builtin.uri:
-        url: "https://{{ netbox_nginx_server_name }}/api/status/"
+        url: "https://{{ operations_management_netbox_nginx_server_name }}/api/status/"
         method: GET
         validate_certs: true
         timeout: 30
@@ -131,6 +133,7 @@
       ansible.builtin.command:
         cmd: /usr/local/bin/netbox-healthcheck
       register: health_check_result
+      changed_when: false
       tags: ['verify']
 
     - name: Display health check results
