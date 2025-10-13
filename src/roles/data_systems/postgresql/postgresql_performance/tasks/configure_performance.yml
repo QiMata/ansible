@@ -1,0 +1,67 @@
+---
+- name: Ensure performance configuration directory exists
+  ansible.builtin.file:
+    path: "{{ postgresql_performance_conf_dir }}"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: '0750'
+  become: true
+
+- name: Build performance settings map
+  ansible.builtin.set_fact:
+    postgresql_performance_settings:
+      shared_buffers: "{{ final_shared_buffers | default(postgresql_shared_buffers) }}"
+      effective_cache_size: "{{ final_effective_cache_size | default(postgresql_effective_cache_size) }}"
+      work_mem: "{{ final_work_mem | default(postgresql_work_mem) }}"
+      maintenance_work_mem: "{{ final_maintenance_work_mem | default(postgresql_maintenance_work_mem) }}"
+      max_connections: "{{ final_max_connections | default(postgresql_max_connections_tuned) }}"
+      wal_buffers: "{{ final_wal_buffers | default(postgresql_wal_buffers) }}"
+      checkpoint_timeout: "{{ postgresql_checkpoint_timeout }}"
+      checkpoint_completion_target: "{{ postgresql_checkpoint_completion_target }}"
+      checkpoint_warning: "{{ postgresql_checkpoint_warning }}"
+      wal_level: "{{ postgresql_wal_level }}"
+      max_wal_size: "{{ postgresql_max_wal_size }}"
+      min_wal_size: "{{ postgresql_min_wal_size }}"
+      bgwriter_delay: "{{ postgresql_bgwriter_delay }}"
+      bgwriter_lru_maxpages: "{{ postgresql_bgwriter_lru_maxpages }}"
+      bgwriter_lru_multiplier: "{{ postgresql_bgwriter_lru_multiplier }}"
+      random_page_cost: "{{ postgresql_random_page_cost }}"
+      seq_page_cost: "{{ postgresql_seq_page_cost }}"
+      cpu_tuple_cost: "{{ postgresql_cpu_tuple_cost }}"
+      cpu_index_tuple_cost: "{{ postgresql_cpu_index_tuple_cost }}"
+      cpu_operator_cost: "{{ postgresql_cpu_operator_cost }}"
+      autovacuum: "{{ postgresql_autovacuum }}"
+      autovacuum_max_workers: "{{ postgresql_autovacuum_max_workers }}"
+      autovacuum_naptime: "{{ postgresql_autovacuum_naptime }}"
+      autovacuum_vacuum_threshold: "{{ postgresql_autovacuum_vacuum_threshold }}"
+      autovacuum_analyze_threshold: "{{ postgresql_autovacuum_analyze_threshold }}"
+      autovacuum_vacuum_scale_factor: "{{ postgresql_autovacuum_vacuum_scale_factor }}"
+      autovacuum_analyze_scale_factor: "{{ postgresql_autovacuum_analyze_scale_factor }}"
+      default_statistics_target: "{{ postgresql_default_statistics_target }}"
+      track_activity_query_size: "{{ postgresql_track_activity_query_size }}"
+      track_functions: "{{ postgresql_track_functions }}"
+      track_io_timing: "{{ postgresql_track_io_timing }}"
+      deadlock_timeout: "{{ postgresql_deadlock_timeout }}"
+      max_locks_per_transaction: "{{ postgresql_max_locks_per_transaction }}"
+      max_pred_locks_per_transaction: "{{ postgresql_max_pred_locks_per_transaction }}"
+
+- name: Filter auto-tuned placeholders
+  ansible.builtin.set_fact:
+    postgresql_performance_rendered_settings: >-
+      {{ postgresql_performance_settings | dict2items
+         | rejectattr('value', 'equalto', 'auto') | list | items2dict }}
+
+- name: Render performance configuration snippet
+  ansible.builtin.copy:
+    dest: "{{ postgresql_performance_conf_file }}"
+    owner: postgres
+    group: postgres
+    mode: '0644'
+    content: |-
+      # Managed by Ansible - PostgreSQL performance tuning
+      {% for key, value in postgresql_performance_rendered_settings.items() %}
+      {{ key }} = {{ value }}
+      {% endfor %}
+  notify: Restart PostgreSQL
+  become: true

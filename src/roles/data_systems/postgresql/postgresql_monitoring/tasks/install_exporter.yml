@@ -7,6 +7,7 @@
     home: /var/lib/postgres_exporter
     create_home: true
     state: present
+  become: true
 
 - name: Create postgres_exporter directories
   ansible.builtin.file:
@@ -18,19 +19,22 @@
   loop:
     - /var/lib/postgres_exporter
     - /etc/postgres_exporter
+  become: true
 
 - name: Download and install postgres_exporter
   ansible.builtin.get_url:
-    url: "https://github.com/prometheus-community/postgres_exporter/releases/download/v{{ postgresql_exporter_version }}/postgres_exporter-{{ postgresql_exporter_version }}.linux-amd64.tar.gz"
-    dest: "/tmp/postgres_exporter-{{ postgresql_exporter_version }}.tar.gz"
+    url: "{{ postgresql_exporter_download_url }}"
+    dest: "/tmp/{{ postgresql_exporter_archive_name }}"
     mode: '0644'
+  become: true
 
 - name: Extract postgres_exporter
   ansible.builtin.unarchive:
-    src: "/tmp/postgres_exporter-{{ postgresql_exporter_version }}.tar.gz"
+    src: "/tmp/{{ postgresql_exporter_archive_name }}"
     dest: /tmp
     remote_src: true
     creates: "/tmp/postgres_exporter-{{ postgresql_exporter_version }}.linux-amd64"
+  become: true
 
 - name: Install postgres_exporter binary
   ansible.builtin.copy:
@@ -40,24 +44,27 @@
     owner: root
     group: root
     remote_src: true
+  become: true
 
 - name: Create postgres_exporter database user
   community.postgresql.postgresql_user:
     name: "{{ postgresql_exporter_user }}"
     password: "{{ postgresql_exporter_password }}"
     role_attr_flags: LOGIN
-    db: "{{ postgresql_exporter_database }}"
+    login_db: "{{ postgresql_exporter_database }}"
     state: present
   become_user: postgres
+  become: true
 
 - name: Grant monitoring privileges to exporter user
   community.postgresql.postgresql_privs:
-    database: "{{ postgresql_exporter_database }}"
+    login_db: "{{ postgresql_exporter_database }}"
     privs: CONNECT
     type: database
     roles: "{{ postgresql_exporter_user }}"
     state: present
   become_user: postgres
+  become: true
 
 - name: Grant pg_monitor role to exporter user (PostgreSQL 10+)
   community.postgresql.postgresql_user:
@@ -66,6 +73,7 @@
     state: present
   become_user: postgres
   when: postgresql_version | int >= 10
+  become: true
 
 - name: Create postgres_exporter configuration
   ansible.builtin.template:
@@ -75,6 +83,7 @@
     group: "{{ postgresql_exporter_user }}"
     mode: '0600'
   notify: Restart postgres_exporter
+  become: true
 
 - name: Create custom queries file
   ansible.builtin.template:
@@ -85,6 +94,7 @@
     mode: '0644'
   when: postgresql_exporter_custom_queries_enabled | bool
   notify: Restart postgres_exporter
+  become: true
 
 - name: Create postgres_exporter systemd service
   ansible.builtin.template:
@@ -94,6 +104,7 @@
   notify:
     - reload systemd
     - restart postgres_exporter
+  become: true
 
 - name: Enable and start postgres_exporter
   ansible.builtin.systemd:
@@ -101,3 +112,4 @@
     enabled: true
     state: started
     daemon_reload: true
+  become: true

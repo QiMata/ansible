@@ -1,12 +1,23 @@
 ---
+- name: Normalize legacy PgBouncer variables
+  ansible.builtin.set_fact:
+    "{{ item.new }}": "{{ vars[item.old] }}"
+  loop:
+    - { old: "pgbouncer_enabled", new: "postgresql_pgbouncer_enabled" }
+    - { old: "pgbouncer_conffile", new: "postgresql_pgbouncer_conffile" }
+    - { old: "pgbouncer_auth_file", new: "postgresql_pgbouncer_auth_file" }
+    - { old: "pgbouncer_databases", new: "postgresql_pgbouncer_databases" }
+    - { old: "pgbouncer_users", new: "postgresql_pgbouncer_users" }
+  when: item.old in vars
+
 - name: Include PgBouncer installation
   ansible.builtin.include_tasks: install.yml
-  when: pgbouncer_enabled | bool
+  when: postgresql_pgbouncer_enabled | bool
 
 - name: Include PgBouncer configuration
   ansible.builtin.include_tasks: configure.yml
-  when: pgbouncer_enabled | bool
+  when: postgresql_pgbouncer_enabled | bool
 
 - name: Include user management
   ansible.builtin.include_tasks: users.yml
-  when: pgbouncer_enabled | bool
+  when: postgresql_pgbouncer_enabled | bool

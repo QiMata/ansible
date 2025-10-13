@@ -87,3 +87,8 @@ postgresql_performance_monitoring: true
 postgresql_slow_query_threshold_ms: 1000
 postgresql_log_slow_queries: true
 postgresql_log_temp_files: 0
+
+# Configuration rendering
+postgresql_performance_conf_dir: "/etc/postgresql/{{ postgresql_version | default('14') }}/main/conf.d"
+postgresql_performance_conf_file: "{{ postgresql_performance_conf_dir }}/99-performance.conf"
+postgresql_performance_maintenance_jobs: []

@@ -6,6 +6,9 @@ postgresql_exporter_port: 9187
 postgresql_exporter_user: "postgres_exporter"
 postgresql_exporter_password: "{{ vault_postgresql_exporter_password | default('change_me_in_vault') }}"
 postgresql_exporter_database: "postgres"
+postgresql_exporter_download_base_url: "https://github.com/prometheus-community/postgres_exporter/releases/download"
+postgresql_exporter_archive_name: "postgres_exporter-{{ postgresql_exporter_version }}.linux-amd64.tar.gz"
+postgresql_exporter_download_url: "{{ postgresql_exporter_download_base_url }}/v{{ postgresql_exporter_version }}/{{ postgresql_exporter_archive_name }}"
 
 # Monitoring queries
 postgresql_exporter_custom_queries_enabled: true

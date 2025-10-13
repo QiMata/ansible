@@ -1,26 +1,28 @@
 ---
 - name: Revoke default privileges from public schema
   community.postgresql.postgresql_query:
-    db: postgres
+    login_db: postgres
     query: |
       REVOKE CREATE ON SCHEMA public FROM PUBLIC;
       REVOKE ALL ON DATABASE postgres FROM PUBLIC;
   become_user: postgres
   when: postgresql_public_schema_restricted | bool
+  become: true
 
 - name: Set secure default privileges for new objects
   community.postgresql.postgresql_query:
-    db: postgres
+    login_db: postgres
     query: |
       ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM PUBLIC;
       ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON SEQUENCES FROM PUBLIC;
       ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON FUNCTIONS FROM PUBLIC;
   become_user: postgres
   when: postgresql_default_privileges_revoked | bool
+  become: true
 
 - name: Create security monitoring views
   community.postgresql.postgresql_query:
-    db: postgres
+    login_db: postgres
     query: |
       CREATE OR REPLACE VIEW security_failed_logins AS
       SELECT
@@ -45,3 +47,4 @@
       ORDER BY log_time DESC;
   become_user: postgres
   when: postgresql_security_monitoring_enabled | bool
+  become: true
