@@ -164,7 +164,7 @@
       become: true
       become_user: postgres
       community.postgresql.postgresql_query:
-        db: "{{ test_db_name }}"
+        login_db: "{{ test_db_name }}"
         query: |
           CREATE TABLE IF NOT EXISTS test_table (
             id SERIAL PRIMARY KEY,
@@ -176,7 +176,7 @@
       become: true
       become_user: postgres
       community.postgresql.postgresql_query:
-        db: "{{ test_db_name }}"
+        login_db: "{{ test_db_name }}"
         query: |
           INSERT INTO test_table (name) VALUES ('test_record_1'), ('test_record_2')
           ON CONFLICT DO NOTHING;
@@ -185,7 +185,7 @@
       become: true
       become_user: postgres
       community.postgresql.postgresql_query:
-        db: "{{ test_db_name }}"
+        login_db: "{{ test_db_name }}"
         query: "SELECT COUNT(*) as record_count FROM test_table;"
       register: test_data_check
 

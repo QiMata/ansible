@@ -7,6 +7,7 @@
     backup: true
   notify: Restart PostgreSQL
   when: postgresql_restrict_network_access | bool
+  become: true
 
 - name: Configure restrictive pg_hba.conf
   ansible.builtin.template:
@@ -17,9 +18,10 @@
     mode: '0640'
     backup: true
   notify: reload postgresql
+  become: true
 
 - name: Configure firewall for PostgreSQL (if enabled)
-  ansible.builtin.ufw:
+  community.general.ufw:
     rule: allow
     port: "{{ postgresql_port | default(5432) }}"
     src: "{{ item }}"
@@ -28,3 +30,4 @@
   when:
     - postgresql_configure_firewall | default(false)
     - ansible_facts['os_family'] == "Debian"
+  become: true

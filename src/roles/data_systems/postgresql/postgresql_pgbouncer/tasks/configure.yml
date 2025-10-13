@@ -2,12 +2,13 @@
 - name: Generate PgBouncer configuration
   ansible.builtin.template:
     src: pgbouncer.ini.j2
-    dest: "{{ pgbouncer_conffile }}"
+    dest: "{{ postgresql_pgbouncer_conffile }}"
     owner: pgbouncer
     group: pgbouncer
     mode: '0644'
     backup: true
   notify: restart pgbouncer
+  become: true
 
 - name: Create PgBouncer systemd service
   ansible.builtin.template:
@@ -17,12 +18,14 @@
   notify:
     - reload systemd
     - restart pgbouncer
+  become: true
 
 - name: Create logrotate configuration for PgBouncer
   ansible.builtin.template:
     src: pgbouncer.logrotate.j2
     dest: /etc/logrotate.d/pgbouncer
     mode: '0644'
+  become: true
 
 - name: Enable and start PgBouncer service
   ansible.builtin.systemd:
@@ -30,3 +33,4 @@
     enabled: true
     state: started
     daemon_reload: true
+  become: true

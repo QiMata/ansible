@@ -1,0 +1,13 @@
+---
+- name: Configure optional PostgreSQL maintenance cron jobs
+  ansible.builtin.cron:
+    name: "{{ item.name }}"
+    job: "{{ item.job }}"
+    minute: "{{ item.minute | default('0') }}"
+    hour: "{{ item.hour | default('2') }}"
+    weekday: "{{ item.weekday | default('*') }}"
+    user: "{{ item.user | default('postgres') }}"
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ postgresql_performance_maintenance_jobs }}"
+  when: postgresql_performance_maintenance_jobs | length > 0
+  become: true

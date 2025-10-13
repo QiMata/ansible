@@ -8,6 +8,11 @@
     postgresql_monitoring_enabled: true
     postgresql_health_check_enabled: true
     postgresql_slow_query_log_enabled: true
-  roles:
-    - role: data_systems.postgresql
-    - role: data_systems.postgresql.postgresql_monitoring
+  tasks:
+    - name: Apply base PostgreSQL role  # noqa role-name[path]
+      ansible.builtin.import_role:
+        name: ../../..
+
+    - name: Apply PostgreSQL monitoring role  # noqa role-name[path]
+      ansible.builtin.import_role:
+        name: ../..

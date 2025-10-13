@@ -7,19 +7,22 @@
     db_user: postgres
   tasks:
     - name: Install PostgreSQL server
-      apt:
+      ansible.builtin.apt:
         name: postgresql
         state: present
         update_cache: true
 
     - name: Ensure database exists
       become_user: postgres
-      postgresql_db:
+      community.postgresql.postgresql_db:
         name: "{{ db_name }}"
-      ignore_errors: true
+      failed_when: false
+      become: true
 
-  roles:
-    - role: postgres_backup
-      db_name: "{{ db_name }}"
-      db_user: "{{ db_user }}"
-      backup_dir: /var/backups/postgres
+    - name: Apply postgres_backup role  # noqa role-name[path]
+      ansible.builtin.import_role:
+        name: ../..
+      vars:
+        db_name: "{{ db_name }}"
+        db_user: "{{ db_user }}"
+        backup_dir: /var/backups/postgres

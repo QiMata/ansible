@@ -13,12 +13,19 @@
     - { regexp: "^#?tcp_keepalives_interval = ", line: "tcp_keepalives_interval = 30" }
     - { regexp: "^#?tcp_keepalives_count = ", line: "tcp_keepalives_count = 3" }
   notify: Restart PostgreSQL
+  become: true
 
 - name: Create password policy function
   community.postgresql.postgresql_query:
-    db: postgres
+    login_db: postgres
     query: |
-      CREATE OR REPLACE FUNCTION check_password_policy(username text, password text, password_type pgpassword.PasswordType, validuntil_time timestamptz, validuntil_null boolean)
+      CREATE OR REPLACE FUNCTION check_password_policy(
+        username text,
+        password text,
+        password_type pgpassword.PasswordType,
+        validuntil_time timestamptz,
+        validuntil_null boolean
+      )
       RETURNS void AS $$
       BEGIN
         IF length(password) < {{ postgresql_password_min_length }} THEN
@@ -26,10 +33,12 @@
         END IF;
         {% if postgresql_password_complexity %}
         IF password !~ '[A-Z]' OR password !~ '[a-z]' OR password !~ '[0-9]' OR password !~ '[^A-Za-z0-9]' THEN
-          RAISE EXCEPTION 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character';
+          RAISE EXCEPTION 'Password must contain at least one uppercase letter, '
+                         'one lowercase letter, one number, and one special character';
         END IF;
         {% endif %}
       END;
       $$ LANGUAGE plpgsql;
   become_user: postgres
   when: postgresql_password_complexity | bool
+  become: true

@@ -9,6 +9,9 @@ platforms:
     privileged: true
 provisioner:
   name: ansible
+  config_options:
+    defaults:
+      roles_path: /workspace/ansible/src/roles:/workspace/ansible/src/roles/data_systems:/workspace/ansible/src/roles/data_systems/postgresql
   playbooks:
     converge: converge.yml
 verifier:

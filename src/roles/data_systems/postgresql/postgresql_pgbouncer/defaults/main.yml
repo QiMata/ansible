@@ -1,69 +1,71 @@
 ---
 # PgBouncer Configuration
-pgbouncer_enabled: true
-pgbouncer_version: "1.21.0"
-pgbouncer_port: 6432
-pgbouncer_listen_addr: "0.0.0.0"
-pgbouncer_auth_type: "scram-sha-256"
-pgbouncer_auth_file: "/etc/pgbouncer/userlist.txt"
+postgresql_pgbouncer_enabled: "{{ pgbouncer_enabled | default(true) | bool }}"
+postgresql_pgbouncer_version: "{{ pgbouncer_version | default('1.21.0') }}"
+postgresql_pgbouncer_port: "{{ pgbouncer_port | default(6432) | int }}"
+postgresql_pgbouncer_listen_addr: "{{ pgbouncer_listen_addr | default('0.0.0.0') }}"
+postgresql_pgbouncer_auth_type: "{{ pgbouncer_auth_type | default('scram-sha-256') }}"
+postgresql_pgbouncer_auth_file: "{{ pgbouncer_auth_file | default('/etc/pgbouncer/userlist.txt') }}"
 
 # Pool configuration
-pgbouncer_pool_mode: "transaction"  # session, transaction, statement
-pgbouncer_max_client_conn: 100
-pgbouncer_default_pool_size: 20
-pgbouncer_min_pool_size: 5
-pgbouncer_reserve_pool_size: 5
-pgbouncer_reserve_pool_timeout: 5
+postgresql_pgbouncer_pool_mode: "{{ pgbouncer_pool_mode | default('transaction') }}"  # session, transaction, statement
+postgresql_pgbouncer_max_client_conn: "{{ pgbouncer_max_client_conn | default(100) | int }}"
+postgresql_pgbouncer_default_pool_size: "{{ pgbouncer_default_pool_size | default(20) | int }}"
+postgresql_pgbouncer_min_pool_size: "{{ pgbouncer_min_pool_size | default(5) | int }}"
+postgresql_pgbouncer_reserve_pool_size: "{{ pgbouncer_reserve_pool_size | default(5) | int }}"
+postgresql_pgbouncer_reserve_pool_timeout: "{{ pgbouncer_reserve_pool_timeout | default(5) | int }}"
 
 # Connection limits
-pgbouncer_max_db_connections: 50
-pgbouncer_max_user_connections: 50
+postgresql_pgbouncer_max_db_connections: "{{ pgbouncer_max_db_connections | default(50) | int }}"
+postgresql_pgbouncer_max_user_connections: "{{ pgbouncer_max_user_connections | default(50) | int }}"
 
 # Timeouts (in seconds)
-pgbouncer_server_lifetime: 3600
-pgbouncer_server_idle_timeout: 600
-pgbouncer_client_idle_timeout: 0
-pgbouncer_client_login_timeout: 60
-pgbouncer_query_timeout: 0
-pgbouncer_query_wait_timeout: 120
-pgbouncer_cancel_wait_timeout: 10
+postgresql_pgbouncer_server_lifetime: "{{ pgbouncer_server_lifetime | default(3600) | int }}"
+postgresql_pgbouncer_server_idle_timeout: "{{ pgbouncer_server_idle_timeout | default(600) | int }}"
+postgresql_pgbouncer_client_idle_timeout: "{{ pgbouncer_client_idle_timeout | default(0) | int }}"
+postgresql_pgbouncer_client_login_timeout: "{{ pgbouncer_client_login_timeout | default(60) | int }}"
+postgresql_pgbouncer_query_timeout: "{{ pgbouncer_query_timeout | default(0) | int }}"
+postgresql_pgbouncer_query_wait_timeout: "{{ pgbouncer_query_wait_timeout | default(120) | int }}"
+postgresql_pgbouncer_cancel_wait_timeout: "{{ pgbouncer_cancel_wait_timeout | default(10) | int }}"
 
 # Logging
-pgbouncer_log_connections: 1
-pgbouncer_log_disconnections: 1
-pgbouncer_log_pooler_errors: 1
-pgbouncer_log_stats: 1
-pgbouncer_stats_period: 60
+postgresql_pgbouncer_log_connections: "{{ pgbouncer_log_connections | default(1) | int }}"
+postgresql_pgbouncer_log_disconnections: "{{ pgbouncer_log_disconnections | default(1) | int }}"
+postgresql_pgbouncer_log_pooler_errors: "{{ pgbouncer_log_pooler_errors | default(1) | int }}"
+postgresql_pgbouncer_log_stats: "{{ pgbouncer_log_stats | default(1) | int }}"
+postgresql_pgbouncer_stats_period: "{{ pgbouncer_stats_period | default(60) | int }}"
 
 # Admin interface
-pgbouncer_admin_users: "postgres"
-pgbouncer_stats_users: "postgres"
+postgresql_pgbouncer_admin_users: "{{ pgbouncer_admin_users | default('postgres') }}"
+postgresql_pgbouncer_stats_users: "{{ pgbouncer_stats_users | default('postgres') }}"
 
 # SSL configuration (when PostgreSQL SSL is enabled)
-pgbouncer_server_tls_sslmode: "prefer"
-pgbouncer_server_tls_ca_file: ""
-pgbouncer_server_tls_cert_file: ""
-pgbouncer_server_tls_key_file: ""
+postgresql_pgbouncer_server_tls_sslmode: "{{ pgbouncer_server_tls_sslmode | default('prefer') }}"
+postgresql_pgbouncer_server_tls_ca_file: "{{ pgbouncer_server_tls_ca_file | default('') }}"
+postgresql_pgbouncer_server_tls_cert_file: "{{ pgbouncer_server_tls_cert_file | default('') }}"
+postgresql_pgbouncer_server_tls_key_file: "{{ pgbouncer_server_tls_key_file | default('') }}"
 
-# Database connections
-pgbouncer_databases:
+_postgresql_pgbouncer_default_databases:
   - name: "{{ postgresql_database | default('postgres') }}"
     host: "127.0.0.1"
     port: "{{ postgresql_port | default(5432) }}"
-    pool_size: "{{ pgbouncer_default_pool_size }}"
+    pool_size: "{{ postgresql_pgbouncer_default_pool_size }}"
+
+# Database connections
+postgresql_pgbouncer_databases: "{{ pgbouncer_databases | default(_postgresql_pgbouncer_default_databases) }}"
 
 # Users (will be populated from PostgreSQL)
-pgbouncer_users: []
+postgresql_pgbouncer_users: "{{ pgbouncer_users | default([]) }}"
 
 # Performance tuning
-pgbouncer_application_name_add_host: 1
-pgbouncer_conffile: "/etc/pgbouncer/pgbouncer.ini"
-pgbouncer_pidfile: "/var/run/postgresql/pgbouncer.pid"
-pgbouncer_listen_backlog: 128
-pgbouncer_sbuf_loopcnt: 5
-pgbouncer_suspend_timeout: 10
-pgbouncer_tcp_defer_accept: 1
-pgbouncer_tcp_keepalive: 1
-pgbouncer_tcp_keepcnt: 3
-pgbouncer_tcp_keepidle: 600
-pgbouncer_tcp_keepintvl: 30
+postgresql_pgbouncer_application_name_add_host: "{{ pgbouncer_application_name_add_host | default(1) | int }}"
+postgresql_pgbouncer_conffile: "{{ pgbouncer_conffile | default('/etc/pgbouncer/pgbouncer.ini') }}"
+postgresql_pgbouncer_pidfile: "{{ pgbouncer_pidfile | default('/var/run/postgresql/pgbouncer.pid') }}"
+postgresql_pgbouncer_listen_backlog: "{{ pgbouncer_listen_backlog | default(128) | int }}"
+postgresql_pgbouncer_sbuf_loopcnt: "{{ pgbouncer_sbuf_loopcnt | default(5) | int }}"
+postgresql_pgbouncer_suspend_timeout: "{{ pgbouncer_suspend_timeout | default(10) | int }}"
+postgresql_pgbouncer_tcp_defer_accept: "{{ pgbouncer_tcp_defer_accept | default(1) | int }}"
+postgresql_pgbouncer_tcp_keepalive: "{{ pgbouncer_tcp_keepalive | default(1) | int }}"
+postgresql_pgbouncer_tcp_keepcnt: "{{ pgbouncer_tcp_keepcnt | default(3) | int }}"
+postgresql_pgbouncer_tcp_keepidle: "{{ pgbouncer_tcp_keepidle | default(600) | int }}"
+postgresql_pgbouncer_tcp_keepintvl: "{{ pgbouncer_tcp_keepintvl | default(30) | int }}"

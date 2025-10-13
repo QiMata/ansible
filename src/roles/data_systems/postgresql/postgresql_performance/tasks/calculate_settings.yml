@@ -12,14 +12,17 @@
     calculated_shared_buffers: "{{ (ansible_memtotal_mb * 0.25) | int }}MB"
     calculated_effective_cache_size: "{{ (ansible_memtotal_mb * 0.75) | int }}MB"
     calculated_maintenance_work_mem: "{{ [(ansible_memtotal_mb * 0.05) | int, 2048] | min }}MB"
-    calculated_max_connections: >-
-      {%- if postgresql_tune_for_environment == 'production' -%}
-      {{ [(ansible_memtotal_mb / 10) | int, 200] | min }}
-      {%- elif postgresql_tune_for_environment == 'staging' -%}
-      {{ [(ansible_memtotal_mb / 20) | int, 100] | min }}
-      {%- else -%}
-      {{ [(ansible_memtotal_mb / 40) | int, 50] | min }}
-      {%- endif -%}
+  when: postgresql_auto_tune | bool
+
+- name: Determine max connection scaling values
+  ansible.builtin.set_fact:
+    _postgresql_max_connection_divisor: "{{ {'production': 10, 'staging': 20}.get(postgresql_tune_for_environment, 40) }}"
+    _postgresql_max_connection_cap: "{{ {'production': 200, 'staging': 100}.get(postgresql_tune_for_environment, 50) }}"
+  when: postgresql_auto_tune | bool
+
+- name: Calculate optimal max connections
+  ansible.builtin.set_fact:
+    calculated_max_connections: "{{ [(ansible_memtotal_mb / (_postgresql_max_connection_divisor | int)) | int, (_postgresql_max_connection_cap | int)] | min }}"
   when: postgresql_auto_tune | bool
 
 - name: Calculate work_mem based on connections and memory
@@ -40,41 +43,35 @@
 - name: Apply calculated settings
   ansible.builtin.set_fact:
     final_shared_buffers: >-
-      {%- if postgresql_shared_buffers == 'auto' -%}
-      {{ calculated_shared_buffers }}
-      {%- else -%}
-      {{ postgresql_shared_buffers }}
-      {%- endif -%}
+      {{
+        (postgresql_shared_buffers == 'auto')
+        | ternary(calculated_shared_buffers | default(postgresql_shared_buffers), postgresql_shared_buffers)
+      }}
     final_effective_cache_size: >-
-      {%- if postgresql_effective_cache_size == 'auto' -%}
-      {{ calculated_effective_cache_size }}
-      {%- else -%}
-      {{ postgresql_effective_cache_size }}
-      {%- endif -%}
+      {{
+        (postgresql_effective_cache_size == 'auto')
+        | ternary(calculated_effective_cache_size | default(postgresql_effective_cache_size), postgresql_effective_cache_size)
+      }}
     final_work_mem: >-
-      {%- if postgresql_work_mem == 'auto' -%}
-      {{ calculated_work_mem }}
-      {%- else -%}
-      {{ postgresql_work_mem }}
-      {%- endif -%}
+      {{
+        (postgresql_work_mem == 'auto')
+        | ternary(calculated_work_mem | default(postgresql_work_mem), postgresql_work_mem)
+      }}
     final_maintenance_work_mem: >-
-      {%- if postgresql_maintenance_work_mem == 'auto' -%}
-      {{ calculated_maintenance_work_mem }}
-      {%- else -%}
-      {{ postgresql_maintenance_work_mem }}
-      {%- endif -%}
+      {{
+        (postgresql_maintenance_work_mem == 'auto')
+        | ternary(calculated_maintenance_work_mem | default(postgresql_maintenance_work_mem), postgresql_maintenance_work_mem)
+      }}
     final_max_connections: >-
-      {%- if postgresql_max_connections_tuned == 'auto' -%}
-      {{ calculated_max_connections }}
-      {%- else -%}
-      {{ postgresql_max_connections_tuned }}
-      {%- endif -%}
+      {{
+        (postgresql_max_connections_tuned == 'auto')
+        | ternary(calculated_max_connections | default(postgresql_max_connections_tuned), postgresql_max_connections_tuned)
+      }}
     final_wal_buffers: >-
-      {%- if postgresql_wal_buffers == 'auto' -%}
-      {{ calculated_wal_buffers }}
-      {%- else -%}
-      {{ postgresql_wal_buffers }}
-      {%- endif -%}
+      {{
+        (postgresql_wal_buffers == 'auto')
+        | ternary(calculated_wal_buffers | default(postgresql_wal_buffers), postgresql_wal_buffers)
+      }}
 
 - name: Display calculated performance settings
   ansible.builtin.debug:

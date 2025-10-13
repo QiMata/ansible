@@ -5,6 +5,7 @@
       - pgbouncer
       - postgresql-client
     state: present
+  become: true
 
 - name: Create pgbouncer user
   ansible.builtin.user:
@@ -14,6 +15,7 @@
     home: /var/lib/postgresql
     create_home: false
     state: present
+  become: true
 
 - name: Create PgBouncer directories
   ansible.builtin.file:
@@ -26,6 +28,7 @@
     - /etc/pgbouncer
     - /var/log/pgbouncer
     - /var/run/postgresql
+  become: true
 
 - name: Create PgBouncer log directory with proper permissions
   ansible.builtin.file:
@@ -34,3 +37,4 @@
     owner: pgbouncer
     group: pgbouncer
     mode: '0755'
+  become: true

@@ -5,6 +5,7 @@
     state: present
   loop: "{{ postgresql_security_extensions }}"
   when: item in ['pgaudit', 'passwordcheck']
+  become: true
 
 - name: Configure shared_preload_libraries for security extensions
   ansible.builtin.lineinfile:
@@ -14,14 +15,16 @@
     backup: true
   notify: Restart PostgreSQL
   when: postgresql_security_extensions | length > 0
+  become: true
 
 - name: Create pgaudit extension
   community.postgresql.postgresql_ext:
     name: pgaudit
-    db: postgres
+    login_db: postgres
     state: present
   become_user: postgres
   when: "'pgaudit' in postgresql_security_extensions"
+  become: true
 
 - name: Configure pgaudit settings
   ansible.builtin.lineinfile:
@@ -36,3 +39,4 @@
     - { regexp: "^#?pgaudit.log_statement_once = ", line: "pgaudit.log_statement_once = {{ postgresql_audit_log_statement_once | ternary('on', 'off') }}" }
   notify: Restart PostgreSQL
   when: "'pgaudit' in postgresql_security_extensions"
+  become: true
