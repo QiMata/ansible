@@ -6,6 +6,8 @@ apache_airflow_group: "airflow"
 apache_airflow_home: "/opt/airflow"
 apache_airflow_python: "/usr/bin/python3"           # Change if using a venv
 apache_airflow_venv_path: ""                        # e.g. /opt/airflow/venv (leave blank for system python)
+apache_airflow_venv_path_normalized: "{{ apache_airflow_venv_path | default('', true) }}"
+apache_airflow_venv_enabled: "{{ apache_airflow_venv_path_normalized | length > 0 }}"
 
 # Executor Configuration
 # Options: SequentialExecutor, LocalExecutor, CeleryExecutor, KubernetesExecutor

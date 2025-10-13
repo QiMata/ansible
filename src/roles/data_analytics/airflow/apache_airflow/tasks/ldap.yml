@@ -10,16 +10,28 @@
     state: present
   when: apache_airflow_ldap_enabled
 
-- name: Install Python LDAP packages
+- name: Install Python LDAP packages (system python)
   ansible.builtin.pip:
     name:
       - python-ldap
       - flask-appbuilder[ldap]
-    virtualenv: "{{ apache_airflow_venv_path if apache_airflow_venv_path else omit }}"
-    virtualenv_python: "{{ apache_airflow_python if apache_airflow_venv_path else omit }}"
   become: true
   become_user: "{{ apache_airflow_user }}"
-  when: apache_airflow_ldap_enabled
+  when:
+    - apache_airflow_ldap_enabled
+    - not apache_airflow_venv_enabled
+
+- name: Install Python LDAP packages (virtualenv)
+  ansible.builtin.pip:
+    name:
+      - python-ldap
+      - flask-appbuilder[ldap]
+    virtualenv: "{{ apache_airflow_venv_path_normalized }}"
+  become: true
+  become_user: "{{ apache_airflow_user }}"
+  when:
+    - apache_airflow_ldap_enabled
+    - apache_airflow_venv_enabled
 
 - name: Create webserver_config.py with LDAP authentication
   ansible.builtin.template:
