@@ -3,10 +3,10 @@
   hosts: all
   become: true
   vars:
-    letsencrypt_setup_domain_name: example.com
-    letsencrypt_setup_email_address: test@example.com
-    letsencrypt_setup_use_godaddy: false
-    letsencrypt_setup_webroot_path: /tmp/webroot
+    security_identity_letsencrypt_setup_domain_name: example.com
+    security_identity_letsencrypt_setup_email_address: test@example.com
+    security_identity_letsencrypt_setup_use_godaddy: false
+    security_identity_letsencrypt_setup_webroot_path: /tmp/webroot
   pre_tasks:
     - name: Ensure webroot exists
       ansible.builtin.file:

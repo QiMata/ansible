@@ -1,5 +1,19 @@
 ---
 # tasks file for letsencrypt_setup
+- name: Normalize letsencrypt_setup variables
+  ansible.builtin.set_fact:
+    __letsencrypt_setup_domain_name: >-
+      {{ security_identity_letsencrypt_setup_domain_name | default(letsencrypt_setup_domain_name | default('')) }}
+    __letsencrypt_setup_email_address: >-
+      {{ security_identity_letsencrypt_setup_email_address | default(letsencrypt_setup_email_address | default('')) }}
+    __letsencrypt_setup_godaddy_api_key: >-
+      {{ security_identity_letsencrypt_setup_godaddy_api_key | default(letsencrypt_setup_godaddy_api_key | default('')) }}
+    __letsencrypt_setup_godaddy_api_secret: >-
+      {{ security_identity_letsencrypt_setup_godaddy_api_secret | default(letsencrypt_setup_godaddy_api_secret | default('')) }}
+    __letsencrypt_setup_use_godaddy: >-
+      {{ security_identity_letsencrypt_setup_use_godaddy | default(letsencrypt_setup_use_godaddy | default(true)) | bool }}
+    __letsencrypt_setup_webroot_path: >-
+      {{ security_identity_letsencrypt_setup_webroot_path | default(letsencrypt_setup_webroot_path | default('/var/www/html')) }}
 - name: Install software-properties-common
   ansible.builtin.apt:
     name: software-properties-common
@@ -23,25 +37,25 @@
     src: ./godaddy.ini
     dest: ~/.secrets/certbot/godaddy.ini
     mode: '0600'
-  when: letsencrypt_setup_use_godaddy
+  when: __letsencrypt_setup_use_godaddy
 
 - name: Generate certificate with DNS validation
   ansible.builtin.command:
     cmd: >-
       certbot certonly --dns-godaddy --dns-godaddy-credentials ~/.secrets/certbot/godaddy.ini
-      -d {{ letsencrypt_setup_domain_name }} --non-interactive --agree-tos --email {{ letsencrypt_setup_email_address }}
-    creates: "/etc/letsencrypt/live/{{ letsencrypt_setup_domain_name }}/privkey.pem"
+      -d {{ __letsencrypt_setup_domain_name }} --non-interactive --agree-tos --email {{ __letsencrypt_setup_email_address }}
+    creates: "/etc/letsencrypt/live/{{ __letsencrypt_setup_domain_name }}/privkey.pem"
   become: true
-  when: letsencrypt_setup_use_godaddy
+  when: __letsencrypt_setup_use_godaddy
 
 - name: Generate certificate with webroot validation
   ansible.builtin.command:
     cmd: >-
-      certbot certonly --webroot -w {{ letsencrypt_setup_webroot_path }} -d {{ letsencrypt_setup_domain_name }}
-      --non-interactive --agree-tos --email {{ letsencrypt_setup_email_address }}
-    creates: "/etc/letsencrypt/live/{{ letsencrypt_setup_domain_name }}/privkey.pem"
+      certbot certonly --webroot -w {{ __letsencrypt_setup_webroot_path }} -d {{ __letsencrypt_setup_domain_name }}
+      --non-interactive --agree-tos --email {{ __letsencrypt_setup_email_address }}
+    creates: "/etc/letsencrypt/live/{{ __letsencrypt_setup_domain_name }}/privkey.pem"
   become: true
-  when: not letsencrypt_setup_use_godaddy
+  when: not __letsencrypt_setup_use_godaddy
 
 - name: Set up automatic renewal
   ansible.builtin.cron:

@@ -3,11 +3,11 @@
   hosts: all
   become: true
   vars:
-    cert_domains:
+    security_identity_letsencrypt_godaddy_cert_domains:
       - "example.com"
-    godaddy_api_key: "dummy"
-    godaddy_api_secret: "dummy"
-    use_staging: true
-    service_reload_command: "/bin/true"
+    security_identity_letsencrypt_godaddy_api_key: "dummy"
+    security_identity_letsencrypt_godaddy_api_secret: "dummy"
+    security_identity_letsencrypt_godaddy_use_staging: true
+    security_identity_letsencrypt_godaddy_service_reload_command: "/bin/true"
   roles:
     - role: letsencrypt_godaddy

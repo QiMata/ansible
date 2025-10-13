@@ -2,6 +2,8 @@
 
 The **letsencrypt_godaddy** role automates obtaining and renewing SSL/TLS certificates from **Let's Encrypt** using the DNS-01 challenge method with **GoDaddy** as the DNS provider. It installs the lightweight **acme.sh** client on your server to handle ACME interactions, leverages GoDaddy's API to create the necessary DNS verification records, and deploys the resulting certificate and key to your system. This allows you to secure your websites or services with trusted certificates without manual steps. Key features include:
 
+> **Note:** Variables for this role have been namespaced with the `security_identity_letsencrypt_godaddy_` prefix. Existing variable names without the prefix (`letsencrypt_godaddy_cert_domains`, `letsencrypt_godaddy_api_key`, etc.) are still accepted and automatically forwarded to the new names.
+
 ## When to Use This Role vs. Alternative
 
 This repository contains two Let's Encrypt roles for different use cases. Choose the appropriate one based on your requirements:

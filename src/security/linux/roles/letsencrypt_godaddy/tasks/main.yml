@@ -1,7 +1,18 @@
 ---
-- name: Import install tasks
-  ansible.builtin.import_tasks: install.yml
-- name: Import obtain tasks
-  ansible.builtin.import_tasks: obtain.yml
-- name: Import deploy tasks
-  ansible.builtin.import_tasks: deploy.yml
+- name: Delegate to collection letsencrypt_godaddy role
+  ansible.builtin.include_role:
+    name: security_identity.letsencrypt.letsencrypt_godaddy
+  vars:
+    security_identity_letsencrypt_godaddy_cert_domains: "{{ letsencrypt_godaddy_cert_domains }}"
+    security_identity_letsencrypt_godaddy_account_email: "{{ letsencrypt_godaddy_account_email }}"
+    security_identity_letsencrypt_godaddy_api_key: "{{ letsencrypt_godaddy_api_key }}"
+    security_identity_letsencrypt_godaddy_api_secret: "{{ letsencrypt_godaddy_api_secret }}"
+    security_identity_letsencrypt_godaddy_cert_install_path: "{{ letsencrypt_godaddy_cert_install_path }}"
+    security_identity_letsencrypt_godaddy_service_reload_command: "{{ letsencrypt_godaddy_service_reload_command }}"
+    security_identity_letsencrypt_godaddy_use_staging: "{{ letsencrypt_godaddy_use_staging }}"
+    security_identity_letsencrypt_godaddy_propagation_wait: "{{ letsencrypt_godaddy_propagation_wait }}"
+    security_identity_letsencrypt_godaddy_acme_sh_install_dir: "{{ letsencrypt_godaddy_acme_sh_install_dir }}"
+    security_identity_letsencrypt_godaddy_acme_sh_git_url: "{{ letsencrypt_godaddy_acme_sh_git_url }}"
+    security_identity_letsencrypt_godaddy_acme_install_cron: "{{ letsencrypt_godaddy_acme_install_cron }}"
+    security_identity_letsencrypt_godaddy_force_renew: "{{ letsencrypt_godaddy_force_renew }}"
+    security_identity_letsencrypt_godaddy_acme_sh_auto_upgrade: "{{ letsencrypt_godaddy_acme_sh_auto_upgrade }}"

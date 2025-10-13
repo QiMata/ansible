@@ -21,13 +21,15 @@ Use this wrapper role when:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `letsencrypt_domains` | `[]` | **Required.** List of domains for the certificate. Single item uses letsencrypt_setup, multiple items use letsencrypt_godaddy |
-| `letsencrypt_email` | `""` | Email address for Let's Encrypt account registration and notifications |
-| `letsencrypt_client` | `"auto"` | Force client selection: `"auto"`, `"certbot"`, or `"acme.sh"` |
-| `letsencrypt_challenge_method` | `"dns"` | Challenge method: `"dns"` or `"http"` (HTTP only available with certbot) |
-| `godaddy_api_key` | `""` | GoDaddy API key (required for DNS challenges) |
-| `godaddy_api_secret` | `""` | GoDaddy API secret (required for DNS challenges) |
-| `webroot_path` | `"/var/www/html"` | Webroot path for HTTP challenges (certbot only) |
+| `security_identity_letsencrypt_unified_domains` | `[]` | **Required.** List of domains for the certificate. Single item uses `letsencrypt_setup`, multiple items use `letsencrypt_godaddy`. Backwards compatibility for `letsencrypt_domains` is retained. |
+| `security_identity_letsencrypt_unified_email` | `""` | Email address for Let's Encrypt account registration and notifications. Legacy `letsencrypt_email` is still accepted. |
+| `security_identity_letsencrypt_unified_client` | `"auto"` | Force client selection: `"auto"`, `"certbot"`, or `"acme.sh"`. Older `letsencrypt_client` continues to work. |
+| `security_identity_letsencrypt_unified_challenge_method` | `"dns"` | Challenge method: `"dns"` or `"http"` (HTTP only available with certbot). Legacy `letsencrypt_challenge_method` values are honoured. |
+| `security_identity_letsencrypt_unified_godaddy_api_key` | `""` | GoDaddy API key (required for DNS challenges). Falls back to `godaddy_api_key` when provided. |
+| `security_identity_letsencrypt_unified_godaddy_api_secret` | `""` | GoDaddy API secret (required for DNS challenges). Falls back to `godaddy_api_secret`. |
+| `security_identity_letsencrypt_unified_webroot_path` | `"/var/www/html"` | Webroot path for HTTP challenges (certbot only). Falls back to `webroot_path`. |
+
+> **Compatibility note:** The legacy variables shown above without the `security_identity_` prefix are still supported through runtime fallbacks, but new automation should prefer the namespaced variants for ansible-lint compliance.
 
 ## Selection Logic
 
@@ -47,10 +49,10 @@ The role automatically selects the underlying implementation based on:
   roles:
     - role: security_identity.letsencrypt.letsencrypt_unified
       vars:
-        letsencrypt_domains: ["example.com"]
-        letsencrypt_email: "admin@example.com"
-        letsencrypt_challenge_method: "http"
-        webroot_path: "/var/www/html"
+        security_identity_letsencrypt_unified_domains: ["example.com"]
+        security_identity_letsencrypt_unified_email: "admin@example.com"
+        security_identity_letsencrypt_unified_challenge_method: "http"
+        security_identity_letsencrypt_unified_webroot_path: "/var/www/html"
 ```
 
 ### Multiple Domains with DNS Challenge
@@ -60,11 +62,11 @@ The role automatically selects the underlying implementation based on:
   roles:
     - role: security_identity.letsencrypt.letsencrypt_unified
       vars:
-        letsencrypt_domains: ["example.com", "www.example.com", "api.example.com"]
-        letsencrypt_email: "admin@example.com"
-        letsencrypt_challenge_method: "dns"
-        godaddy_api_key: "{{ vault_godaddy_api_key }}"
-        godaddy_api_secret: "{{ vault_godaddy_api_secret }}"
+        security_identity_letsencrypt_unified_domains: ["example.com", "www.example.com", "api.example.com"]
+        security_identity_letsencrypt_unified_email: "admin@example.com"
+        security_identity_letsencrypt_unified_challenge_method: "dns"
+        security_identity_letsencrypt_unified_godaddy_api_key: "{{ vault_godaddy_api_key }}"
+        security_identity_letsencrypt_unified_godaddy_api_secret: "{{ vault_godaddy_api_secret }}"
 ```
 
 ### Force Specific Client
@@ -74,12 +76,12 @@ The role automatically selects the underlying implementation based on:
   roles:
     - role: security_identity.letsencrypt.letsencrypt_unified
       vars:
-        letsencrypt_domains: ["example.com"]
-        letsencrypt_email: "admin@example.com"
-        letsencrypt_client: "acme.sh"  # Force acme.sh even for single domain
-        letsencrypt_challenge_method: "dns"
-        godaddy_api_key: "{{ vault_godaddy_api_key }}"
-        godaddy_api_secret: "{{ vault_godaddy_api_secret }}"
+        security_identity_letsencrypt_unified_domains: ["example.com"]
+        security_identity_letsencrypt_unified_email: "admin@example.com"
+        security_identity_letsencrypt_unified_client: "acme.sh"  # Force acme.sh even for single domain
+        security_identity_letsencrypt_unified_challenge_method: "dns"
+        security_identity_letsencrypt_unified_godaddy_api_key: "{{ vault_godaddy_api_key }}"
+        security_identity_letsencrypt_unified_godaddy_api_secret: "{{ vault_godaddy_api_secret }}"
 ```
 
 ## Limitations

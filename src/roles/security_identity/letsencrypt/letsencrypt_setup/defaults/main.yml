@@ -1,8 +1,13 @@
 ---
 # defaults file for letsencrypt_setup
-letsencrypt_setup_domain_name: "your_domain"
-letsencrypt_setup_email_address: "your_email"
-letsencrypt_setup_godaddy_api_key: "your_godaddy_api_key"
-letsencrypt_setup_godaddy_api_secret: "your_godaddy_api_secret"
-letsencrypt_setup_use_godaddy: true
-letsencrypt_setup_webroot_path: "/var/www/html"
+#
+# Variable names follow the `security_identity_` prefix required for roles that
+# live inside the `security_identity` collection-style namespace. Legacy
+# variables without this prefix remain supported via runtime fallbacks in the
+# task files.
+security_identity_letsencrypt_setup_domain_name: "your_domain"
+security_identity_letsencrypt_setup_email_address: "your_email"
+security_identity_letsencrypt_setup_godaddy_api_key: "your_godaddy_api_key"
+security_identity_letsencrypt_setup_godaddy_api_secret: "your_godaddy_api_secret"
+security_identity_letsencrypt_setup_use_godaddy: true
+security_identity_letsencrypt_setup_webroot_path: "/var/www/html"

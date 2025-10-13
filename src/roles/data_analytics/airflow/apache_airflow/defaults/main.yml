@@ -104,6 +104,11 @@ apache_airflow_letsencrypt_domains:
 apache_airflow_letsencrypt_cert_path: "{{ apache_airflow_home }}/ssl"
 apache_airflow_letsencrypt_cert_owner: "{{ apache_airflow_user }}"
 apache_airflow_letsencrypt_cert_group: "{{ apache_airflow_group }}"
+apache_airflow_letsencrypt_email_address: "airflow@example.com"
+apache_airflow_letsencrypt_use_godaddy: false
+apache_airflow_letsencrypt_godaddy_api_key: ""
+apache_airflow_letsencrypt_godaddy_api_secret: ""
+apache_airflow_letsencrypt_webroot_path: "/var/www/html"
 
 # Separate Worker Nodes Configuration
 apache_airflow_worker_nodes_enabled: "{{ apache_airflow_executor == 'CeleryExecutor' }}"
