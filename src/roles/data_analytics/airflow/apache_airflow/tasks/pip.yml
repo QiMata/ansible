@@ -1,28 +1,50 @@
 ---
 - name: Optionally create venv
-  ansible.builtin.command: "{{ apache_airflow_python }} -m venv {{ apache_airflow_venv_path }}"
+  ansible.builtin.command: "{{ apache_airflow_python }} -m venv {{ apache_airflow_venv_path_normalized }}"
   args:
-    creates: "{{ apache_airflow_venv_path }}/bin/activate"
-  when: apache_airflow_venv_path | length > 0
+    creates: "{{ apache_airflow_venv_path_normalized }}/bin/activate"
+  when: apache_airflow_venv_enabled
 
-- name: Install/upgrade pip in venv or system
+- name: Install/upgrade pip (system python)
   ansible.builtin.pip:
     name: pip
     state: present
-    virtualenv: "{{ apache_airflow_venv_path if apache_airflow_venv_path | length > 0 else omit }}"
-    virtualenv_command: "{{ apache_airflow_python }} -m venv"
-    virtualenv_python: "{{ apache_airflow_python }}"
+  when: not apache_airflow_venv_enabled
 
-- name: Install Apache Airflow
+- name: Install/upgrade pip (virtualenv)
+  ansible.builtin.pip:
+    name: pip
+    state: present
+    virtualenv: "{{ apache_airflow_venv_path_normalized }}"
+  when: apache_airflow_venv_enabled
+
+- name: Install Apache Airflow (system python)
   ansible.builtin.pip:
     name: "apache-airflow=={{ apache_airflow_version }}"
     extra_args: "-r https://raw.githubusercontent.com/apache/airflow/constraints-{{ apache_airflow_version }}/constraints-3.10.txt"
-    virtualenv: "{{ apache_airflow_venv_path if apache_airflow_venv_path | length > 0 else omit }}"
-    virtualenv_site_packages: false
+  when: not apache_airflow_venv_enabled
 
-- name: Install extra Airflow packages
+- name: Install Apache Airflow (virtualenv)
+  ansible.builtin.pip:
+    name: "apache-airflow=={{ apache_airflow_version }}"
+    extra_args: "-r https://raw.githubusercontent.com/apache/airflow/constraints-{{ apache_airflow_version }}/constraints-3.10.txt"
+    virtualenv: "{{ apache_airflow_venv_path_normalized }}"
+    virtualenv_site_packages: false
+  when: apache_airflow_venv_enabled
+
+- name: Install extra Airflow packages (system python)
   ansible.builtin.pip:
     name: "{{ apache_airflow_extra_pip_packages }}"
     state: present
-    virtualenv: "{{ apache_airflow_venv_path if apache_airflow_venv_path | length > 0 else omit }}"
-  when: apache_airflow_extra_pip_packages | length > 0
+  when:
+    - apache_airflow_extra_pip_packages | length > 0
+    - not apache_airflow_venv_enabled
+
+- name: Install extra Airflow packages (virtualenv)
+  ansible.builtin.pip:
+    name: "{{ apache_airflow_extra_pip_packages }}"
+    state: present
+    virtualenv: "{{ apache_airflow_venv_path_normalized }}"
+  when:
+    - apache_airflow_extra_pip_packages | length > 0
+    - apache_airflow_venv_enabled
