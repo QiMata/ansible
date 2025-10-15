@@ -27,6 +27,7 @@
   when: item.name not in installed_plugins.stdout
   register: plugin_install_result
   failed_when: plugin_install_result.rc != 0
+  changed_when: plugin_install_result.rc == 0
   notify: restart elasticsearch
 
 - name: Verify plugin installation
@@ -79,7 +80,9 @@
     - s3_access_key is defined
     - s3_secret_key is defined
     - es_wait_for_cluster
-  ignore_errors: true
+  register: es_repository_s3_result
+  failed_when: es_repository_s3_result.status not in [200, 400]
+  changed_when: es_repository_s3_result.status == 200
   delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
@@ -101,6 +104,8 @@
   when:
     - "'analysis-icu' in (es_plugins | map(attribute='name') | list)"
     - es_wait_for_cluster
-  ignore_errors: true
+  register: es_analysis_icu_result
+  failed_when: es_analysis_icu_result.status not in [200, 400]
+  changed_when: es_analysis_icu_result.status == 200
   delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
   run_once: true

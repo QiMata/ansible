@@ -78,7 +78,9 @@
   when:
     - es_custom_analyzers | length > 0 or es_custom_filters | length > 0 or es_custom_tokenizers | length > 0
     - es_wait_for_cluster
-  ignore_errors: true
+  register: es_custom_analysis_result
+  failed_when: es_custom_analysis_result.status not in [200, 400]
+  changed_when: es_custom_analysis_result.status == 200
   delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 

@@ -11,7 +11,8 @@
 
 - name: Wait for Elasticsearch to be responsive
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}"
+    url: >-
+      http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}
     method: GET
     status_code: [200, 401]
   register: es_health_check
@@ -21,10 +22,11 @@
 
 - name: Check Elasticsearch cluster health
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cluster/health"
+    url: >-
+      http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cluster/health
     method: GET
     timeout: "{{ es_cluster_health_timeout | regex_replace('s', '') | int }}"
-    return_content: yes
+    return_content: true
   register: cluster_health
   when: es_validate_cluster_health
 
@@ -58,9 +60,10 @@
 
 - name: Check node information
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_nodes/_local"
+    url: >-
+      http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_nodes/_local
     method: GET
-    return_content: yes
+    return_content: true
   register: node_info
 
 - name: Display node information
@@ -77,9 +80,10 @@
 
 - name: Check indices health
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cat/indices?v&h=index,health,status,pri,rep,docs.count,store.size"
+    url: >-
+      http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cat/indices?v&h=index,health,status,pri,rep,docs.count,store.size
     method: GET
-    return_content: yes
+    return_content: true
   register: indices_health
 
 - name: Display indices information
@@ -100,9 +104,12 @@
 
 - name: Check disk usage on data nodes
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cat/allocation?v&h=node,disk.indices,disk.used,disk.avail,disk.total,disk.percent"
+    url: >-
+      {{ 'http://' ~ es_network_host ~ ':' ~ (es_proxy_settings.http_port | default(9200)) ~
+         '/_cat/allocation?v&h=' ~
+         'node,disk.indices,disk.used,disk.avail,disk.total,disk.percent' }}
     method: GET
-    return_content: yes
+    return_content: true
   register: disk_allocation
 
 - name: Display disk allocation
@@ -119,9 +126,10 @@
 
 - name: Check pending tasks
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cat/pending_tasks?v"
+    url: >-
+      http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cat/pending_tasks?v
     method: GET
-    return_content: yes
+    return_content: true
   register: pending_tasks
 
 - name: Display pending tasks
@@ -131,9 +139,10 @@
 
 - name: Check thread pool status
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cat/thread_pool?v&h=node_name,name,active,queue,rejected,completed"
+    url: >-
+      http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cat/thread_pool?v&h=node_name,name,active,queue,rejected,completed
     method: GET
-    return_content: yes
+    return_content: true
   register: thread_pools
 
 - name: Display thread pool status
@@ -159,9 +168,10 @@
 
 - name: Check JVM heap usage
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_nodes/stats/jvm"
+    url: >-
+      http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_nodes/stats/jvm
     method: GET
-    return_content: yes
+    return_content: true
   register: jvm_stats
 
 - name: Display JVM heap usage

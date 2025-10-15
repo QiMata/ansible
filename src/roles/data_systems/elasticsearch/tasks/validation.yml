@@ -32,7 +32,9 @@
   ansible.builtin.assert:
     that:
       - item in ['master', 'data', 'data_content', 'data_hot', 'data_warm', 'data_cold', 'data_frozen', 'ingest', 'ml', 'remote_cluster_client', 'transform']
-    fail_msg: "Invalid node role: {{ item }}. Must be one of: master, data, data_content, data_hot, data_warm, data_cold, data_frozen, ingest, ml, remote_cluster_client, transform"
+    fail_msg: >-
+      Invalid node role: {{ item }}. Must be one of: master, data, data_content, data_hot,
+      data_warm, data_cold, data_frozen, ingest, ml, remote_cluster_client, transform
     success_msg: "Node role {{ item }} is valid"
   loop: "{{ es_node_roles }}"
   when: es_node_roles | length > 0
@@ -59,7 +61,9 @@
   ansible.builtin.assert:
     that:
       - (es_heap_size | regex_replace('[kmgKMG]', '') | int) * 2 <= (ansible_memtotal_mb)
-    fail_msg: "Heap size should not exceed 50% of available memory. Current: {{ es_heap_size }}, Available: {{ ansible_memtotal_mb }}MB"
+    fail_msg: >-
+      Heap size should not exceed 50% of available memory. Current: {{ es_heap_size }},
+      Available: {{ ansible_memtotal_mb }}MB
     success_msg: "Memory allocation validation passed"
   when:
     - es_heap_size is match("^[0-9]+[mgMG]$")

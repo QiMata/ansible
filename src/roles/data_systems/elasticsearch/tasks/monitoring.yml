@@ -30,7 +30,9 @@
   when:
     - es_enable_monitoring
     - es_wait_for_cluster
-  ignore_errors: true
+  register: es_monitoring_collection_result
+  failed_when: es_monitoring_collection_result.status not in [200, 400]
+  changed_when: es_monitoring_collection_result.status == 200
   delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
@@ -51,7 +53,9 @@
     - es_enable_monitoring
     - es_monitoring_exporters | length > 0
     - es_wait_for_cluster
-  ignore_errors: true
+  register: es_monitoring_exporters_result
+  failed_when: es_monitoring_exporters_result.status not in [200, 400]
+  changed_when: es_monitoring_exporters_result.status == 200
   delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
@@ -71,7 +75,9 @@
   when:
     - es_watcher_enabled
     - es_wait_for_cluster
-  ignore_errors: true
+  register: es_watcher_enable_result
+  failed_when: es_watcher_enable_result.status not in [200, 400]
+  changed_when: es_watcher_enable_result.status == 200
   delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
@@ -91,7 +97,9 @@
   when:
     - es_watcher_enabled
     - es_wait_for_cluster
-  ignore_errors: true
+  register: es_watcher_encrypt_result
+  failed_when: es_watcher_encrypt_result.status not in [200, 400]
+  changed_when: es_watcher_encrypt_result.status == 200
   delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
@@ -108,7 +116,19 @@
   when:
     - es_watcher_enabled
     - es_wait_for_cluster
-  ignore_errors: true
+  register: es_monitoring_watch_results
+  failed_when: >-
+    (es_monitoring_watch_results.results | default([])
+     | map(attribute='status')
+     | select('defined')
+     | reject('in', [200, 201, 400])
+     | list | length) > 0
+  changed_when: >-
+    (es_monitoring_watch_results.results | default([])
+     | map(attribute='status')
+     | select('defined')
+     | select('in', [200, 201])
+     | list | length) > 0
   delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
@@ -116,6 +136,8 @@
   ansible.builtin.template:
     src: health-watch.json.j2
     dest: /tmp/health-watch.json
+    owner: root
+    group: root
     mode: '0644'
   when: es_watcher_enabled
 
@@ -131,7 +153,9 @@
   when:
     - es_watcher_enabled
     - es_wait_for_cluster
-  ignore_errors: true
+  register: es_cluster_health_watch_result
+  failed_when: es_cluster_health_watch_result.status not in [200, 201, 400]
+  changed_when: es_cluster_health_watch_result.status in [200, 201]
   delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
@@ -144,6 +168,9 @@
       logger.slowlog.level = warn
       logger.slowlog.appenderRef.slowlog_rolling.ref = slowlog_rolling
     create: true
+    owner: root
+    group: root
+    mode: '0644'
   notify: restart elasticsearch
 
 - name: Setup log rotation for monitoring logs
