@@ -2,6 +2,16 @@
 # Spark Auto-scaling Configuration
 spark_autoscaling_enabled: true
 spark_autoscaling_provider: "manual"  # Options: manual, aws, gcp, azure, proxmox
+spark_autoscaling_install_dir: "/opt/spark-autoscaling"
+spark_autoscaling_user: "spark-autoscaler"
+spark_autoscaling_group: "spark-autoscaler"
+spark_autoscaling_virtualenv: "{{ spark_autoscaling_install_dir }}/venv"
+spark_autoscaling_scripts_dir: "{{ spark_autoscaling_install_dir }}/scripts"
+spark_autoscaling_logs_dir: "{{ spark_autoscaling_install_dir }}/logs"
+spark_autoscaling_metrics_env_file: "{{ spark_autoscaling_install_dir }}/metrics.env"
+spark_autoscaling_metrics_collection_interval: "*/5"
+spark_autoscaling_service_name: "spark-autoscaling"
+spark_autoscaling_python_executable: "/usr/bin/env python3"
 
 # Scaling thresholds
 spark_autoscaling_cpu_threshold_up: 80
@@ -33,6 +43,25 @@ spark_autoscaling_aws_region: "us-west-2"
 spark_autoscaling_aws_security_group: ""
 spark_autoscaling_aws_subnet_id: ""
 spark_autoscaling_aws_key_name: ""
+
+spark_autoscaling_cli_packages:
+  manual: {}
+  proxmox: {}
+  aws:
+    Debian:
+      - awscli
+    RedHat:
+      - awscli
+  gcp:
+    Debian:
+      - google-cloud-sdk
+    RedHat:
+      - google-cloud-sdk
+  azure:
+    Debian:
+      - azure-cli
+    RedHat:
+      - azure-cli
 
 # Proxmox specific settings
 spark_autoscaling_proxmox_template: "spark-worker-template"

@@ -1,0 +1,17 @@
+---
+- name: Install systemd unit for Spark autoscaling service
+  ansible.builtin.template:
+    src: spark-autoscaling.service.j2
+    dest: "/etc/systemd/system/{{ spark_autoscaling_service_name }}.service"
+    owner: root
+    group: root
+    mode: '0644'
+  when: spark_autoscaling_enabled
+  notify: Restart Spark autoscaling service
+
+- name: Ensure Spark autoscaling service is enabled and running
+  ansible.builtin.systemd:
+    name: "{{ spark_autoscaling_service_name }}"
+    enabled: true
+    state: started
+  when: spark_autoscaling_enabled

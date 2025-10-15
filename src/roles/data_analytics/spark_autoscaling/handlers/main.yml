@@ -1,0 +1,6 @@
+---
+- name: Restart Spark autoscaling service
+  ansible.builtin.systemd:
+    name: "{{ spark_autoscaling_service_name }}"
+    state: restarted
+  when: spark_autoscaling_enabled
