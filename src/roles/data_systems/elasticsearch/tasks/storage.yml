@@ -11,11 +11,11 @@
     group: elasticsearch
     mode: '0750'
     recurse: true
-  loop: "{{ es_data_paths }}"
+  loop: "{{ elasticsearch_data_paths }}"
 
 - name: Create Elasticsearch log directory
   ansible.builtin.file:
-    path: "{{ es_log_path }}"
+    path: "{{ elasticsearch_log_path }}"
     state: directory
     owner: elasticsearch
     group: elasticsearch
@@ -24,7 +24,7 @@
 
 - name: Create Elasticsearch PID directory
   ansible.builtin.file:
-    path: "{{ es_pid_path }}"
+    path: "{{ elasticsearch_pid_path }}"
     state: directory
     owner: elasticsearch
     group: elasticsearch
@@ -39,8 +39,8 @@
     group: elasticsearch
     mode: '0750'
     recurse: true
-  loop: "{{ es_path_repo }}"
-  when: es_path_repo | length > 0
+  loop: "{{ elasticsearch_path_repo }}"
+  when: elasticsearch_path_repo | length > 0
 
 - name: Set up systemd tmpfiles configuration for PID directory
   ansible.builtin.template:
@@ -55,19 +55,19 @@
   ansible.builtin.lineinfile:
     path: /etc/elasticsearch/elasticsearch.yml
     regexp: '^index\.store\.type:'
-    line: "index.store.type: {{ es_store_type }}"
+    line: "index.store.type: {{ elasticsearch_store_type }}"
     create: true
     owner: root
     group: root
     mode: '0644'
-  when: es_store_type != "fs"
+  when: elasticsearch_store_type != "fs"
   notify: restart elasticsearch
 
 - name: Configure memory mapping settings
   ansible.builtin.lineinfile:
     path: /etc/elasticsearch/elasticsearch.yml
     regexp: '^node\.store\.allow_mmap:'
-    line: "node.store.allow_mmap: {{ es_allow_mmapfs | lower }}"
+    line: "node.store.allow_mmap: {{ elasticsearch_allow_mmapfs | lower }}"
     create: true
     owner: root
     group: root
@@ -81,7 +81,7 @@
   args:
     executable: /bin/bash
   register: disk_usage
-  loop: "{{ es_data_paths }}"
+  loop: "{{ elasticsearch_data_paths }}"
   changed_when: false
 
 - name: Warn about high disk usage
@@ -99,6 +99,6 @@
     group: elasticsearch
     recurse: true
   loop:
-    - "{{ es_config_path }}"
-    - "{{ es_log_path }}"
+    - "{{ elasticsearch_config_path }}"
+    - "{{ elasticsearch_log_path }}"
   failed_when: false

@@ -5,22 +5,22 @@
 
 - name: Create component templates
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_component_template/{{ item.name }}"
+    url: "http://{{ elasticsearch_network_host }}:{{ elasticsearch_proxy_settings.http_port | default(9200) }}/_component_template/{{ item.name }}"
     method: PUT
     body_format: json
     body: "{{ item.template }}"
     headers:
       Content-Type: "application/json"
     status_code: [200, 201]
-  loop: "{{ es_component_templates }}"
+  loop: "{{ elasticsearch_component_templates }}"
   when:
-    - es_wait_for_cluster
-  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+    - elasticsearch_wait_for_cluster
+  delegate_to: "{{ groups['es_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
 - name: Create index templates
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_index_template/{{ item.name }}"
+    url: "http://{{ elasticsearch_network_host }}:{{ elasticsearch_proxy_settings.http_port | default(9200) }}/_index_template/{{ item.name }}"
     method: PUT
     body_format: json
     body:
@@ -36,15 +36,15 @@
     headers:
       Content-Type: "application/json"
     status_code: [200, 201]
-  loop: "{{ es_index_templates }}"
+  loop: "{{ elasticsearch_index_templates }}"
   when:
-    - es_wait_for_cluster
-  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+    - elasticsearch_wait_for_cluster
+  delegate_to: "{{ groups['es_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
 - name: Create index lifecycle policies
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_ilm/policy/{{ item.name }}"
+    url: "http://{{ elasticsearch_network_host }}:{{ elasticsearch_proxy_settings.http_port | default(9200) }}/_ilm/policy/{{ item.name }}"
     method: PUT
     body_format: json
     body:
@@ -54,34 +54,34 @@
     headers:
       Content-Type: "application/json"
     status_code: [200, 201]
-  loop: "{{ es_index_lifecycle_policies }}"
+  loop: "{{ elasticsearch_index_lifecycle_policies }}"
   when:
-    - es_wait_for_cluster
-  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+    - elasticsearch_wait_for_cluster
+  delegate_to: "{{ groups['es_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
 - name: Create custom analyzers
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cluster/settings"
+    url: "http://{{ elasticsearch_network_host }}:{{ elasticsearch_proxy_settings.http_port | default(9200) }}/_cluster/settings"
     method: PUT
     body_format: json
     body:
       persistent:
         index:
           analysis:
-            analyzer: "{{ es_custom_analyzers }}"
-            filter: "{{ es_custom_filters }}"
-            tokenizer: "{{ es_custom_tokenizers }}"
+            analyzer: "{{ elasticsearch_custom_analyzers }}"
+            filter: "{{ elasticsearch_custom_filters }}"
+            tokenizer: "{{ elasticsearch_custom_tokenizers }}"
     headers:
       Content-Type: "application/json"
     status_code: [200, 400]
   when:
-    - es_custom_analyzers | length > 0 or es_custom_filters | length > 0 or es_custom_tokenizers | length > 0
-    - es_wait_for_cluster
-  register: es_custom_analysis_result
-  failed_when: es_custom_analysis_result.status not in [200, 400]
-  changed_when: es_custom_analysis_result.status == 200
-  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+    - elasticsearch_custom_analyzers | length > 0 or elasticsearch_custom_filters | length > 0 or elasticsearch_custom_tokenizers | length > 0
+    - elasticsearch_wait_for_cluster
+  register: elasticsearch_custom_analysis_result
+  failed_when: elasticsearch_custom_analysis_result.status not in [200, 400]
+  changed_when: elasticsearch_custom_analysis_result.status == 200
+  delegate_to: "{{ groups['es_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
 - name: Install custom dictionaries
@@ -91,22 +91,22 @@
     owner: root
     group: elasticsearch
     mode: '0644'
-  loop: "{{ es_custom_dictionaries }}"
-  when: es_custom_dictionaries | length > 0
+  loop: "{{ elasticsearch_custom_dictionaries }}"
+  when: elasticsearch_custom_dictionaries | length > 0
   notify: restart elasticsearch
 
 - name: Verify index templates creation
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_index_template/{{ item.name }}"
+    url: "http://{{ elasticsearch_network_host }}:{{ elasticsearch_proxy_settings.http_port | default(9200) }}/_index_template/{{ item.name }}"
     method: GET
     headers:
       Content-Type: "application/json"
     status_code: [200, 404]
-  loop: "{{ es_index_templates }}"
+  loop: "{{ elasticsearch_index_templates }}"
   register: template_verification
   when:
-    - es_wait_for_cluster
-  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+    - elasticsearch_wait_for_cluster
+  delegate_to: "{{ groups['es_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
 - name: Display template verification results
@@ -117,15 +117,15 @@
 
 - name: Create template backup
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_index_template"
+    url: "http://{{ elasticsearch_network_host }}:{{ elasticsearch_proxy_settings.http_port | default(9200) }}/_index_template"
     method: GET
     headers:
       Content-Type: "application/json"
     status_code: [200]
   register: all_templates
   when:
-    - es_wait_for_cluster
-  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+    - elasticsearch_wait_for_cluster
+  delegate_to: "{{ groups['es_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
 - name: Save template backup to file
@@ -138,5 +138,5 @@
   when:
     - all_templates is defined
     - all_templates.json is defined
-  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+  delegate_to: "{{ groups['es_cluster'][0] | default(inventory_hostname) }}"
   run_once: true

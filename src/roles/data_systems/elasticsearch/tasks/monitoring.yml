@@ -10,12 +10,12 @@
     owner: root
     group: elasticsearch
     mode: '0640'
-  when: es_enable_monitoring
+  when: elasticsearch_enable_monitoring
   notify: restart elasticsearch
 
 - name: Enable monitoring collection
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cluster/settings"
+    url: "http://{{ elasticsearch_network_host }}:{{ elasticsearch_proxy_settings.http_port | default(9200) }}/_cluster/settings"
     method: PUT
     body_format: json
     body:
@@ -23,113 +23,113 @@
         xpack:
           monitoring:
             collection:
-              enabled: "{{ es_monitoring_collection_enabled | lower }}"
+              enabled: "{{ elasticsearch_monitoring_collection_enabled | lower }}"
     headers:
       Content-Type: "application/json"
     status_code: [200, 400]
   when:
-    - es_enable_monitoring
-    - es_wait_for_cluster
-  register: es_monitoring_collection_result
-  failed_when: es_monitoring_collection_result.status not in [200, 400]
-  changed_when: es_monitoring_collection_result.status == 200
-  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+    - elasticsearch_enable_monitoring
+    - elasticsearch_wait_for_cluster
+  register: elasticsearch_monitoring_collection_result
+  failed_when: elasticsearch_monitoring_collection_result.status not in [200, 400]
+  changed_when: elasticsearch_monitoring_collection_result.status == 200
+  delegate_to: "{{ groups['es_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
 - name: Configure monitoring exporters
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cluster/settings"
+    url: "http://{{ elasticsearch_network_host }}:{{ elasticsearch_proxy_settings.http_port | default(9200) }}/_cluster/settings"
     method: PUT
     body_format: json
     body:
       persistent:
         xpack:
           monitoring:
-            exporters: "{{ es_monitoring_exporters }}"
+            exporters: "{{ elasticsearch_monitoring_exporters }}"
     headers:
       Content-Type: "application/json"
     status_code: [200, 400]
   when:
-    - es_enable_monitoring
-    - es_monitoring_exporters | length > 0
-    - es_wait_for_cluster
-  register: es_monitoring_exporters_result
-  failed_when: es_monitoring_exporters_result.status not in [200, 400]
-  changed_when: es_monitoring_exporters_result.status == 200
-  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+    - elasticsearch_enable_monitoring
+    - elasticsearch_monitoring_exporters | length > 0
+    - elasticsearch_wait_for_cluster
+  register: elasticsearch_monitoring_exporters_result
+  failed_when: elasticsearch_monitoring_exporters_result.status not in [200, 400]
+  changed_when: elasticsearch_monitoring_exporters_result.status == 200
+  delegate_to: "{{ groups['es_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
 - name: Enable Watcher
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cluster/settings"
+    url: "http://{{ elasticsearch_network_host }}:{{ elasticsearch_proxy_settings.http_port | default(9200) }}/_cluster/settings"
     method: PUT
     body_format: json
     body:
       persistent:
         xpack:
           watcher:
-            enabled: "{{ es_watcher_enabled | lower }}"
+            enabled: "{{ elasticsearch_watcher_enabled | lower }}"
     headers:
       Content-Type: "application/json"
     status_code: [200, 400]
   when:
-    - es_watcher_enabled
-    - es_wait_for_cluster
-  register: es_watcher_enable_result
-  failed_when: es_watcher_enable_result.status not in [200, 400]
-  changed_when: es_watcher_enable_result.status == 200
-  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+    - elasticsearch_watcher_enabled
+    - elasticsearch_wait_for_cluster
+  register: elasticsearch_watcher_enable_result
+  failed_when: elasticsearch_watcher_enable_result.status not in [200, 400]
+  changed_when: elasticsearch_watcher_enable_result.status == 200
+  delegate_to: "{{ groups['es_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
 - name: Configure Watcher encryption
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cluster/settings"
+    url: "http://{{ elasticsearch_network_host }}:{{ elasticsearch_proxy_settings.http_port | default(9200) }}/_cluster/settings"
     method: PUT
     body_format: json
     body:
       persistent:
         xpack:
           watcher:
-            encrypt_sensitive_data: "{{ es_watcher_encrypt_sensitive_data | lower }}"
+            encrypt_sensitive_data: "{{ elasticsearch_watcher_encrypt_sensitive_data | lower }}"
     headers:
       Content-Type: "application/json"
     status_code: [200, 400]
   when:
-    - es_watcher_enabled
-    - es_wait_for_cluster
-  register: es_watcher_encrypt_result
-  failed_when: es_watcher_encrypt_result.status not in [200, 400]
-  changed_when: es_watcher_encrypt_result.status == 200
-  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+    - elasticsearch_watcher_enabled
+    - elasticsearch_wait_for_cluster
+  register: elasticsearch_watcher_encrypt_result
+  failed_when: elasticsearch_watcher_encrypt_result.status not in [200, 400]
+  changed_when: elasticsearch_watcher_encrypt_result.status == 200
+  delegate_to: "{{ groups['es_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
 - name: Create monitoring dashboard watches
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_watcher/watch/{{ item.name }}"
+    url: "http://{{ elasticsearch_network_host }}:{{ elasticsearch_proxy_settings.http_port | default(9200) }}/_watcher/watch/{{ item.name }}"
     method: PUT
     body_format: json
     body: "{{ item.watch }}"
     headers:
       Content-Type: "application/json"
     status_code: [200, 201, 400]
-  loop: "{{ es_monitoring_watches | default([]) }}"
+  loop: "{{ elasticsearch_monitoring_watches | default([]) }}"
   when:
-    - es_watcher_enabled
-    - es_wait_for_cluster
-  register: es_monitoring_watch_results
+    - elasticsearch_watcher_enabled
+    - elasticsearch_wait_for_cluster
+  register: elasticsearch_monitoring_watch_results
   failed_when: >-
-    (es_monitoring_watch_results.results | default([])
+    (elasticsearch_monitoring_watch_results.results | default([])
      | map(attribute='status')
      | select('defined')
      | reject('in', [200, 201, 400])
      | list | length) > 0
   changed_when: >-
-    (es_monitoring_watch_results.results | default([])
+    (elasticsearch_monitoring_watch_results.results | default([])
      | map(attribute='status')
      | select('defined')
      | select('in', [200, 201])
      | list | length) > 0
-  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+  delegate_to: "{{ groups['es_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
 - name: Configure cluster health monitoring
@@ -139,11 +139,11 @@
     owner: root
     group: root
     mode: '0644'
-  when: es_watcher_enabled
+  when: elasticsearch_watcher_enabled
 
 - name: Install cluster health watch
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_watcher/watch/cluster_health"
+    url: "http://{{ elasticsearch_network_host }}:{{ elasticsearch_proxy_settings.http_port | default(9200) }}/_watcher/watch/cluster_health"
     method: PUT
     body: "{{ lookup('file', '/tmp/health-watch.json') | from_json }}"
     body_format: json
@@ -151,12 +151,12 @@
       Content-Type: "application/json"
     status_code: [200, 201, 400]
   when:
-    - es_watcher_enabled
-    - es_wait_for_cluster
-  register: es_cluster_health_watch_result
-  failed_when: es_cluster_health_watch_result.status not in [200, 201, 400]
-  changed_when: es_cluster_health_watch_result.status in [200, 201]
-  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+    - elasticsearch_watcher_enabled
+    - elasticsearch_wait_for_cluster
+  register: elasticsearch_cluster_health_watch_result
+  failed_when: elasticsearch_cluster_health_watch_result.status not in [200, 201, 400]
+  changed_when: elasticsearch_cluster_health_watch_result.status in [200, 201]
+  delegate_to: "{{ groups['es_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
 - name: Configure slow log monitoring
@@ -180,4 +180,4 @@
     owner: root
     group: root
     mode: '0644'
-  when: es_enable_monitoring
+  when: elasticsearch_enable_monitoring

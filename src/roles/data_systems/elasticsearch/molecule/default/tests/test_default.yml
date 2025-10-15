@@ -29,7 +29,7 @@
         status_code: 200
       retries: 30
       delay: 2
-      register: es_health_check
+      register: elasticsearch_health_check
 
     - name: Check Elasticsearch cluster health
       ansible.builtin.uri:
@@ -64,12 +64,12 @@
     - name: Check Elasticsearch configuration file exists
       ansible.builtin.stat:
         path: /etc/elasticsearch/elasticsearch.yml
-      register: es_config
+      register: elasticsearch_config
 
     - name: Assert Elasticsearch config exists
       ansible.builtin.assert:
         that:
-          - es_config.stat.exists
+          - elasticsearch_config.stat.exists
         fail_msg: "Elasticsearch configuration file does not exist"
 
     - name: Check if Elasticsearch is listening on port 9200

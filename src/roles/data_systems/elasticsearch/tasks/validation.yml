@@ -6,25 +6,25 @@
 - name: Validate Elasticsearch version format
   ansible.builtin.assert:
     that:
-      - es_version is defined
-      - es_version | length > 0
+      - elasticsearch_version is defined
+      - elasticsearch_version | length > 0
     fail_msg: "Elasticsearch version must be defined and not empty"
     success_msg: "Elasticsearch version validation passed"
 
 - name: Validate cluster name
   ansible.builtin.assert:
     that:
-      - es_cluster_name is defined
-      - es_cluster_name | length > 0
-      - es_cluster_name is match("^[a-zA-Z0-9][a-zA-Z0-9_-]*$")
+      - elasticsearch_cluster_name is defined
+      - elasticsearch_cluster_name | length > 0
+      - elasticsearch_cluster_name is match("^[a-zA-Z0-9][a-zA-Z0-9_-]*$")
     fail_msg: "Cluster name must be defined and contain only alphanumeric characters, underscores, and hyphens"
     success_msg: "Cluster name validation passed"
 
 - name: Validate heap size format
   ansible.builtin.assert:
     that:
-      - es_heap_size is defined
-      - es_heap_size is match("^[0-9]+[kmgKMG]?$")
+      - elasticsearch_heap_size is defined
+      - elasticsearch_heap_size is match("^[0-9]+[kmgKMG]?$")
     fail_msg: "Heap size must be in format like '2g', '1024m', or '1048576k'"
     success_msg: "Heap size validation passed"
 
@@ -36,13 +36,13 @@
       Invalid node role: {{ item }}. Must be one of: master, data, data_content, data_hot,
       data_warm, data_cold, data_frozen, ingest, ml, remote_cluster_client, transform
     success_msg: "Node role {{ item }} is valid"
-  loop: "{{ es_node_roles }}"
-  when: es_node_roles | length > 0
+  loop: "{{ elasticsearch_node_roles }}"
+  when: elasticsearch_node_roles | length > 0
 
 - name: Validate environment setting
   ansible.builtin.assert:
     that:
-      - es_environment in ['dev', 'development', 'staging', 'prod', 'production']
+      - elasticsearch_environment in ['dev', 'development', 'staging', 'prod', 'production']
     fail_msg: "Environment must be one of: dev, development, staging, prod, production"
     success_msg: "Environment validation passed"
 
@@ -53,38 +53,38 @@
     owner: elasticsearch
     group: elasticsearch
     mode: '0750'
-  loop: "{{ es_data_paths }}"
+  loop: "{{ elasticsearch_data_paths }}"
   check_mode: true
   register: data_path_check
 
 - name: Validate memory settings
   ansible.builtin.assert:
     that:
-      - (es_heap_size | regex_replace('[kmgKMG]', '') | int) * 2 <= (ansible_memtotal_mb)
+      - (elasticsearch_heap_size | regex_replace('[kmgKMG]', '') | int) * 2 <= (ansible_memtotal_mb)
     fail_msg: >-
-      Heap size should not exceed 50% of available memory. Current: {{ es_heap_size }},
+      Heap size should not exceed 50% of available memory. Current: {{ elasticsearch_heap_size }},
       Available: {{ ansible_memtotal_mb }}MB
     success_msg: "Memory allocation validation passed"
   when:
-    - es_heap_size is match("^[0-9]+[mgMG]$")
+    - elasticsearch_heap_size is match("^[0-9]+[mgMG]$")
     - ansible_memtotal_mb is defined
 
 - name: Validate LDAP configuration when security is enabled
   ansible.builtin.assert:
     that:
-      - ldap_url | length > 0
-      - ldap_bind_dn | length > 0
-      - ldap_user_base_dn | length > 0
+      - elasticsearch_ldap_url | length > 0
+      - elasticsearch_ldap_bind_dn | length > 0
+      - elasticsearch_ldap_user_base_dn | length > 0
     fail_msg: "LDAP configuration is incomplete when security is enabled"
     success_msg: "LDAP configuration validation passed"
   when:
-    - es_enable_security
-    - ldap_url is defined
+    - elasticsearch_enable_security
+    - elasticsearch_ldap_url is defined
 
 - name: Check for conflicting discovery settings
   ansible.builtin.assert:
     that:
-      - not (groups['es_master'] | default([]) | length == 1 and es_environment in ['prod', 'production'])
+      - not (groups['es_master'] | default([]) | length == 1 and elasticsearch_environment in ['prod', 'production'])
     fail_msg: "Single master node is not recommended for production environments"
     success_msg: "Discovery configuration validation passed"
   when: groups['es_master'] is defined
@@ -96,5 +96,5 @@
       - item.name | length > 0
     fail_msg: "Plugin name must be defined and not empty"
     success_msg: "Plugin {{ item.name }} validation passed"
-  loop: "{{ es_plugins }}"
-  when: es_plugins | length > 0
+  loop: "{{ elasticsearch_plugins }}"
+  when: elasticsearch_plugins | length > 0

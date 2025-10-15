@@ -19,8 +19,12 @@
 
 - name: Recreate keystore when security is disabled to remove SSL transport settings
   when: >
-    (es_environment is defined and es_environment == 'dev') or
-    (es_dev_settings is defined and es_dev_settings['xpack.security.enabled'] is defined and not es_dev_settings['xpack.security.enabled'])
+    (elasticsearch_environment is defined and elasticsearch_environment == 'dev') or
+    (
+      elasticsearch_dev_settings is defined and
+      elasticsearch_dev_settings['xpack.security.enabled'] is defined and
+      not elasticsearch_dev_settings['xpack.security.enabled']
+    )
   notify: restart elasticsearch
   block:
     - name: Remove existing keystore

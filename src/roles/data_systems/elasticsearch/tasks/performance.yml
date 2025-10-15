@@ -10,67 +10,67 @@
     owner: root
     group: elasticsearch
     mode: '0644'
-  when: es_jvm_options | length > 0
+  when: elasticsearch_jvm_options | length > 0
   notify: restart elasticsearch
 
 - name: Configure thread pool settings
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cluster/settings"
+    url: "http://{{ elasticsearch_network_host }}:{{ elasticsearch_proxy_settings.http_port | default(9200) }}/_cluster/settings"
     method: PUT
     body_format: json
     body:
       persistent:
-        thread_pool: "{{ es_thread_pool_settings }}"
+        thread_pool: "{{ elasticsearch_thread_pool_settings }}"
     headers:
       Content-Type: "application/json"
     status_code: [200, 400]
   when:
-    - es_thread_pool_settings | length > 0
-    - es_wait_for_cluster
-  register: es_thread_pool_result
-  failed_when: es_thread_pool_result.status not in [200, 400]
-  changed_when: es_thread_pool_result.status == 200
-  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+    - elasticsearch_thread_pool_settings | length > 0
+    - elasticsearch_wait_for_cluster
+  register: elasticsearch_thread_pool_result
+  failed_when: elasticsearch_thread_pool_result.status not in [200, 400]
+  changed_when: elasticsearch_thread_pool_result.status == 200
+  delegate_to: "{{ groups['es_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
 - name: Configure circuit breaker settings
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cluster/settings"
+    url: "http://{{ elasticsearch_network_host }}:{{ elasticsearch_proxy_settings.http_port | default(9200) }}/_cluster/settings"
     method: PUT
     body_format: json
     body:
       persistent:
         indices:
-          breaker: "{{ es_circuit_breaker_settings }}"
+          breaker: "{{ elasticsearch_circuit_breaker_settings }}"
     headers:
       Content-Type: "application/json"
     status_code: [200, 400]
   when:
-    - es_circuit_breaker_settings | length > 0
-    - es_wait_for_cluster
-  register: es_circuit_breaker_result
-  failed_when: es_circuit_breaker_result.status not in [200, 400]
-  changed_when: es_circuit_breaker_result.status == 200
-  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+    - elasticsearch_circuit_breaker_settings | length > 0
+    - elasticsearch_wait_for_cluster
+  register: elasticsearch_circuit_breaker_result
+  failed_when: elasticsearch_circuit_breaker_result.status not in [200, 400]
+  changed_when: elasticsearch_circuit_breaker_result.status == 200
+  delegate_to: "{{ groups['es_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
 - name: Configure cache settings
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cluster/settings"
+    url: "http://{{ elasticsearch_network_host }}:{{ elasticsearch_proxy_settings.http_port | default(9200) }}/_cluster/settings"
     method: PUT
     body_format: json
     body:
-      persistent: "{{ es_cache_settings }}"
+      persistent: "{{ elasticsearch_cache_settings }}"
     headers:
       Content-Type: "application/json"
     status_code: [200, 400]
   when:
-    - es_cache_settings | length > 0
-    - es_wait_for_cluster
-  register: es_cache_settings_result
-  failed_when: es_cache_settings_result.status not in [200, 400]
-  changed_when: es_cache_settings_result.status == 200
-  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+    - elasticsearch_cache_settings | length > 0
+    - elasticsearch_wait_for_cluster
+  register: elasticsearch_cache_settings_result
+  failed_when: elasticsearch_cache_settings_result.status not in [200, 400]
+  changed_when: elasticsearch_cache_settings_result.status == 200
+  delegate_to: "{{ groups['es_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
 - name: Set vm.max_map_count for Elasticsearch
@@ -124,7 +124,7 @@
     owner: root
     group: root
     mode: '0644'
-  when: es_bootstrap_memory_lock
+  when: elasticsearch_bootstrap_memory_lock
 
 - name: Configure systemd service for memory locking
   ansible.builtin.lineinfile:
@@ -135,7 +135,7 @@
     owner: root
     group: root
     mode: '0644'
-  when: es_bootstrap_memory_lock
+  when: elasticsearch_bootstrap_memory_lock
   notify:
     - Reload systemd
     - Restart elasticsearch
@@ -147,7 +147,7 @@
     mode: '0755'
     owner: root
     group: root
-  when: es_bootstrap_memory_lock
+  when: elasticsearch_bootstrap_memory_lock
 
 - name: Configure I/O scheduler for data disks
   ansible.builtin.shell: |
@@ -157,6 +157,6 @@
     done
   args:
     executable: /bin/bash
-  loop: "{{ es_data_paths }}"
+  loop: "{{ elasticsearch_data_paths }}"
   changed_when: false
   failed_when: false

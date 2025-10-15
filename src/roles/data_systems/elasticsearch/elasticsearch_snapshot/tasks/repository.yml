@@ -1,12 +1,12 @@
 ---
 - name: Register snapshot repository
   ansible.builtin.uri:
-    url: "http://localhost:9200/_snapshot/{{ es_snapshot_repo_name }}"
+    url: "http://localhost:9200/_snapshot/{{ elasticsearch_snapshot_repo_name }}"
     method: PUT
     body_format: json
     body:
-      type: "{{ es_snapshot_repo_type }}"
-      settings: "{{ es_snapshot_repo_settings }}"
+      type: "{{ elasticsearch_snapshot_repo_type }}"
+      settings: "{{ elasticsearch_snapshot_repo_settings }}"
     status_code: 200
     user: "{{ elastic_api_user | default('elastic') }}"
     password: "{{ elastic_api_password | default(vault_elastic_password) }}"

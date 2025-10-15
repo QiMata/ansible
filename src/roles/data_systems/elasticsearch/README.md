@@ -37,120 +37,120 @@ This Ansible role installs, configures, and manages Elasticsearch clusters. It p
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `es_version` | `"8.x"` | Elasticsearch version to install |
-| `es_cluster_name` | `"elasticsearch-cluster"` | Name of the Elasticsearch cluster |
-| `es_node_roles` | `[]` | List of node roles (master, data, ingest, etc.) |
-| `es_network_host` | `"{{ ansible_default_ipv4.address }}"` | Network interface to bind to |
-| `es_heap_size` | `"2g"` | JVM heap size allocation |
-| `es_install_java` | `true` | Whether to install OpenJDK automatically |
-| `es_environment` | `"production"` | Environment type (dev, staging, production) |
+| `elasticsearch_version` | `"8.x"` | Elasticsearch version to install |
+| `elasticsearch_cluster_name` | `"elasticsearch-cluster"` | Name of the Elasticsearch cluster |
+| `elasticsearch_node_roles` | `[]` | List of node roles (master, data, ingest, etc.) |
+| `elasticsearch_network_host` | `"{{ ansible_default_ipv4.address }}"` | Network interface to bind to |
+| `elasticsearch_heap_size` | `"2g"` | JVM heap size allocation |
+| `elasticsearch_install_java` | `true` | Whether to install OpenJDK automatically |
+| `elasticsearch_environment` | `"production"` | Environment type (dev, staging, production) |
 
 ### Storage and Paths
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `es_data_paths` | `["/var/lib/elasticsearch"]` | List of data storage paths |
-| `es_log_path` | `"/var/log/elasticsearch"` | Log directory path |
-| `es_config_path` | `"/etc/elasticsearch"` | Configuration directory |
-| `es_path_repo` | `[]` | Snapshot repository paths |
-| `es_store_type` | `"fs"` | Storage type (fs, niofs, mmapfs, hybridfs) |
-| `es_allow_mmapfs` | `true` | Allow memory-mapped file system |
+| `elasticsearch_data_paths` | `["/var/lib/elasticsearch"]` | List of data storage paths |
+| `elasticsearch_log_path` | `"/var/log/elasticsearch"` | Log directory path |
+| `elasticsearch_config_path` | `"/etc/elasticsearch"` | Configuration directory |
+| `elasticsearch_path_repo` | `[]` | Snapshot repository paths |
+| `elasticsearch_store_type` | `"fs"` | Storage type (fs, niofs, mmapfs, hybridfs) |
+| `elasticsearch_allow_mmapfs` | `true` | Allow memory-mapped file system |
 
 ### Security Configuration
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `es_enable_security` | `false` | Enable X-Pack security features |
-| `es_tls_provided` | `false` | Whether TLS certificates are pre-provided |
-| `es_api_key_enabled` | `false` | Enable API key authentication |
-| `es_audit_enabled` | `false` | Enable security auditing |
-| `es_field_level_security` | `false` | Enable field-level security |
-| `es_document_level_security` | `false` | Enable document-level security |
+| `elasticsearch_enable_security` | `false` | Enable X-Pack security features |
+| `elasticsearch_tls_provided` | `false` | Whether TLS certificates are pre-provided |
+| `elasticsearch_api_key_enabled` | `false` | Enable API key authentication |
+| `elasticsearch_audit_enabled` | `false` | Enable security auditing |
+| `elasticsearch_field_level_security` | `false` | Enable field-level security |
+| `elasticsearch_document_level_security` | `false` | Enable document-level security |
 
 ### Plugin Management
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `es_plugins` | `[]` | List of plugins to install |
-| `es_plugins_remove` | `[]` | List of plugins to remove |
+| `elasticsearch_plugins` | `[]` | List of plugins to install |
+| `elasticsearch_plugins_remove` | `[]` | List of plugins to remove |
 
 ### Index Template Management
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `es_index_templates` | `[]` | Index templates to create |
-| `es_component_templates` | `[]` | Component templates to create |
-| `es_index_lifecycle_policies` | `[]` | ILM policies to create |
-| `es_custom_analyzers` | `{}` | Custom text analyzers |
-| `es_custom_filters` | `{}` | Custom token filters |
-| `es_custom_tokenizers` | `{}` | Custom tokenizers |
+| `elasticsearch_index_templates` | `[]` | Index templates to create |
+| `elasticsearch_component_templates` | `[]` | Component templates to create |
+| `elasticsearch_index_lifecycle_policies` | `[]` | ILM policies to create |
+| `elasticsearch_custom_analyzers` | `{}` | Custom text analyzers |
+| `elasticsearch_custom_filters` | `{}` | Custom token filters |
+| `elasticsearch_custom_tokenizers` | `{}` | Custom tokenizers |
 
 ### Snapshot and Backup
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `es_snapshot_repositories` | `[]` | Snapshot repositories configuration |
-| `es_snapshot_policies` | `[]` | Automated snapshot policies |
-| `es_backup_retention_days` | `30` | Backup retention period |
+| `elasticsearch_snapshot_repositories` | `[]` | Snapshot repositories configuration |
+| `elasticsearch_snapshot_policies` | `[]` | Automated snapshot policies |
+| `elasticsearch_backup_retention_days` | `30` | Backup retention period |
 
 ### Monitoring and Alerting
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `es_enable_monitoring` | `false` | Enable X-Pack monitoring |
-| `es_monitoring_cluster_uuid` | `""` | Monitoring cluster UUID |
-| `es_watcher_enabled` | `false` | Enable Watcher for alerting |
-| `es_alerting_enabled` | `false` | Enable alerting features |
+| `elasticsearch_enable_monitoring` | `false` | Enable X-Pack monitoring |
+| `elasticsearch_monitoring_cluster_uuid` | `""` | Monitoring cluster UUID |
+| `elasticsearch_watcher_enabled` | `false` | Enable Watcher for alerting |
+| `elasticsearch_alerting_enabled` | `false` | Enable alerting features |
 
 ### Performance Tuning
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `es_thread_pool_settings` | `{}` | Thread pool configuration |
-| `es_circuit_breaker_settings` | `{}` | Circuit breaker settings |
-| `es_cache_settings` | `{}` | Cache configuration |
-| `es_jvm_options` | `[]` | Additional JVM options |
-| `es_bootstrap_memory_lock` | `true` | Lock process memory |
+| `elasticsearch_thread_pool_settings` | `{}` | Thread pool configuration |
+| `elasticsearch_circuit_breaker_settings` | `{}` | Circuit breaker settings |
+| `elasticsearch_cache_settings` | `{}` | Cache configuration |
+| `elasticsearch_jvm_options` | `[]` | Additional JVM options |
+| `elasticsearch_bootstrap_memory_lock` | `true` | Lock process memory |
 
 ### Load Balancer/Proxy
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `es_behind_proxy` | `false` | Whether ES is behind a proxy |
-| `es_proxy_settings` | `{}` | Proxy configuration settings |
-| `es_http_compression` | `true` | Enable HTTP compression |
-| `es_http_cors_enabled` | `false` | Enable CORS |
+| `elasticsearch_behind_proxy` | `false` | Whether ES is behind a proxy |
+| `elasticsearch_proxy_settings` | `{}` | Proxy configuration settings |
+| `elasticsearch_http_compression` | `true` | Enable HTTP compression |
+| `elasticsearch_http_cors_enabled` | `false` | Enable CORS |
 
 ### Health Checks and Validation
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `es_health_check_enabled` | `true` | Enable automated health checks |
-| `es_health_check_retries` | `30` | Health check retry count |
-| `es_health_check_delay` | `10` | Delay between health checks |
-| `es_validate_config` | `true` | Validate configuration |
-| `es_validate_cluster_health` | `true` | Validate cluster health |
+| `elasticsearch_health_check_enabled` | `true` | Enable automated health checks |
+| `elasticsearch_health_check_retries` | `30` | Health check retry count |
+| `elasticsearch_health_check_delay` | `10` | Delay between health checks |
+| `elasticsearch_validate_config` | `true` | Validate configuration |
+| `elasticsearch_validate_cluster_health` | `true` | Validate cluster health |
 
 ### Upgrade Management
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `es_rolling_upgrade` | `false` | Enable rolling upgrade mode |
-| `es_upgrade_validation` | `true` | Validate before upgrade |
-| `es_backup_before_upgrade` | `true` | Backup before upgrade |
-| `es_upgrade_timeout` | `600` | Upgrade timeout in seconds |
+| `elasticsearch_rolling_upgrade` | `false` | Enable rolling upgrade mode |
+| `elasticsearch_upgrade_validation` | `true` | Validate before upgrade |
+| `elasticsearch_backup_before_upgrade` | `true` | Backup before upgrade |
+| `elasticsearch_upgrade_timeout` | `600` | Upgrade timeout in seconds |
 
 ### LDAP Integration
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ldap_url` | `""` | LDAP server URL |
-| `ldap_bind_dn` | `""` | LDAP bind distinguished name |
-| `ldap_bind_password` | `""` | LDAP bind password |
-| `ldap_user_base_dn` | `""` | Base DN for user searches |
-| `ldap_group_base_dn` | `""` | Base DN for group searches |
-| `ldap_admin_group_dn` | `""` | DN of the admin group |
-| `ldap_user_group_dn` | `""` | DN of the user group |
+| `elasticsearch_ldap_url` | `""` | LDAP server URL |
+| `elasticsearch_ldap_bind_dn` | `""` | LDAP bind distinguished name |
+| `elasticsearch_ldap_bind_password` | `""` | LDAP bind password |
+| `elasticsearch_ldap_user_base_dn` | `""` | Base DN for user searches |
+| `elasticsearch_ldap_group_base_dn` | `""` | Base DN for group searches |
+| `elasticsearch_ldap_admin_group_dn` | `""` | DN of the admin group |
+| `elasticsearch_ldap_user_group_dn` | `""` | DN of the user group |
 
 See `defaults/main.yml` for the complete list of configurable variables and their detailed structure.
 
@@ -172,11 +172,11 @@ This role has no external Ansible Galaxy dependencies, but requires:
   roles:
     - role: data_systems/elasticsearch
       vars:
-        es_cluster_name: "single-node-cluster"
-        es_node_roles: ["master", "data", "ingest"]
-        es_heap_size: "4g"
-        es_environment: "development"
-        es_health_check_enabled: true
+        elasticsearch_cluster_name: "single-node-cluster"
+        elasticsearch_node_roles: ["master", "data", "ingest"]
+        elasticsearch_heap_size: "4g"
+        elasticsearch_environment: "development"
+        elasticsearch_health_check_enabled: true
 ```
 
 ### Multi-Node Cluster Deployment
@@ -189,23 +189,23 @@ This role has no external Ansible Galaxy dependencies, but requires:
   roles:
     - role: data_systems/elasticsearch
       vars:
-        es_cluster_name: "production-cluster"
-        es_heap_size: "8g"
-        es_environment: "production"
-        es_bootstrap_memory_lock: true
+        elasticsearch_cluster_name: "production-cluster"
+        elasticsearch_heap_size: "8g"
+        elasticsearch_environment: "production"
+        elasticsearch_bootstrap_memory_lock: true
 
 - name: Configure Master Nodes
-  hosts: es_master
+  hosts: elasticsearch_master
   become: true
   vars:
-    es_node_roles: ["master"]
+    elasticsearch_node_roles: ["master"]
 
 - name: Configure Data Nodes
-  hosts: es_data
+  hosts: elasticsearch_data
   become: true
   vars:
-    es_node_roles: ["data", "ingest"]
-    es_data_paths:
+    elasticsearch_node_roles: ["data", "ingest"]
+    elasticsearch_data_paths:
       - "/data1/elasticsearch"
       - "/data2/elasticsearch"
 ```
@@ -220,40 +220,40 @@ This role has no external Ansible Galaxy dependencies, but requires:
   roles:
     - role: data_systems/elasticsearch
       vars:
-        es_cluster_name: "production-cluster"
-        es_environment: "production"
-        es_heap_size: "16g"
+        elasticsearch_cluster_name: "production-cluster"
+        elasticsearch_environment: "production"
+        elasticsearch_heap_size: "16g"
         
         # Security
-        es_enable_security: true
-        es_tls_provided: true
-        es_audit_enabled: true
+        elasticsearch_enable_security: true
+        elasticsearch_tls_provided: true
+        elasticsearch_audit_enabled: true
         
         # Storage
-        es_data_paths:
+        elasticsearch_data_paths:
           - "/data1/elasticsearch"
           - "/data2/elasticsearch"
-        es_path_repo:
+        elasticsearch_path_repo:
           - "/backup/elasticsearch"
         
         # Plugins
-        es_plugins:
+        elasticsearch_plugins:
           - name: "repository-s3"
           - name: "analysis-icu"
           - name: "mapper-murmur3"
         
         # Monitoring
-        es_enable_monitoring: true
-        es_watcher_enabled: true
+        elasticsearch_enable_monitoring: true
+        elasticsearch_watcher_enabled: true
         
         # Snapshots
-        es_snapshot_repositories:
+        elasticsearch_snapshot_repositories:
           - name: "backup-repo"
             type: "fs"
             settings:
               location: "/backup/elasticsearch"
         
-        es_snapshot_policies:
+        elasticsearch_snapshot_policies:
           - name: "daily-backup"
             schedule: "0 2 * * *"
             repository: "backup-repo"
@@ -262,12 +262,12 @@ This role has no external Ansible Galaxy dependencies, but requires:
                 expire_after: "30d"
         
         # Performance
-        es_jvm_options:
+        elasticsearch_jvm_options:
           - "-XX:+UseG1GC"
           - "-XX:MaxGCPauseMillis=200"
         
         # Index Templates
-        es_index_templates:
+        elasticsearch_index_templates:
           - name: "logs-template"
             index_patterns: ["logs-*"]
             settings:
@@ -292,24 +292,24 @@ This role has no external Ansible Galaxy dependencies, but requires:
   roles:
     - role: data_systems/elasticsearch
       vars:
-        es_cluster_name: "secure-cluster"
-        es_enable_security: true
-        es_tls_provided: true
-        es_audit_enabled: true
+        elasticsearch_cluster_name: "secure-cluster"
+        elasticsearch_enable_security: true
+        elasticsearch_tls_provided: true
+        elasticsearch_audit_enabled: true
         
         # LDAP Configuration
-        ldap_url: "ldap://ldap.company.com:389"
-        ldap_bind_dn: "cn=elasticsearch,ou=services,dc=company,dc=com"
-        ldap_bind_password: "{{ vault_ldap_password }}"
-        ldap_user_base_dn: "ou=users,dc=company,dc=com"
-        ldap_group_base_dn: "ou=groups,dc=company,dc=com"
-        ldap_admin_group_dn: "cn=elasticsearch-admins,ou=groups,dc=company,dc=com"
-        ldap_user_group_dn: "cn=elasticsearch-users,ou=groups,dc=company,dc=com"
+        elasticsearch_ldap_url: "ldap://ldap.company.com:389"
+        elasticsearch_ldap_bind_dn: "cn=elasticsearch,ou=services,dc=company,dc=com"
+        elasticsearch_ldap_bind_password: "{{ vault_ldap_password }}"
+        elasticsearch_ldap_user_base_dn: "ou=users,dc=company,dc=com"
+        elasticsearch_ldap_group_base_dn: "ou=groups,dc=company,dc=com"
+        elasticsearch_ldap_admin_group_dn: "cn=elasticsearch-admins,ou=groups,dc=company,dc=com"
+        elasticsearch_ldap_user_group_dn: "cn=elasticsearch-users,ou=groups,dc=company,dc=com"
         
         # Advanced Security
-        es_api_key_enabled: true
-        es_field_level_security: true
-        es_audit_settings:
+        elasticsearch_api_key_enabled: true
+        elasticsearch_field_level_security: true
+        elasticsearch_audit_settings:
           enabled: true
           outputs: ["logfile"]
           logfile:
@@ -327,13 +327,13 @@ This role has no external Ansible Galaxy dependencies, but requires:
   roles:
     - role: data_systems/elasticsearch
       vars:
-        es_cluster_name: "dev-cluster"
-        es_environment: "development"
-        es_heap_size: "2g"
-        es_validate_cluster_health: false
-        es_plugins:
+        elasticsearch_cluster_name: "dev-cluster"
+        elasticsearch_environment: "development"
+        elasticsearch_heap_size: "2g"
+        elasticsearch_validate_cluster_health: false
+        elasticsearch_plugins:
           - name: "analysis-icu"
-        es_custom_analyzers:
+        elasticsearch_custom_analyzers:
           my_analyzer:
             tokenizer: "standard"
             filter: ["lowercase", "stop"]
@@ -349,20 +349,20 @@ This role has no external Ansible Galaxy dependencies, but requires:
   roles:
     - role: data_systems/elasticsearch
       vars:
-        es_cluster_name: "monitored-cluster"
+        elasticsearch_cluster_name: "monitored-cluster"
         
         # Monitoring
-        es_enable_monitoring: true
-        es_monitoring_collection_enabled: true
-        es_watcher_enabled: true
+        elasticsearch_enable_monitoring: true
+        elasticsearch_monitoring_collection_enabled: true
+        elasticsearch_watcher_enabled: true
         
         # Health Checks
-        es_health_check_enabled: true
-        es_health_check_retries: 30
-        es_health_check_delay: 5
+        elasticsearch_health_check_enabled: true
+        elasticsearch_health_check_retries: 30
+        elasticsearch_health_check_delay: 5
         
         # Performance Monitoring
-        es_thread_pool_settings:
+        elasticsearch_thread_pool_settings:
           search:
             size: 16
             queue_size: 1000
@@ -382,20 +382,20 @@ es-data-01 ansible_host=10.0.1.20
 es-data-02 ansible_host=10.0.1.21
 es-data-03 ansible_host=10.0.1.22
 
-[es_master]
+[elasticsearch_master]
 es-master-01
 es-master-02
 es-master-03
 
-[es_data]
+[elasticsearch_data]
 es-data-01
 es-data-02
 es-data-03
 
 [elasticsearch_cluster:vars]
-es_cluster_name=production-cluster
-es_environment=production
-es_heap_size=8g
+elasticsearch_cluster_name=production-cluster
+elasticsearch_environment=production
+elasticsearch_heap_size=8g
 ```
 
 ## Tags
@@ -499,9 +499,9 @@ The tests validate:
 
 ### Common Issues
 
-1. **Java Installation**: Ensure Java is installed or set `es_install_java: true`
-2. **Memory Settings**: Adjust `es_heap_size` based on available system memory
-3. **Network Binding**: Verify `es_network_host` is accessible by other cluster nodes
+1. **Java Installation**: Ensure Java is installed or set `elasticsearch_install_java: true`
+2. **Memory Settings**: Adjust `elasticsearch_heap_size` based on available system memory
+3. **Network Binding**: Verify `elasticsearch_network_host` is accessible by other cluster nodes
 4. **Security**: When enabling security, ensure certificates are properly deployed
 
 ### Logs

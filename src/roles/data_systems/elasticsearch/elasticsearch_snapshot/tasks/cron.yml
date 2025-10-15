@@ -2,7 +2,7 @@
 - name: Install snapshot script
   ansible.builtin.template:
     src: snapshot_script.sh.j2
-    dest: /usr/local/bin/es_snapshot.sh
+    dest: /usr/local/bin/elasticsearch_snapshot.sh
     mode: '0750'
     owner: root
     group: root
@@ -13,5 +13,5 @@
     hour: 2
     minute: 0
     user: root
-    job: "/usr/local/bin/es_snapshot.sh"
+    job: "/usr/local/bin/elasticsearch_snapshot.sh"
   when: elasticsearch_snapshot_use_slm is not true
