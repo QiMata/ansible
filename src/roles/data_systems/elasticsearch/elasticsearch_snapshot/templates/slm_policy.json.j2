@@ -1,7 +1,7 @@
 {
   "schedule": "0 2 * * *",
   "name": "<daily-snap-{now/d}>",
-  "repository": "{{ es_snapshot_repo_name }}",
+  "repository": "{{ elasticsearch_snapshot_repo_name }}",
   "config": {
     "indices": "*",
     "ignore_unavailable": true

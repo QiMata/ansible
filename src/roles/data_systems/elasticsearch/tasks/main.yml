@@ -5,7 +5,7 @@
 
 - name: Include validation tasks
   ansible.builtin.import_tasks: validation.yml
-  when: es_validate_config
+  when: elasticsearch_validate_config
   tags: [validation, always]
 
 - name: Include install tasks
@@ -26,30 +26,30 @@
 
 - name: Include plugin management tasks
   ansible.builtin.import_tasks: plugins.yml
-  when: es_plugins | length > 0 or es_plugins_remove | length > 0
+  when: elasticsearch_plugins | length > 0 or elasticsearch_plugins_remove | length > 0
   tags: plugins
 
 - name: Include security tasks
   ansible.builtin.import_tasks: security.yml
-  when: es_enable_security
+  when: elasticsearch_enable_security
   tags: security
 
 - name: Include monitoring tasks
   ansible.builtin.import_tasks: monitoring.yml
-  when: es_enable_monitoring or es_watcher_enabled
+  when: elasticsearch_enable_monitoring or elasticsearch_watcher_enabled
   tags: monitoring
 
 - name: Include index templates tasks
   ansible.builtin.import_tasks: templates.yml
-  when: es_index_templates | length > 0 or es_component_templates | length > 0 or es_index_lifecycle_policies | length > 0
+  when: elasticsearch_index_templates | length > 0 or elasticsearch_component_templates | length > 0 or elasticsearch_index_lifecycle_policies | length > 0
   tags: templates
 
 - name: Include snapshot configuration tasks
   ansible.builtin.import_tasks: snapshots.yml
-  when: es_snapshot_repositories | length > 0 or es_snapshot_policies | length > 0
+  when: elasticsearch_snapshot_repositories | length > 0 or elasticsearch_snapshot_policies | length > 0
   tags: snapshots
 
 - name: Include health check tasks
   ansible.builtin.import_tasks: health_checks.yml
-  when: es_health_check_enabled
+  when: elasticsearch_health_check_enabled
   tags: [health, validation]

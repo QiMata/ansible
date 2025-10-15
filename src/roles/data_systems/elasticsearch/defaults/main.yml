@@ -4,57 +4,57 @@
 # ============================================================================
 
 # Elasticsearch package and repository version
-es_version: "8.x"
+elasticsearch_version: "8.x"
 
 # Cluster configuration
-es_cluster_name: "elasticsearch-cluster"
-es_node_roles: ["master", "data", "ingest"]
-es_network_host: "{{ ansible_default_ipv4.address }}"
+elasticsearch_cluster_name: "elasticsearch-cluster"
+elasticsearch_node_roles: ["master", "data", "ingest"]
+elasticsearch_network_host: "{{ ansible_default_ipv4.address }}"
 
 # JVM heap size
-es_heap_size: "2g"
+elasticsearch_heap_size: "2g"
 
 # Install OpenJDK if required
-es_install_java: true
+elasticsearch_install_java: true
 
 # Environment configuration
-es_environment: "production"  # dev, staging, production
+elasticsearch_environment: "production"  # dev, staging, production
 
 # ============================================================================
 # STORAGE AND PATHS CONFIGURATION
 # ============================================================================
 
 # Data paths configuration
-es_data_paths:
+elasticsearch_data_paths:
   - "/var/lib/elasticsearch"
-es_log_path: "/var/log/elasticsearch"
-es_config_path: "/etc/elasticsearch"
-es_home_path: "/usr/share/elasticsearch"
-es_pid_path: "/var/run/elasticsearch"
+elasticsearch_log_path: "/var/log/elasticsearch"
+elasticsearch_config_path: "/etc/elasticsearch"
+elasticsearch_home_path: "/usr/share/elasticsearch"
+elasticsearch_pid_path: "/var/run/elasticsearch"
 
 # Snapshot repository paths
-es_path_repo: []
+elasticsearch_path_repo: []
 
 # Custom storage settings
-es_store_type: "fs"  # fs, niofs, mmapfs, hybridfs
-es_allow_mmapfs: true
+elasticsearch_store_type: "fs"  # fs, niofs, mmapfs, hybridfs
+elasticsearch_allow_mmapfs: true
 
 # ============================================================================
 # SECURITY CONFIGURATION
 # ============================================================================
 
 # Basic security settings
-es_enable_security: false
-es_tls_provided: false
+elasticsearch_enable_security: false
+elasticsearch_tls_provided: false
 
 # Advanced security features
-es_api_key_enabled: false
-es_audit_enabled: false
-es_field_level_security: false
-es_document_level_security: false
+elasticsearch_api_key_enabled: false
+elasticsearch_audit_enabled: false
+elasticsearch_field_level_security: false
+elasticsearch_document_level_security: false
 
 # Audit settings
-es_audit_settings:
+elasticsearch_audit_settings:
   enabled: false
   outputs: ["logfile"]
   logfile:
@@ -63,37 +63,37 @@ es_audit_settings:
       exclude: []
 
 # LDAP settings for security integration
-ldap_url: ""
-ldap_bind_dn: ""
-ldap_bind_password: ""
-ldap_user_base_dn: ""
-ldap_group_base_dn: ""
-ldap_admin_group_dn: ""
-ldap_user_group_dn: ""
+elasticsearch_ldap_url: ""
+elasticsearch_ldap_bind_dn: ""
+elasticsearch_ldap_bind_password: ""
+elasticsearch_ldap_user_base_dn: ""
+elasticsearch_ldap_group_base_dn: ""
+elasticsearch_ldap_admin_group_dn: ""
+elasticsearch_ldap_user_group_dn: ""
 
 # ============================================================================
 # PLUGIN MANAGEMENT
 # ============================================================================
 
 # Elasticsearch plugins to install
-es_plugins: []
+elasticsearch_plugins: []
 # Example:
-# es_plugins:
+# elasticsearch_plugins:
 #   - name: "repository-s3"
-#     version: "{{ es_version }}"
+#     version: "{{ elasticsearch_version }}"
 #   - name: "analysis-icu"
 
 # Plugin removal list
-es_plugins_remove: []
+elasticsearch_plugins_remove: []
 
 # ============================================================================
 # INDEX TEMPLATE MANAGEMENT
 # ============================================================================
 
 # Index templates configuration
-es_index_templates: []
+elasticsearch_index_templates: []
 # Example:
-# es_index_templates:
+# elasticsearch_index_templates:
 #   - name: "logs-template"
 #     index_patterns: ["logs-*"]
 #     settings:
@@ -105,12 +105,12 @@ es_index_templates: []
 #           type: date
 
 # Component templates
-es_component_templates: []
+elasticsearch_component_templates: []
 
 # Index lifecycle policies
-es_index_lifecycle_policies: []
+elasticsearch_index_lifecycle_policies: []
 # Example:
-# es_index_lifecycle_policies:
+# elasticsearch_index_lifecycle_policies:
 #   - name: "logs-policy"
 #     phases:
 #       hot:
@@ -126,18 +126,18 @@ es_index_lifecycle_policies: []
 # ============================================================================
 
 # Snapshot repositories
-es_snapshot_repositories: []
+elasticsearch_snapshot_repositories: []
 # Example:
-# es_snapshot_repositories:
+# elasticsearch_snapshot_repositories:
 #   - name: "backup-repo"
 #     type: "fs"
 #     settings:
 #       location: "/backup/elasticsearch"
 
 # Snapshot policies
-es_snapshot_policies: []
+elasticsearch_snapshot_policies: []
 # Example:
-# es_snapshot_policies:
+# elasticsearch_snapshot_policies:
 #   - name: "daily-backup"
 #     schedule: "0 1 * * *"
 #     repository: "backup-repo"
@@ -146,31 +146,31 @@ es_snapshot_policies: []
 #         expire_after: "30d"
 
 # Backup retention
-es_backup_retention_days: 30
+elasticsearch_backup_retention_days: 30
 
 # ============================================================================
 # MONITORING AND ALERTING
 # ============================================================================
 
 # Monitoring configuration
-es_enable_monitoring: false
-es_monitoring_cluster_uuid: ""
-es_monitoring_collection_enabled: true
-es_monitoring_exporters: {}
+elasticsearch_enable_monitoring: false
+elasticsearch_monitoring_cluster_uuid: ""
+elasticsearch_monitoring_collection_enabled: true
+elasticsearch_monitoring_exporters: {}
 
 # Watcher configuration
-es_watcher_enabled: false
-es_watcher_encrypt_sensitive_data: false
+elasticsearch_watcher_enabled: false
+elasticsearch_watcher_encrypt_sensitive_data: false
 
 # Alerting settings
-es_alerting_enabled: false
+elasticsearch_alerting_enabled: false
 
 # ============================================================================
 # PERFORMANCE TUNING
 # ============================================================================
 
 # Thread pool settings
-es_thread_pool_settings:
+elasticsearch_thread_pool_settings:
   search:
     size: "{{ ansible_processor_cores }}"
     queue_size: 1000
@@ -179,7 +179,7 @@ es_thread_pool_settings:
     queue_size: 10000
 
 # Circuit breaker settings
-es_circuit_breaker_settings:
+elasticsearch_circuit_breaker_settings:
   total:
     limit: "95%"
   fielddata:
@@ -188,7 +188,7 @@ es_circuit_breaker_settings:
     limit: "60%"
 
 # Cache settings
-es_cache_settings:
+elasticsearch_cache_settings:
   indices:
     queries:
       size: "10%"
@@ -198,22 +198,22 @@ es_cache_settings:
       size: "1%"
 
 # JVM additional options
-es_jvm_options: []
+elasticsearch_jvm_options: []
 # Example:
-# es_jvm_options:
+# elasticsearch_jvm_options:
 #   - "-XX:+UseG1GC"
 #   - "-XX:MaxGCPauseMillis=200"
 
 # Bootstrap memory lock
-es_bootstrap_memory_lock: true
+elasticsearch_bootstrap_memory_lock: true
 
 # ============================================================================
 # LOAD BALANCER/PROXY CONFIGURATION
 # ============================================================================
 
 # Proxy settings
-es_behind_proxy: false
-es_proxy_settings:
+elasticsearch_behind_proxy: false
+elasticsearch_proxy_settings:
   http_host: "0.0.0.0"
   http_port: 9200
   transport_host: "{{ ansible_default_ipv4.address }}"
@@ -221,68 +221,68 @@ es_proxy_settings:
   publish_host: "{{ ansible_default_ipv4.address }}"
 
 # HTTP settings
-es_http_compression: true
-es_http_cors_enabled: false
-es_http_cors_allow_origin: "*"
-es_http_max_content_length: "100mb"
+elasticsearch_http_compression: true
+elasticsearch_http_cors_enabled: false
+elasticsearch_http_cors_allow_origin: "*"
+elasticsearch_http_max_content_length: "100mb"
 
 # ============================================================================
 # CUSTOM CONFIGURATION
 # ============================================================================
 
 # Custom analyzers and filters
-es_custom_analyzers: {}
-es_custom_filters: {}
-es_custom_tokenizers: {}
+elasticsearch_custom_analyzers: {}
+elasticsearch_custom_filters: {}
+elasticsearch_custom_tokenizers: {}
 
 # Custom dictionaries
-es_custom_dictionaries: []
+elasticsearch_custom_dictionaries: []
 
 # Log4j2 configuration
-es_log4j2_custom: false
-es_log_level: "INFO"
-es_slow_log_threshold_query_warn: "10s"
-es_slow_log_threshold_query_info: "5s"
-es_slow_log_threshold_fetch_warn: "1s"
-es_slow_log_threshold_fetch_info: "800ms"
+elasticsearch_log4j2_custom: false
+elasticsearch_log_level: "INFO"
+elasticsearch_slow_log_threshold_query_warn: "10s"
+elasticsearch_slow_log_threshold_query_info: "5s"
+elasticsearch_slow_log_threshold_fetch_warn: "1s"
+elasticsearch_slow_log_threshold_fetch_info: "800ms"
 
 # ============================================================================
 # HEALTH CHECKS AND VALIDATION
 # ============================================================================
 
 # Health check settings
-es_health_check_enabled: true
-es_health_check_retries: 30
-es_health_check_delay: 10
-es_cluster_health_timeout: "30s"
+elasticsearch_health_check_enabled: true
+elasticsearch_health_check_retries: 30
+elasticsearch_health_check_delay: 10
+elasticsearch_cluster_health_timeout: "30s"
 
 # Validation settings
-es_validate_config: true
-es_validate_cluster_health: true
-es_wait_for_cluster: true
+elasticsearch_validate_config: true
+elasticsearch_validate_cluster_health: true
+elasticsearch_wait_for_cluster: true
 
 # ============================================================================
 # UPGRADE MANAGEMENT
 # ============================================================================
 
 # Upgrade settings
-es_rolling_upgrade: false
-es_upgrade_validation: true
-es_backup_before_upgrade: true
-es_upgrade_timeout: 600
+elasticsearch_rolling_upgrade: false
+elasticsearch_upgrade_validation: true
+elasticsearch_backup_before_upgrade: true
+elasticsearch_upgrade_timeout: 600
 
 # Version compatibility checks
-es_check_version_compatibility: true
+elasticsearch_check_version_compatibility: true
 
 # ============================================================================
 # MULTI-ENVIRONMENT SPECIFIC SETTINGS
 # ============================================================================
 
 # Environment-specific overrides
-es_env_specific_settings: {}
+elasticsearch_env_specific_settings: {}
 
 # Development environment defaults
-es_dev_settings:
+elasticsearch_dev_settings:
   discovery.type: "single-node"
   cluster.routing.allocation.disk.threshold_enabled: false
   action.auto_create_index: true
@@ -290,13 +290,13 @@ es_dev_settings:
   xpack.security.enrollment.enabled: false
 
 # Production environment defaults
-es_prod_settings:
+elasticsearch_prod_settings:
   discovery.zen.minimum_master_nodes: "{{ ((groups['es_master'] | default([])) | length / 2) | round(0, 'ceil') | int }}"
   cluster.routing.allocation.disk.watermark.low: "85%"
   cluster.routing.allocation.disk.watermark.high: "90%"
   cluster.routing.allocation.disk.watermark.flood_stage: "95%"
 
 # Staging environment defaults
-es_staging_settings:
+elasticsearch_staging_settings:
   discovery.type: "single-node"
   cluster.routing.allocation.disk.threshold_enabled: true

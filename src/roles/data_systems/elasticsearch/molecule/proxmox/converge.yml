@@ -5,25 +5,25 @@
   gather_facts: true
   vars:
     # Override defaults for testing
-    es_heap_size: "512m"
-    es_environment: "dev"
-    es_network_host: "0.0.0.0"
+    elasticsearch_heap_size: "512m"
+    elasticsearch_environment: "dev"
+    elasticsearch_network_host: "0.0.0.0"
   tasks:
-    - name: "Include elasticsearch role"
+    - name: "Include Elasticsearch role"
       ansible.builtin.include_role:
-        name: "{{ playbook_dir }}/../.."
+        name: elasticsearch
   handlers:
-    - name: update apt cache
+    - name: Update apt cache
       ansible.builtin.apt:
         update_cache: true
 
-    - name: restart elasticsearch
+    - name: Restart Elasticsearch
       ansible.builtin.service:
         name: elasticsearch
         state: restarted
         enabled: true
 
-    - name: wait for elasticsearch
+    - name: Wait for Elasticsearch
       ansible.builtin.uri:
         url: "http://localhost:9200"
         method: GET

@@ -7,28 +7,32 @@
   ansible.builtin.service:
     name: elasticsearch
     state: started
-  register: es_service_status
+  register: elasticsearch_service_status
+
+- name: Set Elasticsearch API base URL
+  ansible.builtin.set_fact:
+    elasticsearch_api_base_url: >-
+      http://{{ elasticsearch_network_host }}:{{ elasticsearch_proxy_settings.http_port | default(9200) }}
 
 - name: Wait for Elasticsearch to be responsive
   ansible.builtin.uri:
-    url: >-
-      http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}
+    url: "{{ elasticsearch_api_base_url }}"
     method: GET
     status_code: [200, 401]
-  register: es_health_check
-  until: es_health_check.status in [200, 401]
-  retries: "{{ es_health_check_retries }}"
-  delay: "{{ es_health_check_delay }}"
+  register: elasticsearch_health_check
+  until: elasticsearch_health_check.status in [200, 401]
+  retries: "{{ elasticsearch_health_check_retries }}"
+  delay: "{{ elasticsearch_health_check_delay }}"
 
 - name: Check Elasticsearch cluster health
   ansible.builtin.uri:
     url: >-
-      http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cluster/health
+      {{ elasticsearch_api_base_url }}/_cluster/health
     method: GET
-    timeout: "{{ es_cluster_health_timeout | regex_replace('s', '') | int }}"
+    timeout: "{{ elasticsearch_cluster_health_timeout | regex_replace('s', '') | int }}"
     return_content: true
   register: cluster_health
-  when: es_validate_cluster_health
+  when: elasticsearch_validate_cluster_health
 
 - name: Display cluster health status
   ansible.builtin.debug:
@@ -56,12 +60,12 @@
   when:
     - cluster_health is defined
     - cluster_health.json is defined
-    - es_validate_cluster_health
+    - elasticsearch_validate_cluster_health
 
 - name: Check node information
   ansible.builtin.uri:
     url: >-
-      http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_nodes/_local
+      {{ elasticsearch_api_base_url }}/_nodes/_local
     method: GET
     return_content: true
   register: node_info
@@ -79,9 +83,11 @@
     - node_info.json is defined
 
 - name: Check indices health
+  vars:
+    elasticsearch_indices_fields: >-
+      index,health,status,pri,rep,docs.count,store.size
   ansible.builtin.uri:
-    url: >-
-      http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cat/indices?v&h=index,health,status,pri,rep,docs.count,store.size
+    url: "{{ elasticsearch_api_base_url }}/_cat/indices?v&h={{ elasticsearch_indices_fields }}"
     method: GET
     return_content: true
   register: indices_health
@@ -100,14 +106,14 @@
     - indices_health.content is defined
     - indices_health.content != ""
     - "'red' in indices_health.content"
-    - es_validate_cluster_health
+    - elasticsearch_validate_cluster_health
 
 - name: Check disk usage on data nodes
+  vars:
+    elasticsearch_allocation_fields: >-
+      node,disk.indices,disk.used,disk.avail,disk.total,disk.percent
   ansible.builtin.uri:
-    url: >-
-      {{ 'http://' ~ es_network_host ~ ':' ~ (es_proxy_settings.http_port | default(9200)) ~
-         '/_cat/allocation?v&h=' ~
-         'node,disk.indices,disk.used,disk.avail,disk.total,disk.percent' }}
+    url: "{{ elasticsearch_api_base_url }}/_cat/allocation?v&h={{ elasticsearch_allocation_fields }}"
     method: GET
     return_content: true
   register: disk_allocation
@@ -127,7 +133,7 @@
 - name: Check pending tasks
   ansible.builtin.uri:
     url: >-
-      http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cat/pending_tasks?v
+      {{ elasticsearch_api_base_url }}/_cat/pending_tasks?v
     method: GET
     return_content: true
   register: pending_tasks
@@ -138,9 +144,11 @@
   when: pending_tasks is defined
 
 - name: Check thread pool status
+  vars:
+    elasticsearch_thread_pool_fields: >-
+      node_name,name,active,queue,rejected,completed
   ansible.builtin.uri:
-    url: >-
-      http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cat/thread_pool?v&h=node_name,name,active,queue,rejected,completed
+    url: "{{ elasticsearch_api_base_url }}/_cat/thread_pool?v&h={{ elasticsearch_thread_pool_fields }}"
     method: GET
     return_content: true
   register: thread_pools
@@ -164,12 +172,12 @@
     minute: "*/5"
     job: "/usr/local/bin/elasticsearch-health-check.sh"
     user: root
-  when: es_health_check_enabled
+  when: elasticsearch_health_check_enabled
 
 - name: Check JVM heap usage
   ansible.builtin.uri:
     url: >-
-      http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_nodes/stats/jvm
+      {{ elasticsearch_api_base_url }}/_nodes/stats/jvm
     method: GET
     return_content: true
   register: jvm_stats
@@ -198,8 +206,8 @@
     msg: |
       Elasticsearch Health Summary:
       ================================
-      ✓ Service Status: {{ 'Running' if es_service_status.status.ActiveState == 'active' else 'Not Running' }}
-      ✓ HTTP Response: {{ 'OK' if es_health_check.status in [200, 401] else 'Failed' }}
+      ✓ Service Status: {{ 'Running' if elasticsearch_service_status.status.ActiveState == 'active' else 'Not Running' }}
+      ✓ HTTP Response: {{ 'OK' if elasticsearch_health_check.status in [200, 401] else 'Failed' }}
       ✓ Cluster Health: {{ cluster_health.json.status | default('Unknown') | upper }}
       ✓ Node Count: {{ cluster_health.json.number_of_nodes | default('Unknown') }}
       ✓ Data Nodes: {{ cluster_health.json.number_of_data_nodes | default('Unknown') }}

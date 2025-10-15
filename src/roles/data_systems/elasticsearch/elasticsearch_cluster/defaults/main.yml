@@ -1,6 +1,6 @@
 ---
-es_version: "8.x"
-es_cluster_name: "amundsen-es-cluster"
-es_heap_size: "2g"
-es_node_roles: ["master", "data"]
-es_network_host: "0.0.0.0"
+elasticsearch_cluster_version: "{{ elasticsearch_version | default('8.x') }}"
+elasticsearch_cluster_name: "amundsen-es-cluster"
+elasticsearch_cluster_heap_size: "{{ elasticsearch_heap_size | default('2g') }}"
+elasticsearch_cluster_node_roles: ["master", "data"]
+elasticsearch_cluster_network_host: "{{ elasticsearch_network_host | default('0.0.0.0') }}"

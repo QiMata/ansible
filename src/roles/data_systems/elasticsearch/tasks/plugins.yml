@@ -6,7 +6,7 @@
 - name: Remove unwanted Elasticsearch plugins
   ansible.builtin.shell: |
     /usr/share/elasticsearch/bin/elasticsearch-plugin remove {{ item }}
-  loop: "{{ es_plugins_remove }}"
+  loop: "{{ elasticsearch_plugins_remove }}"
   register: plugin_remove_result
   failed_when:
     - plugin_remove_result.rc != 0
@@ -23,7 +23,7 @@
 - name: Install Elasticsearch plugins
   ansible.builtin.shell: |
     /usr/share/elasticsearch/bin/elasticsearch-plugin install --batch {{ item.name }}{% if item.version is defined %}:{{ item.version }}{% endif %}
-  loop: "{{ es_plugins }}"
+  loop: "{{ elasticsearch_plugins }}"
   when: item.name not in installed_plugins.stdout
   register: plugin_install_result
   failed_when: plugin_install_result.rc != 0
@@ -47,7 +47,7 @@
     owner: root
     group: elasticsearch
     mode: '0640'
-  when: es_plugins | length > 0
+  when: elasticsearch_plugins | length > 0
   notify: restart elasticsearch
 
 - name: Set plugin directory permissions
@@ -57,11 +57,11 @@
     group: elasticsearch
     mode: '0755'
     recurse: true
-  when: es_plugins | length > 0
+  when: elasticsearch_plugins | length > 0
 
 - name: Configure repository-s3 plugin settings
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cluster/settings"
+    url: "http://{{ elasticsearch_network_host }}:{{ elasticsearch_proxy_settings.http_port | default(9200) }}/_cluster/settings"
     method: PUT
     body_format: json
     body:
@@ -76,19 +76,19 @@
       Content-Type: "application/json"
     status_code: [200, 400]
   when:
-    - "'repository-s3' in (es_plugins | map(attribute='name') | list)"
+    - "'repository-s3' in (elasticsearch_plugins | map(attribute='name') | list)"
     - s3_access_key is defined
     - s3_secret_key is defined
-    - es_wait_for_cluster
-  register: es_repository_s3_result
-  failed_when: es_repository_s3_result.status not in [200, 400]
-  changed_when: es_repository_s3_result.status == 200
-  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+    - elasticsearch_wait_for_cluster
+  register: elasticsearch_repository_s3_result
+  failed_when: elasticsearch_repository_s3_result.status not in [200, 400]
+  changed_when: elasticsearch_repository_s3_result.status == 200
+  delegate_to: "{{ groups['es_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
 - name: Configure analysis-icu plugin settings
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cluster/settings"
+    url: "http://{{ elasticsearch_network_host }}:{{ elasticsearch_proxy_settings.http_port | default(9200) }}/_cluster/settings"
     method: PUT
     body_format: json
     body:
@@ -102,10 +102,10 @@
       Content-Type: "application/json"
     status_code: [200, 400]
   when:
-    - "'analysis-icu' in (es_plugins | map(attribute='name') | list)"
-    - es_wait_for_cluster
-  register: es_analysis_icu_result
-  failed_when: es_analysis_icu_result.status not in [200, 400]
-  changed_when: es_analysis_icu_result.status == 200
-  delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
+    - "'analysis-icu' in (elasticsearch_plugins | map(attribute='name') | list)"
+    - elasticsearch_wait_for_cluster
+  register: elasticsearch_analysis_icu_result
+  failed_when: elasticsearch_analysis_icu_result.status not in [200, 400]
+  changed_when: elasticsearch_analysis_icu_result.status == 200
+  delegate_to: "{{ groups['es_cluster'][0] | default(inventory_hostname) }}"
   run_once: true

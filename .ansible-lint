@@ -47,6 +47,11 @@ mock_roles:
   - openldap_client
   - openldap_content
   - rocketchat
+  - elasticsearch_install
+  - elasticsearch_cluster
+  - elasticsearch_security
+  - elasticsearch_snapshot
+  - elasticsearch_config
 warn_list:
   - experimental  # retain visibility into experimental rules
 offline: true

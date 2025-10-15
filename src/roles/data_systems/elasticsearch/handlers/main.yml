@@ -7,14 +7,14 @@
   ansible.builtin.apt:
     update_cache: true
 
-- name: Restart elasticsearch
+- name: Restart Elasticsearch
   ansible.builtin.service:
     name: elasticsearch
     state: restarted
     enabled: true
-  notify: wait for elasticsearch
+  notify: Wait for Elasticsearch
 
-- name: Reload elasticsearch
+- name: Reload Elasticsearch
   ansible.builtin.service:
     name: elasticsearch
     state: reloaded
@@ -23,47 +23,53 @@
   ansible.builtin.systemd:
     daemon_reload: true
 
-- name: Wait for elasticsearch
+- name: Wait for Elasticsearch
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}"
+    url: "http://{{ elasticsearch_network_host }}:{{ elasticsearch_proxy_settings.http_port | default(9200) }}"
     method: GET
     status_code: [200, 401]
-  register: es_wait
-  until: es_wait.status in [200, 401]
+  register: elasticsearch_wait
+  until: elasticsearch_wait.status in [200, 401]
   retries: 30
   delay: 10
 
 - name: Validate cluster health
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_cluster/health"
+    url: "http://{{ elasticsearch_network_host }}:{{ elasticsearch_proxy_settings.http_port | default(9200) }}/_cluster/health"
     method: GET
   register: cluster_health_check
   until: cluster_health_check.json.status != "red"
   retries: 10
   delay: 30
-  when: es_validate_cluster_health
+  when: elasticsearch_validate_cluster_health
 
 - name: Reload elasticsearch config
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_nodes/reload_secure_settings"
+    url: "http://{{ elasticsearch_network_host }}:{{ elasticsearch_proxy_settings.http_port | default(9200) }}/_nodes/reload_secure_settings"
     method: POST
     body_format: json
     body: {}
     headers:
       Content-Type: "application/json"
     status_code: [200, 400]
-  ignore_errors: true
+  register: elasticsearch_reload_settings
+  failed_when: elasticsearch_reload_settings.status not in [200, 400]
+  changed_when: elasticsearch_reload_settings.status == 200
 
 - name: Update elasticsearch passwords
-  ansible.builtin.shell: |
-    /usr/share/elasticsearch/bin/elasticsearch-setup-passwords auto --batch
-  register: password_setup
-  when: es_enable_security
-  ignore_errors: true
+  ansible.builtin.command:
+    cmd: /usr/share/elasticsearch/bin/elasticsearch-setup-passwords auto --batch
+  register: elasticsearch_password_setup
+  changed_when: elasticsearch_password_setup.rc == 0
+  failed_when: elasticsearch_password_setup.rc not in [0, 70]
+  when: elasticsearch_enable_security
 
 - name: Backup elasticsearch data
+  vars:
+    elasticsearch_snapshot_base_url: >-
+      http://{{ elasticsearch_network_host }}:{{ elasticsearch_proxy_settings.http_port | default(9200) }}
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_snapshot/backup-repo/automated-backup-{{ ansible_date_time.epoch }}"
+    url: "{{ elasticsearch_snapshot_base_url }}/_snapshot/backup-repo/automated-backup-{{ ansible_date_time.epoch }}"
     method: PUT
     body_format: json
     body:
@@ -74,6 +80,8 @@
       Content-Type: "application/json"
     status_code: [200, 201, 400]
   when:
-    - es_snapshot_repositories | length > 0
-    - es_backup_before_upgrade
-  ignore_errors: true
+    - elasticsearch_snapshot_repositories | length > 0
+    - elasticsearch_backup_before_upgrade
+  register: elasticsearch_backup_request
+  failed_when: elasticsearch_backup_request.status not in [200, 201, 400]
+  changed_when: elasticsearch_backup_request.status in [200, 201]

@@ -26,10 +26,10 @@ provisioner:
   inventory:
     host_vars:
       elasticsearch-instance:
-        es_cluster_name: "test-cluster"
-        es_node_roles: ["master", "data", "ingest"]
-        es_heap_size: "512m"
-        es_install_java: true
-        es_enable_security: false
+        elasticsearch_cluster_name: "test-cluster"
+        elasticsearch_node_roles: ["master", "data", "ingest"]
+        elasticsearch_heap_size: "512m"
+        elasticsearch_install_java: true
+        elasticsearch_enable_security: false
 verifier:
   name: ansible

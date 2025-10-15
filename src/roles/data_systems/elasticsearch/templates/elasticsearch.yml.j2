@@ -4,26 +4,26 @@
 # ============================================================================
 
 # Cluster Configuration
-cluster.name: "{{ es_cluster_name }}"
+cluster.name: "{{ elasticsearch_cluster_name }}"
 node.name: "{{ inventory_hostname }}"
-node.roles: {{ es_node_roles | to_json }}
+node.roles: {{ elasticsearch_node_roles | to_json }}
 
 # Network Configuration
-network.host: "{{ es_network_host }}"
-{% if es_behind_proxy %}
-http.host: "{{ es_proxy_settings.http_host }}"
-transport.host: "{{ es_proxy_settings.transport_host }}"
-network.publish_host: "{{ es_proxy_settings.publish_host }}"
+network.host: "{{ elasticsearch_network_host }}"
+{% if elasticsearch_behind_proxy %}
+http.host: "{{ elasticsearch_proxy_settings.http_host }}"
+transport.host: "{{ elasticsearch_proxy_settings.transport_host }}"
+network.publish_host: "{{ elasticsearch_proxy_settings.publish_host }}"
 {% endif %}
-http.port: {{ es_proxy_settings.http_port | default(9200) }}
-transport.port: {{ es_proxy_settings.transport_port | default(9300) }}
+http.port: {{ elasticsearch_proxy_settings.http_port | default(9200) }}
+transport.port: {{ elasticsearch_proxy_settings.transport_port | default(9300) }}
 
 # HTTP Configuration
-http.compression: {{ es_http_compression | lower }}
-http.max_content_length: "{{ es_http_max_content_length }}"
-{% if es_http_cors_enabled %}
+http.compression: {{ elasticsearch_http_compression | lower }}
+http.max_content_length: "{{ elasticsearch_http_max_content_length }}"
+{% if elasticsearch_http_cors_enabled %}
 http.cors.enabled: true
-http.cors.allow-origin: "{{ es_http_cors_allow_origin }}"
+http.cors.allow-origin: "{{ elasticsearch_http_cors_allow_origin }}"
 {% endif %}
 
 # Discovery Configuration
@@ -31,103 +31,103 @@ http.cors.allow-origin: "{{ es_http_cors_allow_origin }}"
 discovery.seed_hosts: {{ groups['es_master'] | map('extract', hostvars, 'ansible_default_ipv4.address') | list }}
 cluster.initial_master_nodes: {{ groups['es_master'] | list }}
 {% else %}
-{% if es_environment in ['dev', 'development'] %}
-{{ es_dev_settings | to_nice_yaml(indent=0) | replace(': ', ': ') }}
-{% elif es_environment == 'staging' %}
-{{ es_staging_settings | to_nice_yaml(indent=0) | replace(': ', ': ') }}
+{% if elasticsearch_environment in ['dev', 'development'] %}
+{{ elasticsearch_dev_settings | to_nice_yaml(indent=0) | replace(': ', ': ') }}
+{% elif elasticsearch_environment == 'staging' %}
+{{ elasticsearch_staging_settings | to_nice_yaml(indent=0) | replace(': ', ': ') }}
 {% else %}
 discovery.type: single-node
 {% endif %}
 {% endif %}
 
 # Path Configuration
-{% if es_data_paths | length == 1 %}
-path.data: {{ es_data_paths[0] }}
+{% if elasticsearch_data_paths | length == 1 %}
+path.data: {{ elasticsearch_data_paths[0] }}
 {% else %}
-path.data: {{ es_data_paths | to_json }}
+path.data: {{ elasticsearch_data_paths | to_json }}
 {% endif %}
-path.logs: "{{ es_log_path }}"
-path.home: "{{ es_home_path }}"
-{% if es_path_repo | length > 0 %}
-path.repo: {{ es_path_repo | to_json }}
+path.logs: "{{ elasticsearch_log_path }}"
+path.home: "{{ elasticsearch_home_path }}"
+{% if elasticsearch_path_repo | length > 0 %}
+path.repo: {{ elasticsearch_path_repo | to_json }}
 {% endif %}
 
 # Memory Configuration
-{% if es_bootstrap_memory_lock %}
+{% if elasticsearch_bootstrap_memory_lock %}
 bootstrap.memory_lock: true
 {% endif %}
 
 # Security Configuration
-{% if es_enable_security %}
+{% if elasticsearch_enable_security %}
 xpack.security.enabled: true
-{% if es_tls_provided %}
+{% if elasticsearch_tls_provided %}
 xpack.security.transport.ssl.enabled: true
 xpack.security.transport.ssl.verification_mode: certificate
-xpack.security.transport.ssl.certificate: "{{ es_config_path }}/certs/{{ inventory_hostname }}.crt"
-xpack.security.transport.ssl.key: "{{ es_config_path }}/certs/{{ inventory_hostname }}.key"
-xpack.security.transport.ssl.certificate_authorities: "{{ es_config_path }}/certs/cacert.pem"
+xpack.security.transport.ssl.certificate: "{{ elasticsearch_config_path }}/certs/{{ inventory_hostname }}.crt"
+xpack.security.transport.ssl.key: "{{ elasticsearch_config_path }}/certs/{{ inventory_hostname }}.key"
+xpack.security.transport.ssl.certificate_authorities: "{{ elasticsearch_config_path }}/certs/cacert.pem"
 
 xpack.security.http.ssl.enabled: true
-xpack.security.http.ssl.certificate: "{{ es_config_path }}/certs/{{ inventory_hostname }}.crt"
-xpack.security.http.ssl.key: "{{ es_config_path }}/certs/{{ inventory_hostname }}.key"
-xpack.security.http.ssl.certificate_authorities: "{{ es_config_path }}/certs/cacert.pem"
+xpack.security.http.ssl.certificate: "{{ elasticsearch_config_path }}/certs/{{ inventory_hostname }}.crt"
+xpack.security.http.ssl.key: "{{ elasticsearch_config_path }}/certs/{{ inventory_hostname }}.key"
+xpack.security.http.ssl.certificate_authorities: "{{ elasticsearch_config_path }}/certs/cacert.pem"
 {% endif %}
 
-{% if es_api_key_enabled %}
+{% if elasticsearch_api_key_enabled %}
 xpack.security.authc.api_key.enabled: true
 {% endif %}
 
-{% if es_audit_enabled %}
+{% if elasticsearch_audit_enabled %}
 xpack.security.audit.enabled: true
-{% for output in es_audit_settings.outputs %}
-xpack.security.audit.outputs: {{ es_audit_settings.outputs | to_json }}
+{% for output in elasticsearch_audit_settings.outputs %}
+xpack.security.audit.outputs: {{ elasticsearch_audit_settings.outputs | to_json }}
 {% endfor %}
-{% if 'logfile' in es_audit_settings.outputs %}
-xpack.security.audit.logfile.events.include: {{ es_audit_settings.logfile.events.include | to_json }}
-{% if es_audit_settings.logfile.events.exclude | length > 0 %}
-xpack.security.audit.logfile.events.exclude: {{ es_audit_settings.logfile.events.exclude | to_json }}
+{% if 'logfile' in elasticsearch_audit_settings.outputs %}
+xpack.security.audit.logfile.events.include: {{ elasticsearch_audit_settings.logfile.events.include | to_json }}
+{% if elasticsearch_audit_settings.logfile.events.exclude | length > 0 %}
+xpack.security.audit.logfile.events.exclude: {{ elasticsearch_audit_settings.logfile.events.exclude | to_json }}
 {% endif %}
 {% endif %}
 {% endif %}
 
-{% if ldap_url %}
+{% if elasticsearch_ldap_url %}
 xpack.security.authc.realms.ldap.ldap1:
   order: 0
-  url: "{{ ldap_url }}"
-  bind_dn: "{{ ldap_bind_dn }}"
-  bind_password: "{{ ldap_bind_password }}"
+  url: "{{ elasticsearch_ldap_url }}"
+  bind_dn: "{{ elasticsearch_ldap_bind_dn }}"
+  bind_password: "{{ elasticsearch_ldap_bind_password }}"
   user_search:
-    base_dn: "{{ ldap_user_base_dn }}"
+    base_dn: "{{ elasticsearch_ldap_user_base_dn }}"
     filter: "(cn={0})"
   group_search:
-    base_dn: "{{ ldap_group_base_dn }}"
+    base_dn: "{{ elasticsearch_ldap_group_base_dn }}"
     filter: "(member={0})"
   files:
-    role_mapping: "{{ es_config_path }}/role_mapping.yml"
+    role_mapping: "{{ elasticsearch_config_path }}/role_mapping.yml"
 {% endif %}
 {% endif %}
 
 # Production Environment Settings
-{% if es_environment in ['prod', 'production'] %}
-{{ es_prod_settings | to_nice_yaml(indent=0) | replace(': ', ': ') }}
+{% if elasticsearch_environment in ['prod', 'production'] %}
+{{ elasticsearch_prod_settings | to_nice_yaml(indent=0) | replace(': ', ': ') }}
 {% endif %}
 
 # Environment Specific Overrides
-{% if es_env_specific_settings | length > 0 %}
-{{ es_env_specific_settings | to_nice_yaml(indent=0) | replace(': ', ': ') }}
+{% if elasticsearch_env_specific_settings | length > 0 %}
+{{ elasticsearch_env_specific_settings | to_nice_yaml(indent=0) | replace(': ', ': ') }}
 {% endif %}
 
 # Custom Settings
-{% if es_custom_analyzers | length > 0 or es_custom_filters | length > 0 or es_custom_tokenizers | length > 0 %}
+{% if elasticsearch_custom_analyzers | length > 0 or elasticsearch_custom_filters | length > 0 or elasticsearch_custom_tokenizers | length > 0 %}
 index:
   analysis:
-{% if es_custom_analyzers | length > 0 %}
-    analyzer: {{ es_custom_analyzers | to_nice_yaml(indent=6) | replace('\n', '\n      ') }}
+{% if elasticsearch_custom_analyzers | length > 0 %}
+    analyzer: {{ elasticsearch_custom_analyzers | to_nice_yaml(indent=6) | replace('\n', '\n      ') }}
 {% endif %}
-{% if es_custom_filters | length > 0 %}
-    filter: {{ es_custom_filters | to_nice_yaml(indent=6) | replace('\n', '\n      ') }}
+{% if elasticsearch_custom_filters | length > 0 %}
+    filter: {{ elasticsearch_custom_filters | to_nice_yaml(indent=6) | replace('\n', '\n      ') }}
 {% endif %}
-{% if es_custom_tokenizers | length > 0 %}
-    tokenizer: {{ es_custom_tokenizers | to_nice_yaml(indent=6) | replace('\n', '\n      ') }}
+{% if elasticsearch_custom_tokenizers | length > 0 %}
+    tokenizer: {{ elasticsearch_custom_tokenizers | to_nice_yaml(indent=6) | replace('\n', '\n      ') }}
 {% endif %}
 {% endif %}
