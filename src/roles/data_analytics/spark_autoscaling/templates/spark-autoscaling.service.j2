@@ -1,0 +1,16 @@
+[Unit]
+Description=Spark Autoscaling Controller
+After=network.target
+
+[Service]
+Type=simple
+User={{ spark_autoscaling_user }}
+Group={{ spark_autoscaling_group }}
+WorkingDirectory={{ spark_autoscaling_install_dir }}
+EnvironmentFile=-{{ spark_autoscaling_metrics_env_file }}
+ExecStart={{ spark_autoscaling_python_executable }} {{ spark_autoscaling_scripts_dir }}/spark_autoscaler.py --config {{ spark_autoscaling_install_dir }}/autoscaling.conf
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

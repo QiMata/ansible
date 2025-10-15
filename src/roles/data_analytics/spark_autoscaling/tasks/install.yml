@@ -13,24 +13,24 @@
 
 - name: Create autoscaling user
   ansible.builtin.user:
-    name: spark-autoscaler
+    name: "{{ spark_autoscaling_user }}"
     system: true
     shell: /bin/bash
-    home: /opt/spark-autoscaling
+    home: "{{ spark_autoscaling_install_dir }}"
     create_home: true
 
 - name: Create autoscaling directories
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
-    owner: spark-autoscaler
-    group: spark-autoscaler
+    owner: "{{ spark_autoscaling_user }}"
+    group: "{{ spark_autoscaling_group }}"
     mode: '0755'
   loop:
-    - /opt/spark-autoscaling
-    - /opt/spark-autoscaling/scripts
-    - /opt/spark-autoscaling/logs
-    - /var/log/spark-autoscaling
+    - "{{ spark_autoscaling_install_dir }}"
+    - "{{ spark_autoscaling_scripts_dir }}"
+    - "{{ spark_autoscaling_logs_dir }}"
+    - "/var/log/{{ spark_autoscaling_service_name }}"
 
 - name: Create Python virtual environment
   ansible.builtin.pip:
@@ -39,16 +39,17 @@
       - boto3
       - google-cloud-compute
       - azure-mgmt-compute
-    virtualenv: /opt/spark-autoscaling/venv
+    virtualenv: "{{ spark_autoscaling_virtualenv }}"
     virtualenv_python: python3
   become: true
-  become_user: spark-autoscaler
+  become_user: "{{ spark_autoscaling_user }}"
 
 - name: Install cloud provider CLIs
+  vars:
+    spark_autoscaling_cli_list: >-
+      {{ spark_autoscaling_cli_packages.get(spark_autoscaling_provider, {}).get(ansible_os_family, []) }}
   ansible.builtin.package:
     name: "{{ item }}"
     state: present
-  loop:
-    - awscli
-  when: spark_autoscaling_provider == "aws"
-  ignore_errors: true
+  loop: "{{ spark_autoscaling_cli_list }}"
+  when: spark_autoscaling_cli_list | length > 0

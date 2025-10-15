@@ -1,0 +1,41 @@
+---
+- name: Ensure metrics environment file is present when webhook configured
+  ansible.builtin.template:
+    src: metrics.env.j2
+    dest: "{{ spark_autoscaling_metrics_env_file }}"
+    owner: "{{ spark_autoscaling_user }}"
+    group: "{{ spark_autoscaling_group }}"
+    mode: '0640'
+  when:
+    - spark_autoscaling_metrics_enabled
+    - spark_autoscaling_webhook_url | length > 0
+
+- name: Ensure metrics environment file is absent when metrics are disabled or no webhook configured
+  ansible.builtin.file:
+    path: "{{ spark_autoscaling_metrics_env_file }}"
+    state: absent
+  when:
+    - not spark_autoscaling_metrics_enabled or spark_autoscaling_webhook_url | length == 0
+
+- name: Check metrics collector script
+  ansible.builtin.stat:
+    path: "{{ spark_autoscaling_scripts_dir }}/metrics_collector.sh"
+  register: spark_autoscaling_metrics_collector
+  when: spark_autoscaling_metrics_enabled
+
+- name: Configure metrics collector cron job
+  ansible.builtin.cron:
+    name: Spark autoscaling metrics collector
+    user: "{{ spark_autoscaling_user }}"
+    job: "{{ spark_autoscaling_scripts_dir }}/metrics_collector.sh >> {{ spark_autoscaling_logs_dir }}/metrics.log 2>&1"
+    minute: "{{ spark_autoscaling_metrics_collection_interval }}"
+  when:
+    - spark_autoscaling_metrics_enabled
+    - spark_autoscaling_metrics_collector.stat.exists
+
+- name: Remove metrics collector cron job when metrics disabled
+  ansible.builtin.cron:
+    name: Spark autoscaling metrics collector
+    user: "{{ spark_autoscaling_user }}"
+    state: absent
+  when: not spark_autoscaling_metrics_enabled

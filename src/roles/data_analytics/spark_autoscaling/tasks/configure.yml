@@ -3,25 +3,25 @@
 - name: Deploy autoscaling configuration
   ansible.builtin.template:
     src: autoscaling.conf.j2
-    dest: /opt/spark-autoscaling/autoscaling.conf
-    owner: spark-autoscaler
-    group: spark-autoscaler
+    dest: "{{ spark_autoscaling_install_dir }}/autoscaling.conf"
+    owner: "{{ spark_autoscaling_user }}"
+    group: "{{ spark_autoscaling_group }}"
     mode: '0644'
 
 - name: Deploy main autoscaling script
   ansible.builtin.template:
     src: spark_autoscaler.py.j2
-    dest: /opt/spark-autoscaling/scripts/spark_autoscaler.py
-    owner: spark-autoscaler
-    group: spark-autoscaler
+    dest: "{{ spark_autoscaling_scripts_dir }}/spark_autoscaler.py"
+    owner: "{{ spark_autoscaling_user }}"
+    group: "{{ spark_autoscaling_group }}"
     mode: '0755'
 
 - name: Deploy scaling provider scripts
   ansible.builtin.template:
     src: "{{ item }}.j2"
-    dest: "/opt/spark-autoscaling/scripts/{{ item }}"
-    owner: spark-autoscaler
-    group: spark-autoscaler
+    dest: "{{ spark_autoscaling_scripts_dir }}/{{ item }}"
+    owner: "{{ spark_autoscaling_user }}"
+    group: "{{ spark_autoscaling_group }}"
     mode: '0755'
   loop:
     - scale_up.sh
@@ -31,8 +31,8 @@
 - name: Deploy cloud provider specific scripts
   ansible.builtin.template:
     src: "providers/{{ spark_autoscaling_provider }}_provider.py.j2"
-    dest: "/opt/spark-autoscaling/scripts/{{ spark_autoscaling_provider }}_provider.py"
-    owner: spark-autoscaler
-    group: spark-autoscaler
+    dest: "{{ spark_autoscaling_scripts_dir }}/{{ spark_autoscaling_provider }}_provider.py"
+    owner: "{{ spark_autoscaling_user }}"
+    group: "{{ spark_autoscaling_group }}"
     mode: '0755'
   when: spark_autoscaling_provider != "manual"
