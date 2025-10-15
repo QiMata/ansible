@@ -62,4 +62,4 @@
         descr: "Allow all LAN traffic"
 
   roles:
-    - role: networking.pfsense
+    - role: pfsense

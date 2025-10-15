@@ -92,7 +92,7 @@ pfsense_perform_updates: false
         descr: "Allow LAN to any"
   
   roles:
-    - networking.pfsense
+    - pfsense
 ```
 
 ### VLAN Configuration
@@ -118,7 +118,7 @@ pfsense_perform_updates: false
         subnet: 24
   
   roles:
-    - networking.pfsense
+    - pfsense
 ```
 
 ### OpenVPN Server
@@ -143,7 +143,7 @@ pfsense_perform_updates: false
           gwredir: true
   
   roles:
-    - networking.pfsense
+    - pfsense
 ```
 
 ### IPsec Site-to-Site VPN
@@ -173,7 +173,7 @@ pfsense_perform_updates: false
           hash: "sha256"
   
   roles:
-    - networking.pfsense
+    - pfsense
 ```
 
 ### Traffic Shaping/QoS
@@ -207,7 +207,7 @@ pfsense_perform_updates: false
           descr: "Web traffic shaping"
   
   roles:
-    - networking.pfsense
+    - pfsense
 ```
 
 ### Package Management
@@ -225,7 +225,7 @@ pfsense_perform_updates: false
         - Snort
   
   roles:
-    - networking.pfsense
+    - pfsense
 ```
 
 ## Available Tags

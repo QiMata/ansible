@@ -6,15 +6,11 @@ galaxy_info:
   description: Comprehensive pfSense firewall configuration role
   company: Your Organization
   license: MIT
-  min_ansible_version: 2.9
+  min_ansible_version: '2.14'
   platforms:
-    - name: pfSense
+    - name: FreeBSD
       versions:
-        - 2.6
-        - 2.7
-        - 23.01
-        - 23.05
-        - 23.09
+        - all
   galaxy_tags:
     - networking
     - firewall

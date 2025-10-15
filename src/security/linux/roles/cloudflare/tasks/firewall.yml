@@ -5,13 +5,13 @@
     method: GET
     headers:
       Authorization: "Bearer {{ cloudflare_api_token }}"
-  register: _cf_existing_rules
-  failed_when: _cf_existing_rules.status != 200
+  register: cloudflare_firewall_existing_rules
+  failed_when: cloudflare_firewall_existing_rules.status != 200
   changed_when: false
 
 - name: Ensure firewall rules are present
   vars:
-    existing_rules: "{{ _cf_existing_rules.json.result | default([]) }}"
+    existing_rules: "{{ cloudflare_firewall_existing_rules.json.result | default([]) }}"
   loop: "{{ cloudflare_firewall_rules }}"
   loop_control:
     loop_var: rule
@@ -32,5 +32,5 @@
       configuration:
         target: "{{ rule.target }}"
         value: "{{ rule.value }}"
-  register: _create_rule
-  changed_when: _create_rule.status == 200
+  register: cloudflare_firewall_create_result
+  changed_when: cloudflare_firewall_create_result.status == 200

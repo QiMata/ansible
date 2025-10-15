@@ -1,7 +1,7 @@
 ---
 # Gateway Configuration
 - name: Configure gateways
-  pfsensible.core.pfsense_gateway:
+  pfsense_gateway:  # noqa: syntax-check[unknown-module]
     name: "{{ item.name }}"
     interface: "{{ item.interface }}"
     gateway: "{{ item.gateway | default('dynamic') }}"
@@ -20,7 +20,7 @@
   notify: reload pfsense routing
 
 - name: Configure gateway groups
-  pfsensible.core.pfsense_gateway_group:
+  pfsense_gateway_group:  # noqa: syntax-check[unknown-module]
     name: "{{ item.name }}"
     members: "{{ item.members }}"
     trigger: "{{ item.trigger | default('down') }}"

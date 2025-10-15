@@ -4,7 +4,7 @@
   gather_facts: false
   tasks:
     - name: Verify enterprise system configuration
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_system_settings.hostname == "pfsense-enterprise"
           - pfsense_system_settings.domain == "enterprise.corp"
@@ -13,7 +13,7 @@
         success_msg: "Enterprise system settings verified"
 
     - name: Verify multiple interfaces are configured
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_interfaces | length >= 4
           - pfsense_interfaces | selectattr('interface', 'equalto', 'opt1') | list | length == 1
@@ -22,7 +22,7 @@
         success_msg: "Multiple interfaces verified"
 
     - name: Verify VLAN configuration
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_vlans | length >= 3
           - pfsense_vlans | selectattr('tag', 'equalto', 10) | list | length == 1
@@ -32,7 +32,7 @@
         success_msg: "VLAN configuration verified"
 
     - name: Verify multiple DHCP servers
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_dhcp_servers | length >= 3
           - pfsense_dhcp_servers | selectattr('interface', 'equalto', 'lan') | list | length == 1
@@ -42,7 +42,7 @@
         success_msg: "Multiple DHCP servers verified"
 
     - name: Verify DNS host overrides
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_dns_host_overrides | length >= 2
           - pfsense_dns_host_overrides | selectattr('host', 'equalto', 'mail') | list | length == 1
@@ -51,7 +51,7 @@
         success_msg: "DNS host overrides verified"
 
     - name: Verify enterprise aliases
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_aliases | length >= 3
           - pfsense_aliases | selectattr('name', 'equalto', 'RFC1918_Networks') | list | length == 1
@@ -61,7 +61,7 @@
         success_msg: "Enterprise aliases verified"
 
     - name: Verify comprehensive firewall rules
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_firewall_rules | length >= 5
           - pfsense_firewall_rules | selectattr('interface', 'equalto', 'lan') | list | length >= 1
@@ -71,7 +71,7 @@
         success_msg: "Comprehensive firewall rules verified"
 
     - name: Verify NAT rules for DMZ
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_nat_rules | length >= 2
           - pfsense_nat_rules | selectattr('target', 'equalto', '10.0.100.10') | list | length >= 2
@@ -79,7 +79,7 @@
         success_msg: "DMZ NAT rules verified"
 
     - name: Verify traffic shaping configuration
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_traffic_shaping.enable == true
           - pfsense_traffic_shaping.limiters | length >= 2
@@ -87,7 +87,7 @@
         success_msg: "Traffic shaping verified"
 
     - name: Verify user authentication
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_user_auth.local_users | length >= 2
           - pfsense_user_auth.local_users | selectattr('username', 'equalto', 'netadmin') | list | length == 1
@@ -96,7 +96,7 @@
         success_msg: "User authentication verified"
 
     - name: Verify captive portal configuration
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_captive_portal.zones | length >= 1
           - pfsense_captive_portal.zones[0].zone == "guest"
@@ -104,7 +104,7 @@
         success_msg: "Captive portal verified"
 
     - name: Verify enterprise packages
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_packages.install | length >= 3
           - "'pfBlockerNG' in pfsense_packages.install"
@@ -114,7 +114,7 @@
         success_msg: "Enterprise packages verified"
 
     - name: Verify backup configuration
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_backup.enabled == true
           - pfsense_backup.local_path == "/tmp/pfsense_enterprise_backup.xml"
@@ -122,7 +122,7 @@
         success_msg: "Backup configuration verified"
 
     - name: Verify all enterprise features are enabled
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_configure_vlans == true
           - pfsense_configure_traffic_shaping == true

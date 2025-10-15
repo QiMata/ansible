@@ -6,12 +6,12 @@
     - name: Create mock pfSense environment
       block:
         - name: Set up test environment variables
-          set_fact:
+          ansible.builtin.set_fact:
             test_environment: true
             mock_pfsense_api: true
 
         - name: Create temporary directories for testing
-          file:
+          ansible.builtin.file:
             path: "{{ item }}"
             state: directory
             mode: '0755'
@@ -22,7 +22,7 @@
           delegate_to: localhost
 
         - name: Create mock pfSense configuration file
-          copy:
+          ansible.builtin.copy:
             content: |
               <?xml version="1.0"?>
               <pfsense>
@@ -34,12 +34,13 @@
                 </system>
               </pfsense>
             dest: /tmp/pfsense_test/config/config.xml
+            mode: "0644"
           delegate_to: localhost
 
         - name: Display test environment setup
-          debug:
+          ansible.builtin.debug:
             msg: "Mock pfSense test environment prepared successfully"
       rescue:
         - name: Handle preparation failures
-          debug:
+          ansible.builtin.debug:
             msg: "Test environment preparation failed, continuing with limited testing"

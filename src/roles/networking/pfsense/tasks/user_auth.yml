@@ -1,7 +1,7 @@
 ---
 # User Authentication Configuration
 - name: Create local users
-  pfsensible.core.pfsense_user:
+  pfsense_user:  # noqa: syntax-check[unknown-module]
     name: "{{ item.username }}"
     password: "{{ item.password }}"
     full_name: "{{ item.full_name | default(omit) }}"
@@ -18,7 +18,7 @@
   no_log: true
 
 - name: Create user groups
-  pfsensible.core.pfsense_group:
+  pfsense_group:  # noqa: syntax-check[unknown-module]
     name: "{{ item.name }}"
     scope: "{{ item.scope | default('local') }}"
     description: "{{ item.description | default(omit) }}"
@@ -28,7 +28,7 @@
   when: pfsense_user_auth.groups is defined
 
 - name: Configure LDAP authentication servers
-  pfsensible.core.pfsense_authserver_ldap:
+  pfsense_authserver_ldap:  # noqa: syntax-check[unknown-module]
     name: "{{ item.name }}"
     host: "{{ item.host }}"
     port: "{{ item.port | default(389) }}"
@@ -50,7 +50,7 @@
   no_log: true
 
 - name: Configure RADIUS authentication servers
-  pfsensible.core.pfsense_authserver_radius:
+  pfsense_authserver_radius:  # noqa: syntax-check[unknown-module]
     name: "{{ item.name }}"
     host: "{{ item.host }}"
     port: "{{ item.port | default(1812) }}"

@@ -1,7 +1,7 @@
 ---
 # Certificate Management
 - name: Create Certificate Authorities
-  pfsensible.core.pfsense_ca:
+  pfsense_ca:  # noqa: syntax-check[unknown-module]
     name: "{{ item.name }}"
     crt: "{{ item.crt | default(omit) }}"
     prv: "{{ item.prv | default(omit) }}"
@@ -13,7 +13,7 @@
   when: pfsense_certificate_authorities is defined
 
 - name: Create certificates
-  pfsensible.core.pfsense_cert:
+  pfsense_cert:  # noqa: syntax-check[unknown-module]
     name: "{{ item.name }}"
     crt: "{{ item.crt | default(omit) }}"
     prv: "{{ item.prv | default(omit) }}"
@@ -23,7 +23,7 @@
   when: pfsense_certificates is defined
 
 - name: Generate self-signed certificates
-  pfsensible.core.pfsense_cert:
+  pfsense_cert:  # noqa: syntax-check[unknown-module]
     name: "{{ item.name }}"
     method: "{{ item.method | default('internal') }}"
     caref: "{{ item.caref | default(omit) }}"

@@ -9,8 +9,8 @@
     body_format: json
     body:
       value: "{{ cloudflare_ssl_mode }}"
-  register: _ssl
-  changed_when: _ssl.json.result.value != cloudflare_ssl_mode
+  register: cloudflare_ssl_update_result
+  changed_when: cloudflare_ssl_update_result.json.result.value != cloudflare_ssl_mode
 
 - name: Enable / Disable Always Use HTTPS
   ansible.builtin.uri:
@@ -22,5 +22,5 @@
     body_format: json
     body:
       value: "{{ 'on' if cloudflare_always_use_https else 'off' }}"
-  register: _https
-  changed_when: _https.json.result.value != ('on' if cloudflare_always_use_https else 'off')
+  register: cloudflare_https_toggle_result
+  changed_when: cloudflare_https_toggle_result.json.result.value != ('on' if cloudflare_always_use_https else 'off')

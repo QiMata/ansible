@@ -1,7 +1,7 @@
 ---
 # NAT Rules Configuration
 - name: Configure NAT port forward rules
-  pfsensible.core.pfsense_nat_port_forward:
+  pfsense_nat_port_forward:  # noqa: syntax-check[unknown-module]
     interface: "{{ item.interface }}"
     protocol: "{{ item.protocol | default('tcp') }}"
     source: "{{ item.source | default('any') }}"
@@ -21,14 +21,14 @@
   notify: reload firewall nat
 
 - name: Configure NAT outbound rules
-  pfsensible.core.pfsense_nat_outbound:
+  pfsense_nat_outbound:  # noqa: syntax-check[unknown-module]
     mode: "{{ pfsense_nat_outbound.mode | default('automatic') }}"
     rules: "{{ pfsense_nat_outbound.rules | default([]) }}"
   when: pfsense_nat_outbound is defined
   notify: reload firewall nat
 
 - name: Configure NAT 1:1 rules
-  pfsensible.core.pfsense_nat_one_to_one:
+  pfsense_nat_one_to_one:  # noqa: syntax-check[unknown-module]
     interface: "{{ item.interface }}"
     external: "{{ item.external }}"
     internal: "{{ item.internal }}"

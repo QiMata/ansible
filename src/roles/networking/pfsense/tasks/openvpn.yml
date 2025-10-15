@@ -1,7 +1,7 @@
 ---
 # OpenVPN Configuration
 - name: Configure OpenVPN servers
-  pfsensible.core.pfsense_openvpn_server:
+  pfsense_openvpn_server:  # noqa: syntax-check[unknown-module]
     mode: "{{ item.mode | default('server_user') }}"
     protocol: "{{ item.protocol | default('udp4') }}"
     interface: "{{ item.interface }}"
@@ -50,7 +50,7 @@
   notify: restart openvpn
 
 - name: Configure OpenVPN clients
-  pfsensible.core.pfsense_openvpn_client:
+  pfsense_openvpn_client:  # noqa: syntax-check[unknown-module]
     mode: "{{ item.mode | default('p2p_tls') }}"
     protocol: "{{ item.protocol | default('udp4') }}"
     interface: "{{ item.interface }}"
@@ -80,7 +80,7 @@
   notify: restart openvpn
 
 - name: Configure OpenVPN client-specific overrides
-  pfsensible.core.pfsense_openvpn_override:
+  pfsense_openvpn_override:  # noqa: syntax-check[unknown-module]
     server_id: "{{ item.0.vpnid | default(omit) }}"
     common_name: "{{ item.1.common_name }}"
     description: "{{ item.1.descr | default(omit) }}"

@@ -230,16 +230,16 @@
       cleanup_local: true
 
   roles:
-    - networking.pfsense
+    - pfsense
 
   post_tasks:
     - name: Verify pfSense is responding
-      uri:
+      ansible.builtin.uri:
         url: "https://{{ pfsense_host }}:{{ pfsense_port }}"
-        validate_certs: "{{ pfsense_validate_certs }}"
+        validate_certs: "{{ pfsense_validate_certs | bool }}"
         timeout: 10
       delegate_to: localhost
 
     - name: Display completion message
-      debug:
+      ansible.builtin.debug:
         msg: "pfSense configuration completed successfully for {{ inventory_hostname }}"

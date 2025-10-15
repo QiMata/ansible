@@ -78,11 +78,6 @@
         local_port: "80"
         descr: "Web Server NAT"
 
-  pre_tasks:
-    - name: Mock pfSense API calls for testing
-      set_fact:
-        ansible_check_mode: false
-      when: pfsense_mock_mode | default(false)
 
   roles:
-    - role: networking.pfsense
+    - role: pfsense

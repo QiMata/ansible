@@ -1,7 +1,7 @@
 ---
 # System Settings Configuration
 - name: Configure hostname and domain
-  pfsensible.core.pfsense_setup:
+  pfsense_setup:  # noqa: syntax-check[unknown-module]
     hostname: "{{ pfsense_system_settings.hostname }}"
     domain: "{{ pfsense_system_settings.domain }}"
     timezone: "{{ pfsense_system_settings.timezone }}"
@@ -10,20 +10,20 @@
   notify: reload pfsense config
 
 - name: Configure DNS servers
-  pfsensible.core.pfsense_setup:
+  pfsense_setup:  # noqa: syntax-check[unknown-module]
     dns_servers: "{{ pfsense_system_settings.dns_servers }}"
     dns_search_domains: "{{ pfsense_system_settings.dns_search_domains }}"
   notify: reload pfsense config
   when: pfsense_system_settings.dns_servers is defined
 
 - name: Configure NTP servers
-  pfsensible.core.pfsense_setup:
+  pfsense_setup:  # noqa: syntax-check[unknown-module]
     ntp_servers: "{{ pfsense_system_settings.ntp_servers }}"
   notify: reload pfsense config
   when: pfsense_system_settings.ntp_servers is defined
 
 - name: Configure WebGUI settings
-  pfsensible.core.pfsense_setup:
+  pfsense_setup:  # noqa: syntax-check[unknown-module]
     webgui_protocol: "{{ pfsense_system_settings.webgui_settings.protocol }}"
     webgui_port: "{{ pfsense_system_settings.webgui_settings.port }}"
     webgui_max_procs: "{{ pfsense_system_settings.webgui_settings.max_processes }}"

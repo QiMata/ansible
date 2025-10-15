@@ -252,4 +252,4 @@
       cleanup_local: false
 
   roles:
-    - role: networking.pfsense
+    - role: pfsense

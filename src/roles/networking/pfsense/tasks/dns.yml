@@ -1,7 +1,7 @@
 ---
 # DNS Configuration
 - name: Configure DNS Resolver (Unbound)
-  pfsensible.core.pfsense_unbound:
+  pfsense_unbound:  # noqa: syntax-check[unknown-module]
     enable: "{{ pfsense_dns_resolver.enable | default(true) }}"
     port: "{{ pfsense_dns_resolver.port | default(53) }}"
     network_interfaces: "{{ pfsense_dns_resolver.network_interfaces | default(['all']) }}"
@@ -19,7 +19,7 @@
   notify: restart unbound
 
 - name: Configure DNS host overrides
-  pfsensible.core.pfsense_unbound_host_override:
+  pfsense_unbound_host_override:  # noqa: syntax-check[unknown-module]
     host: "{{ item.host }}"
     domain: "{{ item.domain }}"
     ip: "{{ item.ip }}"
@@ -31,7 +31,7 @@
   notify: restart unbound
 
 - name: Configure DNS domain overrides
-  pfsensible.core.pfsense_unbound_domain_override:
+  pfsense_unbound_domain_override:  # noqa: syntax-check[unknown-module]
     domain: "{{ item.domain }}"
     ip: "{{ item.ip }}"
     descr: "{{ item.descr | default(omit) }}"
@@ -41,7 +41,7 @@
   notify: restart unbound
 
 - name: Disable DNS Forwarder if resolver is enabled
-  pfsensible.core.pfsense_dnsmasq:
+  pfsense_dnsmasq:  # noqa: syntax-check[unknown-module]
     enable: false
   when:
     - pfsense_dns_resolver is defined

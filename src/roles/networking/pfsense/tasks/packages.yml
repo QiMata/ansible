@@ -1,23 +1,24 @@
 ---
 # Package Management
 - name: Install pfSense packages
-  pfsensible.core.pfsense_package:
+  pfsense_package:  # noqa: syntax-check[unknown-module]
     name: "{{ item }}"
     state: present
   loop: "{{ pfsense_packages.install | default([]) }}"
   when: pfsense_packages.install is defined
 
 - name: Remove pfSense packages
-  pfsensible.core.pfsense_package:
+  pfsense_package:  # noqa: syntax-check[unknown-module]
     name: "{{ item }}"
     state: absent
   loop: "{{ pfsense_packages.remove | default([]) }}"
   when: pfsense_packages.remove is defined
 
 - name: Configure pfBlockerNG (if installed)
+  when: "'pfBlockerNG' in pfsense_packages.install | default([])"
   block:
     - name: Configure pfBlockerNG general settings
-      pfsensible.core.pfsense_pfblockerng:
+      pfsense_pfblockerng:  # noqa: syntax-check[unknown-module]
         enable: "{{ pfsense_pfblockerng.enable | default(true) }}"
         cron: "{{ pfsense_pfblockerng.cron | default('01 00 * * *') }}"
         max_lines: "{{ pfsense_pfblockerng.max_lines | default(4000000) }}"
@@ -25,7 +26,7 @@
       when: pfsense_pfblockerng is defined
 
     - name: Configure pfBlockerNG DNSBL settings
-      pfsensible.core.pfsense_pfblockerng_dnsbl:
+      pfsense_pfblockerng_dnsbl:  # noqa: syntax-check[unknown-module]
         enable: "{{ item.enable | default(true) }}"
         name: "{{ item.name }}"
         description: "{{ item.description | default(omit) }}"
@@ -36,12 +37,12 @@
       when:
         - pfsense_pfblockerng is defined
         - pfsense_pfblockerng.dnsbl_feeds is defined
-  when: "'pfBlockerNG' in pfsense_packages.install | default([])"
 
 - name: Configure Suricata (if installed)
+  when: "'Suricata' in pfsense_packages.install | default([])"
   block:
     - name: Configure Suricata interfaces
-      pfsensible.core.pfsense_suricata_interface:
+      pfsense_suricata_interface:  # noqa: syntax-check[unknown-module]
         interface: "{{ item.interface }}"
         enable: "{{ item.enable | default(true) }}"
         description: "{{ item.description | default(omit) }}"
@@ -54,4 +55,3 @@
       when:
         - pfsense_suricata is defined
         - pfsense_suricata.interfaces is defined
-  when: "'Suricata' in pfsense_packages.install | default([])"

@@ -1,7 +1,7 @@
 ---
 # DHCP Server Configuration
 - name: Configure DHCP servers
-  pfsensible.core.pfsense_dhcp:
+  pfsense_dhcp:  # noqa: syntax-check[unknown-module]
     interface: "{{ item.interface }}"
     enable: "{{ item.enable | default(true) }}"
     range_from: "{{ item.range_from }}"
@@ -21,7 +21,7 @@
   notify: restart dhcp
 
 - name: Configure DHCP static mappings
-  pfsensible.core.pfsense_dhcp_static:
+  pfsense_dhcp_static:  # noqa: syntax-check[unknown-module]
     interface: "{{ item.0.interface }}"
     mac: "{{ item.1.mac }}"
     ipaddr: "{{ item.1.ipaddr }}"

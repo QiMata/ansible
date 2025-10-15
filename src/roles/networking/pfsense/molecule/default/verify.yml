@@ -4,7 +4,7 @@
   gather_facts: false
   tasks:
     - name: Check if pfSense variables are properly set
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_host is defined
           - pfsense_username is defined
@@ -15,7 +15,7 @@
         success_msg: "All required pfSense variables are properly defined"
 
     - name: Verify system settings configuration
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_system_settings.hostname == "pfsense-test"
           - pfsense_system_settings.domain == "test.local"
@@ -24,7 +24,7 @@
         success_msg: "System settings are configured correctly"
 
     - name: Verify interface configuration
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_interfaces | length >= 2
           - pfsense_interfaces[0].interface == "wan"
@@ -34,7 +34,7 @@
         success_msg: "Interface configuration is correct"
 
     - name: Verify DHCP server configuration
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_dhcp_servers | length >= 1
           - pfsense_dhcp_servers[0].interface == "lan"
@@ -44,7 +44,7 @@
         success_msg: "DHCP server configuration is correct"
 
     - name: Verify firewall rules configuration
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_firewall_rules | length >= 2
           - pfsense_firewall_rules[0].interface == "lan"
@@ -55,7 +55,7 @@
         success_msg: "Firewall rules configuration is correct"
 
     - name: Verify NAT rules configuration
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_nat_rules | length >= 1
           - pfsense_nat_rules[0].interface == "wan"
@@ -64,11 +64,11 @@
         success_msg: "NAT rules configuration is correct"
 
     - name: Test role idempotency by checking variables
-      debug:
+      ansible.builtin.debug:
         msg: "Role variables are consistent and idempotent"
 
     - name: Verify component flags are properly set
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_configure_system_settings == true
           - pfsense_configure_interfaces == true
