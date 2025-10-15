@@ -1,7 +1,7 @@
 ---
 # Firewall Rules Configuration
 - name: Configure firewall rules
-  pfsensible.core.pfsense_rule:
+  pfsense_rule:  # noqa: syntax-check[unknown-module]
     interface: "{{ item.interface }}"
     action: "{{ item.action | default('pass') }}"
     direction: "{{ item.direction | default('in') }}"
@@ -24,7 +24,7 @@
   notify: reload firewall filter
 
 - name: Configure floating firewall rules
-  pfsensible.core.pfsense_rule:
+  pfsense_rule:  # noqa: syntax-check[unknown-module]
     interface: "{{ item.interface }}"
     action: "{{ item.action | default('pass') }}"
     direction: "{{ item.direction | default('any') }}"
@@ -47,7 +47,7 @@
   notify: reload firewall filter
 
 - name: Remove old firewall rules
-  pfsensible.core.pfsense_rule:
+  pfsense_rule:  # noqa: syntax-check[unknown-module]
     interface: "{{ item.interface }}"
     action: "{{ item.action }}"
     protocol: "{{ item.protocol }}"

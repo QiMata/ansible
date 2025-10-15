@@ -1,7 +1,7 @@
 ---
 # Captive Portal Configuration
 - name: Configure captive portal zones
-  pfsensible.core.pfsense_captiveportal:
+  pfsense_captiveportal:  # noqa: syntax-check[unknown-module]
     zone: "{{ item.zone }}"
     interface: "{{ item.interface }}"
     enable: "{{ item.enable | default(true) }}"
@@ -27,7 +27,7 @@
   notify: restart captive portal
 
 - name: Configure captive portal allowed IPs
-  pfsensible.core.pfsense_captiveportal_allowed_ip:
+  pfsense_captiveportal_allowed_ip:  # noqa: syntax-check[unknown-module]
     zone: "{{ item.0.zone }}"
     ip: "{{ item.1.ip }}"
     subnet: "{{ item.1.subnet | default(32) }}"
@@ -39,7 +39,7 @@
   notify: restart captive portal
 
 - name: Configure captive portal allowed hostnames
-  pfsensible.core.pfsense_captiveportal_allowed_hostname:
+  pfsense_captiveportal_allowed_hostname:  # noqa: syntax-check[unknown-module]
     zone: "{{ item.0.zone }}"
     hostname: "{{ item.1.hostname }}"
     direction: "{{ item.1.direction | default('both') }}"

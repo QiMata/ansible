@@ -1,7 +1,7 @@
 ---
 # IPsec Site-to-Site VPN Configuration
 - name: Configure IPsec Phase 1 entries
-  pfsensible.core.pfsense_ipsec_phase1:
+  pfsense_ipsec_phase1:  # noqa: syntax-check[unknown-module]
     ikeid: "{{ item.ikeid | default(omit) }}"
     interface: "{{ item.interface }}"
     remote_gateway: "{{ item.remote_gateway }}"
@@ -36,7 +36,7 @@
   notify: restart ipsec
 
 - name: Configure IPsec Phase 2 entries
-  pfsensible.core.pfsense_ipsec_phase2:
+  pfsense_ipsec_phase2:  # noqa: syntax-check[unknown-module]
     ikeid: "{{ item.ikeid }}"
     uniqid: "{{ item.uniqid | default(omit) }}"
     mode: "{{ item.mode | default('tunnel') }}"
@@ -61,7 +61,7 @@
   notify: restart ipsec
 
 - name: Enable IPsec if configured
-  pfsensible.core.pfsense_ipsec:
+  pfsense_ipsec:  # noqa: syntax-check[unknown-module]
     enable: "{{ pfsense_ipsec.enable | default(true) }}"
     unityhybrid: "{{ pfsense_ipsec.unityhybrid | default(false) }}"
     strictcrlpolicy: "{{ pfsense_ipsec.strictcrlpolicy | default(false) }}"

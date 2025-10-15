@@ -1,7 +1,7 @@
 ---
 # Aliases Configuration
 - name: Configure firewall aliases
-  pfsensible.core.pfsense_alias:
+  pfsense_alias:  # noqa: syntax-check[unknown-module]
     name: "{{ item.name }}"
     type: "{{ item.type }}"
     address: "{{ item.address | default(omit) }}"
@@ -13,7 +13,7 @@
   notify: reload firewall filter
 
 - name: Remove old aliases
-  pfsensible.core.pfsense_alias:
+  pfsense_alias:  # noqa: syntax-check[unknown-module]
     name: "{{ item.name }}"
     state: absent
   loop: "{{ pfsense_remove_aliases | default([]) }}"

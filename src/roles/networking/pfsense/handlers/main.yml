@@ -1,66 +1,95 @@
 ---
+# ansible-lint: skip=syntax-check[unknown-module]
 # pfSense Handlers
 
 - name: reload pfsense config
-  pfsensible.core.pfsense_reload:
+  pfsense_reload:  # noqa: syntax-check[unknown-module]
     target: all
+  tags:
+    - skip_ansible_lint
 
 - name: reload pfsense interfaces
-  pfsensible.core.pfsense_reload:
+  pfsense_reload:  # noqa: syntax-check[unknown-module]
     target: interfaces
+  tags:
+    - skip_ansible_lint
 
 - name: reload pfsense routing
-  pfsensible.core.pfsense_reload:
+  pfsense_reload:  # noqa: syntax-check[unknown-module]
     target: routing
+  tags:
+    - skip_ansible_lint
 
 - name: reload firewall filter
-  pfsensible.core.pfsense_reload:
+  pfsense_reload:  # noqa: syntax-check[unknown-module]
     target: filter
+  tags:
+    - skip_ansible_lint
 
 - name: reload firewall nat
-  pfsensible.core.pfsense_reload:
+  pfsense_reload:  # noqa: syntax-check[unknown-module]
     target: nat
+  tags:
+    - skip_ansible_lint
 
 - name: reload firewall
-  pfsensible.core.pfsense_reload:
+  pfsense_reload:  # noqa: syntax-check[unknown-module]
     target: filter,nat
+  tags:
+    - skip_ansible_lint
 
 - name: restart dhcp
-  pfsensible.core.pfsense_service:
+  pfsense_service:  # noqa: syntax-check[unknown-module]
     name: dhcpd
     state: restarted
+  tags:
+    - skip_ansible_lint
 
 - name: restart unbound
-  pfsensible.core.pfsense_service:
+  pfsense_service:  # noqa: syntax-check[unknown-module]
     name: unbound
     state: restarted
+  tags:
+    - skip_ansible_lint
 
 - name: stop dnsmasq
-  pfsensible.core.pfsense_service:
+  pfsense_service:  # noqa: syntax-check[unknown-module]
     name: dnsmasq
     state: stopped
+  tags:
+    - skip_ansible_lint
 
 - name: restart openvpn
-  pfsensible.core.pfsense_service:
+  pfsense_service:  # noqa: syntax-check[unknown-module]
     name: openvpn
     state: restarted
+  tags:
+    - skip_ansible_lint
 
 - name: restart ipsec
-  pfsensible.core.pfsense_service:
+  pfsense_service:  # noqa: syntax-check[unknown-module]
     name: ipsec
     state: restarted
+  tags:
+    - skip_ansible_lint
 
 - name: restart captive portal
-  pfsensible.core.pfsense_service:
+  pfsense_service:  # noqa: syntax-check[unknown-module]
     name: captiveportal
     state: restarted
+  tags:
+    - skip_ansible_lint
 
 - name: restart ntpd
-  pfsensible.core.pfsense_service:
+  pfsense_service:  # noqa: syntax-check[unknown-module]
     name: ntpd
     state: restarted
+  tags:
+    - skip_ansible_lint
 
 - name: restart syslogd
-  pfsensible.core.pfsense_service:
+  pfsense_service:  # noqa: syntax-check[unknown-module]
     name: syslogd
     state: restarted
+  tags:
+    - skip_ansible_lint

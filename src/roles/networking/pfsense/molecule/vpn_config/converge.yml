@@ -274,4 +274,4 @@
         descr: "OpenVPN Site-to-Site NAT"
 
   roles:
-    - role: networking.pfsense
+    - role: pfsense

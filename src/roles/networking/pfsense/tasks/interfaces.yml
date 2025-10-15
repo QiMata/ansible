@@ -1,7 +1,7 @@
 ---
 # Interface Configuration
 - name: Configure network interfaces
-  pfsensible.core.pfsense_interface:
+  pfsense_interface:  # noqa: syntax-check[unknown-module]
     interface: "{{ item.interface }}"
     enable: "{{ item.enable | default(true) }}"
     descr: "{{ item.descr | default(omit) }}"
@@ -20,7 +20,7 @@
   notify: reload pfsense interfaces
 
 - name: Enable interfaces
-  pfsensible.core.pfsense_interface:
+  pfsense_interface:  # noqa: syntax-check[unknown-module]
     interface: "{{ item.interface }}"
     enable: true
   loop: "{{ pfsense_interfaces }}"

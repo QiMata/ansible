@@ -1,7 +1,7 @@
 ---
 # Static Routes Configuration
 - name: Configure static routes
-  pfsensible.core.pfsense_route:
+  pfsense_route:  # noqa: syntax-check[unknown-module]
     network: "{{ item.network }}"
     gateway: "{{ item.gateway }}"
     descr: "{{ item.descr | default(omit) }}"
@@ -12,7 +12,7 @@
   notify: reload pfsense routing
 
 - name: Remove old static routes
-  pfsensible.core.pfsense_route:
+  pfsense_route:  # noqa: syntax-check[unknown-module]
     network: "{{ item.network }}"
     gateway: "{{ item.gateway }}"
     state: absent

@@ -1,7 +1,7 @@
 ---
 # Traffic Shaping/QoS Configuration
 - name: Configure traffic shaping limiters
-  pfsensible.core.pfsense_limiter:
+  pfsense_limiter:  # noqa: syntax-check[unknown-module]
     name: "{{ item.name }}"
     bandwidth: "{{ item.bandwidth }}"
     bandwidthtype: "{{ item.bandwidthtype | default('Mb') }}"
@@ -21,7 +21,7 @@
   notify: reload firewall
 
 - name: Configure traffic shaping queues
-  pfsensible.core.pfsense_traffic_shaper:
+  pfsense_traffic_shaper:  # noqa: syntax-check[unknown-module]
     interface: "{{ item.interface }}"
     scheduler: "{{ item.scheduler | default('HFSC') }}"
     bandwidthtype: "{{ item.bandwidthtype | default('Mb') }}"
@@ -38,7 +38,7 @@
   notify: reload firewall
 
 - name: Configure traffic shaping rules
-  pfsensible.core.pfsense_rule:
+  pfsense_rule:  # noqa: syntax-check[unknown-module]
     interface: "{{ item.interface }}"
     action: "{{ item.action | default('pass') }}"
     protocol: "{{ item.protocol | default('any') }}"

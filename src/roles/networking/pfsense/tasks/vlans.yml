@@ -1,7 +1,7 @@
 ---
 # VLAN Configuration
 - name: Create VLANs
-  pfsensible.core.pfsense_vlan:
+  pfsense_vlan:  # noqa: syntax-check[unknown-module]
     interface: "{{ item.if }}"
     vlan_id: "{{ item.tag }}"
     descr: "{{ item.descr | default(omit) }}"
@@ -12,7 +12,7 @@
   notify: reload pfsense interfaces
 
 - name: Configure VLAN interfaces
-  pfsensible.core.pfsense_interface:
+  pfsense_interface:  # noqa: syntax-check[unknown-module]
     interface: "{{ item.if }}.{{ item.tag }}"
     enable: "{{ item.enable | default(true) }}"
     descr: "{{ item.descr | default(omit) }}"

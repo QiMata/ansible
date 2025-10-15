@@ -3,9 +3,9 @@ name: pfSense Role CI/CD
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   schedule:
     # Run tests weekly on Sundays at 2 AM UTC
     - cron: '0 2 * * 0'
@@ -289,12 +289,24 @@ jobs:
 
     steps:
       - name: Notify on success
-        if: ${{ needs.test-basic.result == 'success' && needs.test-enterprise.result == 'success' && needs.test-vpn.result == 'success' && needs.test-default.result == 'success' }}
+        if: >-
+          ${{
+            needs.test-basic.result == 'success'
+            and needs.test-enterprise.result == 'success'
+            and needs.test-vpn.result == 'success'
+            and needs.test-default.result == 'success'
+          }}
         run: |
           echo "✅ All tests passed successfully!"
 
       - name: Notify on failure
-        if: ${{ needs.test-basic.result == 'failure' || needs.test-enterprise.result == 'failure' || needs.test-vpn.result == 'failure' || needs.test-default.result == 'failure' }}
+        if: >-
+          ${{
+            needs.test-basic.result == 'failure'
+            or needs.test-enterprise.result == 'failure'
+            or needs.test-vpn.result == 'failure'
+            or needs.test-default.result == 'failure'
+          }}
         run: |
           echo "❌ Some tests failed!"
           exit 1

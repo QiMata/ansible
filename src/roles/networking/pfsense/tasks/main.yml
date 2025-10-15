@@ -3,134 +3,134 @@
 # This role configures all major components of pfSense
 
 - name: Include system settings configuration
-  include_tasks: system_settings.yml
-  when: pfsense_configure_system_settings | default(true)
+  ansible.builtin.include_tasks: system_settings.yml
+  when: pfsense_configure_system_settings
   tags:
     - system
     - system_settings
 
 - name: Include certificate management
-  include_tasks: certificates.yml
-  when: pfsense_configure_certificates | default(false)
+  ansible.builtin.include_tasks: certificates.yml
+  when: pfsense_configure_certificates
   tags:
     - certificates
     - ssl
 
 - name: Include interface configuration
-  include_tasks: interfaces.yml
-  when: pfsense_configure_interfaces | default(true)
+  ansible.builtin.include_tasks: interfaces.yml
+  when: pfsense_configure_interfaces
   tags:
     - interfaces
     - lans
     - network
 
 - name: Include VLAN configuration
-  include_tasks: vlans.yml
-  when: pfsense_configure_vlans | default(false)
+  ansible.builtin.include_tasks: vlans.yml
+  when: pfsense_configure_vlans
   tags:
     - vlans
     - network
 
 - name: Include gateway configuration
-  include_tasks: gateways.yml
-  when: pfsense_configure_gateways | default(true)
+  ansible.builtin.include_tasks: gateways.yml
+  when: pfsense_configure_gateways
   tags:
     - gateways
     - routing
 
 - name: Include static routes configuration
-  include_tasks: static_routes.yml
-  when: pfsense_configure_static_routes | default(false)
+  ansible.builtin.include_tasks: static_routes.yml
+  when: pfsense_configure_static_routes
   tags:
     - routes
     - routing
 
 - name: Include DHCP server configuration
-  include_tasks: dhcp.yml
-  when: pfsense_configure_dhcp | default(true)
+  ansible.builtin.include_tasks: dhcp.yml
+  when: pfsense_configure_dhcp
   tags:
     - dhcp
     - network
 
 - name: Include DNS configuration
-  include_tasks: dns.yml
-  when: pfsense_configure_dns | default(true)
+  ansible.builtin.include_tasks: dns.yml
+  when: pfsense_configure_dns
   tags:
     - dns
     - resolver
 
 - name: Include aliases configuration
-  include_tasks: aliases.yml
-  when: pfsense_configure_aliases | default(false)
+  ansible.builtin.include_tasks: aliases.yml
+  when: pfsense_configure_aliases
   tags:
     - aliases
     - firewall
 
 - name: Include NAT rules configuration
-  include_tasks: nat_rules.yml
-  when: pfsense_configure_nat | default(true)
+  ansible.builtin.include_tasks: nat_rules.yml
+  when: pfsense_configure_nat
   tags:
     - nat
     - firewall
 
 - name: Include firewall rules configuration
-  include_tasks: firewall_rules.yml
-  when: pfsense_configure_firewall_rules | default(true)
+  ansible.builtin.include_tasks: firewall_rules.yml
+  when: pfsense_configure_firewall_rules
   tags:
     - firewall
     - rules
 
 - name: Include traffic shaping configuration
-  include_tasks: traffic_shaping.yml
-  when: pfsense_configure_traffic_shaping | default(false)
+  ansible.builtin.include_tasks: traffic_shaping.yml
+  when: pfsense_configure_traffic_shaping
   tags:
     - qos
     - traffic_shaping
 
 - name: Include user authentication configuration
-  include_tasks: user_auth.yml
-  when: pfsense_configure_user_auth | default(false)
+  ansible.builtin.include_tasks: user_auth.yml
+  when: pfsense_configure_user_auth
   tags:
     - auth
     - users
 
 - name: Include captive portal configuration
-  include_tasks: captive_portal.yml
-  when: pfsense_configure_captive_portal | default(false)
+  ansible.builtin.include_tasks: captive_portal.yml
+  when: pfsense_configure_captive_portal
   tags:
     - captive_portal
     - guest
 
 - name: Include OpenVPN configuration
-  include_tasks: openvpn.yml
-  when: pfsense_configure_openvpn | default(false)
+  ansible.builtin.include_tasks: openvpn.yml
+  when: pfsense_configure_openvpn
   tags:
     - openvpn
     - vpn
 
 - name: Include IPsec site-to-site VPN configuration
-  include_tasks: ipsec_s2s.yml
-  when: pfsense_configure_ipsec | default(false)
+  ansible.builtin.include_tasks: ipsec_s2s.yml
+  when: pfsense_configure_ipsec
   tags:
     - ipsec
     - vpn
     - s2s
 
 - name: Include package management
-  include_tasks: packages.yml
-  when: pfsense_configure_packages | default(false)
+  ansible.builtin.include_tasks: packages.yml
+  when: pfsense_configure_packages
   tags:
     - packages
 
 - name: Include backup configuration
-  include_tasks: backup.yml
-  when: pfsense_perform_backup | default(false)
+  ansible.builtin.include_tasks: backup.yml
+  when: pfsense_perform_backup
   tags:
     - backup
 
 - name: Include system updates
-  include_tasks: updates.yml
-  when: pfsense_perform_updates | default(false)
+  ansible.builtin.include_tasks: updates.yml
+  when: pfsense_perform_updates
   tags:
     - updates
     - maintenance

@@ -1,20 +1,20 @@
 ---
 # System Updates
 - name: Check for system updates
-  pfsensible.core.pfsense_update:
+  pfsense_update:  # noqa: syntax-check[unknown-module]
     check_only: true
   register: update_check
   when: pfsense_updates.check_for_updates | default(false)
 
 - name: Display available updates
-  debug:
+  ansible.builtin.debug:
     var: update_check.updates
   when:
     - pfsense_updates.check_for_updates | default(false)
     - update_check.updates is defined
 
 - name: Create backup before update
-  include_tasks: backup.yml
+  ansible.builtin.include_tasks: backup.yml
   vars:
     pfsense_backup:
       enabled: true
@@ -27,9 +27,9 @@
     - update_check.updates | length > 0
 
 - name: Install system updates
-  pfsensible.core.pfsense_update:
+  pfsense_update:  # noqa: syntax-check[unknown-module]
     install: true
-    reboot: "{{ pfsense_updates.reboot_after_update | default(false) }}"
+    reboot: "{{ pfsense_updates.reboot_after_update | default(false) | bool }}"
   register: update_result
   when:
     - pfsense_updates.auto_update | default(false)
@@ -37,14 +37,14 @@
     - update_check.updates | length > 0
 
 - name: Display update results
-  debug:
+  ansible.builtin.debug:
     var: update_result
   when:
     - pfsense_updates.auto_update | default(false)
     - update_result is defined
 
 - name: Wait for system to come back online after reboot
-  wait_for_connection:
+  ansible.builtin.wait_for_connection:
     connect_timeout: 20
     sleep: 5
     delay: 60

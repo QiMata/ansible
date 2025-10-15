@@ -4,7 +4,7 @@
   gather_facts: false
   tasks:
     - name: Verify VPN system configuration
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_system_settings.hostname == "pfsense-vpn"
           - pfsense_system_settings.domain == "vpn.test"
@@ -12,7 +12,7 @@
         success_msg: "VPN system settings verified"
 
     - name: Verify certificate configuration
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_generated_certificates | length >= 2
           - pfsense_generated_certificates | selectattr('name', 'equalto', 'VPN_CA') | list | length == 1
@@ -21,7 +21,7 @@
         success_msg: "Certificate configuration verified"
 
     - name: Verify OpenVPN server configuration
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_openvpn.servers | length >= 2
           - pfsense_openvpn.servers[0].descr == "Remote Access VPN Server"
@@ -35,7 +35,7 @@
         success_msg: "OpenVPN server configuration verified"
 
     - name: Verify OpenVPN client configuration
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_openvpn.clients | length >= 1
           - pfsense_openvpn.clients[0].descr == "Branch Office VPN Client"
@@ -45,7 +45,7 @@
         success_msg: "OpenVPN client configuration verified"
 
     - name: Verify IPsec configuration
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_ipsec.enable == true
           - pfsense_ipsec.phase1 | length >= 2
@@ -54,7 +54,7 @@
         success_msg: "IPsec configuration verified"
 
     - name: Verify IPsec Phase 1 configuration
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_ipsec.phase1[0].descr == "Site-to-Site IPsec VPN"
           - pfsense_ipsec.phase1[0].remote_gateway == "203.0.113.200"
@@ -66,7 +66,7 @@
         success_msg: "IPsec Phase 1 configuration verified"
 
     - name: Verify IPsec Phase 2 configuration
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_ipsec.phase2[0].descr == "Site-to-Site Tunnel"
           - pfsense_ipsec.phase2[0].localid_address == "192.168.1.0"
@@ -77,7 +77,7 @@
         success_msg: "IPsec Phase 2 configuration verified"
 
     - name: Verify VPN firewall rules
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_firewall_rules | length >= 10
           - pfsense_firewall_rules | selectattr('destination_port', 'equalto', '1194') | list | length >= 1
@@ -88,7 +88,7 @@
         success_msg: "VPN firewall rules verified"
 
     - name: Verify OpenVPN tunnel rules
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_firewall_rules | selectattr('source', 'equalto', '10.8.0.0/24') | list | length >= 1
           - pfsense_firewall_rules | selectattr('source', 'equalto', '10.9.0.0/30') | list | length >= 1
@@ -97,7 +97,7 @@
         success_msg: "OpenVPN tunnel rules verified"
 
     - name: Verify IPsec tunnel rules
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_firewall_rules | selectattr('source', 'equalto', '192.168.200.0/24') | list | length >= 1
           - pfsense_firewall_rules | selectattr('source', 'equalto', '10.12.0.0/24') | list | length >= 1
@@ -106,7 +106,7 @@
         success_msg: "IPsec tunnel rules verified"
 
     - name: Verify VPN NAT rules
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_nat_rules | length >= 2
           - pfsense_nat_rules | selectattr('local_port', 'equalto', '1194') | list | length >= 1
@@ -115,7 +115,7 @@
         success_msg: "VPN NAT rules verified"
 
     - name: Verify all VPN features are enabled
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_configure_certificates == true
           - pfsense_configure_openvpn == true
@@ -124,7 +124,7 @@
         success_msg: "All VPN features are properly enabled"
 
     - name: Verify VPN network isolation
-      assert:
+      ansible.builtin.assert:
         that:
           - pfsense_openvpn.servers[0].client2client == false
           - pfsense_openvpn.servers[0].duplicate_cn == false
