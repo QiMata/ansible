@@ -27,7 +27,9 @@
   when:
     - es_thread_pool_settings | length > 0
     - es_wait_for_cluster
-  ignore_errors: true
+  register: es_thread_pool_result
+  failed_when: es_thread_pool_result.status not in [200, 400]
+  changed_when: es_thread_pool_result.status == 200
   delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
@@ -46,7 +48,9 @@
   when:
     - es_circuit_breaker_settings | length > 0
     - es_wait_for_cluster
-  ignore_errors: true
+  register: es_circuit_breaker_result
+  failed_when: es_circuit_breaker_result.status not in [200, 400]
+  changed_when: es_circuit_breaker_result.status == 200
   delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
@@ -63,7 +67,9 @@
   when:
     - es_cache_settings | length > 0
     - es_wait_for_cluster
-  ignore_errors: true
+  register: es_cache_settings_result
+  failed_when: es_cache_settings_result.status not in [200, 400]
+  changed_when: es_cache_settings_result.status == 200
   delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
@@ -76,7 +82,7 @@
   when: >
     ansible_virtualization_type is not defined or
     ansible_virtualization_type not in ['lxc', 'docker', 'container']
-  ignore_errors: true
+  failed_when: false
 
 - name: Set vm.swappiness
   ansible.posix.sysctl:
@@ -87,7 +93,7 @@
   when: >
     ansible_virtualization_type is not defined or
     ansible_virtualization_type not in ['lxc', 'docker', 'container']
-  ignore_errors: true
+  failed_when: false
 
 - name: Configure file descriptor limits
   ansible.builtin.lineinfile:
@@ -95,6 +101,9 @@
     regexp: '^elasticsearch.*nofile'
     line: "elasticsearch soft nofile 65536\nelasticsearch hard nofile 65536"
     create: true
+    owner: root
+    group: root
+    mode: '0644'
 
 - name: Configure process limits
   ansible.builtin.lineinfile:
@@ -102,6 +111,9 @@
     regexp: '^elasticsearch.*nproc'
     line: "elasticsearch soft nproc 4096\nelasticsearch hard nproc 4096"
     create: true
+    owner: root
+    group: root
+    mode: '0644'
 
 - name: Configure memory locking limits
   ansible.builtin.lineinfile:
@@ -109,6 +121,9 @@
     regexp: '^elasticsearch.*memlock'
     line: "elasticsearch soft memlock unlimited\nelasticsearch hard memlock unlimited"
     create: true
+    owner: root
+    group: root
+    mode: '0644'
   when: es_bootstrap_memory_lock
 
 - name: Configure systemd service for memory locking
@@ -117,6 +132,9 @@
     regexp: '^LimitMEMLOCK='
     line: "LimitMEMLOCK=infinity"
     create: true
+    owner: root
+    group: root
+    mode: '0644'
   when: es_bootstrap_memory_lock
   notify:
     - Reload systemd
@@ -127,13 +145,18 @@
     path: /etc/systemd/system/elasticsearch.service.d
     state: directory
     mode: '0755'
+    owner: root
+    group: root
   when: es_bootstrap_memory_lock
 
 - name: Configure I/O scheduler for data disks
   ansible.builtin.shell: |
+    set -o pipefail
     for disk in $(lsblk -no NAME,MOUNTPOINT | grep "{{ item }}" | awk '{print $1}' | sed 's/[0-9]*$//'); do
       echo deadline > /sys/block/${disk}/queue/scheduler
     done
+  args:
+    executable: /bin/bash
   loop: "{{ es_data_paths }}"
   changed_when: false
-  ignore_errors: true
+  failed_when: false

@@ -57,6 +57,9 @@
     regexp: '^index\.store\.type:'
     line: "index.store.type: {{ es_store_type }}"
     create: true
+    owner: root
+    group: root
+    mode: '0644'
   when: es_store_type != "fs"
   notify: restart elasticsearch
 
@@ -66,11 +69,17 @@
     regexp: '^node\.store\.allow_mmap:'
     line: "node.store.allow_mmap: {{ es_allow_mmapfs | lower }}"
     create: true
+    owner: root
+    group: root
+    mode: '0644'
   notify: restart elasticsearch
 
 - name: Check disk space for data directories
   ansible.builtin.shell: |
+    set -o pipefail
     df -h {{ item }} | tail -1 | awk '{print $5}' | sed 's/%//'
+  args:
+    executable: /bin/bash
   register: disk_usage
   loop: "{{ es_data_paths }}"
   changed_when: false
@@ -92,4 +101,4 @@
   loop:
     - "{{ es_config_path }}"
     - "{{ es_log_path }}"
-  ignore_errors: true
+  failed_when: false

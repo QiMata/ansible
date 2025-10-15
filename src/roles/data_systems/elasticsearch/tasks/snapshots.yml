@@ -18,7 +18,8 @@
 
 - name: Create snapshot repositories
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_snapshot/{{ item.name }}"
+    url: >-
+      http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_snapshot/{{ item.name }}
     method: PUT
     body_format: json
     body:
@@ -35,7 +36,8 @@
 
 - name: Verify snapshot repositories
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_snapshot/{{ item.name }}/_verify"
+    url: >-
+      http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_snapshot/{{ item.name }}/_verify
     method: POST
     headers:
       Content-Type: "application/json"
@@ -44,7 +46,13 @@
   register: repo_verification
   when:
     - es_wait_for_cluster
-  ignore_errors: true
+  failed_when: >-
+    (repo_verification.results | default([])
+     | map(attribute='status')
+     | select('defined')
+     | reject('in', [200, 400])
+     | list | length) > 0
+  changed_when: false
   delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
@@ -56,7 +64,8 @@
 
 - name: Create snapshot lifecycle policies
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_slm/policy/{{ item.name }}"
+    url: >-
+      http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_slm/policy/{{ item.name }}
     method: PUT
     body_format: json
     body:
@@ -102,7 +111,10 @@
 
 - name: Test snapshot creation
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_snapshot/{{ es_snapshot_repositories[0].name }}/test-snapshot-{{ ansible_date_time.epoch }}"
+    url: >-
+      {{ 'http://' ~ es_network_host ~ ':' ~ (es_proxy_settings.http_port | default(9200)) ~
+         '/_snapshot/' ~ es_snapshot_repositories[0].name ~
+         '/test-snapshot-' ~ ansible_date_time.epoch }}
     method: PUT
     body_format: json
     body:
@@ -119,13 +131,17 @@
     - es_snapshot_repositories | length > 0
     - es_wait_for_cluster
   register: test_snapshot
-  ignore_errors: true
+  failed_when: test_snapshot.status not in [200, 201, 400]
+  changed_when: test_snapshot.status in [200, 201]
   delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
 - name: Check test snapshot status
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_snapshot/{{ es_snapshot_repositories[0].name }}/test-snapshot-{{ ansible_date_time.epoch }}"
+    url: >-
+      {{ 'http://' ~ es_network_host ~ ':' ~ (es_proxy_settings.http_port | default(9200)) ~
+         '/_snapshot/' ~ es_snapshot_repositories[0].name ~
+         '/test-snapshot-' ~ ansible_date_time.epoch }}
     method: GET
     headers:
       Content-Type: "application/json"
@@ -140,7 +156,10 @@
 
 - name: Delete test snapshot
   ansible.builtin.uri:
-    url: "http://{{ es_network_host }}:{{ es_proxy_settings.http_port | default(9200) }}/_snapshot/{{ es_snapshot_repositories[0].name }}/test-snapshot-{{ ansible_date_time.epoch }}"
+    url: >-
+      {{ 'http://' ~ es_network_host ~ ':' ~ (es_proxy_settings.http_port | default(9200)) ~
+         '/_snapshot/' ~ es_snapshot_repositories[0].name ~
+         '/test-snapshot-' ~ ansible_date_time.epoch }}
     method: DELETE
     headers:
       Content-Type: "application/json"
@@ -149,7 +168,9 @@
     - test_snapshot is defined
     - test_snapshot.status in [200, 201]
     - es_wait_for_cluster
-  ignore_errors: true
+  register: delete_test_snapshot_result
+  failed_when: delete_test_snapshot_result.status not in [200, 404]
+  changed_when: delete_test_snapshot_result.status == 200
   delegate_to: "{{ groups['elasticsearch_cluster'][0] | default(inventory_hostname) }}"
   run_once: true
 
