@@ -4,6 +4,7 @@
     msg: "Configuring Grafana performance settings"
 
 - name: Set up caching configuration
+  when: grafana_caching_enabled
   block:
     - name: Install Redis for caching
       ansible.builtin.package:
@@ -33,7 +34,13 @@
 
     - name: Test Redis connectivity
       ansible.builtin.command:
-        cmd: redis-cli -h {{ grafana_caching_config.redis.address.split(':')[0] }} -p {{ grafana_caching_config.redis.address.split(':')[1] | default('6379') }} ping
+        argv:
+          - redis-cli
+          - -h
+          - "{{ grafana_caching_config.redis.address.split(':')[0] }}"
+          - -p
+          - "{{ grafana_caching_config.redis.address.split(':')[1] | default('6379') }}"
+          - ping
       register: redis_test
       changed_when: false
       when: grafana_caching_config.type == 'redis'
@@ -44,8 +51,6 @@
           - redis_test.stdout == "PONG"
         fail_msg: "Redis connectivity test failed"
       when: grafana_caching_config.type == 'redis'
-
-  when: grafana_caching_enabled
 
 - name: Configure database connection pooling
   ansible.builtin.lineinfile:

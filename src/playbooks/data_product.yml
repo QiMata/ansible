@@ -59,10 +59,10 @@
   roles:
     - role: geerlingguy_redis
       vars:
-        redis_bind: "{{ data_product_redis_bind }}"
-        redis_port: "{{ data_product_redis_port | default(6379) }}"
-        redis_password: "{{ vault_data_product_redis_password | default(omit) }}"
-        redis_requirepass: "{{ (vault_data_product_redis_password is defined) | ternary(true, false) }}"
+        redis_bind: "{{ data_product_redis_bind }}"  # noqa var-naming
+        redis_port: "{{ data_product_redis_port | default(6379) }}"  # noqa var-naming
+        redis_password: "{{ vault_data_product_redis_password | default(omit) }}"  # noqa var-naming
+        redis_requirepass: "{{ (vault_data_product_redis_password is defined) | ternary(true, false) }}"  # noqa var-naming
 
 - name: Deploy RabbitMQ message broker (optional alternative for Airflow)
   hosts: rabbitmq
