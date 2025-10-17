@@ -15,6 +15,9 @@
     path: /var/lib/grafana
     dest: "{{ grafana_backup_path }}/pre-restore-backup-{{ ansible_date_time.epoch }}.tar.gz"
     format: gz
+    owner: grafana
+    group: grafana
+    mode: '0640'
   become_user: grafana
   become: true
 
@@ -31,6 +34,7 @@
     - restore_source_check.stat.exists
 
 - name: Restore Grafana database (SQL dump)
+  when: grafana_database.type != 'sqlite3'
   block:
     - name: Check for SQL dump file
       ansible.builtin.stat:
@@ -62,8 +66,6 @@
       when:
         - grafana_database.type == 'mysql'
         - sql_dump_check.stat.exists
-
-  when: grafana_database.type != 'sqlite3'
 
 - name: Restore Grafana configuration files
   ansible.builtin.copy:

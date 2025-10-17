@@ -21,6 +21,11 @@
     mode: "0644"
   notify: Restart Grafana
 
+- name: Check for legacy datasource file
+  ansible.builtin.stat:
+    path: "{{ role_path }}/files/provisioning/datasources.yml"
+  register: grafana_legacy_datasource
+
 - name: Deploy legacy datasource configuration (if exists)
   ansible.builtin.copy:
     src: provisioning/datasources.yml
@@ -28,8 +33,13 @@
     owner: grafana
     group: grafana
     mode: "0644"
-  ignore_errors: true
   notify: Restart Grafana
+  when: grafana_legacy_datasource.stat.exists
+
+- name: Check for bundled dashboards directory
+  ansible.builtin.stat:
+    path: "{{ role_path }}/files/dashboards"
+  register: grafana_dashboards_dir
 
 - name: Deploy dashboards from files directory
   ansible.builtin.copy:
@@ -38,8 +48,8 @@
     owner: grafana
     group: grafana
     mode: "0644"
-  ignore_errors: true
   notify: Restart Grafana
+  when: grafana_dashboards_dir.stat.exists
 
 - name: Create dashboard directories
   ansible.builtin.file:

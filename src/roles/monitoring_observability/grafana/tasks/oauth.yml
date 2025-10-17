@@ -33,7 +33,7 @@
   when: grafana_oauth_enabled
 
 - name: Test OAuth provider connectivity
-  ansible.builtin.shell: /tmp/oauth_validate.sh
+  ansible.builtin.command: /tmp/oauth_validate.sh
   register: oauth_test_result
   changed_when: false
   failed_when: oauth_test_result.rc != 0
