@@ -1,12 +1,9 @@
+# Example legacy datasource definition used when templated configuration is unavailable.
+# Customize this file to match the datasources bundled with the role.
 apiVersion: 1
 datasources:
-{% for ds in grafana_datasources %}
-  - name: {{ ds.name }}
-    type: {{ ds.type }}
-    url: {{ ds.url }}
-    access: {{ ds.access }}
-    isDefault: {{ ds.isDefault | default(false) }}
-    {% if ds.database %}
-    database: {{ ds.database }}
-    {% endif %}
-{% endfor %}
+  - name: Example Prometheus
+    type: prometheus
+    url: http://prometheus:9090
+    access: proxy
+    isDefault: true

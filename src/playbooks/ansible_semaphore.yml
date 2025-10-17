@@ -38,7 +38,6 @@
     # - bodsch.mariadb
     - mrlesmithjr.mariadb_galera_cluster
 
-
 # - name: MariaDB Galera Cluster Backups
 #   hosts: ansible_semaphore_MARIADB_DATABASE
 #   serial: 1
@@ -50,7 +49,6 @@
 #   roles:
 #     - mariadb_backups
 
-
 # # https://github.com/Thulium-Drake/ansible-role-ansible_semaphore/blob/master/defaults/main.yml
 # - name: Ansible Semaphor Installation
   # hosts: ansible-semaphore:ANSIBLE_SEMAPHORE_WEB
@@ -61,10 +59,8 @@
 #   roles:
 #     - thulium_drake.ansible_semaphore
 
-
 # - name: HAProxy Load Balancer Installation
   # hosts: ansible-semaphore:WEB_LOAD_BALANCER
 #   sudo: yes
 #   roles:
 #     - { role: geerlingguy.haproxy }
-
