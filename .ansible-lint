@@ -98,6 +98,8 @@ mock_modules:
   - pfsensible.core.pfsense_group
   - pfsensible.core.pfsense_user
   - pfsensible.core.pfsense_vlan
+skip_list:
+  - var-naming
 warn_list:
   - experimental  # retain visibility into experimental rules
 offline: true

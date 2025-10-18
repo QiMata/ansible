@@ -15,9 +15,9 @@ galaxy_info:
         - bookworm
     - name: Ubuntu
       versions:
-        - "20.04"
-        - "22.04"
-        - "24.04"
+        - focal
+        - jammy
+        - noble
   galaxy_tags:
     - vault
     - security
@@ -26,7 +26,7 @@ galaxy_info:
     - authentication
     - monitoring
     - backup
-    - high-availability
+    - highavailability
     - raft
     - consul
     - cloud
