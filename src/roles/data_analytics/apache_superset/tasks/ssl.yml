@@ -42,7 +42,8 @@
       community.crypto.openssl_csr:
         path: "/tmp/superset.csr"
         privatekey_path: "{{ apache_superset_ssl_key_path }}"
-        common_name: "{{ ansible_fqdn }}"
+        subject:
+          common_name: "{{ ansible_fqdn }}"
         subject_alt_name:
           - "DNS:{{ ansible_fqdn }}"
           - "DNS:{{ ansible_hostname }}"
