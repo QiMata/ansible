@@ -6,7 +6,7 @@
     status_code: 200
     validate_certs: false
   register: logstash_healthcheck_result
-  retries: {{ logstash_healthcheck_retries }}
-  delay: {{ logstash_healthcheck_delay }}
+  retries: "{{ logstash_healthcheck_retries | int }}"
+  delay: "{{ logstash_healthcheck_delay | int }}"
   until: logstash_healthcheck_result.status == 200
   changed_when: false
