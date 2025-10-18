@@ -13,6 +13,6 @@ provisioner:
   name: ansible
   config_options:
     defaults:
-      role_name_check: False
+      role_name_check: false
 verifier:
   name: ansible

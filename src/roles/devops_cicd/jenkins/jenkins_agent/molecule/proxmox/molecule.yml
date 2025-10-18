@@ -16,7 +16,8 @@ platforms:
 provisioner:
   name: ansible
   env:
-    ANSIBLE_ROLES_PATH: "/ansible/src/roles:/ansible/src/roles/devops_cicd:/ansible/src/roles/devops_cicd/jenkins"
+    ANSIBLE_ROLES_PATH: >-
+      /ansible/src/roles:/ansible/src/roles/devops_cicd:/ansible/src/roles/devops_cicd/jenkins
   playbooks:
     create: ../../../../../../molecule/proxmox/create.yml
     prepare: ../../../../../../molecule/proxmox/prepare.yml
@@ -31,14 +32,14 @@ provisioner:
         ansible_connection: ssh
         ansible_ssh_pass: molecule123
         ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
-        ansible_become: yes
+        ansible_become: true
         ansible_become_method: sudo
   config_options:
     defaults:
       host_key_checking: false
       stdout_callback: yaml
       bin_ansible_callbacks: true
-      role_name_check: False
+      role_name_check: false
   roles_path: "/ansible/src/roles:/ansible/src/roles/devops_cicd:/ansible/src/roles/devops_cicd/jenkins"
 verifier:
   name: ansible

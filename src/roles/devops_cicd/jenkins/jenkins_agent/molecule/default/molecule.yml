@@ -10,7 +10,8 @@ platforms:
 provisioner:
   name: ansible
   env:
-    ANSIBLE_ROLES_PATH: "/ansible/src/roles:/ansible/src/roles/devops_cicd:/ansible/src/roles/devops_cicd/jenkins"
+    ANSIBLE_ROLES_PATH: >-
+      /ansible/src/roles:/ansible/src/roles/devops_cicd:/ansible/src/roles/devops_cicd/jenkins
   playbooks:
     converge: converge.yml
 verifier:

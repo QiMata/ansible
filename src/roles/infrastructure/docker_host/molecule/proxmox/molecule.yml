@@ -22,7 +22,8 @@ provisioner:
     verify: verify.yml
     destroy: /ansible/src/molecule/proxmox/destroy.yml
   env:
-    ANSIBLE_ROLES_PATH: "/ansible/src/roles:/ansible/src/roles/infrastructure:/ansible/src/roles/data_analytics:/ansible/src/roles/data_systems:/ansible/src/roles/devops_cicd:/ansible/src/roles/load_balancing_ha:/ansible/src/roles/monitoring_observability:/ansible/src/roles/networking:/ansible/src/roles/operations_management:/ansible/src/roles/security_identity"
+    ANSIBLE_ROLES_PATH: >-
+      /ansible/src/roles:/ansible/src/roles/infrastructure:/ansible/src/roles/data_analytics:/ansible/src/roles/data_systems:/ansible/src/roles/devops_cicd:/ansible/src/roles/load_balancing_ha:/ansible/src/roles/monitoring_observability:/ansible/src/roles/networking:/ansible/src/roles/operations_management:/ansible/src/roles/security_identity
   inventory:
     host_vars:
       docker_host-test-instance:
@@ -38,7 +39,7 @@ provisioner:
       host_key_checking: false
       stdout_callback: yaml
       bin_ansible_callbacks: true
-      role_name_check: False
+      role_name_check: false
 verifier:
   name: ansible
 scenario:

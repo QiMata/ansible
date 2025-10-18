@@ -36,7 +36,7 @@ provisioner:
       host_key_checking: false
       stdout_callback: yaml
       bin_ansible_callbacks: true
-      role_name_check: False
+      role_name_check: false
 verifier:
   name: ansible
 scenario:
