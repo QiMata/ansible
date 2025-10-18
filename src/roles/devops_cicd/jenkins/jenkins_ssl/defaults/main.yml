@@ -11,7 +11,16 @@ jenkins_ssl_disable_http: false
 
 # Certificate generation options
 jenkins_ssl_generate_self_signed: true
-jenkins_ssl_cert_subject: "/C=US/ST=State/L=City/O=Organization/CN={{ ansible_fqdn }}"
+jenkins_ssl_cert_subject:
+  common_name: "{{ ansible_fqdn }}"
+  country_name: US
+  state_or_province_name: State
+  locality_name: City
+  organization_name: Organization
+jenkins_ssl_subject_alt_names:
+  - "DNS:{{ ansible_fqdn }}"
+  - "DNS:{{ ansible_hostname }}"
+  - "IP:{{ ansible_default_ipv4.address }}"
 jenkins_ssl_cert_days: 365
 
 # Security headers

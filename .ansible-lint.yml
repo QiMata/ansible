@@ -1,17 +1,21 @@
 ---
-offline: false
+offline: true
 use_default_rules: true
 project_dir: .
 exclude_paths:
   - .git/
   - .cache/
+  - molecule/
+  - src/roles/**/molecule/
 skip_list:
   - args
-  - syntax-check[unknown-module]
+  - var-naming
 mock_modules:
   - community.crypto.openssl_privatekey
   - community.crypto.openssl_csr
   - community.crypto.x509_certificate
+  - community.general.archive_info
+  - ansible_collections.community.general.plugins.modules.archive_info
   - openssl_privatekey
   - openssl_csr
   - x509_certificate
@@ -61,6 +65,3 @@ mock_modules:
   - pfsensible.core.pfsense_user
   - pfsensible.core.pfsense_vlan
 
-per_file_ignores:
-  src/roles/networking/pfsense/handlers/main.yml:
-    - syntax-check[unknown-module]

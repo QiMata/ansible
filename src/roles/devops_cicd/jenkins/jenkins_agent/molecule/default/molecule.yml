@@ -10,7 +10,7 @@ platforms:
 provisioner:
   name: ansible
   env:
-    ANSIBLE_ROLES_PATH: "/ansible/src/roles:/ansible/src/roles/devops_cicd:/ansible/src/roles/devops_cicd/jenkins"
+    ANSIBLE_ROLES_PATH: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') | default(lookup('env', 'PWD') + '/src/roles/devops_cicd/jenkins', true) }}"
   playbooks:
     converge: converge.yml
 verifier:

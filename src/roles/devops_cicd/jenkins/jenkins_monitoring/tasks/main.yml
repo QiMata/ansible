@@ -49,7 +49,7 @@
     owner: jenkins
     group: jenkins
     mode: '0644'
-  notify: restart jenkins
+  notify: Restart Jenkins
 
 - name: Setup health check cron job
   ansible.builtin.cron:
@@ -88,5 +88,5 @@
     owner: jenkins
     group: jenkins
     mode: '0644'
-  notify: restart jenkins
+  notify: Restart Jenkins
   when: jenkins_monitoring_prometheus_enabled

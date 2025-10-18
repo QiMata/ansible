@@ -1,0 +1,9 @@
+---
+galaxy_info:
+  author: Ansible Automation
+  description: Set up Jenkins monitoring and alerting.
+  license: MIT
+  min_ansible_version: '2.13'
+  namespace: devops_cicd
+  role_name: jenkins_monitoring
+dependencies: []

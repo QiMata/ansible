@@ -9,6 +9,8 @@ platforms:
     privileged: true
 provisioner:
   name: ansible
+  env:
+    ANSIBLE_ROLES_PATH: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') | default(lookup('env', 'PWD') + '/src/roles/devops_cicd', true) }}"
   playbooks:
     converge: converge.yml
 verifier:

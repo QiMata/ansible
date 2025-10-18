@@ -67,7 +67,8 @@
     - not backup_file_stat.stat.exists
 
 - name: Verify backup file integrity
-  ansible.builtin.command: tar -tzf "{{ jenkins_restore_backup_file }}"
+  community.general.archive_info:
+    path: "{{ jenkins_restore_backup_file }}"
   register: backup_integrity_check
   changed_when: false
   when:
@@ -120,7 +121,7 @@
     group: jenkins
     remote_src: true
     exclude: "{{ jenkins_restore_exclude_patterns }}"
-  notify: restart jenkins
+  notify: Restart Jenkins
   when: jenkins_restore_enabled
 
 - name: Restore preserved configurations
