@@ -15,8 +15,8 @@
   ansible.builtin.uri:
     url: "http://{{ vault_addr }}:{{ vault_port }}/v1/sys/init"
     method: GET
+    status_code: [200, 204, 404]
   register: vault_init_status
-  ignore_errors: true
 
 - name: Create policy files directory
   ansible.builtin.file:
@@ -49,7 +49,6 @@
   when:
     - vault_init_status.json.initialized | default(false)
     - vault_root_token is defined
-  ignore_errors: true
 
 - name: Create default admin policy
   ansible.builtin.uri:
@@ -69,7 +68,6 @@
     - vault_init_status.json.initialized | default(false)
     - vault_root_token is defined
     - vault_policies | selectattr('name', 'equalto', 'admin') | list | length == 0
-  ignore_errors: true
 
 - name: Create default read-only policy
   ansible.builtin.uri:
@@ -92,4 +90,3 @@
     - vault_init_status.json.initialized | default(false)
     - vault_root_token is defined
     - vault_policies | selectattr('name', 'equalto', 'readonly') | list | length == 0
-  ignore_errors: true

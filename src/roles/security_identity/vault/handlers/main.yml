@@ -1,10 +1,10 @@
 ---
-- name: restart vault
+- name: Restart Vault
   ansible.builtin.service:
     name: "{{ vault_service_name }}"
     state: restarted
 
-- name: restart rsyslog
+- name: Restart Rsyslog
   ansible.builtin.service:
     name: rsyslog
     state: restarted
