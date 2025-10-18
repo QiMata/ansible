@@ -1,11 +1,11 @@
 ---
 - name: Determine primary domain
   ansible.builtin.set_fact:
-    primary_domain: "{{ letsencrypt_godaddy_cert_domains[0] }}"
+    letsencrypt_godaddy_primary_domain: "{{ letsencrypt_godaddy_cert_domains[0] }}"
 
 - name: Ensure certificate directory exists
   ansible.builtin.file:
-    path: "{{ letsencrypt_godaddy_cert_install_path }}/{{ primary_domain }}"
+    path: "{{ letsencrypt_godaddy_cert_install_path }}/{{ letsencrypt_godaddy_primary_domain }}"
     state: directory
     owner: root
     group: root
@@ -16,15 +16,15 @@
   ansible.builtin.shell: |
     export GD_Key="{{ letsencrypt_godaddy_api_key }}";
     export GD_Secret="{{ letsencrypt_godaddy_api_secret }}";
-    "{{ letsencrypt_godaddy_acme_sh_install_dir }}/acme.sh" --install-cert -d "{{ primary_domain }}" \
+    "{{ letsencrypt_godaddy_acme_sh_install_dir }}/acme.sh" --install-cert -d "{{ letsencrypt_godaddy_primary_domain }}" \
       --home "{{ letsencrypt_godaddy_acme_sh_install_dir }}" \
       --config-home "{{ letsencrypt_godaddy_acme_sh_install_dir }}" \
-      --cert-file "{{ letsencrypt_godaddy_cert_install_path }}/{{ primary_domain }}/cert.pem" \
-      --key-file "{{ letsencrypt_godaddy_cert_install_path }}/{{ primary_domain }}/privkey.pem" \
-      --fullchain-file "{{ letsencrypt_godaddy_cert_install_path }}/{{ primary_domain }}/fullchain.pem" \
+      --cert-file "{{ letsencrypt_godaddy_cert_install_path }}/{{ letsencrypt_godaddy_primary_domain }}/cert.pem" \
+      --key-file "{{ letsencrypt_godaddy_cert_install_path }}/{{ letsencrypt_godaddy_primary_domain }}/privkey.pem" \
+      --fullchain-file "{{ letsencrypt_godaddy_cert_install_path }}/{{ letsencrypt_godaddy_primary_domain }}/fullchain.pem" \
       {% if letsencrypt_godaddy_service_reload_command %}--reloadcmd "{{ letsencrypt_godaddy_service_reload_command }}"{% endif %}
-  register: acme_install
-  changed_when: "'Cert success' in acme_install.stdout or 'Installing' in acme_install.stdout"
+  register: letsencrypt_godaddy_acme_install
+  changed_when: "'Cert success' in letsencrypt_godaddy_acme_install.stdout or 'Installing' in letsencrypt_godaddy_acme_install.stdout"
   notify: reload_service
   no_log: true
   become: true
