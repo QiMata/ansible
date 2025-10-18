@@ -5,7 +5,7 @@
 
 - name: Update package cache
   ansible.builtin.apt:
-    update_cache: yes
+    update_cache: true
     cache_valid_time: 3600
   when: ansible_os_family == "Debian"
 
@@ -30,7 +30,7 @@
   ansible.builtin.apt_repository:
     repo: "deb [arch=amd64,arm64,ppc64el] {{ mariadb_repository_url }} {{ ansible_distribution_release }} main"
     state: present
-    update_cache: yes
+    update_cache: true
   when: ansible_os_family == "Debian"
 
 - name: Set MariaDB root password before installation
@@ -89,4 +89,4 @@
     owner: mysql
     group: mysql
     mode: '0755'
-  when: mariadb_enable_backup
+  when: mariadb_enable_backup | bool

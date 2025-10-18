@@ -1,6 +1,7 @@
 # ---> Ansible
 # Build artifacts and collections
 collections/
+!.ansible/collections/
 .ansible_facts/
 .molecule/
 

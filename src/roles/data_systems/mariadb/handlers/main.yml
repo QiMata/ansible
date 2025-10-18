@@ -3,14 +3,14 @@
 # MARIADB HANDLERS
 # ============================================================================
 
-- name: restart mariadb
+- name: Restart MariaDB service
   ansible.builtin.service:
     name: "{{ mariadb_service_name }}"
     state: restarted
     enabled: true
   listen: "restart mariadb"
 
-- name: wait for mariadb
+- name: Wait for MariaDB availability
   ansible.builtin.wait_for:
     port: "{{ mariadb_port }}"
     host: "{{ mariadb_bind_address }}"
@@ -18,7 +18,7 @@
     timeout: 300
   listen: "wait for mariadb"
 
-- name: reload mariadb
+- name: Reload MariaDB service
   ansible.builtin.service:
     name: "{{ mariadb_service_name }}"
     state: reloaded

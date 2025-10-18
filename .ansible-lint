@@ -52,6 +52,52 @@ mock_roles:
   - elasticsearch_security
   - elasticsearch_snapshot
   - elasticsearch_config
+exclude_paths:
+  - .git/
+  - .cache/
+mock_modules:
+  - pfsensible.core.pfsense_reload
+  - pfsensible.core.pfsense_service
+  - pfsensible.core.pfsense_alias
+  - pfsensible.core.pfsense_backup
+  - pfsensible.core.pfsense_captiveportal
+  - pfsensible.core.pfsense_captiveportal_allowed_hostname
+  - pfsensible.core.pfsense_captiveportal_allowed_ip
+  - pfsensible.core.pfsense_ca
+  - pfsensible.core.pfsense_cert
+  - pfsensible.core.pfsense_dhcp
+  - pfsensible.core.pfsense_dhcp_static
+  - pfsensible.core.pfsense_dnsmasq
+  - pfsensible.core.pfsense_unbound
+  - pfsensible.core.pfsense_unbound_domain_override
+  - pfsensible.core.pfsense_unbound_host_override
+  - pfsensible.core.pfsense_rule
+  - pfsensible.core.pfsense_gateway
+  - pfsensible.core.pfsense_gateway_group
+  - pfsensible.core.pfsense_interface
+  - pfsensible.core.pfsense_ipsec
+  - pfsensible.core.pfsense_ipsec_phase1
+  - pfsensible.core.pfsense_ipsec_phase2
+  - pfsensible.core.pfsense_nat_one_to_one
+  - pfsensible.core.pfsense_nat_outbound
+  - pfsensible.core.pfsense_nat_port_forward
+  - pfsensible.core.pfsense_openvpn_client
+  - pfsensible.core.pfsense_openvpn_override
+  - pfsensible.core.pfsense_openvpn_server
+  - pfsensible.core.pfsense_package
+  - pfsensible.core.pfsense_pfblockerng
+  - pfsensible.core.pfsense_pfblockerng_dnsbl
+  - pfsensible.core.pfsense_suricata_interface
+  - pfsensible.core.pfsense_route
+  - pfsensible.core.pfsense_setup
+  - pfsensible.core.pfsense_limiter
+  - pfsensible.core.pfsense_traffic_shaper
+  - pfsensible.core.pfsense_update
+  - pfsensible.core.pfsense_authserver_ldap
+  - pfsensible.core.pfsense_authserver_radius
+  - pfsensible.core.pfsense_group
+  - pfsensible.core.pfsense_user
+  - pfsensible.core.pfsense_vlan
 warn_list:
   - experimental  # retain visibility into experimental rules
 offline: true
