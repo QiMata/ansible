@@ -4,8 +4,8 @@
     vault write pki/roles/{{ vault_stepca_role }}
     allow_any_name=true
     max_ttl={{ vault_pki_max_ttl }}
-  register: _pki_role
-  changed_when: "'Success' in _pki_role.stdout"
+  register: vault_pki_role
+  changed_when: "'Success' in vault_pki_role.stdout"
   environment:
     VAULT_ADDR: "http://127.0.0.1:{{ vault_port }}"
   no_log: true
@@ -24,13 +24,13 @@
         capabilities = ["update"]
       }
     mode: '0600'
-  register: _policy_file
+  register: vault_policy_file
 
 - name: Apply Vault policy
   ansible.builtin.command: >
     vault policy write {{ vault_stepca_policy }} /tmp/{{ vault_stepca_policy }}.hcl
-  register: _policy_write
-  changed_when: "'Success' in _policy_write.stdout"
+  register: vault_policy_write
+  changed_when: "'Success' in vault_policy_write.stdout"
   environment:
     VAULT_ADDR: "http://127.0.0.1:{{ vault_port }}"
   no_log: true
@@ -38,8 +38,8 @@
 - name: Enable AppRole auth
   ansible.builtin.command: >
     vault auth enable approle
-  register: _enable_approle
-  changed_when: "'successfully enabled' in _enable_approle.stdout"
+  register: vault_enable_approle
+  changed_when: "'successfully enabled' in vault_enable_approle.stdout"
   failed_when: false
   environment:
     VAULT_ADDR: "http://127.0.0.1:{{ vault_port }}"
@@ -51,8 +51,8 @@
     token_policies="{{ vault_stepca_policy }}"
     token_ttl={{ vault_stepca_token_ttl }}
     token_max_ttl={{ vault_stepca_token_ttl }}
-  register: _approle
-  changed_when: "'Success' in _approle.stdout"
+  register: vault_approle
+  changed_when: "'Success' in vault_approle.stdout"
   environment:
     VAULT_ADDR: "http://127.0.0.1:{{ vault_port }}"
   no_log: true

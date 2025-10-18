@@ -3,8 +3,8 @@
   ansible.builtin.command: >
     vault write -format=json pki/intermediate/generate/internal
     common_name="{{ vault_pki_common_name }}"
-  register: _csr_generation
-  changed_when: "'certificate_request' in _csr_generation.stdout"
+  register: vault_pki_csr_generation
+  changed_when: "'certificate_request' in vault_pki_csr_generation.stdout"
   environment:
     VAULT_ADDR: "http://127.0.0.1:{{ vault_port }}"
   no_log: true
@@ -12,7 +12,7 @@
 - name: Save CSR locally
   ansible.builtin.copy:
     dest: /tmp/vault_intermediate.csr
-    content: "{{ (_csr_generation.stdout | from_json).data.csr }}"
+    content: "{{ (vault_pki_csr_generation.stdout | from_json).data.csr }}"
     mode: "0644"
 
 # Signing of CSR should be handled by step-ca role
@@ -22,8 +22,8 @@
   ansible.builtin.command: >
     vault write pki/intermediate/set-signed
     certificate=@/tmp/vault_intermediate.crt
-  register: _import_cert
-  changed_when: "'Success' in _import_cert.stdout"
+  register: vault_pki_import_cert
+  changed_when: "'Success' in vault_pki_import_cert.stdout"
   environment:
     VAULT_ADDR: "http://127.0.0.1:{{ vault_port }}"
   no_log: true

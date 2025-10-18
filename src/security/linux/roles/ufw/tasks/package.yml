@@ -5,6 +5,6 @@
     name: "{{ ufw_packages }}"
     state: present
   become: true
-  register: result
-  until: result is successful
+  register: ufw_package_result
+  until: ufw_package_result is successful
   tags: usw, package

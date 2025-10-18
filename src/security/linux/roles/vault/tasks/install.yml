@@ -32,7 +32,7 @@
     name: "{{ vault_user }}"
     system: true
     shell: /usr/sbin/nologin
-  register: _vault_user_created
+  register: vault_user_created
 
 - name: Ensure data & config directories exist
   ansible.builtin.file:
