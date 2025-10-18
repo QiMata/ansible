@@ -1,0 +1,9 @@
+---
+galaxy_info:
+  author: Ansible Automation
+  description: Install and configure a Python-based Git repository service.
+  license: MIT
+  min_ansible_version: '2.13'
+  namespace: devops_cicd
+  role_name: python_git_repo_service_install
+dependencies: []

@@ -78,7 +78,18 @@
 
 - name: Add environment variables to agent config
   ansible.builtin.set_fact:
-    agent_config: "{{ agent_config | combine({'nodeProperties': [{'stapler-class': 'hudson.slaves.EnvironmentVariablesNodeProperty', 'envVars': jenkins_agent_env_vars}]}, recursive=true) }}"
+    agent_config: >-
+      {{ agent_config | combine(
+        {
+          'nodeProperties': [
+            {
+              'stapler-class': 'hudson.slaves.EnvironmentVariablesNodeProperty',
+              'envVars': jenkins_agent_env_vars
+            }
+          ]
+        },
+        recursive=true
+      ) }}
   when:
     - jenkins_agent_registration_enabled
     - jenkins_agent_env_vars | length > 0

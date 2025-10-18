@@ -38,7 +38,7 @@
     line: '{{ item.key }}="{{ item.value }}"'
     insertafter: '^#?\s*JENKINS_ARGS='
   loop: "{{ jenkins_casc_environment_vars | dict2items }}"
-  notify: restart jenkins
+  notify: Restart Jenkins
   when: jenkins_casc_enabled
 
 - name: Create CasC reload endpoint protection
@@ -48,7 +48,7 @@
     owner: jenkins
     group: jenkins
     mode: '0644'
-  notify: restart jenkins
+  notify: Restart Jenkins
   when: jenkins_casc_enabled
 
 - name: Validate CasC configuration

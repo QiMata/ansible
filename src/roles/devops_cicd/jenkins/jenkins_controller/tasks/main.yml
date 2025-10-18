@@ -31,14 +31,14 @@
       - "jenkins={{ jenkins_version }}*"
     state: present
     update_cache: true
-  notify: restart jenkins
+  notify: Restart Jenkins
 
 - name: Disable setup wizard
   ansible.builtin.lineinfile:
     path: /etc/default/jenkins
     regexp: '^JENKINS_ARGS='
     line: 'JENKINS_ARGS="--webroot=/var/cache/$NAME/war --httpPort={{ jenkins_http_port }} -Djenkins.install.runSetupWizard=false {{ jenkins_java_opts }}"'
-  notify: restart jenkins
+  notify: Restart Jenkins
 
 - name: Ensure init.groovy.d directory exists
   ansible.builtin.file:
@@ -55,7 +55,7 @@
     owner: jenkins
     group: jenkins
     mode: "0644"
-  notify: restart jenkins
+  notify: Restart Jenkins
 
 - name: Create plugins list
   ansible.builtin.template:
@@ -84,7 +84,7 @@
   register: plugin_cli_res
   changed_when: plugin_cli_res.rc == 0
   when: plugin_cli_stat.stat.exists
-  notify: restart jenkins
+  notify: Restart Jenkins
 
 - name: Download Jenkins Plugin Manager jar (fallback)
   ansible.builtin.get_url:
@@ -102,7 +102,7 @@
   args:
     creates: "{{ jenkins_controller_home }}/plugins/{{ jenkins_plugins[0] }}.jpi"
   when: not plugin_cli_stat.stat.exists
-  notify: restart jenkins
+  notify: Restart Jenkins
 
 - name: Ensure Jenkins service enabled and started
   ansible.builtin.service:
