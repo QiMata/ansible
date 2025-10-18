@@ -5,7 +5,11 @@
   community.mysql.mysql_query:
     login_unix_socket: /var/run/mysqld/mysqld.sock
     query: "INSTALL PLUGIN server_audit SONAME 'server_audit'"
-  ignore_errors: true
+  register: mariadb_audit_plugin
+  failed_when:
+    - mariadb_audit_plugin.rc != 0
+    - "'already installed' not in (mariadb_audit_plugin.msg | default('') | lower)"
+  changed_when: mariadb_audit_plugin.rc == 0
 
 - name: Create audit log directory
   ansible.builtin.file:

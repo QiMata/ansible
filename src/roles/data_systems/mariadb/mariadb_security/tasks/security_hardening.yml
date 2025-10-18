@@ -22,13 +22,18 @@
     name: root
     host: "{{ item }}"
     state: absent
-  loop:
-    - "{{ ansible_fqdn }}"
-    - "{{ ansible_hostname }}"
-    - "{{ ansible_default_ipv4.address }}"
-    - "%"
+  loop: "{{ mariadb_remote_root_hosts }}"
+  vars:
+    mariadb_remote_root_hosts: >-
+      {{
+        [
+          ansible_fqdn | default(''),
+          ansible_hostname | default(''),
+          (ansible_default_ipv4.address if (ansible_default_ipv4 is defined and 'address' in ansible_default_ipv4) else ''),
+          '%'
+        ] | reject('equalto', '') | list
+      }}
   when: mariadb_remove_remote_root | bool
-  ignore_errors: true
 
 - name: Create security hardening configuration
   ansible.builtin.template:
@@ -39,16 +44,22 @@
     mode: '0644'
   notify: restart mariadb
 
-- name: Set secure file permissions on MariaDB configuration
-  ansible.builtin.file:
+- name: Gather MariaDB configuration file facts
+  ansible.builtin.stat:
     path: "{{ item }}"
-    owner: root
-    group: mysql
-    mode: '0640'
   loop:
     - /etc/mysql/my.cnf
     - /etc/mysql/mariadb.cnf
-  ignore_errors: true
+  register: mariadb_config_files
+
+- name: Set secure file permissions on MariaDB configuration
+  ansible.builtin.file:
+    path: "{{ item.item }}"
+    owner: root
+    group: mysql
+    mode: '0640'
+  loop: "{{ mariadb_config_files.results }}"
+  when: item.stat.exists
 
 - name: Set secure directory permissions
   ansible.builtin.file:
@@ -60,16 +71,27 @@
   loop:
     - /var/lib/mysql
     - /var/log/mysql
-  ignore_errors: true
+
+- name: Remove root MySQL history file
+  ansible.builtin.file:
+    path: /root/.mysql_history
+    state: absent
+
+- name: Discover user MySQL history files
+  ansible.builtin.find:
+    paths: /home
+    patterns: .mysql_history
+    hidden: true
+    file_type: file
+  register: mariadb_history_files
 
 - name: Remove history files
   ansible.builtin.file:
-    path: "{{ item }}"
+    path: "{{ item.path }}"
     state: absent
-  loop:
-    - /root/.mysql_history
-    - /home/*/.mysql_history
-  ignore_errors: true
+  loop: "{{ mariadb_history_files.files }}"
+  loop_control:
+    label: "{{ item.path }}"
 
 - name: Create mysql history symlink to /dev/null
   ansible.builtin.file:

@@ -10,7 +10,7 @@
     owner: root
     group: root
     mode: '0644'
-    backup: yes
+    backup: true
   notify:
     - restart mariadb
     - wait for mariadb
@@ -30,7 +30,7 @@
     owner: mysql
     group: mysql
     mode: '0640'
-  when: mariadb_slow_query_log
+  when: mariadb_slow_query_log | bool
 
 - name: Set up SSL certificates directory
   ansible.builtin.file:
@@ -39,13 +39,14 @@
     owner: mysql
     group: mysql
     mode: '0755'
-  when: mariadb_enable_ssl
+  when: mariadb_enable_ssl | bool
 
 - name: Configure MariaDB for container environments
   ansible.builtin.lineinfile:
     path: /etc/mysql/conf.d/mariadb.cnf
     line: "{{ item }}"
-    create: yes
+    create: true
+    mode: '0644'
   loop:
     - "# Container-aware settings"
     - "innodb_use_native_aio = 0"
@@ -60,4 +61,4 @@
   register: mariadb_config_check
   failed_when: mariadb_config_check.rc != 0
   changed_when: false
-  check_mode: no
+  check_mode: false

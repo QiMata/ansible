@@ -1,4 +1,3 @@
-# ansible-lint: disable=args
 # SSL/TLS Configuration Tasks
 
 - name: Create SSL directory
@@ -138,6 +137,7 @@
   when: mariadb_ssl_generate_certs | bool
 
 - name: Generate Galera SSL certificates
+  when: mariadb_galera_ssl_enabled | bool and mariadb_ssl_generate_certs | bool
   block:
     - name: Generate Galera private key
       community.crypto.openssl_privatekey:
@@ -184,7 +184,6 @@
         owner: mysql
         group: mysql
         mode: '0644'
-  when: mariadb_galera_ssl_enabled | bool and mariadb_ssl_generate_certs | bool
 
 - name: Configure MariaDB SSL settings
   ansible.builtin.template:
