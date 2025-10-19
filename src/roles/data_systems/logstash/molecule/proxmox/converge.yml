@@ -10,4 +10,4 @@
   tasks:
     - name: Include logstash role
       ansible.builtin.include_role:
-        name: "{{ playbook_dir }}/../.."
+        name: logstash

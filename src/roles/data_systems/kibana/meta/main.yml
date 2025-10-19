@@ -14,4 +14,4 @@ galaxy_info:
     - elasticsearch
     - observability
     - monitoring
-  dependencies: []
+dependencies: []

@@ -4,13 +4,13 @@
   become: true
   gather_facts: true
   vars:
-    es_cluster_name: proxmox-es
-    es_heap_size: "512m"
-    es_enable_security: false
+    es_cluster_name: proxmox-es  # noqa var-naming
+    es_heap_size: "512m"  # noqa var-naming
+    es_enable_security: false  # noqa var-naming
   tasks:
     - name: Include elasticsearch role
       ansible.builtin.include_role:
-        name: data_systems/elasticsearch
+        name: elasticsearch
 
 - name: Converge Kibana
   hosts: all
@@ -22,4 +22,4 @@
   tasks:
     - name: Include kibana role
       ansible.builtin.include_role:
-        name: "{{ playbook_dir }}/../.."
+        name: kibana
