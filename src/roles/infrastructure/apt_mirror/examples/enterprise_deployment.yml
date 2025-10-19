@@ -129,7 +129,7 @@
     apt_mirror_dr_backup_enabled: true
 
   roles:
-    - role: infrastructure/apt_mirror
+    - role: apt_mirror
 
   post_tasks:
     - name: Display mirror information

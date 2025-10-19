@@ -15,6 +15,7 @@ mock_modules:
   - community.crypto.openssl_csr
   - community.crypto.x509_certificate
   - community.general.archive_info
+  - community.general.ufw
   - ansible_collections.community.general.plugins.modules.archive_info
   - openssl_privatekey
   - openssl_csr

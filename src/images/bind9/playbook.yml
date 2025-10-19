@@ -6,16 +6,16 @@
     # TCP+UDP 53; UFW manages per-port only (UDP requires separate rules)
     image_service_ports: [53]
   roles:
-    - role: infrastructure/shared/update_system
-    - role: infrastructure/shared/remove_unnecessary_packages
-    - role: infrastructure/shared/sshd
-    - role: infrastructure/shared/ufw
+    - role: update_system
+    - role: remove_unnecessary_packages
+    - role: sshd
+    - role: ufw
       vars:
         ufw_allow_ports: "{{ (image_open_service_ports | default(false)) | ternary(image_service_ports, []) }}"
       when: image_configure_firewall | default(false)
-    - role: infrastructure/shared/base
+    - role: base
 
-    - role: networking/bind9
+    - role: bind9
 
   # For UDP 53 with UFW, you can add a rule post-bake:
   # - ansible.builtin.ufw: rule=allow port=53 proto=udp

@@ -11,16 +11,16 @@
     registry_data_dir: /var/lib/registry
     registry_env: {}
   roles:
-    - role: infrastructure/shared/update_system
-    - role: infrastructure/shared/remove_unnecessary_packages
-    - role: infrastructure/shared/sshd
-    - role: infrastructure/shared/ufw
+    - role: update_system
+    - role: remove_unnecessary_packages
+    - role: sshd
+    - role: ufw
       vars:
         ufw_allow_ports: "{{ (image_open_service_ports | default(false)) | ternary(image_service_ports, []) }}"
       when: image_configure_firewall | default(false)
-    - role: infrastructure/shared/base
+    - role: base
 
-    - role: infrastructure/docker_host
+    - role: docker_host
       when: image_supports_docker | default(false)
-    - role: infrastructure/container_registry
+    - role: container_registry
       when: image_supports_docker | default(false)

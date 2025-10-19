@@ -62,7 +62,7 @@
   tasks:
     - name: Include apt_mirror role
       include_role:
-        name: infrastructure/apt_mirror
+        name: apt_mirror
 
     - name: Wait for services to start
       wait_for:

@@ -9,17 +9,17 @@
     postgresql_env: prod
     postgresql_enable_service: false
   roles:
-    - role: infrastructure/shared/update_system
-    - role: infrastructure/shared/remove_unnecessary_packages
-    - role: infrastructure/shared/sshd
-    - role: infrastructure/shared/ufw
+    - role: update_system
+    - role: remove_unnecessary_packages
+    - role: sshd
+    - role: ufw
       vars:
         ufw_allow_ports: "{{ (image_open_service_ports | default(false)) | ternary(image_service_ports, []) }}"
       when: image_configure_firewall | default(false)
-    - role: infrastructure/shared/base
+    - role: base
 
-    - role: data_systems/postgresql
-    - role: data_systems/postgresql/postgresql_security
-    - role: data_systems/postgresql/postgresql_performance
-    - role: data_systems/postgresql/postgresql_monitoring
-    - role: data_systems/postgresql/postgresql_ssl
+    - role: postgresql
+    - role: postgresql_security
+    - role: postgresql_performance
+    - role: postgresql_monitoring
+    - role: postgresql_ssl
