@@ -8,15 +8,15 @@
     keepalived_enable_syslog: true
     keepalived_enable_service: false
   roles:
-    - role: infrastructure/shared/update_system
-    - role: infrastructure/shared/remove_unnecessary_packages
-    - role: infrastructure/shared/sshd
-    - role: infrastructure/shared/ufw
+    - role: update_system
+    - role: remove_unnecessary_packages
+    - role: sshd
+    - role: ufw
       vars:
         ufw_allow_ports: "{{ (image_open_service_ports | default(false)) | ternary(image_service_ports, []) }}"
-    - role: infrastructure/shared/base
+    - role: base
 
-    - role: load_balancing_ha/keepalived
+    - role: keepalived
 
   # Note: Allow VRRP (protocol 112) at runtime via your network/security stack.
   # UFW does not directly manage VRRP protocol rules.

@@ -18,4 +18,4 @@
         daemon_reload: true
 
   roles:
-    - role: infrastructure/apt_mirror
+    - role: apt_mirror

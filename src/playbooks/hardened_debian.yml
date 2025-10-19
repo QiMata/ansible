@@ -5,7 +5,7 @@
   vars_files:
     - group_vars/all.yml
   roles:
-    - role: infrastructure/shared/update_system
-    - role: infrastructure/shared/common
-    - role: infrastructure/shared/sshd
-    - role: infrastructure/shared/ufw
+    - role: update_system
+    - role: common
+    - role: sshd
+    - role: ufw

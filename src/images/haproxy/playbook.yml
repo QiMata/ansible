@@ -7,13 +7,13 @@
     haproxy_stats_enable: false
     haproxy_enable_service: false
   roles:
-    - role: infrastructure/shared/update_system
-    - role: infrastructure/shared/remove_unnecessary_packages
-    - role: infrastructure/shared/sshd
-    - role: infrastructure/shared/ufw
+    - role: update_system
+    - role: remove_unnecessary_packages
+    - role: sshd
+    - role: ufw
       vars:
         ufw_allow_ports: "{{ (image_open_service_ports | default(false)) | ternary(image_service_ports, []) }}"
       when: image_configure_firewall | default(false)
-    - role: infrastructure/shared/base
+    - role: base
 
-    - role: load_balancing_ha/haproxy
+    - role: haproxy

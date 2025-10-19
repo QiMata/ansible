@@ -50,7 +50,7 @@
   tasks:
     - name: "Include mariadb role"
       ansible.builtin.include_role:
-        name: "{{ playbook_dir }}/../.."
+        name: mariadb
 
   post_tasks:
     # Create test database and user for validation

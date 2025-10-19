@@ -33,7 +33,7 @@
     apt_mirror_bandwidth_limit: "10M"
 
   roles:
-    - role: infrastructure/apt_mirror
+    - role: apt_mirror
 
 ---
 # Example Playbook: APT Mirror with Selective Mirroring
@@ -92,7 +92,7 @@
     apt_mirror_storage_alert_threshold: 75
 
   roles:
-    - role: infrastructure/apt_mirror
+    - role: apt_mirror
 
 ---
 # Example Playbook: Multi-Architecture Mirror
@@ -136,4 +136,4 @@
     apt_mirror_alert_email: "ops@example.com"
 
   roles:
-    - role: infrastructure/apt_mirror
+    - role: apt_mirror
