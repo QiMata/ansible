@@ -1,3 +1,52 @@
 # {{ ansible_managed }}
-Port 22
-AddressFamily inet
+Port {{ sshd_port }}
+AddressFamily {{ sshd_address_family }}
+Protocol {{ sshd_protocol }}
+{% set listen_list = sshd_listen_addresses if sshd_listen_addresses else ([sshd_listen_address] if sshd_listen_address else []) %}
+{% for addr in listen_list %}
+ListenAddress {{ addr }}
+{% endfor %}
+SyslogFacility {{ sshd_syslog_facility }}
+LogLevel {{ sshd_log_level }}
+PermitRootLogin {{ sshd_permit_root_login }}
+PasswordAuthentication {{ sshd_password_authentication }}
+PermitEmptyPasswords {{ sshd_permit_empty_passwords }}
+KbdInteractiveAuthentication {{ sshd_kbd_interactive_authentication }}
+ChallengeResponseAuthentication {{ sshd_challenge_response_authentication }}
+UsePAM {{ sshd_use_pam }}
+PubkeyAuthentication {{ sshd_pubkey_authentication }}
+AuthenticationMethods {{ sshd_authentication_methods }}
+HostbasedAuthentication {{ sshd_hostbased_authentication }}
+IgnoreRhosts {{ sshd_ignore_rhosts }}
+GSSAPIAuthentication {{ sshd_gssapi_authentication }}
+X11Forwarding {{ sshd_x11_forwarding }}
+AllowTcpForwarding {{ sshd_allow_tcp_forwarding }}
+AllowAgentForwarding {{ sshd_allow_agent_forwarding }}
+Compression {{ sshd_compression }}
+ClientAliveInterval {{ sshd_client_alive_interval }}
+ClientAliveCountMax {{ sshd_client_alive_count_max }}
+LoginGraceTime {{ sshd_login_grace_time }}
+MaxAuthTries {{ sshd_max_auth_tries }}
+MaxSessions {{ sshd_max_sessions }}
+TCPKeepAlive {{ sshd_tcp_keep_alive }}
+PrintMotd {{ sshd_print_motd }}
+AuthorizedKeysFile {{ sshd_authorized_keys_file }}
+Ciphers {{ sshd_ciphers | join(',') }}
+MACs {{ sshd_macs | join(',') }}
+KexAlgorithms {{ sshd_kex_algorithms | join(',') }}
+Subsystem sftp {{ sshd_sftp_subsystem }}
+{% if sshd_allow_groups %}
+AllowGroups {{ sshd_allow_groups | join(' ') }}
+{% endif %}
+{% if sshd_allow_users %}
+AllowUsers {{ sshd_allow_users | join(' ') }}
+{% endif %}
+{% if sshd_deny_users %}
+DenyUsers {{ sshd_deny_users | join(' ') }}
+{% endif %}
+{% if sshd_deny_groups %}
+DenyGroups {{ sshd_deny_groups | join(' ') }}
+{% endif %}
+{% if sshd_banner %}
+Banner {{ sshd_banner }}
+{% endif %}

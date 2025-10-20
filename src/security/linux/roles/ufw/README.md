@@ -65,6 +65,11 @@ Below is a list of variables used by the role, along with default values (define
 | **`ufw_allow_ports`**      | `[]` (empty list) | List of additional incoming ports (or port ranges) to allow. Each entry in the list should be a port number or range (e.g. `80` for HTTP or `6000:6100` for a range). The role will create an allow rule for each specified port (using TCP by default). This is useful for permitting application-specific ports (web, database, etc.). **Note:** Removing a port from this list will **not** automatically close that port if it was previously opened (see **Known Issues**). |
 | **`ufw_allow_interfaces`** | `[]` (empty list) | List of network interface names from which to allow all traffic (incoming). If specified, the role will create allow rules for all incoming packets on each given interface. For example, you might include `lo` to ensure all loopback traffic is accepted, or an internal interface like `eth1` if you trust all traffic on that network. **Important:** Use actual interface identifiers (e.g. `"eth1"`, `"ens3"`, `"lo"`); do not list protocols (such as "tcp") here.       |
 
+| **`ufw_logging`**             | `on`              | Logging level passed to UFW (`off`, `low`, `medium`, `high`, or `on`). |
+| **`ufw_default_incoming_policy`** | `deny`            | Default policy applied to incoming traffic when the firewall is enabled. |
+| **`ufw_default_outgoing_policy`** | `allow`           | Default policy applied to outbound traffic when the firewall is enabled. |
+| **`ufw_additional_rules`**     | `[]`              | List of dictionaries for advanced rules (fields such as `rule`, `port`, `proto`, `from_ip`, `to_ip`, `name`, `direction`, `interface`). |
+
 </details>
 
 <!-- markdownlint-enable MD033 -->

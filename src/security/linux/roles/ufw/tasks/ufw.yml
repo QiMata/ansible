@@ -1,7 +1,17 @@
 ---
+- name: "UFW: Set default policies"
+  community.general.ufw:
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+  loop:
+    - direction: incoming
+      policy: "{{ ufw_default_incoming_policy }}"
+    - direction: outgoing
+      policy: "{{ ufw_default_outgoing_policy }}"
+
 - name: "UFW: Set logging"
   community.general.ufw:
-    logging: 'on'
+    logging: "{{ ufw_logging }}"
 
 # We explicitly manage SSH rule
 - name: "UFW: Allow SSH"
@@ -16,6 +26,18 @@
     rule: allow
     port: "{{ item }}"
   loop: "{{ ufw_allow_ports }}"
+
+- name: "UFW: Apply additional rules"
+  community.general.ufw:
+    rule: "{{ item.rule | default('allow') }}"
+    port: "{{ item.port | default(omit) }}"
+    proto: "{{ item.proto | default(omit) }}"
+    from_ip: "{{ item.from_ip | default(omit) }}"
+    to_ip: "{{ item.to_ip | default(omit) }}"
+    name: "{{ item.name | default(omit) }}"
+    direction: "{{ item.direction | default(omit) }}"
+    interface: "{{ item.interface | default(omit) }}"
+  loop: "{{ ufw_additional_rules }}"
 
 # Allow specific interfaces
 - name: Accept packets from interfaces

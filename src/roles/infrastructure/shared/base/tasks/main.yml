@@ -1,8 +1,35 @@
 ---
 # Base role main tasks file
-# This role orchestrates internal dependency roles to establish a baseline system state.
-# Dependency roles executed automatically via meta/main.yml.
-# Placeholder for future hardening or baseline tasks specific to this role.
-- name: Base role placeholder debug
+# This role orchestrates optional hardening components controlled by base_* variables.
+- name: Configure host-based firewall
+  ansible.builtin.include_role:
+    name: ufw
+  vars:
+    ufw_allow_ssh: "{{ base_firewall_allow_ssh }}"
+    ufw_allow_ports: "{{ base_firewall_allow_ports }}"
+    ufw_allow_interfaces: "{{ base_firewall_allow_interfaces }}"
+    ufw_logging: "{{ base_firewall_logging }}"
+  when: base_enable_ufw | bool
+
+- name: Apply SSH daemon hardening profile
+  ansible.builtin.include_role:
+    name: sshd
+  when: base_enable_sshd_hardening | bool
+
+- name: Configure Filebeat OS log forwarding
+  ansible.builtin.include_role:
+    name: configure_filebeat_os
+  vars:
+    configure_filebeat_os_output_elasticsearch_hosts: "{{ base_filebeat_output_elasticsearch_hosts }}"
+    configure_filebeat_os_input_type: "{{ base_filebeat_input_type }}"
+    configure_filebeat_os_paths: "{{ base_filebeat_paths }}"
+  when: base_enable_filebeat | bool
+
+- name: Enforce baseline administrative access controls
+  ansible.builtin.include_role:
+    name: base_access_controls
+  when: base_enable_access_controls | bool
+
+- name: Base role summary debug
   ansible.builtin.debug:
-    msg: "Base role executed (dependencies handled via meta)."
+    msg: "Base role executed (core dependencies handled via meta)."

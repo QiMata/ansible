@@ -24,11 +24,19 @@ In practice, this role orchestrates several component roles in sequence to prepa
 ```mermaid
 flowchart TD
     subgraph "Base Role Execution"
-    RUP[Remove Unnecessary Packages] --> US[Update System] --> RB[Bootstrap (robertdebock.bootstrap)] --> AU[Auto Update (robertdebock.auto_update)] --> F2B[Fail2Ban (robertdebock.fail2ban)] --> CL[ClamAV (geerlingguy.clamav)]
+    RUP[Remove Unnecessary Packages] --> US[Update System] --> RB[Bootstrap (robertdebock.bootstrap)] --> AU[Auto Update (robertdebock.auto_update)] --> F2B[Fail2Ban (robertdebock.fail2ban)]
+    F2B --> CL[ClamAV (geerlingguy.clamav)]
+    F2B --> FW[UFW Firewall (ufw, optional)]
+    FW --> SSH[SSH Hardening (sshd, optional)]
+    SSH --> AC[Access Controls (base_access_controls, optional)]
+    CL --> LOG[Filebeat OS Forwarder (configure_filebeat_os, optional)]
+    AC --> LOG
     end
 ```
 
 The **Base** role is typically run early in your playbook (often on all hosts) with elevated privileges (`become: yes`). It assumes internet access for package installation and updates. No application-specific configurations are made here – only generic system hardening and preparation tasks. This provides a solid foundation for subsequent roles (database, webserver, etc.) to build upon.
+
+In addition to the core update and malware-prevention stack, you can toggle optional components that ship with the Base role: a host firewall enforced with UFW, hardened SSH daemon defaults, centralized log forwarding via Filebeat, and baseline administrative account/sudo configuration. Each capability is controlled through `base_enable_*` variables so you can opt in per environment.
 
 ## Supported Operating Systems/Platforms
 
@@ -58,6 +66,22 @@ Other Debian-based systems similar to the above releases are likely compatible. 
 | **`fail2ban_maxretry`**            | `5`                           | Maximum failed login attempts before an IP is banned. (e.g., 5 failed SSH login attempts within the findtime window triggers a ban.)                                                                                       |
 | **`fail2ban_destemail`**           | `"admin+fail2ban@qimata.net"` | Destination email for Fail2Ban alerts. Fail2Ban will send ban notification emails to this address (if mailing is configured).                                                                                              |
 | **`fail2ban_sender`**              | `"admin@<server_fqdn>"`       | Sender address for Fail2Ban emails. By default, uses “admin@” with the server’s FQDN. Adjust if your mail setup requires a specific sender.                                                                                |
+
+| **`base_enable_bootstrap`**               | `true`                      | Toggle the `robertdebock.bootstrap` dependency that installs Python/sudo on pristine hosts. |
+| **`base_enable_auto_update`**             | `true`                      | Enable unattended-upgrades configuration. Disable if you prefer to manage auto updates separately. |
+| **`base_enable_fail2ban`**                | `true`                      | Controls whether Fail2Ban is executed as part of the baseline. |
+| **`base_enable_clamav`**                  | `true`                      | Enable or disable ClamAV antivirus installation. |
+| **`base_enable_ufw`**                     | `true`                      | Apply the repository’s UFW role to enforce a host firewall. |
+| **`base_firewall_allow_ports`**                     | `[]`                        | Extra TCP/UDP ports to allow through the firewall (SSH is permitted automatically). |
+| **`base_firewall_allow_interfaces`**                | `[]`                        | Network interfaces that should always be accepted by UFW (e.g., `eth0`). |
+| **`base_firewall_logging`**                         | `on`                        | Logging level for the firewall (`off`, `low`, `medium`, `high`, or `on`). |
+| **`base_enable_sshd_hardening`**          | `true`                      | Apply the hardened sshd configuration provided by the local `sshd` role. |
+| **`base_enable_filebeat`**                | `false`                     | Install and configure Filebeat to forward OS logs when enabled. |
+| **`base_filebeat_output_elasticsearch_hosts`** | `["localhost:9200"]` | Target Elasticsearch/Logstash hosts for Filebeat output. |
+| **`base_filebeat_input_type`**    | `"log"`                    | Filebeat input type used for OS log harvesting. |
+| **`base_filebeat_paths`**         | `["/var/log/*.log"]`    | List of log paths forwarded to the central collector. |
+| **`base_enable_access_controls`**         | `false`                     | Manage baseline administrative accounts and sudo policies via `base_access_controls`. |
+| **`base_access_controls_accounts`**       | `[]`                        | Optional list of admin account definitions (see the `base_access_controls` role for structure). |
 
 </details>
 
@@ -91,8 +115,12 @@ ansible-galaxy install robertdebock.bootstrap robertdebock.auto_update robertdeb
 
 * **`remove_unnecessary_packages`** – Removes predefined unnecessary packages (games, legacy tools, etc.) to slim down the system and eliminate potential security risks.
 * **`update_system`** – Updates all system packages to the latest available versions (essentially running an apt upgrade). This ensures the server starts in a fully patched state.
+* **`ufw`** – Configures host-based firewall rules (enabled when `base_enable_ufw` is true).
+* **`sshd`** – Drops a hardened `sshd_config` with secure ciphers/MACs and passwordless authentication defaults (enabled when `base_enable_sshd_hardening` is true).
+* **`configure_filebeat_os`** – Installs Filebeat and points it at your central log pipeline (enabled when `base_enable_filebeat` is true).
+* **`base_access_controls`** – Manages administrative accounts and sudo policy (enabled when `base_enable_access_controls` is true).
 
-These internal roles are part of the repository and are invoked automatically; you do not need to call them separately. There are no other external system requirements (such as specific Python libraries on the control node) beyond a recent Ansible release (Ansible 2.13+ recommended to ensure all modules used are available).
+These internal roles are part of the repository and are invoked automatically when their toggle variables are enabled; you do not need to call them separately. There are no other external system requirements (such as specific Python libraries on the control node) beyond a recent Ansible release (Ansible 2.13+ recommended to ensure all modules used are available).
 
 ## Example Playbook
 
@@ -157,7 +185,7 @@ The Molecule tests provide a quick way to validate changes to the role. Contribu
 
 * **Fail2Ban lockout prevention:** Fail2Ban is configured to protect SSH (and possibly other services) out-of-the-box. Be careful not to lock yourself out. The default ignore list includes localhost but **not** other private IPs. If you run Ansible from a remote IP or jump host, consider adding it to `fail2ban_ignoreips` before applying the role. In case you get locked out (because Fail2Ban banned your IP), you’ll need console or out-of-band access to remove the ban. Always verify the `ignoreips` and ban settings in a staging environment.
 
-* **Firewall not automatically configured:** This Base role does **not** enable or configure a firewall by default. It installs Fail2Ban (which uses firewall rules internally to ban IPs) but it does not set up general firewall rules for open/closed ports. If you require a firewall (e.g., UFW or firewalld) you should apply a separate role or manual tasks for that. (There was an option to include an UFW role, but it is left disabled in this role’s dependencies.) So, don’t assume ports are blocked just by using Base—set up a firewall explicitly if needed.
+* **Firewall behavior:** Base now enables UFW by default to drop unsolicited inbound traffic. Override `base_enable_ufw` or adjust the `ufw_*` variables if your host needs additional open ports beyond SSH and the ones you list.
 
 * **Initial connectivity and Python**: When running on a brand new server that lacks Python, the included `robertdebock.bootstrap` role will attempt to install Python using the raw module. This requires either direct root SSH access or a user able to `sudo` without a pre-existing Python interpreter. In practice, you should run the Base role with `become: yes` and an account that has root privileges. The bootstrap process will handle Python installation. If your Ansible control user cannot escalate to root, the bootstrap step (and thus the Base role) will fail. Ensure your inventory is set up to allow bootstrapping (e.g., `ansible_user=root` for new machines or a proper `ansible_become` configuration).
 
@@ -177,9 +205,13 @@ Running the Base role significantly improves the security posture of a server, b
 
 * **ClamAV Antivirus:** Installing ClamAV adds malware scanning capability to the server. This can catch viruses or malware in files (for example, on file servers or user upload directories). The ClamAV daemon (if enabled) will run with elevated privileges to read files, and regularly update signature databases. Security considerations: ClamAV itself runs under a dedicated low-privilege user (`clamav`) for scanning, and its signatures are updated securely from the ClamAV servers. There’s minimal risk introduced by ClamAV, but be aware that if ClamAV finds infected files, you need a process to handle those alerts/quarantine. Also, an outdated ClamAV (if not kept updated) could give a false sense of security – the role ensures freshclam is installed so definitions stay current. ClamAV does open a local socket (for clamd service) but it is not exposed to external network by default.
 
-* **User Accounts and Access:** The Base role itself does **not create or remove user accounts** (aside from the system accounts created by package installations like `clamav` and `Debian-exim` for mail if any). It does not modify SSH authorized keys or sudoers aside from what the bootstrap role ensures (installing sudo). So it doesn’t directly alter user access. However, note that the separate **SSHD role** (if you choose to use it in conjunction) *would* harden SSH (e.g., disable root login, etc.). By default Base leaves SSH settings unchanged. If you require root login to be disabled or other SSH hardening, refer to the SSHD role (see below) or configure those settings in your sshd config outside of this role.
+* **SSH Daemon Hardening:** The optional sshd role disables password authentication, disallows root login, and restricts cryptographic algorithms to modern choices. Ensure your administrators use SSH keys (or adjust the template) before enabling it.
 
-* **No Firewall by Default:** As noted, Base doesn’t turn on a firewall. This means all ports that are open pre-role remain open post-role. Security-wise, this role doesn’t restrict network access (beyond Fail2Ban blocking certain IPs). It’s recommended to implement firewall rules (manually or via an Ansible role) to complement the Base role for a defense-in-depth strategy. The commented dependency on UFW indicates that it was considered, but it’s not active; thus, ensure your server’s ports are managed according to your organization’s security policy.
+* **Centralized Log Forwarding:** Enabling Filebeat ships `/var/log` content to your Elasticsearch/Logstash endpoint. This gets security logs off the host quickly, but remember to secure the pipeline and account for the extra Beats traffic.
+
+* **User Accounts and Access:** With `base_enable_access_controls` you can have the role create standardized admin accounts, install their SSH keys, and enforce sudo logging conventions. Leave it disabled if you prefer to manage accounts elsewhere.
+
+* **Host-Based Firewall Enforcement:** When `base_enable_ufw` is true (the default), the role enables UFW, denies unsolicited inbound traffic, and only allows SSH plus any ports you explicitly list. This drastically reduces exposed services. You can disable the firewall or tailor allowed ports/interfaces via the `ufw_*` variables if you need broader access.
 
 In summary, the Base role is geared towards **reinforcing security** (through updates, hardening measures, and monitoring) while maintaining system stability. Always review the changes, especially on sensitive systems, and adjust variables (like whitelists or update behaviors) to align with your security requirements.
 
@@ -191,11 +223,13 @@ This repository contains other roles that complement or relate to the Base role.
 
 * **[update_system](../update_system/README.md)** – *(Dependency of Base)* Handles updating all system packages. This is essentially the “apt upgrade” step. It’s included in Base, but you could use it separately for maintenance tasks or adjust its behavior (it could be extended to reboot if needed).
 
-* **[sshd](../sshd/README.md)** – This role configures the OpenSSH daemon. While the Base role installs Fail2Ban for SSH protection, it does not alter SSH settings themselves. The **SSHD** role can be used to harden SSH configuration (for example, disable root login, change SSH port, restrict ciphers/MACs, etc.). Use this role alongside Base if you require custom SSH server settings.
+* **[sshd](../sshd/README.md)** – Hardened sshd settings are now available directly through `base_enable_sshd_hardening`. Review the role documentation if you need to override the provided template or further customize SSH beyond the secure defaults.
 
-* **[configure_filebeat_os](../configure_filebeat_os/README.md)** – This optional role sets up Filebeat to ship system logs to an external Elasticsearch/ELK stack. It’s not enabled by default in Base, but if you have a central logging system, you can apply this role to forward auth logs, syslog, etc. (Base ensures your logs are there and Fail2Ban monitors them, but this would get them off the box for analysis).
+* **[configure_filebeat_os](../configure_filebeat_os/README.md)** – Controlled through `base_enable_filebeat`; enable it to forward `/var/log/*.log` to Elasticsearch/Logstash. Adjust the role variables if you need alternate outputs or additional log paths.
 
-* **UFW (Uncomplicated Firewall)** – *Note:* While not currently an active role in the repository (it was planned via `oefenweb.ufw` but commented out), if you need host-based firewalling, consider enabling a UFW role or another firewall role from Ansible Galaxy. This would complement Base’s security by restricting network ports as needed. (For instance, you might allow SSH and HTTP/HTTPS and deny all else.)
+* **[base_access_controls](../base_access_controls/README.md)** – Documents the account/sudo variables consumed when `base_enable_access_controls` is enabled.
+
+* **UFW (Uncomplicated Firewall)** – The local `ufw` role is invoked automatically when `base_enable_ufw` is true. Override the defaults if you need to open additional services or integrate with pre-existing firewall policies.
 
 * **Other application roles** – After the Base role has been applied, you would proceed with roles like **PostgreSQL**, **Apache NiFi**, **Minio**, etc. (all present in this repository). The Base role’s state (up-to-date system with basic security) is assumed by those roles. For example, [postgresql](../postgresql/README.md) will rely on the OS being prepared (and it even can leverage `postgresql_configure_firewall` if you integrate with a firewall role). Check each role’s documentation for any assumptions; Base is usually a prerequisite for them in a full playbook run.
 

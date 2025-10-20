@@ -1,0 +1,12 @@
+---
+base_access_controls_admin_group: admin
+base_access_controls_sudo_group: sudo
+base_access_controls_accounts: []
+base_access_controls_default_shell: /bin/bash
+base_access_controls_manage_authorized_keys: true
+base_access_controls_sudo_nopasswd: false
+base_access_controls_sudo_logfile: /var/log/sudo.log
+base_access_controls_sudo_log_input: true
+base_access_controls_sudo_log_output: true
+base_access_controls_sudo_passwd_timeout: 5
+base_access_controls_sudo_extra_directives: []

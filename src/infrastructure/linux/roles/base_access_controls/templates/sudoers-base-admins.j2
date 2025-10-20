@@ -1,0 +1,13 @@
+# {{ ansible_managed }}
+Defaults:%{{ base_access_controls_sudo_group }} logfile="{{ base_access_controls_sudo_logfile }}"
+{% if base_access_controls_sudo_log_input %}
+Defaults:%{{ base_access_controls_sudo_group }} log_input
+{% endif %}
+{% if base_access_controls_sudo_log_output %}
+Defaults:%{{ base_access_controls_sudo_group }} log_output
+{% endif %}
+Defaults:%{{ base_access_controls_sudo_group }} passwd_timeout={{ base_access_controls_sudo_passwd_timeout }}
+{% for directive in base_access_controls_sudo_extra_directives %}
+{{ directive }}
+{% endfor %}
+%{{ base_access_controls_sudo_group }} ALL=(ALL:ALL) {{ 'NOPASSWD:ALL' if base_access_controls_sudo_nopasswd else 'ALL' }}
