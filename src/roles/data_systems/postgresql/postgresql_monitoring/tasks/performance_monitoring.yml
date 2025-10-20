@@ -58,5 +58,5 @@
     name: pg_stat_statements
     login_db: "{{ postgresql_exporter_database }}"
     state: present
-  become_user: postgres
   become: true
+  become_user: postgres

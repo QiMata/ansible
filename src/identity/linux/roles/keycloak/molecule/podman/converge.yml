@@ -27,7 +27,6 @@
       community.postgresql.postgresql_user:
         name: keycloak
         password: keycloak
-        priv: ALL
   roles:
     - role: keycloak
       vars:

@@ -22,9 +22,9 @@
     name: pgaudit
     login_db: postgres
     state: present
+  become: true
   become_user: postgres
   when: "'pgaudit' in postgresql_security_extensions"
-  become: true
 
 - name: Configure pgaudit settings
   ansible.builtin.lineinfile:

@@ -39,6 +39,6 @@
         {% endif %}
       END;
       $$ LANGUAGE plpgsql;
+  become: true
   become_user: postgres
   when: postgresql_password_complexity | bool
-  become: true

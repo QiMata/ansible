@@ -5,9 +5,9 @@
     query: |
       REVOKE CREATE ON SCHEMA public FROM PUBLIC;
       REVOKE ALL ON DATABASE postgres FROM PUBLIC;
+  become: true
   become_user: postgres
   when: postgresql_public_schema_restricted | bool
-  become: true
 
 - name: Set secure default privileges for new objects
   community.postgresql.postgresql_query:
@@ -16,9 +16,9 @@
       ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM PUBLIC;
       ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON SEQUENCES FROM PUBLIC;
       ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON FUNCTIONS FROM PUBLIC;
+  become: true
   become_user: postgres
   when: postgresql_default_privileges_revoked | bool
-  become: true
 
 - name: Create security monitoring views
   community.postgresql.postgresql_query:
@@ -45,6 +45,6 @@
       FROM pg_log
       WHERE message LIKE '%DROP%' OR message LIKE '%DELETE%' OR message LIKE '%TRUNCATE%'
       ORDER BY log_time DESC;
+  become: true
   become_user: postgres
   when: postgresql_security_monitoring_enabled | bool
-  become: true
