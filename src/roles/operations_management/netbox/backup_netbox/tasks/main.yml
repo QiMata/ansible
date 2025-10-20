@@ -14,8 +14,8 @@
     login_host: "{{ postgres_host }}"
     login_user: "{{ postgres_user }}"
     login_password: "{{ postgres_password }}"
-  become_user: postgres
   become: true
+  become_user: postgres
 
 - name: Archive NetBox media
   community.general.archive:

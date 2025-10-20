@@ -53,8 +53,8 @@
     role_attr_flags: LOGIN
     login_db: "{{ postgresql_exporter_database }}"
     state: present
-  become_user: postgres
   become: true
+  become_user: postgres
 
 - name: Grant monitoring privileges to exporter user
   community.postgresql.postgresql_privs:
@@ -63,17 +63,17 @@
     type: database
     roles: "{{ postgresql_exporter_user }}"
     state: present
-  become_user: postgres
   become: true
+  become_user: postgres
 
 - name: Grant pg_monitor role to exporter user (PostgreSQL 10+)
   community.postgresql.postgresql_user:
     name: "{{ postgresql_exporter_user }}"
     role_attr_flags: pg_monitor
     state: present
+  become: true
   become_user: postgres
   when: postgresql_version | int >= 10
-  become: true
 
 - name: Create postgres_exporter configuration
   ansible.builtin.template:

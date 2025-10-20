@@ -3,8 +3,8 @@
   community.postgresql.postgresql_query:
     login_db: postgres
     query: "SELECT usename, passwd FROM pg_shadow WHERE usename NOT LIKE 'pg_%'"
-  become_user: postgres
   become: true
+  become_user: postgres
   register: postgresql_users
 
 - name: Generate PgBouncer user list

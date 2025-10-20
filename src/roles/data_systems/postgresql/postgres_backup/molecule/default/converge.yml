@@ -13,11 +13,11 @@
         update_cache: true
 
     - name: Ensure database exists
+      become: true
       become_user: postgres
       community.postgresql.postgresql_db:
         name: "{{ db_name }}"
       failed_when: false
-      become: true
 
     - name: Apply postgres_backup role  # noqa role-name[path]
       ansible.builtin.import_role:

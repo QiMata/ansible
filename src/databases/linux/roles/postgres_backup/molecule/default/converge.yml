@@ -13,8 +13,8 @@
         update_cache: true
 
     - name: Ensure database exists
-      become_user: postgres
       become: true
+      become_user: postgres
       community.postgresql.postgresql_db:
         name: "{{ postgres_backup_db_name }}"
       failed_when: false
