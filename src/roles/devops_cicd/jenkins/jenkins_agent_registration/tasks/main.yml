@@ -1,10 +1,36 @@
 ---
+- name: Resolve Jenkins controller credentials
+  ansible.builtin.set_fact:
+    jenkins_agent_registration_controller_user: >-
+      {{
+        jenkins_controller_admin_user
+        | default(jenkins_admin_user | default('admin', true), true)
+      }}
+    jenkins_agent_registration_controller_password: >-
+      {{
+        jenkins_controller_admin_password
+        | default(jenkins_admin_password, true)
+      }}
+    jenkins_agent_registration_env_vars_data: >-
+      {{
+        (jenkins_agent_registration_env_vars | from_yaml)
+        if jenkins_agent_registration_env_vars is string
+        else jenkins_agent_registration_env_vars | default({}, true)
+      }}
+    jenkins_agent_registration_tool_locations_data: >-
+      {{
+        (jenkins_agent_registration_tool_locations | from_yaml)
+        if jenkins_agent_registration_tool_locations is string
+        else jenkins_agent_registration_tool_locations | default([], true)
+      }}
+  when: jenkins_agent_registration_enabled
+
 - name: Check if Jenkins controller is accessible
   ansible.builtin.uri:
-    url: "http://{{ jenkins_controller_host }}:{{ jenkins_controller_port }}/api/json"
+    url: "http://{{ jenkins_agent_registration_controller_host }}:{{ jenkins_agent_registration_controller_port }}/api/json"
     method: GET
-    user: "{{ jenkins_admin_user | default('admin') }}"
-    password: "{{ jenkins_admin_password }}"
+    user: "{{ jenkins_agent_registration_controller_user }}"
+    password: "{{ jenkins_agent_registration_controller_password }}"
     status_code: 200
   register: jenkins_controller_check
   retries: 5
@@ -14,10 +40,10 @@
 
 - name: Get Jenkins CSRF crumb
   ansible.builtin.uri:
-    url: "http://{{ jenkins_controller_host }}:{{ jenkins_controller_port }}/crumbIssuer/api/json"
+    url: "http://{{ jenkins_agent_registration_controller_host }}:{{ jenkins_agent_registration_controller_port }}/crumbIssuer/api/json"
     method: GET
-    user: "{{ jenkins_admin_user | default('admin') }}"
-    password: "{{ jenkins_admin_password }}"
+    user: "{{ jenkins_agent_registration_controller_user }}"
+    password: "{{ jenkins_agent_registration_controller_password }}"
     return_content: true
   register: jenkins_crumb
   delegate_to: localhost
@@ -25,10 +51,12 @@
 
 - name: Check if agent already exists
   ansible.builtin.uri:
-    url: "http://{{ jenkins_controller_host }}:{{ jenkins_controller_port }}/computer/{{ jenkins_agent_name }}/api/json"
+    url: >-
+      http://{{ jenkins_agent_registration_controller_host }}:{{ jenkins_agent_registration_controller_port }}/computer/{{
+      jenkins_agent_registration_agent_name }}/api/json
     method: GET
-    user: "{{ jenkins_admin_user | default('admin') }}"
-    password: "{{ jenkins_admin_password }}"
+    user: "{{ jenkins_agent_registration_controller_user }}"
+    password: "{{ jenkins_agent_registration_controller_password }}"
     status_code: [200, 404]
   register: agent_exists_check
   delegate_to: localhost
@@ -36,10 +64,12 @@
 
 - name: Delete existing agent if present
   ansible.builtin.uri:
-    url: "http://{{ jenkins_controller_host }}:{{ jenkins_controller_port }}/computer/{{ jenkins_agent_name }}/doDelete"
+    url: >-
+      http://{{ jenkins_agent_registration_controller_host }}:{{ jenkins_agent_registration_controller_port }}/computer/{{
+      jenkins_agent_registration_agent_name }}/doDelete
     method: POST
-    user: "{{ jenkins_admin_user | default('admin') }}"
-    password: "{{ jenkins_admin_password }}"
+    user: "{{ jenkins_agent_registration_controller_user }}"
+    password: "{{ jenkins_agent_registration_controller_password }}"
     headers:
       Jenkins-Crumb: "{{ jenkins_crumb.json.crumb }}"
     status_code: [200, 302]
@@ -52,26 +82,26 @@
 - name: Create Jenkins agent configuration
   ansible.builtin.set_fact:
     agent_config:
-      name: "{{ jenkins_agent_name }}"
-      nodeDescription: "{{ jenkins_agent_description }}"
-      numExecutors: "{{ jenkins_agent_executors }}"
-      remoteFS: "{{ jenkins_agent_remote_fs }}"
-      labelString: "{{ jenkins_agent_labels }}"
-      mode: "{{ jenkins_agent_usage_mode }}"
+      name: "{{ jenkins_agent_registration_agent_name }}"
+      nodeDescription: "{{ jenkins_agent_registration_agent_description }}"
+      numExecutors: "{{ jenkins_agent_registration_agent_executors }}"
+      remoteFS: "{{ jenkins_agent_registration_agent_remote_fs }}"
+      labelString: "{{ jenkins_agent_registration_agent_labels }}"
+      mode: "{{ jenkins_agent_registration_agent_usage_mode }}"
       launcher:
         stapler-class: "hudson.plugins.sshslaves.SSHLauncher"
-        host: "{{ jenkins_agent_ssh_host }}"
-        port: "{{ jenkins_agent_ssh_port }}"
-        credentialsId: "{{ jenkins_agent_ssh_credential_id }}"
+        host: "{{ jenkins_agent_registration_ssh_host }}"
+        port: "{{ jenkins_agent_registration_ssh_port }}"
+        credentialsId: "{{ jenkins_agent_registration_ssh_credential_id }}"
         launchTimeoutSeconds: 60
-        maxNumRetries: "{{ jenkins_agent_max_num_retries }}"
-        retryWaitTime: "{{ jenkins_agent_retry_wait_time }}"
+        maxNumRetries: "{{ jenkins_agent_registration_max_num_retries }}"
+        retryWaitTime: "{{ jenkins_agent_registration_retry_wait_time }}"
         sshHostKeyVerificationStrategy:
           stapler-class: "hudson.plugins.sshslaves.verifiers.NonVerifyingKeyVerificationStrategy"
-        javaPath: "{{ jenkins_agent_ssh_java_path }}"
-        jvmOptions: "{{ jenkins_agent_ssh_jvm_options }}"
-        prefixStartSlaveCmd: "{{ jenkins_agent_ssh_prefix_start_slave_cmd }}"
-        suffixStartSlaveCmd: "{{ jenkins_agent_ssh_suffix_start_slave_cmd }}"
+        javaPath: "{{ jenkins_agent_registration_ssh_java_path }}"
+        jvmOptions: "{{ jenkins_agent_registration_ssh_jvm_options }}"
+        prefixStartSlaveCmd: "{{ jenkins_agent_registration_ssh_prefix_start_slave_cmd }}"
+        suffixStartSlaveCmd: "{{ jenkins_agent_registration_ssh_suffix_start_slave_cmd }}"
       retentionStrategy:
         stapler-class: "hudson.slaves.RetentionStrategy$Always"
   when: jenkins_agent_registration_enabled
@@ -84,7 +114,7 @@
           'nodeProperties': [
             {
               'stapler-class': 'hudson.slaves.EnvironmentVariablesNodeProperty',
-              'envVars': jenkins_agent_env_vars
+              'envVars': jenkins_agent_registration_env_vars_data
             }
           ]
         },
@@ -92,20 +122,21 @@
       ) }}
   when:
     - jenkins_agent_registration_enabled
-    - jenkins_agent_env_vars | length > 0
+    - jenkins_agent_registration_env_vars_data | length > 0
 
 - name: Register Jenkins agent
   ansible.builtin.uri:
-    url: "http://{{ jenkins_controller_host }}:{{ jenkins_controller_port }}/computer/doCreateItem"
+    url: >-
+      http://{{ jenkins_agent_registration_controller_host }}:{{ jenkins_agent_registration_controller_port }}/computer/doCreateItem
     method: POST
-    user: "{{ jenkins_admin_user | default('admin') }}"
-    password: "{{ jenkins_admin_password }}"
+    user: "{{ jenkins_agent_registration_controller_user }}"
+    password: "{{ jenkins_agent_registration_controller_password }}"
     headers:
       Jenkins-Crumb: "{{ jenkins_crumb.json.crumb }}"
       Content-Type: "application/x-www-form-urlencoded"
     body_format: form-urlencoded
     body:
-      name: "{{ jenkins_agent_name }}"
+      name: "{{ jenkins_agent_registration_agent_name }}"
       type: "hudson.slaves.DumbSlave"
       json: "{{ agent_config | to_json }}"
     status_code: [200, 302]
@@ -117,10 +148,12 @@
 
 - name: Wait for agent to come online
   ansible.builtin.uri:
-    url: "http://{{ jenkins_controller_host }}:{{ jenkins_controller_port }}/computer/{{ jenkins_agent_name }}/api/json"
+    url: >-
+      http://{{ jenkins_agent_registration_controller_host }}:{{ jenkins_agent_registration_controller_port }}/computer/{{
+      jenkins_agent_registration_agent_name }}/api/json
     method: GET
-    user: "{{ jenkins_admin_user | default('admin') }}"
-    password: "{{ jenkins_admin_password }}"
+    user: "{{ jenkins_agent_registration_controller_user }}"
+    password: "{{ jenkins_agent_registration_controller_password }}"
     return_content: true
   register: agent_status
   until: agent_status.json.offline == false
@@ -135,11 +168,11 @@
   ansible.builtin.debug:
     msg: |
       Jenkins agent registration completed:
-      - Agent Name: {{ jenkins_agent_name }}
+      - Agent Name: {{ jenkins_agent_registration_agent_name }}
       - Status: {{ 'Online' if (agent_status.json.offline == false) else 'Offline' }}
-      - Executors: {{ jenkins_agent_executors }}
-      - Labels: {{ jenkins_agent_labels }}
-      - Remote FS: {{ jenkins_agent_remote_fs }}
+      - Executors: {{ jenkins_agent_registration_agent_executors }}
+      - Labels: {{ jenkins_agent_registration_agent_labels }}
+      - Remote FS: {{ jenkins_agent_registration_agent_remote_fs }}
   when:
     - jenkins_agent_registration_enabled
     - agent_status is defined

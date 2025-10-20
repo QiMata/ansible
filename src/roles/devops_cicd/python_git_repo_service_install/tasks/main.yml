@@ -4,7 +4,7 @@
     repo: "{{ python_git_repo_service_install_app_repo }}"
     dest: "/opt/{{ python_git_repo_service_install_app_name }}"
     version: "{{ app_version | default('HEAD') }}"
-  register: git_output
+  register: python_git_repo_service_install_git_output
 
 - name: Install Python dependencies
   ansible.builtin.pip:

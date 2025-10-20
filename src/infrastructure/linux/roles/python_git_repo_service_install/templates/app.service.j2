@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 User=your_username  # Replace with the appropriate user
-WorkingDirectory=/opt/{{ app_name }}
+WorkingDirectory=/opt/{{ python_git_repo_service_install_app_name }}
 ExecStart=/usr/bin/python3 app.py  # Replace with the command to start your application
 Restart=always
 

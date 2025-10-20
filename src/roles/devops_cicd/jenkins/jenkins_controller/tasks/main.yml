@@ -27,8 +27,8 @@
 - name: Install Jenkins and Java
   ansible.builtin.apt:
     name:
-      - "openjdk-{{ jenkins_java_version }}-jdk"
-      - "jenkins={{ jenkins_version }}*"
+      - "openjdk-{{ jenkins_controller_java_version }}-jdk"
+      - "jenkins={{ jenkins_controller_version }}*"
     state: present
     update_cache: true
   notify: Restart Jenkins
@@ -37,7 +37,9 @@
   ansible.builtin.lineinfile:
     path: /etc/default/jenkins
     regexp: '^JENKINS_ARGS='
-    line: 'JENKINS_ARGS="--webroot=/var/cache/$NAME/war --httpPort={{ jenkins_http_port }} -Djenkins.install.runSetupWizard=false {{ jenkins_java_opts }}"'
+    line: >-
+      JENKINS_ARGS="--webroot=/var/cache/$NAME/war --httpPort={{ jenkins_controller_http_port }}
+      -Djenkins.install.runSetupWizard=false {{ jenkins_controller_java_opts }}"
   notify: Restart Jenkins
 
 - name: Ensure init.groovy.d directory exists
@@ -80,7 +82,7 @@
   ansible.builtin.command: >
     jenkins-plugin-cli --war /usr/share/jenkins/jenkins.war --plugin-file /opt/jenkins_plugins.txt
   args:
-    creates: "{{ jenkins_controller_home }}/plugins/{{ jenkins_plugins[0] }}.jpi"
+    creates: "{{ jenkins_controller_home }}/plugins/{{ jenkins_controller_plugins[0] }}.jpi"
   register: plugin_cli_res
   changed_when: plugin_cli_res.rc == 0
   when: plugin_cli_stat.stat.exists
@@ -100,7 +102,7 @@
     --plugin-file /opt/jenkins_plugins.txt
     --plugin-download-directory {{ jenkins_controller_home }}/plugins
   args:
-    creates: "{{ jenkins_controller_home }}/plugins/{{ jenkins_plugins[0] }}.jpi"
+    creates: "{{ jenkins_controller_home }}/plugins/{{ jenkins_controller_plugins[0] }}.jpi"
   when: not plugin_cli_stat.stat.exists
   notify: Restart Jenkins
 
@@ -110,9 +112,9 @@
     state: started
     enabled: true
 
-- name: Wait for Jenkins to listen on port {{ jenkins_http_port }}
+- name: Wait for Jenkins to listen on port {{ jenkins_controller_http_port }}
   ansible.builtin.wait_for:
-    port: "{{ jenkins_http_port | int }}"
+    port: "{{ jenkins_controller_http_port | int }}"
     host: 127.0.0.1
     delay: 2
     timeout: 120
