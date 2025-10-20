@@ -3,8 +3,8 @@ import hudson.security.*
 
 def instance = Jenkins.getInstance()
 def hudsonRealm = new HudsonPrivateSecurityRealm(false)
-if(!hudsonRealm.getAllUsers().any { it.getId() == "{{ jenkins_admin_user }}" }){
-  hudsonRealm.createAccount("{{ jenkins_admin_user }}", "{{ jenkins_controller_admin_password }}")
+if(!hudsonRealm.getAllUsers().any { it.getId() == "{{ jenkins_controller_admin_user }}" }){
+  hudsonRealm.createAccount("{{ jenkins_controller_admin_user }}", "{{ jenkins_controller_admin_password }}")
   instance.setSecurityRealm(hudsonRealm)
   def strategy = new FullControlOnceLoggedInAuthorizationStrategy()
   strategy.setAllowAnonymousRead(false)

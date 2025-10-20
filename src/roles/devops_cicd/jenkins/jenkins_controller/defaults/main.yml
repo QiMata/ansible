@@ -7,12 +7,12 @@ jenkins_controller_backup_dir: "/var/backups/jenkins"
 jenkins_controller_backup_keep_days: 7
 
 # Common tunables
-jenkins_java_version: 17
-jenkins_http_port: 8080
-jenkins_java_opts: ""
-jenkins_admin_user: admin
+jenkins_controller_java_version: "{{ jenkins_java_version | default(17, true) }}"
+jenkins_controller_http_port: "{{ jenkins_http_port | default(8080, true) }}"
+jenkins_controller_java_opts: "{{ jenkins_java_opts | default('', true) }}"
+jenkins_controller_admin_user: "{{ jenkins_admin_user | default('admin', true) }}"
 # Default LTS version may be overridden in scenario
-jenkins_version: "2.452.2"
+jenkins_controller_version: "{{ jenkins_version | default('2.452.2', true) }}"
 
 # Plugins used by molecule tests
-jenkins_plugins: ["git"]
+jenkins_controller_plugins: "{{ jenkins_plugins | default(['git'], true) }}"

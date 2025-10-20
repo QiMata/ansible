@@ -12,25 +12,25 @@ Requirements
 - The agent host already exists and is reachable by the controller via SSH with a configured credentialsId
 
 Key variables (see defaults/main.yml for full list)
-- jenkins_controller_host: Controller host (default: groups['jenkins_controllers'][0] or localhost)
-- jenkins_controller_port: Controller HTTP port (default: 8080)
+- jenkins_agent_registration_controller_host: Controller host (default: groups['jenkins_controllers'][0] or localhost)
+- jenkins_agent_registration_controller_port: Controller HTTP port (default: 8080)
 - jenkins_admin_user: Admin user (default: admin)
 - jenkins_admin_password: Admin password (required)
 - jenkins_agent_registration_enabled: Gate to enable the role (default: true)
 - jenkins_agent_replace_existing: If true and node exists, delete then recreate (set where needed)
-- jenkins_agent_name: Node name (default: inventory_hostname)
-- jenkins_agent_description: Default: "Auto-provisioned Jenkins agent"
-- jenkins_agent_executors: Default: 2 (inherits if already defined)
-- jenkins_agent_remote_fs: Default: jenkins_agent_home or /home/jenkins
-- jenkins_agent_labels: Default: "linux auto-provisioned" (inherits if already defined)
-- jenkins_agent_usage_mode: NORMAL or EXCLUSIVE (default: NORMAL)
-- jenkins_agent_ssh_host: Default: ansible_default_ipv4.address
-- jenkins_agent_ssh_port: Default: 22
-- jenkins_agent_ssh_credential_id: Default: jenkins-ssh-key (or jenkins_credentials_ssh_key_id if provided)
-- jenkins_agent_ssh_java_path, jenkins_agent_ssh_jvm_options, jenkins_agent_ssh_prefix_start_slave_cmd, jenkins_agent_ssh_suffix_start_slave_cmd
-- jenkins_agent_retry_wait_time, jenkins_agent_max_num_retries, jenkins_agent_keep_alive_strategy
-- jenkins_agent_env_vars: Dict of env vars to attach (default: {})
-- jenkins_agent_tool_locations: List of tool locations (default: [])
+- jenkins_agent_registration_agent_name: Node name (default: inventory_hostname)
+- jenkins_agent_registration_agent_description: Default: "Auto-provisioned Jenkins agent"
+- jenkins_agent_registration_agent_executors: Default: 2 (inherits if already defined)
+- jenkins_agent_registration_agent_remote_fs: Default: jenkins_agent_home or /home/jenkins
+- jenkins_agent_registration_agent_labels: Default: "linux auto-provisioned" (inherits if already defined)
+- jenkins_agent_registration_agent_usage_mode: NORMAL or EXCLUSIVE (default: NORMAL)
+- jenkins_agent_registration_ssh_host: Default: ansible_default_ipv4.address
+- jenkins_agent_registration_ssh_port: Default: 22
+- jenkins_agent_registration_ssh_credential_id: Default: jenkins-ssh-key (or jenkins_credentials_ssh_key_id if provided)
+- jenkins_agent_registration_ssh_java_path, jenkins_agent_registration_ssh_jvm_options, jenkins_agent_registration_ssh_prefix_start_slave_cmd, jenkins_agent_registration_ssh_suffix_start_slave_cmd
+- jenkins_agent_registration_retry_wait_time, jenkins_agent_registration_max_num_retries, jenkins_agent_registration_keep_alive_strategy
+- jenkins_agent_registration_env_vars: Dict of env vars to attach (default: {})
+- jenkins_agent_registration_tool_locations: List of tool locations (default: [])
 
 Idempotency
 - Checks if the node exists
@@ -44,13 +44,13 @@ Example
   vars:
     jenkins_admin_user: admin
     jenkins_admin_password: "{{ vault_jenkins_admin_password }}"
-    jenkins_agent_name: agent01
-    jenkins_agent_executors: 2
-    jenkins_agent_labels: "linux amd64"
-    jenkins_agent_remote_fs: "/home/jenkins"
-    jenkins_agent_ssh_host: "{{ ansible_default_ipv4.address }}"
-    jenkins_agent_ssh_port: 22
-    jenkins_agent_ssh_credential_id: jenkins-ssh-key
+    jenkins_agent_registration_agent_name: agent01
+    jenkins_agent_registration_agent_executors: 2
+    jenkins_agent_registration_agent_labels: "linux amd64"
+    jenkins_agent_registration_agent_remote_fs: "/home/jenkins"
+    jenkins_agent_registration_ssh_host: "{{ ansible_default_ipv4.address }}"
+    jenkins_agent_registration_ssh_port: 22
+    jenkins_agent_registration_ssh_credential_id: jenkins-ssh-key
     jenkins_agent_replace_existing: false
   roles:
     - role: devops_cicd/jenkins/jenkins_agent_registration
