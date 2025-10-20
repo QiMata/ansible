@@ -10,3 +10,7 @@ ufw_allow_ports: []
 
 # Allow specific interfaces
 ufw_allow_interfaces: []
+ufw_logging: 'on'
+ufw_default_incoming_policy: 'deny'
+ufw_default_outgoing_policy: 'allow'
+ufw_additional_rules: []

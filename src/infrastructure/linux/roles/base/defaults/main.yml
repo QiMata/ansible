@@ -3,3 +3,16 @@ base_enable_bootstrap: true
 base_enable_auto_update: true
 base_enable_fail2ban: true
 base_enable_clamav: true
+base_enable_ufw: true
+base_firewall_allow_ssh: true
+base_firewall_allow_ports: []
+base_firewall_allow_interfaces: []
+base_firewall_logging: 'on'
+base_enable_sshd_hardening: true
+base_enable_filebeat: false
+base_filebeat_output_elasticsearch_hosts:
+  - localhost:9200
+base_filebeat_input_type: log
+base_filebeat_paths:
+  - /var/log/*.log
+base_enable_access_controls: false
