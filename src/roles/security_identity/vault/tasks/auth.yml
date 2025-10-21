@@ -15,8 +15,8 @@
   ansible.builtin.uri:
     url: "http://{{ vault_addr }}:{{ vault_port }}/v1/sys/init"
     method: GET
+    status_code: [200, 204, 404]
   register: vault_init_status
-  ignore_errors: true
 
 - name: Configure authentication methods
   ansible.builtin.uri:
@@ -33,7 +33,6 @@
   when:
     - vault_init_status.json.initialized | default(false)
     - vault_root_token is defined
-  ignore_errors: true
 
 - name: Configure LDAP authentication method
   ansible.builtin.uri:
@@ -49,7 +48,6 @@
     - vault_init_status.json.initialized | default(false)
     - vault_root_token is defined
     - item.type == "ldap"
-  ignore_errors: true
 
 - name: Configure OIDC authentication method
   ansible.builtin.uri:
@@ -65,7 +63,6 @@
     - vault_init_status.json.initialized | default(false)
     - vault_root_token is defined
     - item.type == "oidc"
-  ignore_errors: true
 
 - name: Configure Kubernetes authentication method
   ansible.builtin.uri:
@@ -81,7 +78,6 @@
     - vault_init_status.json.initialized | default(false)
     - vault_root_token is defined
     - item.type == "kubernetes"
-  ignore_errors: true
 
 - name: Configure AWS IAM authentication method
   ansible.builtin.uri:
@@ -97,7 +93,6 @@
     - vault_init_status.json.initialized | default(false)
     - vault_root_token is defined
     - item.type == "aws"
-  ignore_errors: true
 
 - name: Configure GitHub authentication method
   ansible.builtin.uri:
@@ -113,11 +108,10 @@
     - vault_init_status.json.initialized | default(false)
     - vault_root_token is defined
     - item.type == "github"
-  ignore_errors: true
 
 - name: Configure username/password authentication method
   ansible.builtin.uri:
-    url: "http://{{ vault_addr }}:{{ vault_port }}/v1/auth/{{ item.name }}/users/{{ user.username }}"
+    url: "http://{{ vault_addr }}:{{ vault_port }}/v1/auth/{{ auth_method.name }}/users/{{ user.username }}"
     method: POST
     headers:
       X-Vault-Token: "{{ vault_root_token | default('') }}"
@@ -126,19 +120,12 @@
       password: "{{ user.password }}"
       policies: "{{ user.policies | default([]) }}"
     status_code: [200, 204, 400]
-  loop: "{{ vault_auth_methods }}"
+  loop: "{{ query('subelements', vault_auth_methods | selectattr('type', 'equalto', 'userpass') | list, 'users', {'skip_missing': True}) }}"
   loop_control:
-    loop_var: auth_method
+    loop_var: auth_method_user
   when:
     - vault_init_status.json.initialized | default(false)
     - vault_root_token is defined
-    - auth_method.type == "userpass"
-    - auth_method.users is defined
   vars:
-    item: "{{ auth_method }}"
-    user: "{{ item.1 }}"
-  with_subelements:
-    - "{{ vault_auth_methods | selectattr('type', 'equalto', 'userpass') | list }}"
-    - users
-    - skip_missing: true
-  ignore_errors: true
+    auth_method: "{{ auth_method_user.0 }}"
+    user: "{{ auth_method_user.1 }}"
