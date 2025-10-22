@@ -34,7 +34,8 @@
       community.crypto.openssl_csr:
         path: "{{ minio_certs_dir }}/request.csr"
         privatekey_path: "{{ minio_certs_dir }}/private.key"
-        common_name: "{{ minio_domain }}"
+        subject:
+          common_name: "{{ minio_domain }}"
         subject_alt_name: >-
           {{ ['DNS:' + minio_domain] + minio_extra_sans | default([]) | map('regex_replace', '^(.*)$', 'DNS:\1') | list }}
         owner: "{{ minio_user }}"
