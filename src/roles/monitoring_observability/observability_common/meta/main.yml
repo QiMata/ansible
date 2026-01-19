@@ -1,13 +1,11 @@
 ---
 galaxy_info:
-  role_name: filebeat
+  role_name: observability_common
   namespace: monitoring_observability
   author: Infrastructure Team
-  description: Install and configure Filebeat for log shipping
-  company: Your Organization
+  description: Shared observability role helpers
   license: MIT
   min_ansible_version: "2.9"
-
   platforms:
     - name: Ubuntu
       versions:
@@ -23,16 +21,4 @@ galaxy_info:
         - "8"
         - "9"
 
-  galaxy_tags:
-    - logging
-    - monitoring
-    - observability
-    - elastic
-    - filebeat
-    - logshipping
-
 dependencies: []
-
-collections:
-  - ansible.posix
-  - community.general

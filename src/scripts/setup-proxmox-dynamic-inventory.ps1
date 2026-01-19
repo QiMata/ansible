@@ -107,6 +107,13 @@ Write-Host "To test your configuration, run:" -ForegroundColor White
 Write-Host "python -c `"import yaml; print('YAML parser OK')`"" -ForegroundColor Cyan
 Write-Host ""
 
+# Optional: test Proxmox API access via unified CLI
+if ($ProxmoxUrl -ne "https://your-proxmox-server:8006" -and $ProxmoxUser -ne "ansible@pve" -and $ProxmoxPassword -ne "") {
+    Write-Host "`nOptional: testing Proxmox API access with unified CLI..." -ForegroundColor Yellow
+    Write-Host "Running: python src/scripts/inventory_cli.py proxmox-test --host $ProxmoxUrl --user $ProxmoxUser --password ******" -ForegroundColor Cyan
+    python src/scripts/inventory_cli.py proxmox-test --host $ProxmoxUrl --user $ProxmoxUser --password $ProxmoxPassword
+}
+
 # Step 8: Usage instructions
 Write-Host "`n=== Next Steps ===" -ForegroundColor Green
 Write-Host "1. Download and install the community.general and community.proxmox collections manually (see above)" -ForegroundColor White

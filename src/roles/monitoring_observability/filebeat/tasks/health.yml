@@ -3,15 +3,15 @@
 - name: Test Filebeat configuration
   ansible.builtin.command:
     cmd: filebeat test config -c {{ filebeat_config_file }}
-  register: config_test
-  failed_when: config_test.rc != 0
+  register: filebeat_config_test
+  failed_when: filebeat_config_test.rc != 0
   changed_when: false
 
 - name: Test output connectivity
   ansible.builtin.command:
     cmd: filebeat test output -c {{ filebeat_config_file }}
-  register: output_test
-  failed_when: output_test.rc != 0
+  register: filebeat_output_test
+  failed_when: filebeat_output_test.rc != 0
   changed_when: false
 
 - name: Check if Filebeat is shipping logs
@@ -26,11 +26,11 @@
 - name: Display health check results
   ansible.builtin.debug:
     msg:
-      - "Configuration test: {{ 'PASSED' if config_test.rc == 0 else 'FAILED' }}"
-      - "Output connectivity test: {{ 'PASSED' if output_test.rc == 0 else 'FAILED' }}"
+      - "Configuration test: {{ 'PASSED' if filebeat_config_test.rc == 0 else 'FAILED' }}"
+      - "Output connectivity test: {{ 'PASSED' if filebeat_output_test.rc == 0 else 'FAILED' }}"
       - "HTTP endpoint status: {{ 'AVAILABLE' if filebeat_stats.status == 200 else 'UNAVAILABLE' }}"
 
 - name: Fail if health checks fail
   ansible.builtin.fail:
     msg: "Filebeat health checks failed"
-  when: config_test.rc != 0 or output_test.rc != 0
+  when: filebeat_config_test.rc != 0 or filebeat_output_test.rc != 0

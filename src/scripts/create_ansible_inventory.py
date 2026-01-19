@@ -15,6 +15,8 @@ try:
 except ImportError:  # pragma: no cover - exercised when psycopg2 is absent
     psycopg2 = None  # type: ignore[assignment]
 
+from scripts.logging_utils import setup_logging
+
 
 @dataclass(frozen=True)
 class ContainerRecord:
@@ -206,18 +208,26 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=os.environ.get("ANSIBLE_BECOME_PASS"),
         help="Privilege escalation password for generated inventory entries (overrides ANSIBLE_BECOME_PASS).",
     )
+    parser.add_argument(
+        "--log-level",
+        default=os.environ.get("ANSIBLE_SCRIPTS_LOG_LEVEL", "INFO"),
+        help="Logging level (default: INFO).",
+    )
 
     args = parser.parse_args(argv)
+    logger = setup_logging(args.log_level)
 
     output_directory = Path(args.output_directory)
 
     if psycopg2 is None:
-        raise RuntimeError("psycopg2 is required to connect to PostgreSQL. Install it before running the CLI.")
+        logger.error("psycopg2 is required to connect to PostgreSQL. Install it before running the CLI.")
+        return 1
 
     with psycopg2.connect(args.db_conn_str) as connection:  # type: ignore[union-attr]
         rows = fetch_inventory_rows(connection)
 
     generate_inventory(rows, output_directory, args.ansible_user, args.become_pass)
+    logger.info("Inventory files generated in %s", output_directory)
     return 0
 
 

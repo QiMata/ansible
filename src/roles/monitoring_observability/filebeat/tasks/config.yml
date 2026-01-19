@@ -4,9 +4,9 @@
   ansible.builtin.template:
     src: filebeat.yml.j2
     dest: "{{ filebeat_config_file }}"
-    owner: "{{ filebeat_user }}"
-    group: "{{ filebeat_group }}"
-    mode: '0644'
+    owner: "{{ filebeat_config_file_owner }}"
+    group: "{{ filebeat_config_file_group }}"
+    mode: "{{ filebeat_config_file_mode }}"
     backup: "{{ filebeat_template_backup }}"
   register: filebeat_config_result
   notify: restart filebeat
@@ -14,8 +14,8 @@
 - name: Validate Filebeat configuration
   ansible.builtin.command:
     cmd: filebeat test config -c {{ filebeat_config_file }}
-  register: config_validation
-  failed_when: config_validation.rc != 0
+  register: filebeat_config_validation
+  failed_when: filebeat_config_validation.rc != 0
   changed_when: false
   when: filebeat_config_validate_before_restart
 
@@ -26,8 +26,8 @@
       ansible.builtin.copy:
         src: "{{ filebeat_ssl_certificate }}"
         dest: "{{ filebeat_config_dir }}/filebeat.crt"
-        owner: "{{ filebeat_user }}"
-        group: "{{ filebeat_group }}"
+        owner: "{{ filebeat_config_file_owner }}"
+        group: "{{ filebeat_config_file_group }}"
         mode: '0644'
       when: filebeat_ssl_certificate != ""
 
@@ -35,8 +35,8 @@
       ansible.builtin.copy:
         src: "{{ filebeat_ssl_key }}"
         dest: "{{ filebeat_config_dir }}/filebeat.key"
-        owner: "{{ filebeat_user }}"
-        group: "{{ filebeat_group }}"
+        owner: "{{ filebeat_config_file_owner }}"
+        group: "{{ filebeat_config_file_group }}"
         mode: '0600'
       when: filebeat_ssl_key != ""
 
@@ -44,8 +44,8 @@
       ansible.builtin.copy:
         src: "{{ item }}"
         dest: "{{ filebeat_config_dir }}/ca.crt"
-        owner: "{{ filebeat_user }}"
-        group: "{{ filebeat_group }}"
+        owner: "{{ filebeat_config_file_owner }}"
+        group: "{{ filebeat_config_file_group }}"
         mode: '0644'
       loop: "{{ filebeat_ssl_certificate_authorities }}"
       when: filebeat_ssl_certificate_authorities | length > 0
@@ -53,6 +53,6 @@
 - name: Set file permissions for configuration
   ansible.builtin.file:
     path: "{{ filebeat_config_file }}"
-    owner: "{{ filebeat_user }}"
-    group: "{{ filebeat_group }}"
-    mode: '0644'
+    owner: "{{ filebeat_config_file_owner }}"
+    group: "{{ filebeat_config_file_group }}"
+    mode: "{{ filebeat_config_file_mode }}"

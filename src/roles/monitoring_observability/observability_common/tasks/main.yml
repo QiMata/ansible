@@ -1,0 +1,7 @@
+---
+- name: Assert supported platform
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family in observability_supported_os_families
+    fail_msg: >-
+      This role supports {{ observability_supported_os_families | join(', ') }}.

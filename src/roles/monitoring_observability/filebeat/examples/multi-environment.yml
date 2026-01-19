@@ -2,7 +2,7 @@
 # Multi-environment Filebeat deployment
 - name: Deploy Filebeat across multiple environments
   hosts: all
-  become: yes
+  become: true
   vars:
     # Environment-specific configuration
     filebeat_environment: "{{ env_name | default('production') }}"
@@ -74,7 +74,7 @@
       cluster: "{{ cluster_name | default('default') }}"
 
   roles:
-    - monitoring_observability.filebeat
+    - filebeat
 
   tags:
     - monitoring

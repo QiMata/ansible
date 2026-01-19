@@ -2,7 +2,7 @@
 # Security-focused Filebeat deployment
 - name: Deploy Filebeat for security monitoring
   hosts: security_servers
-  become: yes
+  become: true
   vars:
     # Security-focused inputs
     filebeat_inputs:
@@ -102,7 +102,7 @@
     filebeat_config_validate_before_restart: true
 
   roles:
-    - monitoring_observability.filebeat
+    - filebeat
 
   tags:
     - monitoring

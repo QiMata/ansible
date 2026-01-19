@@ -9,7 +9,7 @@
   when: ansible_os_family == "Debian"
 
 - name: Install Filebeat (RedHat/CentOS)
-  ansible.builtin.yum:
+  ansible.builtin.dnf:
     name: "{{ filebeat_package_name }}"
     state: "{{ filebeat_package_state }}"
   when: ansible_os_family == "RedHat"

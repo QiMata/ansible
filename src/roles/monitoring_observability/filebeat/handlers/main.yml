@@ -8,8 +8,8 @@
 - name: Validate filebeat after restart
   ansible.builtin.command:
     cmd: filebeat test config -c {{ filebeat_config_file }}
-  register: post_restart_validation
-  failed_when: post_restart_validation.rc != 0
+  register: filebeat_post_restart_validation
+  failed_when: filebeat_post_restart_validation.rc != 0
   changed_when: false
   listen: restart filebeat
 
