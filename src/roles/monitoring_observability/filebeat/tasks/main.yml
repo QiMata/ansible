@@ -1,4 +1,13 @@
 ---
+# Shared observability checks
+- name: Assert supported platform
+  ansible.builtin.include_role:
+    name: monitoring_observability.observability_common
+  vars:
+    observability_supported_os_families:
+      - Debian
+      - RedHat
+
 # Load platform-specific variables
 - name: Load platform-specific variables
   ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
@@ -26,6 +35,13 @@
   tags:
     - filebeat
     - install
+
+# Keystore management
+- name: Manage Filebeat keystore
+  ansible.builtin.include_tasks: keystore.yml
+  tags:
+    - filebeat
+    - security
 
 # Configuration backup
 - name: Backup existing configuration

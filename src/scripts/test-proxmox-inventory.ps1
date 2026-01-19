@@ -9,10 +9,32 @@ param(
     [switch]$UseVault,
     
     [Parameter(Mandatory=$false)]
-    [switch]$ShowGraph
+    [switch]$ShowGraph,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$UseCli,
+
+    [Parameter(Mandatory=$false)]
+    [string]$ProxmoxHost = $env:PROXMOX_HOST,
+
+    [Parameter(Mandatory=$false)]
+    [string]$ProxmoxUser = $env:PROXMOX_USER,
+
+    [Parameter(Mandatory=$false)]
+    [string]$ProxmoxPassword = $env:PROXMOX_PASSWORD
 )
 
 Write-Host "Testing Proxmox Dynamic Inventory..." -ForegroundColor Green
+
+if ($UseCli) {
+    if (-not $ProxmoxHost -or -not $ProxmoxUser -or -not $ProxmoxPassword) {
+        Write-Host "Missing Proxmox CLI credentials. Set PROXMOX_HOST/USER/PASSWORD or pass parameters." -ForegroundColor Red
+        exit 1
+    }
+
+    Write-Host "Running unified CLI Proxmox test..." -ForegroundColor Cyan
+    python src/scripts/inventory_cli.py proxmox-test --host $ProxmoxHost --user $ProxmoxUser --password $ProxmoxPassword
+}
 
 # Change to src directory
 Set-Location -Path "src"

@@ -115,6 +115,8 @@ filebeat_ssl_curve_types: []
 filebeat_api_key_enabled: false
 filebeat_api_key_id: ""
 filebeat_api_key_value: ""
+filebeat_use_keystore: false
+filebeat_keystore_keys: {}
 
 # Processing Configuration
 # ----------------------------------------------------------------------------
@@ -197,3 +199,8 @@ filebeat_custom_config: {}
 # Template rendering options
 filebeat_template_backup: true
 filebeat_template_validate: true
+
+# Configuration file ownership
+filebeat_config_file_owner: "{{ filebeat_user }}"
+filebeat_config_file_group: "{{ filebeat_group }}"
+filebeat_config_file_mode: "0644"

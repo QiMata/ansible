@@ -1,11 +1,11 @@
 ---
 - name: Ensure supported platform
-  ansible.builtin.assert:
-    that:
-      - ansible_os_family in ["Debian", "RedHat"]
-    fail_msg: >-
-      The monitoring_observability.logstash role currently supports Debian/Ubuntu
-      and RHEL-compatible distributions.
+  ansible.builtin.include_role:
+    name: monitoring_observability.observability_common
+  vars:
+    observability_supported_os_families:
+      - Debian
+      - RedHat
 
 - name: Load platform specific variables
   ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"

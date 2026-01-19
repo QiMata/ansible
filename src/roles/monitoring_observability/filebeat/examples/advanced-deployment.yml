@@ -2,7 +2,7 @@
 # Advanced Filebeat deployment with SSL and multiple inputs
 - name: Deploy Filebeat with advanced configuration
   hosts: production_servers
-  become: yes
+  become: true
   vars:
     # Multiple input sources
     filebeat_inputs:
@@ -99,7 +99,7 @@
     filebeat_config_validate_before_restart: true
 
   roles:
-    - monitoring_observability.filebeat
+    - filebeat
 
   tags:
     - monitoring

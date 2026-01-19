@@ -2,7 +2,7 @@
 # Basic Filebeat deployment example
 - name: Deploy Filebeat with basic configuration
   hosts: web_servers
-  become: yes
+  become: true
   vars:
     filebeat_inputs:
       - type: log
@@ -21,7 +21,7 @@
 
     # Point to Logstash nodes deployed via the data_systems/logstash role
     filebeat_output_type: logstash
-    filebeat_logstash_hosts: {{ groups['logstash_servers'] | default(['logstash1.example.com']) | map('regex_replace', '$', ':5044') | list }}
+    filebeat_logstash_hosts: "{{ groups['logstash_servers'] | default(['logstash1.example.com']) | map('regex_replace', '$', ':5044') | list }}"
 
     filebeat_global_tags:
       datacenter: "{{ datacenter_name | default('dc1') }}"
@@ -29,7 +29,7 @@
       team: infrastructure
 
   roles:
-    - monitoring_observability.filebeat
+    - filebeat
 
   tags:
     - monitoring
