@@ -1,0 +1,25 @@
+---
+- name: Manage local users
+  vars:
+    pfsense_host: "{{ pfsense_users_host }}"
+    pfsense_username: "{{ pfsense_users_username }}"
+    pfsense_password: "{{ pfsense_users_password }}"
+    pfsense_scheme: "{{ pfsense_users_scheme }}"
+    pfsense_port: "{{ pfsense_users_port }}"
+    pfsense_timeout: "{{ pfsense_users_timeout }}"
+    pfsense_validate_certs: "{{ pfsense_users_validate_certs }}"
+  pfsense_user:  # noqa: syntax-check[unknown-module]
+    name: "{{ item.username }}"
+    password: "{{ item.password | default(omit) }}"
+    full_name: "{{ item.full_name | default(omit) }}"
+    email: "{{ item.email | default(omit) }}"
+    expires: "{{ item.expires | default(omit) }}"
+    disabled: "{{ item.disabled | default(false) }}"
+    scope: "{{ item.scope | default('user') }}"
+    uid: "{{ item.uid | default(omit) }}"
+    groups: "{{ item.groups | default([]) }}"
+    priv: "{{ item.privileges | default([]) }}"
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ pfsense_users_list }}"
+  when: pfsense_users_list | length > 0
+  no_log: true
