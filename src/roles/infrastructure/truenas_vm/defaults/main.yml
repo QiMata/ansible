@@ -1,0 +1,64 @@
+---
+# Default variables for infrastructure.truenas_vm
+truenas_vm_api_url: ''
+truenas_vm_api_key: ''
+truenas_vm_validate_certs: true
+truenas_vm_validate_only: false
+
+truenas_vm_name: ''
+truenas_vm_description: ''
+truenas_vm_time: 'UTC'
+truenas_vm_autostart: false
+truenas_vm_bootloader: 'UEFI'
+truenas_vm_cpu_mode: 'HOST-PASSTHROUGH'
+truenas_vm_vcpus: 1
+truenas_vm_cores: 1
+truenas_vm_threads: 1
+truenas_vm_memory_mib: 1024
+
+truenas_vm_disk_bus: 'VIRTIO'
+truenas_vm_nic_type: 'VIRTIO'
+
+truenas_vm_os_disk:
+  pool: 'apps'
+  size: '20G'
+  zvol_name: ''
+
+truenas_vm_data_disks: []
+# Example:
+#   - pool: 'data'
+#     size: '100G'
+#     zvol_name: 'vm-data-1'
+
+truenas_vm_networks: []
+# Example:
+#   - bridge: 'br0'
+#     mac: '52:54:00:11:22:33'
+#     mtu: 1500
+
+truenas_vm_iso_path: ''
+
+truenas_vm_cloud_init: {}
+# Example:
+#   user_data: |
+#     #cloud-config
+#     users:
+#       - name: ubuntu
+#   meta_data: |
+#     instance-id: myvm
+#     local-hostname: myvm
+#   network_config: |
+#     version: 2
+#     ethernets:
+#       eth0:
+#         addresses: ["192.168.1.50/24"]
+#         gateway4: "192.168.1.1"
+#         nameservers:
+#           addresses: ["1.1.1.1"]
+
+truenas_vm_additional_devices: []
+
+truenas_vm_start_on_create: true
+truenas_vm_wait_for_running: true
+truenas_vm_wait_retries: 30
+truenas_vm_wait_delay: 10

@@ -1,0 +1,20 @@
+---
+- name: Converge
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Include truenas_vm role
+      ansible.builtin.include_role:
+        name: truenas_vm
+      vars:
+        truenas_vm_api_url: "https://truenas.example"
+        truenas_vm_api_key: "test-api-key"
+        truenas_vm_name: "molecule-vm"
+        truenas_vm_validate_only: true
+        truenas_vm_networks:
+          - bridge: "br0"
+        truenas_vm_data_disks:
+          - pool: "data"
+            size: "10G"
+        truenas_vm_cloud_init:
+          user_data: "#cloud-config"
