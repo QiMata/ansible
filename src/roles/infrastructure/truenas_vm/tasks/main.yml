@@ -1,0 +1,234 @@
+---
+- name: Validate required inputs
+  ansible.builtin.assert:
+    that:
+      - truenas_vm_api_url | length > 0
+      - truenas_vm_api_key | length > 0
+      - truenas_vm_name | length > 0
+    fail_msg: >-
+      truenas_vm_api_url, truenas_vm_api_key, and truenas_vm_name are required.
+
+- name: Stop after validation when requested
+  ansible.builtin.debug:
+    msg: "Validation-only mode enabled; skipping API calls."
+  when: truenas_vm_validate_only
+
+- name: Build API headers
+  ansible.builtin.set_fact:
+    truenas_vm_api_headers:
+      Authorization: "Bearer {{ truenas_vm_api_key }}"
+      Content-Type: "application/json"
+  when: not truenas_vm_validate_only
+
+- name: Fetch existing VMs
+  ansible.builtin.uri:
+    url: "{{ truenas_vm_api_url }}/api/v2.0/vm"
+    method: GET
+    headers: "{{ truenas_vm_api_headers }}"
+    validate_certs: "{{ truenas_vm_validate_certs }}"
+    return_content: true
+  register: truenas_vm_list
+  when: not truenas_vm_validate_only
+
+- name: Select existing VM by name
+  ansible.builtin.set_fact:
+    truenas_vm_existing: >-
+      {{ (truenas_vm_list.json | default([]))
+         | selectattr('name', 'equalto', truenas_vm_name)
+         | list
+         | first
+         | default({}) }}
+  when: not truenas_vm_validate_only
+
+- name: Set existing VM ID
+  ansible.builtin.set_fact:
+    truenas_vm_id: "{{ truenas_vm_existing.id }}"
+  when:
+    - not truenas_vm_validate_only
+    - truenas_vm_existing | length > 0
+
+- name: Build create payload
+  ansible.builtin.set_fact:
+    truenas_vm_payload:
+      name: "{{ truenas_vm_name }}"
+      description: "{{ truenas_vm_description }}"
+      vcpus: "{{ truenas_vm_vcpus }}"
+      cores: "{{ truenas_vm_cores }}"
+      threads: "{{ truenas_vm_threads }}"
+      memory: "{{ truenas_vm_memory_mib }}"
+      autostart: "{{ truenas_vm_autostart }}"
+      time: "{{ truenas_vm_time }}"
+      bootloader: "{{ truenas_vm_bootloader }}"
+      cpu_mode: "{{ truenas_vm_cpu_mode }}"
+  when:
+    - not truenas_vm_validate_only
+    - truenas_vm_existing | length == 0
+
+- name: Create VM
+  ansible.builtin.uri:
+    url: "{{ truenas_vm_api_url }}/api/v2.0/vm"
+    method: POST
+    headers: "{{ truenas_vm_api_headers }}"
+    validate_certs: "{{ truenas_vm_validate_certs }}"
+    body_format: json
+    body: "{{ truenas_vm_payload }}"
+    status_code: [200, 201]
+    return_content: true
+  register: truenas_vm_create
+  when:
+    - not truenas_vm_validate_only
+    - truenas_vm_existing | length == 0
+
+- name: Capture created VM ID
+  ansible.builtin.set_fact:
+    truenas_vm_id: "{{ truenas_vm_create.json.id }}"
+  when:
+    - not truenas_vm_validate_only
+    - truenas_vm_existing | length == 0
+
+- name: Build device list
+  ansible.builtin.set_fact:
+    truenas_vm_devices: []
+  when:
+    - not truenas_vm_validate_only
+    - truenas_vm_existing | length == 0
+
+- name: Add OS disk device
+  ansible.builtin.set_fact:
+    truenas_vm_devices: "{{ truenas_vm_devices + [os_disk_device] }}"
+  vars:
+    os_disk_name: "{{ truenas_vm_os_disk.zvol_name | default(truenas_vm_name ~ '-os') }}"
+    os_disk_device:
+      dtype: DISK
+      attributes:
+        type: "{{ truenas_vm_disk_bus }}"
+        create_zvol: true
+        zvol_name: "{{ truenas_vm_os_disk.pool }}/{{ os_disk_name }}"
+        zvol_volsize: "{{ truenas_vm_os_disk.size }}"
+        path: "/dev/zvol/{{ truenas_vm_os_disk.pool }}/{{ os_disk_name }}"
+  when:
+    - not truenas_vm_validate_only
+    - truenas_vm_existing | length == 0
+    - truenas_vm_os_disk is defined
+    - truenas_vm_os_disk.size | length > 0
+
+- name: Add data disk devices
+  ansible.builtin.set_fact:
+    truenas_vm_devices: "{{ truenas_vm_devices + [data_disk_device] }}"
+  vars:
+    data_disk_name: "{{ item.zvol_name | default(truenas_vm_name ~ '-data-' ~ index) }}"
+    data_disk_device:
+      dtype: DISK
+      attributes:
+        type: "{{ truenas_vm_disk_bus }}"
+        create_zvol: true
+        zvol_name: "{{ item.pool | default('data') }}/{{ data_disk_name }}"
+        zvol_volsize: "{{ item.size }}"
+        path: "/dev/zvol/{{ item.pool | default('data') }}/{{ data_disk_name }}"
+  loop: "{{ truenas_vm_data_disks }}"
+  loop_control:
+    index_var: index
+  when:
+    - not truenas_vm_validate_only
+    - truenas_vm_existing | length == 0
+    - truenas_vm_data_disks | length > 0
+
+- name: Add network devices
+  ansible.builtin.set_fact:
+    truenas_vm_devices: "{{ truenas_vm_devices + [network_device] }}"
+  vars:
+    network_attributes: >-
+      {{ {'type': truenas_vm_nic_type, 'nic_attach': item.bridge}
+         | combine(item.mac is defined | ternary({'mac': item.mac}, {}))
+         | combine(item.mtu is defined | ternary({'mtu': item.mtu}, {})) }}
+    network_device:
+      dtype: NIC
+      attributes: "{{ network_attributes }}"
+  loop: "{{ truenas_vm_networks }}"
+  when:
+    - not truenas_vm_validate_only
+    - truenas_vm_existing | length == 0
+    - truenas_vm_networks | length > 0
+
+- name: Add ISO device
+  ansible.builtin.set_fact:
+    truenas_vm_devices: "{{ truenas_vm_devices + [iso_device] }}"
+  vars:
+    iso_device:
+      dtype: CDROM
+      attributes:
+        path: "{{ truenas_vm_iso_path }}"
+  when:
+    - not truenas_vm_validate_only
+    - truenas_vm_existing | length == 0
+    - truenas_vm_iso_path | length > 0
+
+- name: Add cloud-init device
+  ansible.builtin.set_fact:
+    truenas_vm_devices: "{{ truenas_vm_devices + [cloudinit_device] }}"
+  vars:
+    cloudinit_device:
+      dtype: CLOUDINIT
+      attributes:
+        user_data: "{{ truenas_vm_cloud_init.user_data | default('') }}"
+        meta_data: "{{ truenas_vm_cloud_init.meta_data | default('') }}"
+        network_config: "{{ truenas_vm_cloud_init.network_config | default('') }}"
+  when:
+    - not truenas_vm_validate_only
+    - truenas_vm_existing | length == 0
+    - truenas_vm_cloud_init | length > 0
+
+- name: Add additional devices
+  ansible.builtin.set_fact:
+    truenas_vm_devices: "{{ truenas_vm_devices + truenas_vm_additional_devices }}"
+  when:
+    - not truenas_vm_validate_only
+    - truenas_vm_existing | length == 0
+    - truenas_vm_additional_devices | length > 0
+
+- name: Create VM devices
+  ansible.builtin.uri:
+    url: "{{ truenas_vm_api_url }}/api/v2.0/vm/device"
+    method: POST
+    headers: "{{ truenas_vm_api_headers }}"
+    validate_certs: "{{ truenas_vm_validate_certs }}"
+    body_format: json
+    body:
+      vm: "{{ truenas_vm_id }}"
+      dtype: "{{ item.dtype }}"
+      attributes: "{{ item.attributes }}"
+    status_code: [200, 201]
+  loop: "{{ truenas_vm_devices }}"
+  when:
+    - not truenas_vm_validate_only
+    - truenas_vm_existing | length == 0
+    - truenas_vm_devices | length > 0
+
+- name: Start VM
+  ansible.builtin.uri:
+    url: "{{ truenas_vm_api_url }}/api/v2.0/vm/id/{{ truenas_vm_id }}/start"
+    method: POST
+    headers: "{{ truenas_vm_api_headers }}"
+    validate_certs: "{{ truenas_vm_validate_certs }}"
+    status_code: [200, 201]
+  when:
+    - not truenas_vm_validate_only
+    - truenas_vm_existing | length == 0
+    - truenas_vm_start_on_create
+
+- name: Wait for VM to be running
+  ansible.builtin.uri:
+    url: "{{ truenas_vm_api_url }}/api/v2.0/vm/id/{{ truenas_vm_id }}"
+    method: GET
+    headers: "{{ truenas_vm_api_headers }}"
+    validate_certs: "{{ truenas_vm_validate_certs }}"
+    return_content: true
+  register: truenas_vm_status
+  retries: "{{ truenas_vm_wait_retries }}"
+  delay: "{{ truenas_vm_wait_delay }}"
+  until: truenas_vm_status.json.state == 'RUNNING'
+  when:
+    - not truenas_vm_validate_only
+    - truenas_vm_existing | length == 0
+    - truenas_vm_start_on_create
+    - truenas_vm_wait_for_running
