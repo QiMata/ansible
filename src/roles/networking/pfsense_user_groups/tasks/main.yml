@@ -1,0 +1,18 @@
+---
+- name: Manage local user groups
+  vars:
+    pfsense_host: "{{ pfsense_user_groups_host }}"
+    pfsense_username: "{{ pfsense_user_groups_username }}"
+    pfsense_password: "{{ pfsense_user_groups_password }}"
+    pfsense_scheme: "{{ pfsense_user_groups_scheme }}"
+    pfsense_port: "{{ pfsense_user_groups_port }}"
+    pfsense_timeout: "{{ pfsense_user_groups_timeout }}"
+    pfsense_validate_certs: "{{ pfsense_user_groups_validate_certs }}"
+  pfsense_group:  # noqa: syntax-check[unknown-module]
+    name: "{{ item.name }}"
+    scope: "{{ item.scope | default('local') }}"
+    description: "{{ item.description | default(omit) }}"
+    priv: "{{ item.privileges | default([]) }}"
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ pfsense_user_groups_list }}"
+  when: pfsense_user_groups_list | length > 0

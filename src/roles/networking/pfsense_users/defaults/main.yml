@@ -1,0 +1,27 @@
+---
+# pfSense Users Role Default Variables
+
+pfsense_users_host: "{{ ansible_host }}"
+pfsense_users_username: admin
+pfsense_users_password: "{{ vault_pfsense_password | default('pfsense') }}"
+pfsense_users_scheme: https
+pfsense_users_port: 443
+pfsense_users_timeout: 30
+pfsense_users_validate_certs: false
+
+pfsense_users_list: []
+# Example:
+# pfsense_users_list:
+#   - username: "netadmin"
+#     password: "{{ vault_netadmin_password }}"
+#     full_name: "Network Administrator"
+#     email: "netadmin@example.com"
+#     expires: "2025-12-31"
+#     disabled: false
+#     scope: "user"
+#     uid: 2001
+#     groups:
+#       - "admins"
+#     privileges:
+#       - "page-all"
+#     state: present

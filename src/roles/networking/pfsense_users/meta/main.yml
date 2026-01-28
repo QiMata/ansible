@@ -1,0 +1,23 @@
+---
+galaxy_info:
+  role_name: pfsense_users
+  namespace: networking
+  author: Systems Admin Team
+  description: Manage local pfSense users
+  company: Your Organization
+  license: MIT
+  min_ansible_version: '2.14'
+  platforms:
+    - name: FreeBSD
+      versions:
+        - all
+  galaxy_tags:
+    - networking
+    - firewall
+    - pfsense
+    - users
+
+dependencies: []
+
+collections:
+  - pfsensible.core
