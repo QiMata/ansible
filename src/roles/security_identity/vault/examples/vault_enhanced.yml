@@ -177,7 +177,7 @@
 
   post_tasks:
     - name: Display important information
-      debug:
+      ansible.builtin.debug:
         msg: |
           Vault deployment completed!
 

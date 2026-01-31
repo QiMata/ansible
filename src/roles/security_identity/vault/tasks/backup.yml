@@ -18,7 +18,6 @@
     - jq
     - awscli
   when: ansible_os_family == "Debian"
-  ignore_errors: true
 
 - name: Create backup script
   ansible.builtin.template:
