@@ -14,4 +14,4 @@ galaxy_info:
     - elasticsearch
     - beats
     - logging
-  dependencies: []
+dependencies: []

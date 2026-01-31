@@ -2,21 +2,21 @@
 - name: Converge Elasticsearch
   hosts: all
   become: true
+  vars:
+    es_cluster_name: molecule-es  # noqa var-naming
+    es_heap_size: "512m"  # noqa var-naming
+    es_enable_security: false  # noqa var-naming
+    es_install_java: true  # noqa var-naming
   roles:
-    - role: data_systems/elasticsearch
-      vars:
-        es_cluster_name: molecule-es
-        es_heap_size: "512m"
-        es_enable_security: false
-        es_install_java: true
+    - role: elasticsearch
 
 - name: Converge Kibana
   hosts: all
   become: true
+  vars:
+    kibana_elasticsearch_hosts:
+      - "http://localhost:9200"
+    kibana_service_state: started
+    kibana_service_enabled: true
   roles:
-    - role: data_systems/kibana
-      vars:
-        kibana_elasticsearch_hosts:
-          - "http://localhost:9200"
-        kibana_service_state: started
-        kibana_service_enabled: true
+    - role: kibana
